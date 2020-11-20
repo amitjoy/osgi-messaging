@@ -1,0 +1,30 @@
+mockito.bundles                 =         org.mockito.mockito-core, \
+                                          net.bytebuddy.byte-buddy, \
+                                          net.bytebuddy.byte-buddy-agent, \
+                                          org.objenesis
+
+powermockito.non.bundles        =         javassist,\
+                                          org.powermock:powermock-core,\
+                                          org.powermock:powermock-api-support,\
+                                          org.powermock:powermock-api-mockito2,\
+                                          org.powermock:powermock-module-junit4,\
+                                          org.powermock:powermock-module-junit4-common,\
+                                          org.powermock:powermock-reflect
+
+fasterxml.bundles               =         com.fasterxml.jackson.core.jackson-annotations, \
+                                          com.fasterxml.jackson.core.jackson-core, \
+                                          com.fasterxml.jackson.core.jackson-databind
+
+vertx.bundles                   =         io.vertx.core, \
+                                          io.netty.buffer, \
+                                          io.netty.codec, \
+                                          io.netty.codec-dns, \
+                                          io.netty.codec-http, \
+                                          io.netty.codec-http2, \
+                                          io.netty.codec-socks, \
+                                          io.netty.common, \
+                                          io.netty.handler, \
+                                          io.netty.handler-proxy, \
+                                          io.netty.resolver, \
+                                          io.netty.resolver-dns, \
+                                          io.netty.transport

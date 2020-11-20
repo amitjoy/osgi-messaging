@@ -1,0 +1,20 @@
+-runrepos                       =         Runtime, Workspace
+-runfw                          =         org.apache.felix.framework
+-runee                          =         JavaSE-1.8
+-runvm                          =         -ea
+-runtrace                       =         true
+-runsystempackages              =         com.sun.management,\
+                                          sun.misc,\
+                                          sun.net,\
+                                          sun.reflect
+-runproperties.bootdelegation   =         org.osgi.framework.bootdelegation="\
+		                                     com.sun.management,\
+		                                     com.sun.proxy,\
+		                                     javax.xml.parsers,\
+		                                     javax.xml.transform,\
+		                                     javax.xml.transform.dom,\
+		                                     javax.xml.transform.sax,\
+		                                     javax.xml.transform.stream,\
+		                                     javax.xml.xpath,\
+		                                     org.w3c.dom,\
+		                                     org.xml.sax"
