@@ -2,3 +2,4 @@
 .gradle/
 /generated/
 .metadata
+/bin/

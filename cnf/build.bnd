@@ -3,8 +3,14 @@
 -donotcopy                            =         \.gitignore|\.DS_Store
 
 Bundle-Version                        =         1.${sprint}.${hotfix}.${qualifier}
-Bundle-Developers                     =         amit.mondal;email=admin@amitinside.com;name="Amit Mondal"; organization="Deutsche Telekom AG"
-Bundle-SCM                            =         url=https://github.com/amitjoy/osgi-messaging.git,connection=scm:git:https://github.com/amitjoy/osgi-messaging.git,developerConnection=scm:git:git@github.com:amitjoy/osgi-messaging.git
+
+Bundle-Developers                     =         amit.kumar.mondal; \
+                                                   email=admin@amitinside.com; \
+                                                   name="Amit Kumar Mondal"; \
+                                                   organization="Deutsche Telekom AG"
+Bundle-SCM                            =         url=https://github.com/amitjoy/osgi-messaging.git,\
+                                                connection=scm:git:https://github.com/amitjoy/osgi-messaging.git,\
+                                                developerConnection=scm:git:git@github.com:amitjoy/osgi-messaging.git
 
 javac.source                          =         1.8
 javac.target                          =         ${javac.source}
