@@ -19,7 +19,7 @@ import org.osgi.service.component.annotations.ComponentPropertyType;
  * @see "Component Property Types"
  */
 @ComponentPropertyType
-public @interface ReplytoSubscription {
+public @interface ReplyToSubscription {
 
     String PREFIX_ = "osgi.messaging.replyToSubscription.";
 
