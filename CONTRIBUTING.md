@@ -16,15 +16,21 @@ Here is a (non-exclusive, non-prioritized) list of things you might be able to h
 A proper header must be in place for any file contributed to the project. For a new contribution, please add the below header:
 
 ```
-/*******************************************************************************
- * Copyright (c) <year> <legal entity> and others
+/*
+ *     Copyright (c) <year> <legal entity> and others
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- ******************************************************************************/
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
  ```
 
  Please ensure \<year\> is replaced with the current year or range (e.g. 2017 or 2015, 2017).
@@ -32,17 +38,24 @@ A proper header must be in place for any file contributed to the project. For a 
  to create or add your legal entity to the contributors section as such:
 
  ```
- /*******************************************************************************
- * Copyright (c) <year> <legal entity> and others
+/*
+ *     Copyright (c) <year> <legal entity> and others
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  * Contributors:
  *     <legal entity>
- *******************************************************************************/
+ */
  ```
 
 ### How to Contribute
