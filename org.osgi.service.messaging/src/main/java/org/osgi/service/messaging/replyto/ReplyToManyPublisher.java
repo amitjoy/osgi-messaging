@@ -1,9 +1,11 @@
 package org.osgi.service.messaging.replyto;
 
+import org.osgi.annotation.versioning.ProviderType;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.util.pushstream.PushStream;
 
+@ProviderType
 public interface ReplyToManyPublisher {
 
     /**

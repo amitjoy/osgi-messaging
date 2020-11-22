@@ -1,5 +1,6 @@
 package org.osgi.service.messaging.runtime;
 
+import org.osgi.annotation.versioning.ProviderType;
 import org.osgi.service.messaging.dto.MessagingRuntimeDTO;
 
 /**
@@ -9,6 +10,7 @@ import org.osgi.service.messaging.dto.MessagingRuntimeDTO;
  * <p>
  * It provides access to DTOs representing the current state of the connection.
  */
+@ProviderType
 public interface MessageServiceRuntime {
 
     /**

@@ -2,12 +2,15 @@ package org.osgi.service.messaging;
 
 import java.util.Map;
 
+import org.osgi.annotation.versioning.ProviderType;
+
 /**
  * Context object that can be used to provide additional properties that can
  * be put to the underlying driver / connection.
  *
  * The context holds meta-information for a message to be send or received
  */
+@ProviderType
 public interface MessageContext {
 
     /**

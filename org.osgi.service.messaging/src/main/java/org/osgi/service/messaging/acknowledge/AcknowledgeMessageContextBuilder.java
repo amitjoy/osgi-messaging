@@ -3,6 +3,7 @@ package org.osgi.service.messaging.acknowledge;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.osgi.annotation.versioning.ProviderType;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageContextBuilder;
@@ -12,6 +13,7 @@ import org.osgi.service.messaging.MessageContextBuilder;
  *
  * This builder supports the programmatic way of declaring ack/reject behavior as well a using services.
  */
+@ProviderType
 public interface AcknowledgeMessageContextBuilder extends MessageContextBuilder {
 
     /**

@@ -2,7 +2,10 @@ package org.osgi.service.messaging;
 
 import java.nio.ByteBuffer;
 
+import org.osgi.annotation.versioning.ProviderType;
+
 /** A message object */
+@ProviderType
 public interface Message {
 
     /**

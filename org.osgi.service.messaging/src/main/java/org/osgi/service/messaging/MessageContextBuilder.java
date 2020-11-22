@@ -4,9 +4,12 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.osgi.annotation.versioning.ProviderType;
+
 /**
  * Builder for building a {@link Message} or {@link MessageContext} to configure publish or subscription properties
  */
+@ProviderType
 public interface MessageContextBuilder extends MessageContextProvider {
 
     /**

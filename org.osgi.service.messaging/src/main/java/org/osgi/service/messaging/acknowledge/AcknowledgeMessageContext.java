@@ -1,7 +1,9 @@
 package org.osgi.service.messaging.acknowledge;
 
+import org.osgi.annotation.versioning.ProviderType;
 import org.osgi.service.messaging.MessageContext;
 
+@ProviderType
 public interface AcknowledgeMessageContext extends MessageContext {
 
     /**

@@ -1,7 +1,9 @@
 package org.osgi.service.messaging;
 
+import org.osgi.annotation.versioning.ProviderType;
 import org.osgi.util.pushstream.PushStream;
 
+@ProviderType
 public interface MessageSubscription {
 
     /**
