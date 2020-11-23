@@ -1,3 +1,5 @@
+<img width="558" alt="logo" src="https://user-images.githubusercontent.com/13380182/99921124-a2e83200-2d28-11eb-92d3-b96295b841a9.png">
+
 ## OSGi Messaging Specification and compliant MQTT v5 Implementation
 
 This repository comprises the rudimentary API extracted from the [OSGi RFC 246](https://github.com/osgi/design/blob/main/rfcs/rfc0246/rfc-0246-Messaging.pdf) specification and the MQTT v5 implementation of it. This spec is not at all the official version as it is simply based on the prelimary API from the current version of the spec. This is just an experimental repository for OSGi Messaging specification since the official version is not yet released. The official version is expected to be released with the release of OSGi Enterprise R8 specification in the second quarter of 2021 (as mentioned during the [EclipseCON talk](https://www.eclipsecon.org/2020/sessions/asychronous-communication-distributed-environments-new-osgi-messaging-rfc))
