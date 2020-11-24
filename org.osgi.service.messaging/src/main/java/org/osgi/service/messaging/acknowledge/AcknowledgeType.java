@@ -4,7 +4,7 @@ package org.osgi.service.messaging.acknowledge;
  * Acknowledge types a message can have.
  *
  * RECEIVED - the massage is received, but neither acknowledged nor rejected
- * ACKOWLEDGED - the message was acknowledged
+ * ACKNOWLEDGED - the message was acknowledged
  * REJECTED - the message was rejected
  * UNSUPPORTED - acknowledgement is not supported
  * UNKNOWN - an unknown state
@@ -12,7 +12,7 @@ package org.osgi.service.messaging.acknowledge;
 public enum AcknowledgeType {
 
     RECEIVED,
-    ACKOWLEDGED,
+    ACKNOWLEDGED,
     REJECTED,
     UNSUPPORTED,
     UNKNOWN;

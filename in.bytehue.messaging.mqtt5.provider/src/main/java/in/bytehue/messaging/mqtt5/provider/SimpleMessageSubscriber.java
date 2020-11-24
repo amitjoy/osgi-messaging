@@ -1,6 +1,7 @@
 package in.bytehue.messaging.mqtt5.provider;
 
 import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish.DEFAULT_QOS;
+import static in.bytehue.messaging.mqtt5.api.ExtendedFeatures.MQTT_5;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessagingHelper.acknowledgeMessage;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessagingHelper.toMessage;
 import static java.util.Objects.requireNonNull;
@@ -26,7 +27,7 @@ import org.osgi.util.pushstream.SimplePushEventSource;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 
 @Component
-@MessagingFeature(name = "message-subscriber", feature = "subscribe", protocol = "mqtt5")
+@MessagingFeature(name = "message-subscriber", protocol = MQTT_5)
 public final class SimpleMessageSubscriber implements MessageSubscription {
 
     @Activate

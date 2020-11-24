@@ -1,6 +1,9 @@
 package in.bytehue.messaging.mqtt5.provider;
 
+import static in.bytehue.messaging.mqtt5.api.ExtendedFeatures.MQTT_5;
 import static org.osgi.service.component.annotations.ServiceScope.PROTOTYPE;
+import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
+import static org.osgi.service.messaging.Features.MESSAGE_CONTEXT_BUILDER;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -27,10 +30,8 @@ import in.bytehue.messaging.mqtt5.provider.helper.MessagingHelper;
 @ProvideMessagingAcknowledgeFeature
 @MessagingFeature( //
         name = "message-context-builder", //
-        protocol = "mqtt5", //
-        feature = { //
-                "messageContextBuilder", //
-                "acknowledge" })
+        protocol = MQTT_5, //
+        feature = { MESSAGE_CONTEXT_BUILDER, ACKNOWLEDGE })
 public final class SimpleMessageContextBuilder implements MessageContextBuilder, AcknowledgeMessageContextBuilder {
 
     private final Logger logger;
@@ -158,7 +159,7 @@ public final class SimpleMessageContextBuilder implements MessageContextBuilder,
     @SuppressWarnings("unchecked")
     public AcknowledgeMessageContextBuilder handleAcknowledge(final String acknowledgeHandlerTarget) {
         if (acknowledgeHandlerTarget != null) {
-            messageContext.acknowledgeHandler = getAcknowledgeService(Consumer.class, acknowledgeHandlerTarget);
+            messageContext.acknowledgeHandler = getAcknowledgeHandler(Consumer.class, acknowledgeHandlerTarget);
         }
         return this;
     }
@@ -175,7 +176,7 @@ public final class SimpleMessageContextBuilder implements MessageContextBuilder,
     @SuppressWarnings("unchecked")
     public AcknowledgeMessageContextBuilder filterAcknowledge(final String acknowledgeFilterTarget) {
         if (acknowledgeFilterTarget != null) {
-            messageContext.acknowledgeFilter = getAcknowledgeService(Predicate.class, acknowledgeFilterTarget);
+            messageContext.acknowledgeFilter = getAcknowledgeHandler(Predicate.class, acknowledgeFilterTarget);
         }
         return this;
     }
@@ -192,7 +193,7 @@ public final class SimpleMessageContextBuilder implements MessageContextBuilder,
     @SuppressWarnings("unchecked")
     public AcknowledgeMessageContextBuilder postAcknowledge(final String ackowledgeConsumerTarget) {
         if (ackowledgeConsumerTarget != null) {
-            messageContext.acknowledgeConsumer = getAcknowledgeService(Consumer.class, ackowledgeConsumerTarget);
+            messageContext.acknowledgeConsumer = getAcknowledgeHandler(Consumer.class, ackowledgeConsumerTarget);
         }
         return this;
     }
@@ -202,11 +203,11 @@ public final class SimpleMessageContextBuilder implements MessageContextBuilder,
         return this;
     }
 
-    private <T> T getAcknowledgeService(final Class<T> clazz, final String filter) {
+    private <T> T getAcknowledgeHandler(final Class<T> clazz, final String filter) {
         try {
             return MessagingHelper.getService(clazz, filter, bundleContext);
         } catch (final Exception e) {
-            logger.error(e.getMessage(), e);
+            logger.error("Acknowledge Handler not found in the service registry", e);
         }
         return null;
     }

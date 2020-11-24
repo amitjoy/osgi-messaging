@@ -3,6 +3,7 @@
 	org.osgi.service.messaging,\
 	com.hivemq:hivemq-mqtt-client-shaded,\
 	io.reactivex.rxjava2.rxjava,\
+	in.bytehue.messaging.mqtt5.api,\
 	org.reactivestreams.reactive-streams
 
 -includepackage     : org.osgi.service.messaging.*
@@ -12,6 +13,7 @@
 -includeresource.2  : ${repo;io.reactivex.rxjava2.rxjava};lib:=true
 -includeresource.3  : ${repo;org.reactivestreams.reactive-streams};lib:=true
 
+-exportcontents     : com.hivemq.client.mqtt.*
 Import-Package      : \
 	com.hivemq.client.internal.shaded.io.netty.internal.tcnative;'resolution:'=optional,\
 	com.jcraft.jzlib;'resolution:'=optional,\
@@ -26,3 +28,5 @@ Import-Package      : \
 	org.eclipse.jetty.alpn;'resolution:'=optional,\
 	org.eclipse.jetty.npn;'resolution:'=optional,\
 	*
+
+-fixupmessages.private.package : 'private reference'

@@ -1,12 +1,12 @@
 package in.bytehue.messaging.mqtt5.provider.helper;
 
 import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatIndicator.UTF_8;
+import static in.bytehue.messaging.mqtt5.api.ExtendedFeatures.RETAIN;
+import static in.bytehue.messaging.mqtt5.api.ExtendedFeatures.USER_PROPERTIES;
 import static java.util.stream.Collectors.toMap;
 import static org.osgi.framework.Constants.SERVICE_RANKING;
 import static org.osgi.service.messaging.Features.QOS;
-import static org.osgi.service.messaging.Features.RETAIN;
-import static org.osgi.service.messaging.Features.USER_PROPERTIES;
-import static org.osgi.service.messaging.acknowledge.AcknowledgeType.ACKOWLEDGED;
+import static org.osgi.service.messaging.acknowledge.AcknowledgeType.ACKNOWLEDGED;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.RECEIVED;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.REJECTED;
 
@@ -55,20 +55,21 @@ public final class MessagingHelper {
         final ByteBuffer payload = publish.getPayload().orElse(null);
         // @formatter:off
         final String contentEncoding = publish
-                                        .getPayloadFormatIndicator()
-                                        .filter(e -> e == UTF_8)
-                                        .map(e -> "UTF-8")
-                                        .orElse(null);
+                                            .getPayloadFormatIndicator()
+                                            .filter(e -> e == UTF_8)
+                                            .map(e -> "UTF-8")
+                                            .orElse(null);
         // @formatter:on
         final String contentType = publish.getContentType().map(MessagingHelper::asString).orElse(null);
         final String channel = publish.getTopic().toString();
         final String correlationId = publish.getCorrelationData().map(MessagingHelper::asString).orElse(null);
-        final int qos = publish.getQos().ordinal();
+        final int qos = publish.getQos().getCode();
         final boolean retain = publish.isRetain();
         final Mqtt5UserProperties properties = publish.getUserProperties();
 
         // @formatter:off
-        final Map<String, String> userProperties =  properties.asList()
+        final Map<String, String> userProperties =  properties
+                                                        .asList()
                                                         .stream()
                                                         .collect(toMap(
                                                                     e -> e.getName().toString(),
@@ -91,13 +92,13 @@ public final class MessagingHelper {
         // @formatter:on
     }
 
-    public static void acknowledgeMessage(final Message message, final SimpleMessageContext ctx,
+    public static boolean acknowledgeMessage(final Message message, final SimpleMessageContext ctx,
             final Consumer<Message> interimConsumer) {
         ctx.acknowledgeState = RECEIVED;
         if (ctx.acknowledgeFilter != null) {
             final boolean isAcknowledged = ctx.acknowledgeFilter.test(message);
             if (isAcknowledged) {
-                ctx.acknowledgeState = ACKOWLEDGED;
+                ctx.acknowledgeState = ACKNOWLEDGED;
                 if (ctx.acknowledgeHandler != null) {
                     ctx.acknowledgeHandler.accept(message);
                 }
@@ -109,6 +110,7 @@ public final class MessagingHelper {
         if (ctx.acknowledgeConsumer != null) {
             ctx.acknowledgeConsumer.accept(message);
         }
+        return ctx.acknowledgeState == ACKNOWLEDGED;
     }
 
     private static String asString(final MqttUtf8String string) {

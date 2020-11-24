@@ -23,6 +23,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5ClientBuilder;
+import com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism;
 
 import in.bytehue.messaging.mqtt5.provider.MessagingClient.Config;
 import in.bytehue.messaging.mqtt5.provider.helper.MessagingHelper;
@@ -109,6 +110,12 @@ public final class MessagingClient {
 
         @AttributeDefinition(name = "Maximum Topic Aliases")
         int topicAliasMaximum() default 0;
+
+        @AttributeDefinition(name = "Enhanced Authentication")
+        boolean useEnhancedAuthentication() default false;
+
+        @AttributeDefinition(name = "Enhanced Authentication Service Filter")
+        String enhancedAuthTargetFilter() default "";
     }
 
     Mqtt5Client client;
@@ -130,47 +137,51 @@ public final class MessagingClient {
         if (config.automticReconnect()) {
             logger.debug("Applying automatic reconnect configuration");
             clientBuilder.automaticReconnect()
-                         .initialDelay(config.initialDelay(), SECONDS)
-                         .maxDelay(config.maxDelay(), SECONDS)
+                             .initialDelay(config.initialDelay(), SECONDS)
+                             .maxDelay(config.maxDelay(), SECONDS)
                          .applyAutomaticReconnect();
         }
         if (config.simpleAuth()) {
             logger.debug("Applying Simple authentiation configuration");
             clientBuilder.simpleAuth()
-                         .username(config.username())
-                         .password(config.password().getBytes())
+                             .username(config.username())
+                             .password(config.password().getBytes())
                          .applySimpleAuth();
         }
         if (config.useSSL()) {
             logger.debug("Applying SSL configuration");
             clientBuilder.sslConfig()
-                         .cipherSuites(Arrays.asList(config.cipherSuites()))
-                         .handshakeTimeout(config.handshakeTimeout(), SECONDS)
-                         .trustManagerFactory(getTrustManagerFactory(config, bundleContext))
+                             .cipherSuites(Arrays.asList(config.cipherSuites()))
+                             .handshakeTimeout(config.handshakeTimeout(), SECONDS)
+                             .trustManagerFactory(getTrustManagerFactory(config, bundleContext))
                          .applySslConfig();
         }
         final String lastWillTopic = config.lastWillTopic();
         if (!lastWillTopic.isEmpty()) {
             logger.debug("Applying Last Will Configuration");
             clientBuilder.willPublish()
-                         .topic(lastWillTopic)
-                         .qos(MqttQos.fromCode(config.lastWillQoS()))
-                         .payload(config.lastWillPayLoad().getBytes())
-                         .contentType(config.lastWillContentType())
-                         .messageExpiryInterval(config.lastWillMessageExpiryInterval())
-                         .delayInterval(config.lastWillMessageExpiryInterval())
+                             .topic(lastWillTopic)
+                             .qos(MqttQos.fromCode(config.lastWillQoS()))
+                             .payload(config.lastWillPayLoad().getBytes())
+                             .contentType(config.lastWillContentType())
+                             .messageExpiryInterval(config.lastWillMessageExpiryInterval())
+                             .delayInterval(config.lastWillMessageExpiryInterval())
                          .applyWillPublish();
+        }
+        if (config.useEnhancedAuthentication()) {
+            logger.debug("Applying Enhanced Authentication configuration");
+            clientBuilder.enhancedAuth(getEnhancedAuth(config, bundleContext));
         }
         // restrictions
         logger.debug("Applying Server Restrictions");
         clientBuilder.buildAsync()
                      .connectWith()
                      .restrictions()
-                     .receiveMaximum(config.receiveMaximum())
-                     .sendMaximum(config.sendMaximum())
-                     .maximumPacketSize(config.maximumPacketSize())
-                     .sendMaximumPacketSize(config.sendMaximumPacketSize())
-                     .sendTopicAliasMaximum(config.topicAliasMaximum())
+                         .receiveMaximum(config.receiveMaximum())
+                         .sendMaximum(config.sendMaximum())
+                         .maximumPacketSize(config.maximumPacketSize())
+                         .sendMaximumPacketSize(config.sendMaximumPacketSize())
+                         .sendTopicAliasMaximum(config.topicAliasMaximum())
                      .applyRestrictions();
 
         // @formatter:on
@@ -187,6 +198,20 @@ public final class MessagingClient {
             // @formatter:on
         } catch (final Exception e) {
             logger.error("MQTT SSL Configuration Failed {}", e);
+        }
+        return null;
+    }
+
+    private Mqtt5EnhancedAuthMechanism getEnhancedAuth(final Config config, final BundleContext bundleContext) {
+        try {
+            // @formatter:off
+            return MessagingHelper.getService(
+                    Mqtt5EnhancedAuthMechanism.class,
+                    config.enhancedAuthTargetFilter(),
+                    bundleContext);
+            // @formatter:on
+        } catch (final Exception e) {
+            logger.error("MQTT Enhanced Authentication Configuration Failed {}", e);
         }
         return null;
     }
