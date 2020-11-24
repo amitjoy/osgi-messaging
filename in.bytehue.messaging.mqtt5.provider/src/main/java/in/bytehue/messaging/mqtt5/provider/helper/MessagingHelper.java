@@ -1,4 +1,4 @@
-package com.byteurn.messaging.mqtt5.provider.helper;
+package in.bytehue.messaging.mqtt5.provider.helper;
 
 import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatIndicator.UTF_8;
 import static java.util.stream.Collectors.toMap;
@@ -6,12 +6,16 @@ import static org.osgi.framework.Constants.SERVICE_RANKING;
 import static org.osgi.service.messaging.Features.QOS;
 import static org.osgi.service.messaging.Features.RETAIN;
 import static org.osgi.service.messaging.Features.USER_PROPERTIES;
+import static org.osgi.service.messaging.acknowledge.AcknowledgeType.ACKOWLEDGED;
+import static org.osgi.service.messaging.acknowledge.AcknowledgeType.RECEIVED;
+import static org.osgi.service.messaging.acknowledge.AcknowledgeType.REJECTED;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
@@ -22,6 +26,8 @@ import org.osgi.service.messaging.MessageContextBuilder;
 import com.hivemq.client.mqtt.datatypes.MqttUtf8String;
 import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserProperties;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
+
+import in.bytehue.messaging.mqtt5.provider.SimpleMessageContext;
 
 public final class MessagingHelper {
 
@@ -83,6 +89,26 @@ public final class MessagingHelper {
                                     .extensions(extensions)
                                     .buildMessage();
         // @formatter:on
+    }
+
+    public static void acknowledgeMessage(final Message message, final SimpleMessageContext ctx,
+            final Consumer<Message> interimConsumer) {
+        ctx.acknowledgeState = RECEIVED;
+        if (ctx.acknowledgeFilter != null) {
+            final boolean isAcknowledged = ctx.acknowledgeFilter.test(message);
+            if (isAcknowledged) {
+                ctx.acknowledgeState = ACKOWLEDGED;
+                if (ctx.acknowledgeHandler != null) {
+                    ctx.acknowledgeHandler.accept(message);
+                }
+                interimConsumer.accept(message);
+            } else {
+                ctx.acknowledgeState = REJECTED;
+            }
+        }
+        if (ctx.acknowledgeConsumer != null) {
+            ctx.acknowledgeConsumer.accept(message);
+        }
     }
 
     private static String asString(final MqttUtf8String string) {

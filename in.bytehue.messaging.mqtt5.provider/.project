@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>com.byteurn.messaging.mqtt5.provider</name>
+	<name>in.bytehue.messaging.mqtt5.provider</name>
 	<comment></comment>
 	<projects>
 	</projects>

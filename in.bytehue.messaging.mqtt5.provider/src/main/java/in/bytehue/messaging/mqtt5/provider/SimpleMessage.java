@@ -1,4 +1,4 @@
-package com.byteurn.messaging.mqtt5.provider;
+package in.bytehue.messaging.mqtt5.provider;
 
 import java.nio.ByteBuffer;
 
@@ -7,13 +7,11 @@ import org.osgi.service.messaging.MessageContext;
 
 public final class SimpleMessage implements Message {
 
-    ByteBuffer byteBuffer;
-    MessageContext messageContext;
-
-    boolean isAcknowledged;
+    public ByteBuffer byteBuffer;
+    public MessageContext messageContext;
 
     SimpleMessage() {
-        // used for testing
+        // used for internal purposes
     }
 
     SimpleMessage(final ByteBuffer byteBuffer, final MessageContext messageContext) {

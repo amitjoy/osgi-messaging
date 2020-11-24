@@ -1,11 +1,11 @@
-package com.byteurn.messaging.mqtt5.provider;
+package in.bytehue.messaging.mqtt5.provider;
 
 import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish.DEFAULT_QOS;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessagingHelper.acknowledgeMessage;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessagingHelper.toMessage;
 import static java.util.Objects.requireNonNull;
 import static org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED;
 import static org.osgi.service.messaging.Features.QOS;
-import static org.osgi.service.messaging.acknowledge.AcknowledgeType.ACKOWLEDGED;
-import static org.osgi.service.messaging.acknowledge.AcknowledgeType.REJECTED;
 
 import java.util.Map;
 
@@ -23,7 +23,6 @@ import org.osgi.util.pushstream.PushStream;
 import org.osgi.util.pushstream.PushStreamProvider;
 import org.osgi.util.pushstream.SimplePushEventSource;
 
-import com.byteurn.messaging.mqtt5.provider.helper.MessagingHelper;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 
 @Component
@@ -37,7 +36,7 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
     private MessagingClient messagingClient;
 
     @Reference(scope = PROTOTYPE_REQUIRED)
-    private ComponentServiceObjects<MessageContextBuilder> messageContextBuilder;
+    private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
 
     @Override
     public PushStream<Message> subscribe(final String channel) {
@@ -65,27 +64,12 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
                               .qos(MqttQos.fromCode(qos))
                               .callback(p -> {
                                   try {
-                                      final MessageContextBuilder mcb = messageContextBuilder.getService();
-                                      final Message message = MessagingHelper.toMessage(p, mcb);
+                                      final MessageContextBuilder mcb = mcbFactory.getService();
+                                      final Message message = toMessage(p, mcb);
                                       final SimpleMessageContext ctx = (SimpleMessageContext) context;
-                                      boolean isAcknowledged = false;
-                                      if (ctx.acknowledgeFilter != null) {
-                                          isAcknowledged = ctx.acknowledgeFilter.test(message);
-                                          if (isAcknowledged) {
-                                              ctx.acknowledgeState = ACKOWLEDGED;
-                                              if (ctx.acknowledgeHandler != null) {
-                                                  ctx.acknowledgeHandler.accept(message);
-                                              }
-                                              source.publish(message);
-                                          } else {
-                                              ctx.acknowledgeState = REJECTED;
-                                          }
-                                      }
-                                      if (ctx.acknowledgeConsumer != null) {
-                                          ctx.acknowledgeConsumer.accept(message);
-                                      }
+                                      acknowledgeMessage(message, ctx, m -> source.publish(m));
                                   } finally {
-                                      bundleContext.ungetService(messageContextBuilder.getServiceReference());
+                                      bundleContext.ungetService(mcbFactory.getServiceReference());
                                   }
                               })
                               .send();

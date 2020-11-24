@@ -1,0 +1,28 @@
+-buildpath          :   \
+	org.apache.felix.log,\
+	org.osgi.service.messaging,\
+	com.hivemq:hivemq-mqtt-client-shaded,\
+	io.reactivex.rxjava2.rxjava,\
+	org.reactivestreams.reactive-streams
+
+-includepackage     : org.osgi.service.messaging.*
+-privatepackage     : in.bytehue.*
+
+-includeresource.1  : ${repo;com.hivemq:hivemq-mqtt-client-shaded};lib:=true
+-includeresource.2  : ${repo;io.reactivex.rxjava2.rxjava};lib:=true
+-includeresource.3  : ${repo;org.reactivestreams.reactive-streams};lib:=true
+
+Import-Package      : \
+	com.hivemq.client.internal.shaded.io.netty.internal.tcnative;'resolution:'=optional,\
+	com.jcraft.jzlib;'resolution:'=optional,\
+	org.slf4j;'resolution:'=optional,\
+	org.slf4j.helpers;'resolution:'=optional,\
+	org.slf4j.spi;'resolution:'=optional,\
+	org.apache.log4j;'resolution:'=optional,\
+	org.apache.logging.log4j;'resolution:'=optional,\
+	org.apache.logging.log4j.message;'resolution:'=optional,\
+	org.apache.logging.log4j.spi;'resolution:'=optional,\
+	org.conscrypt;'resolution:'=optional,\
+	org.eclipse.jetty.alpn;'resolution:'=optional,\
+	org.eclipse.jetty.npn;'resolution:'=optional,\
+	*

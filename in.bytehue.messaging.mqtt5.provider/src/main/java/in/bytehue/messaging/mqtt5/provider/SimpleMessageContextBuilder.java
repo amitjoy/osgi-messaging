@@ -1,4 +1,4 @@
-package com.byteurn.messaging.mqtt5.provider;
+package in.bytehue.messaging.mqtt5.provider;
 
 import static org.osgi.service.component.annotations.ServiceScope.PROTOTYPE;
 
@@ -21,11 +21,16 @@ import org.osgi.service.messaging.acknowledge.AcknowledgeMessageContextBuilder;
 import org.osgi.service.messaging.annotations.ProvideMessagingAcknowledgeFeature;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
 
-import com.byteurn.messaging.mqtt5.provider.helper.MessagingHelper;
+import in.bytehue.messaging.mqtt5.provider.helper.MessagingHelper;
 
 @Component(scope = PROTOTYPE)
 @ProvideMessagingAcknowledgeFeature
-@MessagingFeature(name = "context-builder", feature = { "messageContextBuilder", "acknowledge" }, protocol = "mqtt5")
+@MessagingFeature( //
+        name = "message-context-builder", //
+        protocol = "mqtt5", //
+        feature = { //
+                "messageContextBuilder", //
+                "acknowledge" })
 public final class SimpleMessageContextBuilder implements MessageContextBuilder, AcknowledgeMessageContextBuilder {
 
     private final Logger logger;
@@ -34,7 +39,8 @@ public final class SimpleMessageContextBuilder implements MessageContextBuilder,
     private SimpleMessageContext messageContext;
 
     @Activate
-    public SimpleMessageContextBuilder(final BundleContext bundleContext,
+    public SimpleMessageContextBuilder( //
+            final BundleContext bundleContext, //
             @Reference(service = LoggerFactory.class) final Logger logger) {
         this.logger = logger;
         this.bundleContext = bundleContext;

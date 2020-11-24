@@ -10,7 +10,6 @@ biz.aQute:biz.aQute.trace.runpath:1.2.0
 biz.aQute.bnd:biz.aQute.remote.agent:5.2.0
 biz.aQute.bnd:biz.aQute.bnd.runtime.snapshot:5.2.0
 
-
 # OSGi
 
 org.apache.felix:org.apache.felix.cm.json:1.0.2

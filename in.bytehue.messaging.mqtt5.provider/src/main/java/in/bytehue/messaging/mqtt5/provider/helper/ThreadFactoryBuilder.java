@@ -1,4 +1,4 @@
-package com.byteurn.messaging.mqtt5.provider.helper;
+package in.bytehue.messaging.mqtt5.provider.helper;
 
 import java.util.Objects;
 import java.util.concurrent.ThreadFactory;
@@ -13,7 +13,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * <li>a priority
  * <li>the {@link ThreadGroup} the created threads should be bound to
  * </ul>
- *
  */
 public final class ThreadFactoryBuilder {
 

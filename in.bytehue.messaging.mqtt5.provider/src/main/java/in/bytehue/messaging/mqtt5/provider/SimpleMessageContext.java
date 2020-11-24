@@ -1,4 +1,4 @@
-package com.byteurn.messaging.mqtt5.provider;
+package in.bytehue.messaging.mqtt5.provider;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,19 +13,19 @@ import org.osgi.service.messaging.acknowledge.AcknowledgeType;
 
 public final class SimpleMessageContext implements MessageContext, AcknowledgeMessageContext {
 
-    String channel;
-    String contentType;
-    String contentEncoding;
-    String correlationId;
-    String replyToChannel;
+    public String channel;
+    public String contentType;
+    public String contentEncoding;
+    public String correlationId;
+    public String replyToChannel;
 
-    AcknowledgeType acknowledgeState;
-    Consumer<Message> acknowledgeHandler;
-    Predicate<Message> acknowledgeFilter;
-    Consumer<Message> acknowledgeConsumer;
+    public AcknowledgeType acknowledgeState;
+    public Consumer<Message> acknowledgeHandler;
+    public Predicate<Message> acknowledgeFilter;
+    public Consumer<Message> acknowledgeConsumer;
     // AcknowledgeHandler acknowledgeHandler; TODO
 
-    Map<String, Object> extensions = new HashMap<>();
+    public Map<String, Object> extensions = new HashMap<>();
 
     @Override
     public String getChannel() {
