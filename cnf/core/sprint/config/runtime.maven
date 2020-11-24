@@ -1,11 +1,18 @@
+# Apache
+
+org.apache.commons:org.apache.commons.collections:3.2.0.v2013030210310
+org.apache.sling:org.apache.sling.commons.johnzon:1.2.6
+
+# bnd
+
 biz.aQute:biz.aQute.trace.gui:1.2.0
 biz.aQute:biz.aQute.trace.runpath:1.2.0
 biz.aQute.bnd:biz.aQute.remote.agent:5.2.0
 biz.aQute.bnd:biz.aQute.bnd.runtime.snapshot:5.2.0
-org.apache.commons:org.apache.commons.collections:3.2.0.v2013030210310
-org.apache.sling:org.apache.sling.commons.johnzon:1.2.6
+
 
 # OSGi
+
 org.apache.felix:org.apache.felix.cm.json:1.0.2
 org.apache.felix:org.apache.felix.configadmin:1.9.18
 org.apache.felix:org.apache.felix.configurator:1.0.12
@@ -15,6 +22,7 @@ org.apache.felix:org.apache.felix.eventadmin:1.5.0
 org.apache.felix:org.apache.felix.framework:6.0.3
 org.apache.felix:org.apache.felix.gogo.command:1.1.2
 org.apache.felix:org.apache.felix.gogo.jline:1.1.8
+org.apache.felix:org.apache.felix.gogo.runtime:1.1.4
 org.apache.felix:org.apache.felix.gogo.shell:1.1.4
 org.apache.felix:org.apache.felix.healthcheck.api:2.0.4
 org.apache.felix:org.apache.felix.healthcheck.core:2.0.8

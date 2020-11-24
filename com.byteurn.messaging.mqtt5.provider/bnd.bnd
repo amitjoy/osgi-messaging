@@ -1,0 +1,10 @@
+shaded.hivemq.lib : src/main/resources/hivemq-mqtt-client-shaded-1.2.1.jar
+
+-buildpath        :   \
+	org.apache.felix.log,\
+	org.osgi.service.messaging,\
+	${shaded.hivemq.lib};version=file
+
+-includepackage   : org.osgi.service.messaging.*
+-privatepackage   : com.byteurn.*
+-includeresource  : ${shaded.hivemq.lib};lib:=true

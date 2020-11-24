@@ -1,5 +1,7 @@
 package org.osgi.service.messaging.acknowledge;
 
+import org.osgi.annotation.versioning.ProviderType;
+
 /**
  * Handler interface to acknowledge or reject a message.
  *
@@ -8,6 +10,7 @@ package org.osgi.service.messaging.acknowledge;
  *
  * This interface is not meant to be implemented by users.
  */
+@ProviderType
 public interface AcknowledgeHandler {
 
     /**

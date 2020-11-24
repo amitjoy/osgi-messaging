@@ -88,7 +88,7 @@ public interface AcknowledgeMessageContextBuilder extends MessageContextBuilder 
      * @param ackowledgeConsumer the consumer that handles post acknowledge
      * @return the {@link AcknowledgeMessageContextBuilder} instance
      */
-    AcknowledgeMessageContextBuilder postAcknowledge(Consumer<Message> ackowledgeConsumer);
+    AcknowledgeMessageContextBuilder postAcknowledge(Consumer<Message> acknowledgeConsumer);
 
     /**
      * A service with interface {@link Consumer} and parameter type {@link Message} is called, if the service

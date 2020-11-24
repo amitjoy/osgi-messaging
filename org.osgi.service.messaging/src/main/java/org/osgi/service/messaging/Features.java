@@ -87,4 +87,27 @@ public interface Features {
      * @since 1.0
      */
     String QOS = "qos";
+
+    // New Features not conforming to the spec
+
+    /**
+     * The name of the the {@code Message Expiry Interval} extension of the Messaging specification
+     *
+     * @since 1.0
+     */
+    String MESSAGE_EXPIRY_INTERVAL = "messageExpiryInterval";
+
+    /**
+     * The name of the the {@code Message Retain} extension of the Messaging specification
+     *
+     * @since 1.0
+     */
+    String RETAIN = "retain";
+
+    /**
+     * The name of the the {@code User Properties} extension of the Messaging specification
+     *
+     * @since 1.0
+     */
+    String USER_PROPERTIES = "userProperties";
 }
