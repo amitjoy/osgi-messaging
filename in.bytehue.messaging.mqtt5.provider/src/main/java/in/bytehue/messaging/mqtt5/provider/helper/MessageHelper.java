@@ -1,15 +1,18 @@
 package in.bytehue.messaging.mqtt5.provider.helper;
 
 import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatIndicator.UTF_8;
-import static in.bytehue.messaging.mqtt5.api.ExtendedFeatures.RETAIN;
-import static in.bytehue.messaging.mqtt5.api.ExtendedFeatures.USER_PROPERTIES;
+import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MQTT_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.RETAIN;
+import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.USER_PROPERTIES;
 import static java.util.stream.Collectors.toMap;
+import static org.osgi.framework.Constants.OBJECTCLASS;
 import static org.osgi.framework.Constants.SERVICE_RANKING;
 import static org.osgi.service.messaging.Features.QOS;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.ACKNOWLEDGED;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.RECEIVED;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.REJECTED;
 
+import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -17,11 +20,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.osgi.dto.DTO;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.Constants;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
+import org.osgi.framework.dto.ServiceReferenceDTO;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContextBuilder;
+import org.osgi.service.messaging.dto.ChannelDTO;
 
 import com.hivemq.client.mqtt.datatypes.MqttUtf8String;
 import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserProperties;
@@ -29,9 +37,9 @@ import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
 
 import in.bytehue.messaging.mqtt5.provider.SimpleMessageContext;
 
-public final class MessagingHelper {
+public final class MessageHelper {
 
-    private MessagingHelper() {
+    private MessageHelper() {
         throw new IllegalAccessError("Non-instantiable");
     }
 
@@ -60,9 +68,9 @@ public final class MessagingHelper {
                                             .map(e -> "UTF-8")
                                             .orElse(null);
         // @formatter:on
-        final String contentType = publish.getContentType().map(MessagingHelper::asString).orElse(null);
+        final String contentType = publish.getContentType().map(MessageHelper::asString).orElse(null);
         final String channel = publish.getTopic().toString();
-        final String correlationId = publish.getCorrelationData().map(MessagingHelper::asString).orElse(null);
+        final String correlationId = publish.getCorrelationData().map(MessageHelper::asString).orElse(null);
         final int qos = publish.getQos().getCode();
         final boolean retain = publish.isRetain();
         final Mqtt5UserProperties properties = publish.getUserProperties();
@@ -92,6 +100,72 @@ public final class MessagingHelper {
         // @formatter:on
     }
 
+    public static ServiceReferenceDTO getServiceReferenceDTO(final ServiceReference<?> ref, final long bundleId) {
+        final ServiceReferenceDTO dto = new ServiceReferenceDTO();
+        dto.bundle = bundleId;
+        dto.id = (Long) ref.getProperty(Constants.SERVICE_ID);
+        dto.properties = new HashMap<>();
+        for (final String key : ref.getPropertyKeys()) {
+            final Object val = ref.getProperty(key);
+            dto.properties.put(key, getDTOValue(val));
+        }
+        final Bundle[] usingBundles = ref.getUsingBundles();
+        if (usingBundles == null) {
+            dto.usingBundles = new long[0];
+        } else {
+            dto.usingBundles = new long[usingBundles.length];
+            for (int j = 0; j < usingBundles.length; j++) {
+                dto.usingBundles[j] = usingBundles[j].getBundleId();
+            }
+        }
+        return dto;
+    }
+
+    public static Object getDTOValue(final Object value) {
+        Class<?> c = value.getClass();
+        if (c.isArray()) {
+            c = c.getComponentType();
+        }
+        if (Number.class.isAssignableFrom(c) || Boolean.class.isAssignableFrom(c) || String.class.isAssignableFrom(c)
+                || DTO.class.isAssignableFrom(c)) {
+            return value;
+        }
+
+        if (value.getClass().isArray()) {
+            final int length = Array.getLength(value);
+            final String[] converted = new String[length];
+            for (int i = 0; i < length; i++) {
+                converted[i] = String.valueOf(Array.get(value, i));
+            }
+            return converted;
+        }
+
+        return String.valueOf(value);
+    }
+
+    public static ServiceReferenceDTO findServiceRefAsDTO(final Class<?> clazz, final BundleContext bundleContext) {
+        boolean isProtocolCompliant = false;
+        boolean isClazzCompliant = false;
+
+        final ServiceReferenceDTO[] services = bundleContext.getBundle().adapt(ServiceReferenceDTO[].class);
+        for (final ServiceReferenceDTO serviceDTO : services) {
+            final Map<String, Object> properties = serviceDTO.properties;
+            final String[] serviceTypes = (String[]) properties.get(OBJECTCLASS);
+            if (MQTT_PROTOCOL.equals(properties.get("osgi.messaging.protocol"))) {
+                isProtocolCompliant = true;
+            }
+            for (final String type : serviceTypes) {
+                if (clazz.getName().equals(type)) {
+                    isClazzCompliant = true;
+                    if (isClazzCompliant && isProtocolCompliant) {
+                        return serviceDTO;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
     public static boolean acknowledgeMessage(final Message message, final SimpleMessageContext ctx,
             final Consumer<Message> interimConsumer) {
         ctx.acknowledgeState = RECEIVED;
@@ -111,6 +185,16 @@ public final class MessagingHelper {
             ctx.acknowledgeConsumer.accept(message);
         }
         return ctx.acknowledgeState == ACKNOWLEDGED;
+    }
+
+    public static ChannelDTO initChannelDTO(final String name, final String extension, final boolean isConnected) {
+        final ChannelDTO dto = new ChannelDTO();
+
+        dto.name = name;
+        dto.extension = extension;
+        dto.connected = isConnected;
+
+        return dto;
     }
 
     private static String asString(final MqttUtf8String string) {

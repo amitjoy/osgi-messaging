@@ -1,10 +1,11 @@
 package in.bytehue.messaging.mqtt5.provider;
 
 import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish.DEFAULT_QOS;
-import static in.bytehue.messaging.mqtt5.api.ExtendedFeatures.MESSAGE_EXPIRY_INTERVAL;
-import static in.bytehue.messaging.mqtt5.api.ExtendedFeatures.MQTT_5;
-import static in.bytehue.messaging.mqtt5.api.ExtendedFeatures.RETAIN;
-import static in.bytehue.messaging.mqtt5.api.ExtendedFeatures.USER_PROPERTIES;
+import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MESSAGE_EXPIRY_INTERVAL;
+import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MESSAGE_PUBLISHER_NAME;
+import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MQTT_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.RETAIN;
+import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.USER_PROPERTIES;
 import static java.lang.Long.MAX_VALUE;
 import static java.util.Collections.emptyMap;
 import static org.osgi.service.messaging.Features.QOS;
@@ -27,8 +28,8 @@ import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserPropertiesBuilder;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishBuilder.Send.Complete;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishResult;
 
-@Component
-@MessagingFeature(name = "message-publisher", protocol = MQTT_5)
+@Component(service = { MessagePublisher.class, SimpleMessagePublisher.class })
+@MessagingFeature(name = MESSAGE_PUBLISHER_NAME, protocol = MQTT_PROTOCOL)
 public final class SimpleMessagePublisher implements MessagePublisher {
 
     @Reference

@@ -1,6 +1,7 @@
 package in.bytehue.messaging.mqtt5.provider;
 
-import static in.bytehue.messaging.mqtt5.api.ExtendedFeatures.MQTT_5;
+import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MESSAGE_CONTEXT_BUILDER_NAME;
+import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MQTT_PROTOCOL;
 import static org.osgi.service.component.annotations.ServiceScope.PROTOTYPE;
 import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
 import static org.osgi.service.messaging.Features.MESSAGE_CONTEXT_BUILDER;
@@ -24,13 +25,19 @@ import org.osgi.service.messaging.acknowledge.AcknowledgeMessageContextBuilder;
 import org.osgi.service.messaging.annotations.ProvideMessagingAcknowledgeFeature;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
 
-import in.bytehue.messaging.mqtt5.provider.helper.MessagingHelper;
+import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
 
-@Component(scope = PROTOTYPE)
+@Component( //
+        scope = PROTOTYPE, //
+        service = { //
+                MessageContextBuilder.class, //
+                SimpleMessageContextBuilder.class, //
+                AcknowledgeMessageContextBuilder.class //
+        })
 @ProvideMessagingAcknowledgeFeature
 @MessagingFeature( //
-        name = "message-context-builder", //
-        protocol = MQTT_5, //
+        name = MESSAGE_CONTEXT_BUILDER_NAME, //
+        protocol = MQTT_PROTOCOL, //
         feature = { MESSAGE_CONTEXT_BUILDER, ACKNOWLEDGE })
 public final class SimpleMessageContextBuilder implements MessageContextBuilder, AcknowledgeMessageContextBuilder {
 
@@ -205,7 +212,7 @@ public final class SimpleMessageContextBuilder implements MessageContextBuilder,
 
     private <T> T getAcknowledgeHandler(final Class<T> clazz, final String filter) {
         try {
-            return MessagingHelper.getService(clazz, filter, bundleContext);
+            return MessageHelper.getService(clazz, filter, bundleContext);
         } catch (final Exception e) {
             logger.error("Acknowledge Handler not found in the service registry", e);
         }

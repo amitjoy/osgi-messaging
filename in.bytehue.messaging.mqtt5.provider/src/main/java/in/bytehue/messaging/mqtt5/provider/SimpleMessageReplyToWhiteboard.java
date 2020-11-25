@@ -1,108 +1,148 @@
 package in.bytehue.messaging.mqtt5.provider;
 
+import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MESSAGE_WHITEBOARD_NAME;
+import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MQTT_MESSAGING_NAME;
+import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MQTT_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.findServiceRefAsDTO;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getServiceReferenceDTO;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.initChannelDTO;
 import static org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC;
 import static org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED;
 
 import java.nio.ByteBuffer;
+import java.util.Dictionary;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
 import org.osgi.service.component.ComponentServiceObjects;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageContextBuilder;
-import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.MessageSubscription;
+import org.osgi.service.messaging.dto.ChannelDTO;
+import org.osgi.service.messaging.dto.ReplyToSubscriptionDTO;
+import org.osgi.service.messaging.propertytypes.MessagingFeature;
 import org.osgi.service.messaging.replyto.ReplyToManySubscriptionHandler;
 import org.osgi.service.messaging.replyto.ReplyToSingleSubscriptionHandler;
 import org.osgi.service.messaging.replyto.ReplyToSubscriptionHandler;
 import org.osgi.service.messaging.replyto.ReplyToWhiteboard;
 import org.osgi.util.pushstream.PushStream;
 
-@Component
+@MessagingFeature(name = MESSAGE_WHITEBOARD_NAME, protocol = MQTT_PROTOCOL)
+@Component(service = { ReplyToWhiteboard.class, SimpleMessageReplyToWhiteboard.class })
 public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
 
-    private static final String FILTER_MQTT_5 = "(osgi.messaging.protocol=mqtt5)";
+    public static final String FILTER_MQTT = "(osgi.messaging.protocol=" + MQTT_PROTOCOL + ")";
 
     // @formatter:off
-    private static final String FILTER_SUB_HANDLER = ""
+    public static final String FILTER_HANDLER = ""
             + "(osgi.messaging.replyToSubscription.target="
-            + "(&(osgi.messaging.name=message-publisher)"
-            + FILTER_MQTT_5
+            + "(&(osgi.messaging.name=" + MQTT_MESSAGING_NAME + ")" // TODO think about user-defined name
+            + FILTER_MQTT
             + "(osgi.messaging.feature=replyTo)))";
     // @formatter:on
 
+    @Activate
+    private BundleContext bundleContext;
+
+    @Reference
+    private SimpleMessagePublisher publisher;
+
+    @Reference
+    private SimpleMessageSubscriber subscriber;
+
     @Reference(scope = PROTOTYPE_REQUIRED)
-    private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
+    private ComponentServiceObjects<SimpleMessageContextBuilder> mcbFactory;
 
-    @Reference(target = FILTER_MQTT_5)
-    private MessagePublisher publisher;
+    private final Map<ServiceReference<?>, ReplyToSubscriptionDTO> subscriptions = new ConcurrentHashMap<>();
 
-    @Reference(target = FILTER_MQTT_5)
-    private MessageSubscription subscriber;
-
-    @Reference(policy = DYNAMIC, target = FILTER_SUB_HANDLER)
-    public synchronized void bindReplyToSingleSubscriptionHandler( //
+    @Reference(policy = DYNAMIC, target = FILTER_HANDLER)
+    synchronized void bindReplyToSingleSubscriptionHandler( //
             final ReplyToSingleSubscriptionHandler handler, //
-            final Map<String, Object> properties) {
+            final ServiceReference<?> reference) {
 
-        final String pubChannel = (String) properties.get("osgi.messaging.replyToSubscription.replyChannel");
-        final String subChannel = (String) properties.get("osgi.messaging.replyToSubscription.channel");
+        final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
 
         // @formatter:off
-        subscriber.subscribe(subChannel)
+        subscriber.subscribe(replyToDTO.subChannel)
                   .map(m -> handleResponse(m, handler))
-                  .forEach(m -> publisher.publish(m, pubChannel));
+                  .forEach(m -> publisher.publish(m, replyToDTO.pubChannel))
+                  .onResolve(replyToDTO::close);
         // @formatter:on
     }
 
-    void unbindReplyToSingleSubscriptionHandler(final ReplyToSingleSubscriptionHandler handler) {
-        // nothing to do
+    void unbindReplyToSingleSubscriptionHandler(final ServiceReference<?> reference) {
+        subscriptions.remove(reference);
     }
 
-    @Reference(policy = DYNAMIC, target = FILTER_SUB_HANDLER)
-    public synchronized void bindReplyToSubscriptionHandler( //
+    @Reference(policy = DYNAMIC, target = FILTER_HANDLER)
+    synchronized void bindReplyToSubscriptionHandler( //
             final ReplyToSubscriptionHandler handler, //
-            final Map<String, Object> properties) {
-        final String subChannel = (String) properties.get("osgi.messaging.replyToSubscription.channel");
-        subscriber.subscribe(subChannel).forEach(m -> handler.handleResponse(m));
+            final ServiceReference<?> reference) {
+
+        final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
+
+        // @formatter:off
+        subscriber.subscribe(replyToDTO.subChannel)
+                  .forEach(m -> handler.handleResponse(m))
+                  .onResolve(replyToDTO::close);
+        // @formatter:on
     }
 
-    void unbindReplyToSubscriptionHandler(final ReplyToSubscriptionHandler handler) {
-        // nothing to do
+    void unbindReplyToSubscriptionHandler(final ServiceReference<?> reference) {
+        subscriptions.remove(reference);
     }
 
-    @Reference(policy = DYNAMIC, target = FILTER_SUB_HANDLER)
+    @Reference(policy = DYNAMIC, target = FILTER_HANDLER)
     synchronized void bindReplyToManySubscriptionHandler( //
             final ReplyToManySubscriptionHandler handler, //
-            final Map<String, Object> properties) {
+            final ServiceReference<?> reference) {
 
-        final String pubChannel = (String) properties.get("osgi.messaging.replyToSubscription.replyChannel");
-        final String subChannel = (String) properties.get("osgi.messaging.replyToSubscription.channel");
+        final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
 
         // @formatter:off
-        subscriber.subscribe(subChannel)
+        subscriber.subscribe(replyToDTO.subChannel)
                   .map(m -> handleResponses(m, handler))
+                  .onClose(() -> {
+                      final ReplyToSubscriptionDTO dto = subscriptions.get(reference);
+                      dto.requestChannel.connected = false;
+                      dto.responseChannel.connected = false;
+                  })
                   .flatMap(m -> m)
-                  .forEach(m -> publisher.publish(m, pubChannel));
+                  .onClose(replyToDTO::close)
+                  .forEach(m -> publisher.publish(m, replyToDTO.subChannel));
         // @formatter:on
     }
 
-    void unbindReplyToManySubscriptionHandler(final ReplyToManySubscriptionHandler handler) {
-        // nothing to do
+    void unbindReplyToManySubscriptionHandler(final ServiceReference<?> reference) {
+        subscriptions.remove(reference);
     }
 
-    private MessageContextBuilder initResponse(final Message request) {
+    public ReplyToSubscriptionDTO[] getReplyToSubscriptionDTOs() {
+        final ReplyToSubscriptionDTO dto = new ReplyToSubscriptionDTO();
+
+        dto.generateCorrelationId = true;
+        dto.generateReplyChannel = true;
+        dto.serviceDTO = findServiceRefAsDTO(MessageSubscription.class, bundleContext);
+
+        return new ReplyToSubscriptionDTO[] { dto };
+    }
+
+    private SimpleMessageContextBuilder initResponse(final Message request) {
         final MessageContext context = request.getContext();
         final String channel = context.getReplyToChannel();
         final String correlation = context.getCorrelationId();
         final MessageContextBuilder builder = mcbFactory.getService().channel(channel).correlationId(correlation);
-        return builder;
+        return (SimpleMessageContextBuilder) builder;
     }
 
     private Message handleResponse(final Message request, final ReplyToSingleSubscriptionHandler handler) {
-        final MessageContextBuilder mcb = initResponse(request);
+        final SimpleMessageContextBuilder mcb = initResponse(request);
         try {
             return handler.handleResponse(request, mcb).getValue();
         } catch (final Exception e) {
@@ -116,6 +156,49 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
     private PushStream<Message> handleResponses(final Message request, final ReplyToManySubscriptionHandler handler) {
         final MessageContextBuilder mcb = initResponse(request);
         return handler.handleResponses(request, mcb);
+    }
+
+    private ReplyToSubscriptionDTO initReplyToSubscriptionDTO( //
+            final ChannelDTO pub, //
+            final ChannelDTO sub, //
+            final ServiceReference<?> reference) {
+
+        final ReplyToSubscriptionDTO subscriptionDTO = new ReplyToSubscriptionDTO();
+
+        subscriptionDTO.requestChannel = sub;
+        subscriptionDTO.responseChannel = pub;
+        subscriptionDTO.handlerService = getServiceReferenceDTO(reference, bundleContext.getBundle().getBundleId());
+        subscriptionDTO.serviceDTO = findServiceRefAsDTO(MessageSubscription.class, bundleContext);
+        subscriptionDTO.generateCorrelationId = true;
+        subscriptionDTO.generateReplyChannel = true;
+
+        return subscriptionDTO;
+    }
+
+    private class ReplyToDTO {
+        String pubChannel;
+        String subChannel;
+        ServiceReference<?> reference;
+
+        ReplyToDTO(final ServiceReference<?> reference) {
+            this.reference = reference;
+            final Dictionary<String, Object> properties = reference.getProperties();
+
+            pubChannel = (String) properties.get("osgi.messaging.replyToSubscription.replyChannel");
+            subChannel = (String) properties.get("osgi.messaging.replyToSubscription.channel");
+
+            final ChannelDTO pubDTO = initChannelDTO(pubChannel, null, true);
+            final ChannelDTO subDTO = initChannelDTO(subChannel, null, true);
+
+            final ReplyToSubscriptionDTO subscriptionDTO = initReplyToSubscriptionDTO(pubDTO, subDTO, reference);
+            subscriptions.put(reference, subscriptionDTO);
+        }
+
+        void close() {
+            final ReplyToSubscriptionDTO dto = subscriptions.get(reference);
+            dto.requestChannel.connected = false;
+            dto.responseChannel.connected = false;
+        }
     }
 
 }

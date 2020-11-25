@@ -1,7 +1,8 @@
 package in.bytehue.messaging.mqtt5.provider;
 
-import static in.bytehue.messaging.mqtt5.api.ExtendedFeatures.MQTT_5;
-import static in.bytehue.messaging.mqtt5.provider.SimpleMessageReplyToPublisher.PID;
+import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MESSAGE_REPLY_TO_PUBLISHER_NAME;
+import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MQTT_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.PUBLISHER_PID;
 import static org.osgi.service.messaging.Features.GENERATE_CORRELATION_ID;
 import static org.osgi.service.messaging.Features.GENERATE_REPLY_CHANNEL;
 import static org.osgi.service.messaging.Features.REPLY_TO;
@@ -17,8 +18,6 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
-import org.osgi.service.messaging.MessagePublisher;
-import org.osgi.service.messaging.MessageSubscription;
 import org.osgi.service.messaging.annotations.ProvideMessagingReplyToFeature;
 import org.osgi.service.messaging.annotations.ProvideMessagingReplyToManySubscribeFeature;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
@@ -37,11 +36,11 @@ import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 
 @Designate(ocd = Config.class)
 @ProvideMessagingReplyToFeature
-@Component(configurationPid = PID)
+@Component(configurationPid = PUBLISHER_PID)
 @ProvideMessagingReplyToManySubscribeFeature
 @MessagingFeature( //
-        name = "message-replyto-publisher", //
-        protocol = MQTT_5, //
+        name = MESSAGE_REPLY_TO_PUBLISHER_NAME, //
+        protocol = MQTT_PROTOCOL, //
         feature = { //
                 REPLY_TO, //
                 REPLY_TO_MANY_PUBLISH, //
@@ -61,15 +60,13 @@ public final class SimpleMessageReplyToPublisher implements ReplyToPublisher, Re
     private static final String THREAD_NAME_FORMAT = "-%d";
     private static final String THREAD_FACTORY_NAME = "message-publisher";
 
-    public static final String PID = "in.bytehue.messaging.publisher";
-
     private final PromiseFactory factory;
 
-    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
-    private MessagePublisher publisher;
+    @Reference
+    private SimpleMessagePublisher publisher;
 
-    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
-    private MessageSubscription subscriber;
+    @Reference
+    private SimpleMessageSubscriber subscriber;
 
     @Activate
     public SimpleMessageReplyToPublisher(final Config config) {
@@ -89,20 +86,14 @@ public final class SimpleMessageReplyToPublisher implements ReplyToPublisher, Re
     @Override
     public Promise<Message> publishWithReply(final Message requestMessage, final MessageContext replyToContext) {
         autoGenerateMissingConfigs(requestMessage);
+
         final Deferred<Message> deferred = factory.deferred();
-        final MessageContext context;
-        if (replyToContext != null) {
-            context = replyToContext;
-        } else {
-            context = requestMessage.getContext();
-        }
-        final String pubChannel = context.getReplyToChannel();
-        final String subChannel = context.getChannel();
+        final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
 
         // @formatter:off
-        subscriber.subscribe(subChannel)
+        subscriber.subscribe(dto.subChannel)
                   .forEach(m -> {
-                      publisher.publish(m, pubChannel);
+                      publisher.publish(m, dto.pubChannel);
                       deferred.resolve(m);
                   });
         // @formatter:off
@@ -117,19 +108,13 @@ public final class SimpleMessageReplyToPublisher implements ReplyToPublisher, Re
     @Override
     public PushStream<Message> publishWithReplyMany(final Message requestMessage, final MessageContext replyToContext) {
         autoGenerateMissingConfigs(requestMessage);
-        final MessageContext context;
-        if (replyToContext != null) {
-            context = replyToContext;
-        } else {
-            context = requestMessage.getContext();
-        }
-        final String pubChannel = context.getReplyToChannel();
-        final String subChannel = context.getChannel();
+
+        final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
 
         // @formatter:off
-        return subscriber.subscribe(subChannel)
+        return subscriber.subscribe(dto.subChannel)
                          .map(m -> {
-                             publisher.publish(m, pubChannel);
+                             publisher.publish(m, dto.pubChannel);
                              return m;
                           });
         // @formatter:off
@@ -142,6 +127,19 @@ public final class SimpleMessageReplyToPublisher implements ReplyToPublisher, Re
         }
         if (context.getReplyToChannel() == null) {
             context.replyToChannel = UUID.randomUUID().toString();
+        }
+    }
+
+    private class ReplyToDTO {
+        String pubChannel;
+        String subChannel;
+
+        ReplyToDTO(final Message message, MessageContext context) {
+            if (context == null) {
+                context = message.getContext();
+            }
+            pubChannel = context.getReplyToChannel();
+            subChannel = context.getChannel();
         }
     }
 

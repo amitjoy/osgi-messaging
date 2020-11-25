@@ -1,6 +1,6 @@
 package in.bytehue.messaging.mqtt5.provider;
 
-import static in.bytehue.messaging.mqtt5.provider.SimpleMessageClient.PID;
+import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.CLIENT_PID;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.osgi.service.metatype.annotations.AttributeType.PASSWORD;
 
@@ -12,6 +12,7 @@ import javax.net.ssl.TrustManagerFactory;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.log.Logger;
 import org.osgi.service.log.LoggerFactory;
@@ -21,22 +22,21 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 import com.hivemq.client.mqtt.datatypes.MqttQos;
+import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5ClientBuilder;
 import com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism;
 
 import in.bytehue.messaging.mqtt5.provider.SimpleMessageClient.Config;
-import in.bytehue.messaging.mqtt5.provider.helper.MessagingHelper;
+import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
 
 @ProvideMessagingFeature
 @Designate(ocd = Config.class)
-@Component(service = SimpleMessageClient.class, configurationPid = PID)
+@Component(service = SimpleMessageClient.class, configurationPid = CLIENT_PID)
 public final class SimpleMessageClient {
 
-    public static final String PID = "in.bytehue.messaging.client";
-
     @ObjectClassDefinition( //
-            name = "MQTT Messaging Client Configuration", //
+            name = "MQTT v5 Messaging Client Configuration", //
             description = "This configuration is used to configure the messaging connection")
     @interface Config {
         @AttributeDefinition(name = "Client Identifier")
@@ -118,7 +118,7 @@ public final class SimpleMessageClient {
         String enhancedAuthTargetFilter() default "";
     }
 
-    Mqtt5Client client;
+    Mqtt5AsyncClient client;
 
     private final Logger logger;
 
@@ -185,13 +185,18 @@ public final class SimpleMessageClient {
                      .applyRestrictions();
 
         // @formatter:on
-        client = clientBuilder.build();
+        client = clientBuilder.buildAsync();
+    }
+
+    @Deactivate
+    void deactivate() {
+        client.disconnect();
     }
 
     private TrustManagerFactory getTrustManagerFactory(final Config config, final BundleContext bundleContext) {
         try {
             // @formatter:off
-            return MessagingHelper.getService(
+            return MessageHelper.getService(
                         TrustManagerFactory.class,
                         config.trustManagerFactoryTargetFilter(),
                         bundleContext);
@@ -205,7 +210,7 @@ public final class SimpleMessageClient {
     private Mqtt5EnhancedAuthMechanism getEnhancedAuth(final Config config, final BundleContext bundleContext) {
         try {
             // @formatter:off
-            return MessagingHelper.getService(
+            return MessageHelper.getService(
                     Mqtt5EnhancedAuthMechanism.class,
                     config.enhancedAuthTargetFilter(),
                     bundleContext);
