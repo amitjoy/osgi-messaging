@@ -94,9 +94,9 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
     }
 
     private MessageContextBuilder initResponse(final Message request) {
-        final MessageContext requestCtx = request.getContext();
-        final String channel = requestCtx.getReplyToChannel();
-        final String correlation = requestCtx.getCorrelationId();
+        final MessageContext context = request.getContext();
+        final String channel = context.getReplyToChannel();
+        final String correlation = context.getCorrelationId();
         final MessageContextBuilder builder = mcbFactory.getService().channel(channel).correlationId(correlation);
         return builder;
     }
