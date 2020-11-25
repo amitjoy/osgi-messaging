@@ -32,7 +32,7 @@ import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishResult;
 public final class SimpleMessagePublisher implements MessagePublisher {
 
     @Reference
-    private MessagingClient messagingClient;
+    private SimpleMessageClient messagingClient;
 
     @Override
     public void publish(final Message message) {
@@ -84,12 +84,10 @@ public final class SimpleMessagePublisher implements MessagePublisher {
                                   .retain(retain)
                                   .userProperties(propsBuilder.build());
         // @formatter:on
-        String replyChannel = context.getReplyToChannel();
-        if (replyChannel == null) {
-            replyChannel = UUID.randomUUID().toString(); // TODO move efficiently autoGeneration
+        final String replyToChannel = context.getReplyToChannel();
+        if (replyToChannel != null) {
+            publishRequest.responseTopic(replyToChannel).correlationData(correlationId.getBytes());
         }
-        final String replyToChannel = replyChannel;
-        publishRequest.responseTopic(replyToChannel).correlationData(correlationId.getBytes());
         publishRequest.send();
     }
 

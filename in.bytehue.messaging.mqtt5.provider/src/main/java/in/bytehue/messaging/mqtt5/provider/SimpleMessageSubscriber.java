@@ -34,7 +34,7 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
     private BundleContext bundleContext;
 
     @Reference
-    private MessagingClient messagingClient;
+    private SimpleMessageClient messagingClient;
 
     @Reference(scope = PROTOTYPE_REQUIRED)
     private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
@@ -64,13 +64,13 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
                               .topicFilter(channel)
                               .qos(MqttQos.fromCode(qos))
                               .callback(p -> {
+                                  final MessageContextBuilder mcb = mcbFactory.getService();
                                   try {
-                                      final MessageContextBuilder mcb = mcbFactory.getService();
                                       final Message message = toMessage(p, mcb);
                                       final SimpleMessageContext ctx = (SimpleMessageContext) context;
                                       acknowledgeMessage(message, ctx, m -> source.publish(m));
                                   } finally {
-                                      bundleContext.ungetService(mcbFactory.getServiceReference());
+                                      mcbFactory.ungetService(mcb);
                                   }
                               })
                               .send();

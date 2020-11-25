@@ -1,6 +1,6 @@
 package in.bytehue.messaging.mqtt5.provider;
 
-import static in.bytehue.messaging.mqtt5.provider.MessagingClient.PID;
+import static in.bytehue.messaging.mqtt5.provider.SimpleMessageClient.PID;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.osgi.service.metatype.annotations.AttributeType.PASSWORD;
 
@@ -25,13 +25,13 @@ import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5ClientBuilder;
 import com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism;
 
-import in.bytehue.messaging.mqtt5.provider.MessagingClient.Config;
+import in.bytehue.messaging.mqtt5.provider.SimpleMessageClient.Config;
 import in.bytehue.messaging.mqtt5.provider.helper.MessagingHelper;
 
 @ProvideMessagingFeature
 @Designate(ocd = Config.class)
-@Component(service = MessagingClient.class, configurationPid = PID)
-public final class MessagingClient {
+@Component(service = SimpleMessageClient.class, configurationPid = PID)
+public final class SimpleMessageClient {
 
     public static final String PID = "in.bytehue.messaging.client";
 
@@ -123,7 +123,7 @@ public final class MessagingClient {
     private final Logger logger;
 
     @Activate
-    public MessagingClient( //
+    public SimpleMessageClient( //
             final BundleContext bundleContext, //
             final Config config, //
             @Reference(service = LoggerFactory.class) final Logger logger) {

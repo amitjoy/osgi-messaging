@@ -97,8 +97,8 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
         final MessageContext requestCtx = request.getContext();
         final String channel = requestCtx.getReplyToChannel();
         final String correlation = requestCtx.getCorrelationId();
-        final MessageContextBuilder mcb = mcbFactory.getService().channel(channel).correlationId(correlation);
-        return mcb;
+        final MessageContextBuilder builder = mcbFactory.getService().channel(channel).correlationId(correlation);
+        return builder;
     }
 
     private Message handleResponse(final Message request, final ReplyToSingleSubscriptionHandler handler) {
@@ -108,6 +108,8 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
         } catch (final Exception e) {
             final Message error = mcb.content(ByteBuffer.wrap(e.getMessage().getBytes())).buildMessage();
             return error;
+        } finally {
+            mcbFactory.ungetService(mcb);
         }
     }
 

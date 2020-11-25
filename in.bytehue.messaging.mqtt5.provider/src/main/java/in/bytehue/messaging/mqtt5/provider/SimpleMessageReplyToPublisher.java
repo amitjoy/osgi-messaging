@@ -2,23 +2,21 @@ package in.bytehue.messaging.mqtt5.provider;
 
 import static in.bytehue.messaging.mqtt5.api.ExtendedFeatures.MQTT_5;
 import static in.bytehue.messaging.mqtt5.provider.SimpleMessageReplyToPublisher.PID;
-import static org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED;
 import static org.osgi.service.messaging.Features.GENERATE_CORRELATION_ID;
 import static org.osgi.service.messaging.Features.GENERATE_REPLY_CHANNEL;
 import static org.osgi.service.messaging.Features.REPLY_TO;
 import static org.osgi.service.messaging.Features.REPLY_TO_MANY_PUBLISH;
 import static org.osgi.service.messaging.Features.REPLY_TO_MANY_SUBSCRIBE;
 
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
-import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
-import org.osgi.service.messaging.MessageContextBuilder;
 import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.MessageSubscription;
 import org.osgi.service.messaging.annotations.ProvideMessagingReplyToFeature;
@@ -67,9 +65,6 @@ public final class SimpleMessageReplyToPublisher implements ReplyToPublisher, Re
 
     private final PromiseFactory factory;
 
-    @Reference(scope = PROTOTYPE_REQUIRED)
-    private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
-
     @Reference(target = "(osgi.messaging.protocol=mqtt5)")
     private MessagePublisher publisher;
 
@@ -93,6 +88,7 @@ public final class SimpleMessageReplyToPublisher implements ReplyToPublisher, Re
 
     @Override
     public Promise<Message> publishWithReply(final Message requestMessage, final MessageContext replyToContext) {
+        autoGenerateMissingConfigs(requestMessage);
         final Deferred<Message> deferred = factory.deferred();
         final MessageContext context;
         if (replyToContext != null) {
@@ -120,6 +116,7 @@ public final class SimpleMessageReplyToPublisher implements ReplyToPublisher, Re
 
     @Override
     public PushStream<Message> publishWithReplyMany(final Message requestMessage, final MessageContext replyToContext) {
+        autoGenerateMissingConfigs(requestMessage);
         final MessageContext context;
         if (replyToContext != null) {
             context = replyToContext;
@@ -136,6 +133,16 @@ public final class SimpleMessageReplyToPublisher implements ReplyToPublisher, Re
                              return m;
                           });
         // @formatter:off
+    }
+
+    private void autoGenerateMissingConfigs(final Message message) {
+        final SimpleMessageContext context = (SimpleMessageContext) message.getContext();
+        if (context.getCorrelationId() == null) {
+            context.correlationId = UUID.randomUUID().toString();
+        }
+        if (context.getReplyToChannel() == null) {
+            context.replyToChannel = UUID.randomUUID().toString();
+        }
     }
 
 }
