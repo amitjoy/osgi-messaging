@@ -49,11 +49,13 @@ public final class SimpleMessageContextBuilder implements MessageContextBuilder,
     @Activate
     public SimpleMessageContextBuilder( //
             final BundleContext bundleContext, //
+            @Reference final SimpleMessageAcknowledgeHandler acknowledgeHandler, //
             @Reference(service = LoggerFactory.class) final Logger logger) {
         this.logger = logger;
         this.bundleContext = bundleContext;
         message = new SimpleMessage();
         messageContext = new SimpleMessageContext();
+        messageContext.protocolSpecificAcknowledgeHandler = acknowledgeHandler;
     }
 
     @Override

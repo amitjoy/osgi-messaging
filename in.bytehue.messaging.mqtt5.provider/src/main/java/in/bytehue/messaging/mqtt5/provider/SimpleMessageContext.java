@@ -23,7 +23,7 @@ public final class SimpleMessageContext implements MessageContext, AcknowledgeMe
     public Consumer<Message> acknowledgeHandler;
     public Predicate<Message> acknowledgeFilter;
     public Consumer<Message> acknowledgeConsumer;
-    // AcknowledgeHandler acknowledgeHandler; TODO
+    public AcknowledgeHandler protocolSpecificAcknowledgeHandler;
 
     public Map<String, Object> extensions = new HashMap<>();
 
@@ -64,8 +64,7 @@ public final class SimpleMessageContext implements MessageContext, AcknowledgeMe
 
     @Override
     public AcknowledgeHandler getAcknowledgeHandler() {
-        // TODO
-        return null;
+        return protocolSpecificAcknowledgeHandler;
     }
 
 }

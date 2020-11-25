@@ -11,6 +11,7 @@ import static org.osgi.service.messaging.Features.QOS;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.ACKNOWLEDGED;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.RECEIVED;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.REJECTED;
+import static org.osgi.service.messaging.acknowledge.AcknowledgeType.UNSUPPORTED;
 
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
@@ -29,6 +30,7 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.framework.dto.ServiceReferenceDTO;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContextBuilder;
+import org.osgi.service.messaging.acknowledge.AcknowledgeHandler;
 import org.osgi.service.messaging.dto.ChannelDTO;
 
 import com.hivemq.client.mqtt.datatypes.MqttUtf8String;
@@ -168,23 +170,30 @@ public final class MessageHelper {
 
     public static boolean acknowledgeMessage(final Message message, final SimpleMessageContext ctx,
             final Consumer<Message> interimConsumer) {
-        ctx.acknowledgeState = RECEIVED;
-        if (ctx.acknowledgeFilter != null) {
-            final boolean isAcknowledged = ctx.acknowledgeFilter.test(message);
-            if (isAcknowledged) {
-                ctx.acknowledgeState = ACKNOWLEDGED;
-                if (ctx.acknowledgeHandler != null) {
-                    ctx.acknowledgeHandler.accept(message);
+        // first verify if the protocol specific handler is okay with the received message
+        final AcknowledgeHandler protocolSpecificAcknowledgeHandler = ctx.protocolSpecificAcknowledgeHandler;
+        if (protocolSpecificAcknowledgeHandler.acknowledge() || !protocolSpecificAcknowledgeHandler.reject()) {
+            ctx.acknowledgeState = RECEIVED;
+            if (ctx.acknowledgeFilter != null) {
+                final boolean isAcknowledged = ctx.acknowledgeFilter.test(message);
+                if (isAcknowledged) {
+                    ctx.acknowledgeState = ACKNOWLEDGED;
+                    if (ctx.acknowledgeHandler != null) {
+                        ctx.acknowledgeHandler.accept(message);
+                    }
+                    interimConsumer.accept(message);
+                } else {
+                    ctx.acknowledgeState = REJECTED;
                 }
-                interimConsumer.accept(message);
-            } else {
-                ctx.acknowledgeState = REJECTED;
             }
+            if (ctx.acknowledgeConsumer != null) {
+                ctx.acknowledgeConsumer.accept(message);
+            }
+            return ctx.acknowledgeState == ACKNOWLEDGED;
+        } else {
+            ctx.acknowledgeState = UNSUPPORTED;
+            return false;
         }
-        if (ctx.acknowledgeConsumer != null) {
-            ctx.acknowledgeConsumer.accept(message);
-        }
-        return ctx.acknowledgeState == ACKNOWLEDGED;
     }
 
     public static ChannelDTO initChannelDTO(final String name, final String extension, final boolean isConnected) {
@@ -198,7 +207,7 @@ public final class MessageHelper {
     }
 
     private static String asString(final MqttUtf8String string) {
-        return StandardCharsets.UTF_8.decode(string.toByteBuffer()).toString();
+        return asString(string.toByteBuffer());
     }
 
     private static String asString(final ByteBuffer buffer) {
