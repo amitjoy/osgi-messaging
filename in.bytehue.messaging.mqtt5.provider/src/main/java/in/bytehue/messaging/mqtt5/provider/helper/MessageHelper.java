@@ -208,11 +208,11 @@ public final class MessageHelper {
         return dto;
     }
 
-    private static String asString(final MqttUtf8String string) {
+    public static String asString(final MqttUtf8String string) {
         return asString(string.toByteBuffer());
     }
 
-    private static String asString(final ByteBuffer buffer) {
+    public static String asString(final ByteBuffer buffer) {
         return StandardCharsets.UTF_8.decode(buffer).toString();
     }
 

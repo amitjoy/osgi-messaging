@@ -67,4 +67,11 @@ public final class SimpleMessageContext implements MessageContext, AcknowledgeMe
         return protocolSpecificAcknowledgeHandler;
     }
 
+    @Override
+    public String toString() {
+        return "MessageContext [channel=" + channel + ", contentType=" + contentType + ", contentEncoding="
+                + contentEncoding + ", correlationId=" + correlationId + ", replyToChannel=" + replyToChannel
+                + ", extensions=" + extensions + "]";
+    }
+
 }

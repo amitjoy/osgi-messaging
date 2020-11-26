@@ -1,5 +1,7 @@
 package in.bytehue.messaging.mqtt5.provider;
 
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.asString;
+
 import java.nio.ByteBuffer;
 
 import org.osgi.service.messaging.Message;
@@ -27,6 +29,11 @@ public final class SimpleMessage implements Message {
     @Override
     public MessageContext getContext() {
         return messageContext;
+    }
+
+    @Override
+    public String toString() {
+        return "Message [payload=" + asString(byteBuffer) + ", messageContext=" + messageContext + "]";
     }
 
 }
