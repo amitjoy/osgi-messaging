@@ -80,8 +80,7 @@ public final class SimpleMessagePublisher implements MessagePublisher {
 
             // @formatter:off
             final Complete<CompletableFuture<Mqtt5PublishResult>> publishRequest =
-                    messagingClient.client.toAsync()
-                                          .publishWith()
+                    messagingClient.client.publishWith()
                                           .topic(channel)
                                           .contentType(contentType)
                                           .payload(content)
