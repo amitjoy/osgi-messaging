@@ -56,7 +56,7 @@ public interface Features {
      *
      * @since 1.0
      */
-    String GUARANTEED_ORDERING = "guaranteedOrdering"; // TODO does MQTT support it?
+    String GUARANTEED_ORDERING = "guaranteedOrdering";
 
     /**
      * The name of the the {@code Guaranteed Delivery} extension of the Messaging specification

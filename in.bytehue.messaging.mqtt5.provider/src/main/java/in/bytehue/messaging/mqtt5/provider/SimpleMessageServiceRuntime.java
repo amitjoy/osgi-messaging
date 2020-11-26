@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2020 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -29,6 +29,7 @@ import static org.osgi.service.messaging.Features.AUTO_ACKNOWLEDGE;
 import static org.osgi.service.messaging.Features.GENERATE_CORRELATION_ID;
 import static org.osgi.service.messaging.Features.GENERATE_REPLY_CHANNEL;
 import static org.osgi.service.messaging.Features.GUARANTEED_DELIVERY;
+import static org.osgi.service.messaging.Features.GUARANTEED_ORDERING;
 import static org.osgi.service.messaging.Features.LAST_WILL;
 import static org.osgi.service.messaging.Features.MESSAGE_CONTEXT_BUILDER;
 import static org.osgi.service.messaging.Features.QOS;
@@ -51,21 +52,22 @@ import org.osgi.service.messaging.runtime.MessageServiceRuntime;
         name = MESSAGE_RUNTIME,
         protocol = MQTT_PROTOCOL,
         feature = {
-                ACKNOWLEDGE,
-                AUTO_ACKNOWLEDGE,
-                GENERATE_CORRELATION_ID,
-                GENERATE_REPLY_CHANNEL,
-                GUARANTEED_DELIVERY,
-                LAST_WILL,
-                MESSAGE_CONTEXT_BUILDER,
                 QOS,
-                REPLY_TO,
-                REPLY_TO_MANY_PUBLISH,
-                REPLY_TO_MANY_SUBSCRIBE,
-                MESSAGE_EXPIRY_INTERVAL,
-                RECEIVE_LOCAL,
                 RETAIN,
-                USER_PROPERTIES })
+                REPLY_TO,
+                LAST_WILL,
+                ACKNOWLEDGE,
+                RECEIVE_LOCAL,
+                USER_PROPERTIES,
+                AUTO_ACKNOWLEDGE,
+                GUARANTEED_DELIVERY,
+                GUARANTEED_ORDERING,
+                REPLY_TO_MANY_PUBLISH,
+                GENERATE_REPLY_CHANNEL,
+                MESSAGE_EXPIRY_INTERVAL,
+                REPLY_TO_MANY_SUBSCRIBE,
+                GENERATE_CORRELATION_ID,
+                MESSAGE_CONTEXT_BUILDER })
 //@formatter:on
 public final class SimpleMessageServiceRuntime implements MessageServiceRuntime {
 
@@ -100,6 +102,7 @@ public final class SimpleMessageServiceRuntime implements MessageServiceRuntime 
                             GENERATE_CORRELATION_ID,
                             GENERATE_REPLY_CHANNEL,
                             GUARANTEED_DELIVERY,
+                            GUARANTEED_ORDERING,
                             LAST_WILL,
                             MESSAGE_CONTEXT_BUILDER,
                             QOS,

@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2020 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -25,6 +25,7 @@ import static java.util.stream.Collectors.toMap;
 import static org.osgi.framework.Constants.OBJECTCLASS;
 import static org.osgi.framework.Constants.SERVICE_RANKING;
 import static org.osgi.service.messaging.Features.GUARANTEED_DELIVERY;
+import static org.osgi.service.messaging.Features.GUARANTEED_ORDERING;
 import static org.osgi.service.messaging.Features.QOS;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.ACKNOWLEDGED;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.RECEIVED;
@@ -245,11 +246,15 @@ public final class MessageHelper {
     }
 
     public static int findQoS(final Map<String, Object> extensions) {
+        // guaranteed deliver > guaranteed ordering > specified qos
         final boolean isGuaranteedDelivery = (boolean) extensions.getOrDefault(GUARANTEED_DELIVERY, false);
-        if (isGuaranteedDelivery) {
-            return EXACTLY_ONCE.getCode();
+        if (!isGuaranteedDelivery) {
+            final boolean isGuranteedOrdering = (boolean) extensions.getOrDefault(GUARANTEED_ORDERING, false);
+            if (!isGuranteedOrdering) {
+                return (int) extensions.getOrDefault(QOS, DEFAULT_QOS.getCode());
+            }
         }
-        return (int) extensions.getOrDefault(QOS, DEFAULT_QOS.getCode());
+        return EXACTLY_ONCE.getCode();
     }
 
     public static String asString(final MqttUtf8String string) {
