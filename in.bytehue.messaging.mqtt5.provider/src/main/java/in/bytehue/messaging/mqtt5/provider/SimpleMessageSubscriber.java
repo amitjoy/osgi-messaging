@@ -1,6 +1,9 @@
 package in.bytehue.messaging.mqtt5.provider;
 
 import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish.DEFAULT_QOS;
+import static com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode.GRANTED_QOS_0;
+import static com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode.GRANTED_QOS_1;
+import static com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode.GRANTED_QOS_2;
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.MQTT_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.Component.MESSAGE_SUBSCRIBER;
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.Extension.RECEIVE_LOCAL;
@@ -14,7 +17,9 @@ import static java.util.Objects.requireNonNull;
 import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
 import static org.osgi.service.messaging.Features.QOS;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.osgi.framework.BundleContext;
@@ -35,6 +40,8 @@ import org.osgi.util.pushstream.PushStreamProvider;
 import org.osgi.util.pushstream.SimplePushEventSource;
 
 import com.hivemq.client.mqtt.datatypes.MqttQos;
+import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAck;
+import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode;
 
 //@formatter:off
 @MessagingFeature(
@@ -48,8 +55,6 @@ import com.hivemq.client.mqtt.datatypes.MqttQos;
 //@formatter:on
 @Component(service = { MessageSubscription.class, SimpleMessageSubscriber.class })
 public final class SimpleMessageSubscriber implements MessageSubscription {
-
-    // TODO how to unsubscribe?
 
     @Activate
     private BundleContext bundleContext;
@@ -100,7 +105,6 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
                 receiveLocal = true;
                 retainAsPublished = false;
             }
-            subscriptions.put(stream, initChannelDTO(channel, null, true));
 
             // @formatter:off
             messagingClient.client.subscribeWith()
@@ -119,13 +123,25 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
                                         mcbFactory.ungetService(mcb);
                                       }
                                   })
-                                  .send();
+                                  .send()
+                                  .thenAccept(ack -> {
+                                      if (isSubscriptionAcknowledged(ack)) {
+                                          subscriptions.put(
+                                                  stream,
+                                                  initChannelDTO(channel, null, true));
+                                          logger.debug("New subscription request for '{}' has been processed successfully", channel);
+                                      } else {
+                                          logger.error("New subscription request for '{}' failed - {}", channel, ack);
+                                      }
+                                  });
             stream.onClose(() -> {
                 final ChannelDTO dto = subscriptions.get(stream);
                 dto.connected = false;
                 messagingClient.client.unsubscribeWith()
                                       .addTopicFilter(channel)
                                       .send();
+                subscriptions.remove(stream); // remove the subscription from registry
+                source.close();
                 // @formatter:on
 
             });
@@ -152,6 +168,18 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
         subscriptionDTO.channel = channelDTO;
 
         return subscriptionDTO;
+    }
+
+    private boolean isSubscriptionAcknowledged(final Mqtt5SubAck ack) {
+        // @formatter:off
+        final List<Mqtt5SubAckReasonCode> acceptedCodes = Arrays.asList(
+                GRANTED_QOS_0,
+                GRANTED_QOS_1,
+                GRANTED_QOS_2
+        );
+        // @formatter:off
+        final List<Mqtt5SubAckReasonCode> reasonCodes = ack.getReasonCodes();
+        return reasonCodes.stream().findFirst().filter(e -> acceptedCodes.contains(e)).isPresent();
     }
 
 }

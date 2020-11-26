@@ -133,8 +133,8 @@ public final class SimpleMessageClient {
         Mqtt5DisconnectReasonCode disconnectionReasonCode() default NORMAL_DISCONNECTION;
     }
 
-    Config config;
-    Mqtt5AsyncClient client;
+    private final Config config;
+    public final Mqtt5AsyncClient client;
 
     @Activate
     public SimpleMessageClient( //

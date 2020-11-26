@@ -6,6 +6,7 @@ import static in.bytehue.messaging.mqtt5.api.MessageConstants.Extension.MESSAGE_
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.Extension.USER_PROPERTIES;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.findQoS;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.stackTraceToString;
 import static java.util.Collections.emptyMap;
 import static org.osgi.service.messaging.Features.GUARANTEED_DELIVERY;
 import static org.osgi.service.messaging.Features.QOS;
@@ -73,6 +74,7 @@ public final class SimpleMessagePublisher implements MessagePublisher {
             if (channel == null) {
                 channel = context.getChannel();
             }
+            final String ch = channel; // needed for lambda as it needs to be effectively final :(
             final Map<String, Object> extensions = context.getExtensions();
 
             final String contentType = context.getContentType();
@@ -84,8 +86,8 @@ public final class SimpleMessagePublisher implements MessagePublisher {
             final boolean retain = (boolean) extensions.getOrDefault(RETAIN, false);
 
             @SuppressWarnings("unchecked")
-            final Map<String, String> userProperties = (Map<String, String>) extensions.getOrDefault(USER_PROPERTIES,
-                    emptyMap());
+            final Map<String, String> userProperties = //
+                    (Map<String, String>) extensions.getOrDefault(USER_PROPERTIES, emptyMap());
 
             final Mqtt5UserPropertiesBuilder propsBuilder = Mqtt5UserProperties.builder();
             userProperties.forEach((k, v) -> propsBuilder.add(k, v));
@@ -99,7 +101,6 @@ public final class SimpleMessagePublisher implements MessagePublisher {
                                           .qos(MqttQos.fromCode(qos))
                                           .retain(retain)
                                           .userProperties(propsBuilder.build());
-            // @formatter:on
             if (messageExpiryInterval == null) {
                 publishRequest.noMessageExpiry();
             } else {
@@ -112,10 +113,22 @@ public final class SimpleMessagePublisher implements MessagePublisher {
             if (correlationId != null) {
                 publishRequest.correlationData(correlationId.getBytes());
             }
-            publishRequest.send();
+            publishRequest.send()
+                          .thenAccept(result -> {
+                              if (isPublishSuccessful(result)) {
+                                  logger.debug("New publish request for '{}' has been processed successfully", ch);
+                              } else {
+                                  logger.error("New publish request for '{}' failed - {}", ch, stackTraceToString(result.getError().get()));
+                              }
+                          });
+            // @formatter:on
         } catch (final Exception e) {
             logger.error("Eror while publishing data", e);
         }
+    }
+
+    private boolean isPublishSuccessful(final Mqtt5PublishResult result) {
+        return result.getError().isPresent();
     }
 
 }
