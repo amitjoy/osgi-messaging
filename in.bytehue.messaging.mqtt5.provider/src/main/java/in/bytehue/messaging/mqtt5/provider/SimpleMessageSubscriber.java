@@ -1,8 +1,8 @@
 package in.bytehue.messaging.mqtt5.provider;
 
 import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish.DEFAULT_QOS;
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MESSAGE_SUBSCRIBER_NAME;
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MQTT_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.MQTT_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.Component.MESSAGE_SUBSCRIBER;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.acknowledgeMessage;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.findServiceRefAsDTO;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.initChannelDTO;
@@ -33,7 +33,7 @@ import org.osgi.util.pushstream.SimplePushEventSource;
 
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 
-@MessagingFeature(name = MESSAGE_SUBSCRIBER_NAME, protocol = MQTT_PROTOCOL)
+@MessagingFeature(name = MESSAGE_SUBSCRIBER, protocol = MQTT_PROTOCOL)
 @Component(service = { MessageSubscription.class, SimpleMessageSubscriber.class })
 public final class SimpleMessageSubscriber implements MessageSubscription {
 

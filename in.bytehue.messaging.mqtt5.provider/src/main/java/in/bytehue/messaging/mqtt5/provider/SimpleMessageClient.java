@@ -1,6 +1,6 @@
 package in.bytehue.messaging.mqtt5.provider;
 
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.CLIENT_PID;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.PID.CLIENT;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.osgi.service.metatype.annotations.AttributeType.PASSWORD;
 
@@ -33,7 +33,7 @@ import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
 
 @ProvideMessagingFeature
 @Designate(ocd = Config.class)
-@Component(service = SimpleMessageClient.class, configurationPid = CLIENT_PID)
+@Component(service = SimpleMessageClient.class, configurationPid = CLIENT)
 public final class SimpleMessageClient {
 
     @ObjectClassDefinition( //

@@ -1,8 +1,8 @@
 package in.bytehue.messaging.mqtt5.provider;
 
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MESSAGE_RUNTIME_NAME;
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MQTT_PROTOCOL;
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.PROVIDER_NAME;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.MQTT_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.Component.MESSAGE_RUNTIME;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.Component.PROVIDER;
 import static org.osgi.framework.Constants.SERVICE_ID;
 import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
 import static org.osgi.service.messaging.Features.AUTO_ACKNOWLEDGE;
@@ -27,7 +27,7 @@ import org.osgi.service.messaging.runtime.MessageServiceRuntime;
 import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
 
 @Component
-@MessagingFeature(name = MESSAGE_RUNTIME_NAME, protocol = MQTT_PROTOCOL)
+@MessagingFeature(name = MESSAGE_RUNTIME, protocol = MQTT_PROTOCOL)
 public final class SimpleMessageServiceRuntime implements MessageServiceRuntime {
 
     @Activate
@@ -70,7 +70,7 @@ public final class SimpleMessageServiceRuntime implements MessageServiceRuntime 
 
             dto.instanceId = messagingClient.getServiceReference().getProperties().get(SERVICE_ID).toString();
             dto.protocols = new String[] { MQTT_PROTOCOL };
-            dto.providerName = PROVIDER_NAME;
+            dto.providerName = PROVIDER;
             dto.subscriptions = subscriber.getSubscriptionDTOs();
             dto.replyToSubscriptions = whiteboard.getReplyToSubscriptionDTOs();
 

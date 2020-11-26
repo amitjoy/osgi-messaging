@@ -1,9 +1,9 @@
 package in.bytehue.messaging.mqtt5.provider.helper;
 
 import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatIndicator.UTF_8;
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MQTT_PROTOCOL;
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.RETAIN;
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.USER_PROPERTIES;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.MQTT_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.Extension.RETAIN;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.Extension.USER_PROPERTIES;
 import static java.util.stream.Collectors.toMap;
 import static org.osgi.framework.Constants.OBJECTCLASS;
 import static org.osgi.framework.Constants.SERVICE_RANKING;

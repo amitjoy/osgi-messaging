@@ -1,10 +1,8 @@
 package in.bytehue.messaging.mqtt5.provider;
 
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MESSAGE_CONTEXT_BUILDER_NAME;
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MQTT_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.MQTT_PROTOCOL;
 import static org.osgi.service.component.annotations.ServiceScope.PROTOTYPE;
 import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
-import static org.osgi.service.messaging.Features.MESSAGE_CONTEXT_BUILDER;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -18,6 +16,7 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.log.Logger;
 import org.osgi.service.log.LoggerFactory;
+import org.osgi.service.messaging.Features;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageContextBuilder;
@@ -25,6 +24,7 @@ import org.osgi.service.messaging.acknowledge.AcknowledgeMessageContextBuilder;
 import org.osgi.service.messaging.annotations.ProvideMessagingAcknowledgeFeature;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
 
+import in.bytehue.messaging.mqtt5.api.MessageConstants;
 import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
 
 @Component( //
@@ -36,9 +36,9 @@ import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
         })
 @ProvideMessagingAcknowledgeFeature
 @MessagingFeature( //
-        name = MESSAGE_CONTEXT_BUILDER_NAME, //
         protocol = MQTT_PROTOCOL, //
-        feature = { MESSAGE_CONTEXT_BUILDER, ACKNOWLEDGE })
+        name = MessageConstants.Component.MESSAGE_CONTEXT_BUILDER, //
+        feature = { Features.MESSAGE_CONTEXT_BUILDER, ACKNOWLEDGE })
 public final class SimpleMessageContextBuilder implements MessageContextBuilder, AcknowledgeMessageContextBuilder {
 
     private final Logger logger;

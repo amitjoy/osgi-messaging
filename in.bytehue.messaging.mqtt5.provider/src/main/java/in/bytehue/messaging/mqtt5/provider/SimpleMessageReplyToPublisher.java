@@ -1,8 +1,8 @@
 package in.bytehue.messaging.mqtt5.provider;
 
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MESSAGE_REPLY_TO_PUBLISHER_NAME;
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MQTT_PROTOCOL;
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.PUBLISHER_PID;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.MQTT_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.Component.MESSAGE_REPLY_TO_PUBLISHER;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.PID.PUBLISHER;
 import static org.osgi.service.messaging.Features.GENERATE_CORRELATION_ID;
 import static org.osgi.service.messaging.Features.GENERATE_REPLY_CHANNEL;
 import static org.osgi.service.messaging.Features.REPLY_TO;
@@ -36,10 +36,10 @@ import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 
 @Designate(ocd = Config.class)
 @ProvideMessagingReplyToFeature
-@Component(configurationPid = PUBLISHER_PID)
+@Component(configurationPid = PUBLISHER)
 @ProvideMessagingReplyToManySubscribeFeature
 @MessagingFeature( //
-        name = MESSAGE_REPLY_TO_PUBLISHER_NAME, //
+        name = MESSAGE_REPLY_TO_PUBLISHER, //
         protocol = MQTT_PROTOCOL, //
         feature = { //
                 REPLY_TO, //
@@ -51,14 +51,17 @@ public final class SimpleMessageReplyToPublisher implements ReplyToPublisher, Re
 
     @ObjectClassDefinition( //
             name = "MQTT Messaging Reply-To Publisher Executor Configuration", //
-            description = "This configuration is used to configure the internal thread pool size")
+            description = "This configuration is used to configure the internal thread pool")
     @interface Config {
         @AttributeDefinition(name = "Number of Threads for the internal thread pool")
-        int numThreads() default 10;
-    }
+        int numThreads() default 20;
 
-    private static final String THREAD_NAME_FORMAT = "-%d";
-    private static final String THREAD_FACTORY_NAME = "mqtt-replyto-publisher";
+        @AttributeDefinition(name = "Prefix of the thread name")
+        String threadNamePrefix() default "mqtt-replyto-publisher";
+
+        @AttributeDefinition(name = "Suffix of the thread name")
+        String threadNameSuffix() default "-%d";
+    }
 
     private final PromiseFactory factory;
 
@@ -72,8 +75,8 @@ public final class SimpleMessageReplyToPublisher implements ReplyToPublisher, Re
     public SimpleMessageReplyToPublisher(final Config config) {
         final ThreadFactory threadFactory = //
                 new ThreadFactoryBuilder() //
-                        .setThreadFactoryName(THREAD_FACTORY_NAME) //
-                        .setThreadNameFormat(THREAD_NAME_FORMAT) //
+                        .setThreadFactoryName(config.threadNamePrefix()) //
+                        .setThreadNameFormat(config.threadNameSuffix()) //
                         .build();
         factory = new PromiseFactory(Executors.newFixedThreadPool(config.numThreads(), threadFactory));
     }

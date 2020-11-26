@@ -1,11 +1,11 @@
 package in.bytehue.messaging.mqtt5.provider;
 
 import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish.DEFAULT_QOS;
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MESSAGE_EXPIRY_INTERVAL;
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MESSAGE_PUBLISHER_NAME;
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MQTT_PROTOCOL;
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.RETAIN;
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.USER_PROPERTIES;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.MQTT_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.Component.MESSAGE_PUBLISHER;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.Extension.MESSAGE_EXPIRY_INTERVAL;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.Extension.RETAIN;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.Extension.USER_PROPERTIES;
 import static java.util.Collections.emptyMap;
 import static org.osgi.service.messaging.Features.QOS;
 
@@ -30,7 +30,7 @@ import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishBuilder.Send.Com
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishResult;
 
 @Component(service = { MessagePublisher.class, SimpleMessagePublisher.class })
-@MessagingFeature(name = MESSAGE_PUBLISHER_NAME, protocol = MQTT_PROTOCOL)
+@MessagingFeature(name = MESSAGE_PUBLISHER, protocol = MQTT_PROTOCOL)
 public final class SimpleMessagePublisher implements MessagePublisher {
 
     @Reference
@@ -96,7 +96,10 @@ public final class SimpleMessagePublisher implements MessagePublisher {
             }
             final String replyToChannel = context.getReplyToChannel();
             if (replyToChannel != null) {
-                publishRequest.responseTopic(replyToChannel).correlationData(correlationId.getBytes());
+                publishRequest.responseTopic(replyToChannel);
+            }
+            if (correlationId != null) {
+                publishRequest.correlationData(correlationId.getBytes());
             }
             publishRequest.send();
         } catch (final Exception e) {

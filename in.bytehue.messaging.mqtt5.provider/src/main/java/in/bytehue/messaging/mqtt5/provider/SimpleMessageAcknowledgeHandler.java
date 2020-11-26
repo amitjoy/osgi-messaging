@@ -1,6 +1,6 @@
 package in.bytehue.messaging.mqtt5.provider;
 
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MQTT_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.MQTT_PROTOCOL;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.messaging.acknowledge.AcknowledgeHandler;

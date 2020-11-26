@@ -1,8 +1,8 @@
 package in.bytehue.messaging.mqtt5.provider;
 
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MESSAGE_WHITEBOARD_NAME;
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MQTT_MESSAGING_NAME;
-import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MQTT_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.MESSAGING_ID;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.MQTT_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.Component.MESSAGE_WHITEBOARD;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.findServiceRefAsDTO;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getServiceReferenceDTO;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.initChannelDTO;
@@ -34,16 +34,17 @@ import org.osgi.service.messaging.replyto.ReplyToSubscriptionHandler;
 import org.osgi.service.messaging.replyto.ReplyToWhiteboard;
 import org.osgi.util.pushstream.PushStream;
 
-@MessagingFeature(name = MESSAGE_WHITEBOARD_NAME, protocol = MQTT_PROTOCOL)
+@MessagingFeature(name = MESSAGE_WHITEBOARD, protocol = MQTT_PROTOCOL)
 @Component(service = { ReplyToWhiteboard.class, SimpleMessageReplyToWhiteboard.class })
 public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
 
     public static final String FILTER_MQTT = "(osgi.messaging.protocol=" + MQTT_PROTOCOL + ")";
 
     // @formatter:off
+    // TODO Does this filter really make sense?
     public static final String FILTER_HANDLER = ""
             + "(osgi.messaging.replyToSubscription.target="
-            + "(&(osgi.messaging.name=" + MQTT_MESSAGING_NAME + ")"
+            + "(&(osgi.messaging.name=" + MESSAGING_ID + ")"
             + FILTER_MQTT
             + "(osgi.messaging.feature=replyTo)))";
     // @formatter:on
