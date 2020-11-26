@@ -3,6 +3,7 @@ package in.bytehue.messaging.mqtt5.provider;
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.MQTT_PROTOCOL;
 import static org.osgi.service.component.annotations.ServiceScope.PROTOTYPE;
 import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
+import static org.osgi.service.messaging.Features.MESSAGE_CONTEXT_BUILDER;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -16,7 +17,6 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.log.Logger;
 import org.osgi.service.log.LoggerFactory;
-import org.osgi.service.messaging.Features;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageContextBuilder;
@@ -27,18 +27,22 @@ import org.osgi.service.messaging.propertytypes.MessagingFeature;
 import in.bytehue.messaging.mqtt5.api.MessageConstants;
 import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
 
-@Component( //
-        scope = PROTOTYPE, //
-        service = { //
-                MessageContextBuilder.class, //
-                SimpleMessageContextBuilder.class, //
-                AcknowledgeMessageContextBuilder.class //
+// @formatter:off
+@Component(
+        scope = PROTOTYPE,
+        service = {
+                MessageContextBuilder.class,
+                SimpleMessageContextBuilder.class,
+                AcknowledgeMessageContextBuilder.class
         })
 @ProvideMessagingAcknowledgeFeature
-@MessagingFeature( //
-        protocol = MQTT_PROTOCOL, //
-        name = MessageConstants.Component.MESSAGE_CONTEXT_BUILDER, //
-        feature = { Features.MESSAGE_CONTEXT_BUILDER, ACKNOWLEDGE })
+@MessagingFeature(
+        protocol = MQTT_PROTOCOL,
+        name = MessageConstants.Component.MESSAGE_CONTEXT_BUILDER,
+        feature = {
+                MESSAGE_CONTEXT_BUILDER,
+                ACKNOWLEDGE })
+// @formatter:on
 public final class SimpleMessageContextBuilder implements MessageContextBuilder, AcknowledgeMessageContextBuilder {
 
     private final Logger logger;

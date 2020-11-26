@@ -1,12 +1,13 @@
 package in.bytehue.messaging.mqtt5.provider;
 
-import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish.DEFAULT_QOS;
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.MQTT_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.Component.MESSAGE_PUBLISHER;
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.Extension.MESSAGE_EXPIRY_INTERVAL;
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.Extension.USER_PROPERTIES;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.findQoS;
 import static java.util.Collections.emptyMap;
+import static org.osgi.service.messaging.Features.GUARANTEED_DELIVERY;
 import static org.osgi.service.messaging.Features.QOS;
 
 import java.nio.ByteBuffer;
@@ -29,8 +30,18 @@ import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserPropertiesBuilder;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishBuilder.Send.Complete;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishResult;
 
+//@formatter:off
+@MessagingFeature(
+        name = MESSAGE_PUBLISHER,
+        protocol = MQTT_PROTOCOL,
+        feature = {
+                QOS,
+                RETAIN,
+                USER_PROPERTIES,
+                GUARANTEED_DELIVERY,
+                MESSAGE_EXPIRY_INTERVAL })
+//@formatter:on
 @Component(service = { MessagePublisher.class, SimpleMessagePublisher.class })
-@MessagingFeature(name = MESSAGE_PUBLISHER, protocol = MQTT_PROTOCOL)
 public final class SimpleMessagePublisher implements MessagePublisher {
 
     @Reference
@@ -63,12 +74,13 @@ public final class SimpleMessagePublisher implements MessagePublisher {
                 channel = context.getChannel();
             }
             final Map<String, Object> extensions = context.getExtensions();
+
             final String contentType = context.getContentType();
             final String ctxCorrelationId = context.getCorrelationId();
             final String correlationId = ctxCorrelationId != null ? ctxCorrelationId : UUID.randomUUID().toString();
             final ByteBuffer content = message.payload();
             final Long messageExpiryInterval = (Long) extensions.getOrDefault(MESSAGE_EXPIRY_INTERVAL, null);
-            final int qos = (int) extensions.getOrDefault(QOS, DEFAULT_QOS.getCode());
+            final int qos = findQoS(extensions);
             final boolean retain = (boolean) extensions.getOrDefault(RETAIN, false);
 
             @SuppressWarnings("unchecked")

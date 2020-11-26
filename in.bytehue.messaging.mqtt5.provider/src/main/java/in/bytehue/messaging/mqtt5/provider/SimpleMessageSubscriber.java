@@ -4,11 +4,14 @@ import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish.DEFAULT_
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.MQTT_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.Component.MESSAGE_SUBSCRIBER;
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.Extension.RECEIVE_LOCAL;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.acknowledgeMessage;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.findQoS;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.findServiceRefAsDTO;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.initChannelDTO;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.toMessage;
 import static java.util.Objects.requireNonNull;
+import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
 import static org.osgi.service.messaging.Features.QOS;
 
 import java.util.HashMap;
@@ -33,7 +36,16 @@ import org.osgi.util.pushstream.SimplePushEventSource;
 
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 
-@MessagingFeature(name = MESSAGE_SUBSCRIBER, protocol = MQTT_PROTOCOL)
+//@formatter:off
+@MessagingFeature(
+        name = MESSAGE_SUBSCRIBER,
+        protocol = MQTT_PROTOCOL,
+        feature = {
+                QOS,
+                RETAIN,
+                ACKNOWLEDGE,
+                RECEIVE_LOCAL })
+//@formatter:on
 @Component(service = { MessageSubscription.class, SimpleMessageSubscriber.class })
 public final class SimpleMessageSubscriber implements MessageSubscription {
 
@@ -74,15 +86,19 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
             final SimpleMessageContext ctx = (SimpleMessageContext) context;
             requireNonNull(channel, "Channel cannot be null");
             final Map<String, Object> extensions = context.getExtensions();
-            int qos = DEFAULT_QOS.getCode();
+
+            int qos;
             boolean receiveLocal;
+            boolean retainAsPublished;
 
             if (extensions != null) {
-                qos = (int) extensions.getOrDefault(QOS, DEFAULT_QOS.getCode());
+                qos = findQoS(extensions);
                 receiveLocal = (boolean) extensions.getOrDefault(RECEIVE_LOCAL, false);
+                retainAsPublished = (boolean) extensions.getOrDefault(RETAIN, false);
             } else {
                 qos = DEFAULT_QOS.getCode();
                 receiveLocal = true;
+                retainAsPublished = false;
             }
             subscriptions.put(stream, initChannelDTO(channel, null, true));
 
@@ -91,6 +107,7 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
                                   .topicFilter(channel)
                                   .qos(MqttQos.fromCode(qos))
                                   .noLocal(receiveLocal)
+                                  .retainAsPublished(retainAsPublished)
                                   .callback(p -> {
                                       final SimpleMessageContextBuilder mcb = mcbFactory.getService();
                                       try {
@@ -103,10 +120,14 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
                                       }
                                   })
                                   .send();
-            // @formatter:on
             stream.onClose(() -> {
                 final ChannelDTO dto = subscriptions.get(stream);
                 dto.connected = false;
+                messagingClient.client.unsubscribeWith()
+                                      .addTopicFilter(channel)
+                                      .send();
+                // @formatter:on
+
             });
             return stream;
         } catch (final Exception e) {
@@ -132,4 +153,5 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
 
         return subscriptionDTO;
     }
+
 }

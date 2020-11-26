@@ -1,12 +1,15 @@
 package in.bytehue.messaging.mqtt5.provider.helper;
 
+import static com.hivemq.client.mqtt.datatypes.MqttQos.EXACTLY_ONCE;
 import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatIndicator.UTF_8;
+import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish.DEFAULT_QOS;
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.MQTT_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.Extension.USER_PROPERTIES;
 import static java.util.stream.Collectors.toMap;
 import static org.osgi.framework.Constants.OBJECTCLASS;
 import static org.osgi.framework.Constants.SERVICE_RANKING;
+import static org.osgi.service.messaging.Features.GUARANTEED_DELIVERY;
 import static org.osgi.service.messaging.Features.QOS;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.ACKNOWLEDGED;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.RECEIVED;
@@ -224,6 +227,14 @@ public final class MessageHelper {
         dto.connected = isConnected;
 
         return dto;
+    }
+
+    public static int findQoS(final Map<String, Object> extensions) {
+        final boolean isGuaranteedDelivery = (boolean) extensions.getOrDefault(GUARANTEED_DELIVERY, false);
+        if (isGuaranteedDelivery) {
+            return EXACTLY_ONCE.getCode();
+        }
+        return (int) extensions.getOrDefault(QOS, DEFAULT_QOS.getCode());
     }
 
     public static String asString(final MqttUtf8String string) {

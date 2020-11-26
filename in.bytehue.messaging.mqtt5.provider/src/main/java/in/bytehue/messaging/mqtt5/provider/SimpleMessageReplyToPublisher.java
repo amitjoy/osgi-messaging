@@ -36,19 +36,21 @@ import org.osgi.util.pushstream.PushStream;
 import in.bytehue.messaging.mqtt5.provider.SimpleMessageReplyToPublisher.Config;
 import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 
+//@formatter:off
 @Designate(ocd = Config.class)
 @ProvideMessagingReplyToFeature
 @Component(configurationPid = PUBLISHER)
 @ProvideMessagingReplyToManySubscribeFeature
-@MessagingFeature( //
-        name = MESSAGE_REPLY_TO_PUBLISHER, //
-        protocol = MQTT_PROTOCOL, //
-        feature = { //
-                REPLY_TO, //
-                REPLY_TO_MANY_PUBLISH, //
-                REPLY_TO_MANY_SUBSCRIBE, //
-                GENERATE_CORRELATION_ID, //
+@MessagingFeature(
+        name = MESSAGE_REPLY_TO_PUBLISHER,
+        protocol = MQTT_PROTOCOL,
+        feature = {
+                REPLY_TO,
+                REPLY_TO_MANY_PUBLISH,
+                REPLY_TO_MANY_SUBSCRIBE,
+                GENERATE_CORRELATION_ID,
                 GENERATE_REPLY_CHANNEL })
+//@formatter:on
 public final class SimpleMessageReplyToPublisher implements ReplyToPublisher, ReplyToManyPublisher {
 
     @ObjectClassDefinition( //

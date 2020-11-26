@@ -58,7 +58,7 @@ public interface Features {
      *
      * @since 1.0
      */
-    String GUARANTEED_ORDERING = "guaranteedOrdering";
+    String GUARANTEED_ORDERING = "guaranteedOrdering"; // TODO does MQTT support it?
 
     /**
      * The name of the the {@code Guaranteed Delivery} extension of the Messaging specification
@@ -72,7 +72,7 @@ public interface Features {
      *
      * @since 1.0
      */
-    String AUTO_ACKNOWLEDGE = "autoAcknowledge";
+    String AUTO_ACKNOWLEDGE = "autoAcknowledge"; // TODO what is it?
 
     /**
      * The name of the the {@code Last Will} extension of the Messaging specification
