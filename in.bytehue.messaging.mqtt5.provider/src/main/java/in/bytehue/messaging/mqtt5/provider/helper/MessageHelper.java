@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.osgi.dto.DTO;
@@ -196,6 +197,20 @@ public final class MessageHelper {
             ctx.acknowledgeState = UNSUPPORTED;
             return false;
         }
+    }
+
+    public static Message prepareExceptionAsMessage(final Throwable t, final MessageContextBuilder mcb) {
+        final Optional<String> message = Optional.ofNullable(t.getMessage());
+        return mcb.content(ByteBuffer.wrap(message.orElse(stackTraceToString(t)).getBytes())).buildMessage();
+    }
+
+    public static String stackTraceToString(final Throwable t) {
+        String result = t.toString() + "\n";
+        final StackTraceElement[] trace = t.getStackTrace();
+        for (final StackTraceElement element : trace) {
+            result += element.toString() + "\n";
+        }
+        return result;
     }
 
     public static ChannelDTO initChannelDTO(final String name, final String extension, final boolean isConnected) {

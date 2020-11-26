@@ -3,6 +3,7 @@ package in.bytehue.messaging.mqtt5.provider;
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.MQTT_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.Component.MESSAGE_RUNTIME;
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.Component.PROVIDER;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.findServiceRefAsDTO;
 import static org.osgi.framework.Constants.SERVICE_ID;
 import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
 import static org.osgi.service.messaging.Features.AUTO_ACKNOWLEDGE;
@@ -23,8 +24,6 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.messaging.dto.MessagingRuntimeDTO;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
 import org.osgi.service.messaging.runtime.MessageServiceRuntime;
-
-import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
 
 @Component
 @MessagingFeature(name = MESSAGE_RUNTIME, protocol = MQTT_PROTOCOL)
@@ -52,7 +51,7 @@ public final class SimpleMessageServiceRuntime implements MessageServiceRuntime 
             final MessagingRuntimeDTO dto = new MessagingRuntimeDTO();
 
             dto.connectionURI = client.client.getConfig().getServerHost();
-            dto.serviceDTO = MessageHelper.findServiceRefAsDTO(MessageServiceRuntime.class, bundleContext);
+            dto.serviceDTO = findServiceRefAsDTO(MessageServiceRuntime.class, bundleContext);
 
             // @formatter:off
             dto.features = new String[] {

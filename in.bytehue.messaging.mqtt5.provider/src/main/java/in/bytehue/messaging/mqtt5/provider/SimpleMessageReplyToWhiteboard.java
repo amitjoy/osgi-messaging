@@ -6,13 +6,13 @@ import static in.bytehue.messaging.mqtt5.api.MessageConstants.Component.MESSAGE_
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.findServiceRefAsDTO;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getServiceReferenceDTO;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.initChannelDTO;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.prepareExceptionAsMessage;
 import static org.osgi.framework.Constants.OBJECTCLASS;
 import static org.osgi.service.component.annotations.ReferenceCardinality.MULTIPLE;
 import static org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC;
 import static org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED;
 import static org.osgi.service.messaging.Features.REPLY_TO;
 
-import java.nio.ByteBuffer;
 import java.util.Dictionary;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -122,11 +122,6 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
         // @formatter:off
         subscriber.subscribe(replyToDTO.subChannel)
                   .map(m -> handleResponses(m, handler))
-                  .onClose(() -> {
-                      final ReplyToSubscriptionDTO dto = subscriptions.get(reference);
-                      dto.requestChannel.connected = false;
-                      dto.responseChannel.connected = false;
-                  })
                   .flatMap(m -> m)
                   .onClose(replyToDTO::close)
                   .forEach(m -> publisher.publish(m, replyToDTO.subChannel));
@@ -147,24 +142,23 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
         return new ReplyToSubscriptionDTO[] { dto };
     }
 
+    private Message handleResponse(final Message request, final ReplyToSingleSubscriptionHandler handler) {
+        final SimpleMessageContextBuilder mcb = initResponse(request);
+        try {
+            return handler.handleResponse(request, mcb).getValue();
+        } catch (final Exception e) {
+            return prepareExceptionAsMessage(e, mcb);
+        } finally {
+            mcbFactory.ungetService(mcb);
+        }
+    }
+
     private SimpleMessageContextBuilder initResponse(final Message request) {
         final MessageContext context = request.getContext();
         final String channel = context.getReplyToChannel();
         final String correlation = context.getCorrelationId();
         final MessageContextBuilder builder = mcbFactory.getService().channel(channel).correlationId(correlation);
         return (SimpleMessageContextBuilder) builder;
-    }
-
-    private Message handleResponse(final Message request, final ReplyToSingleSubscriptionHandler handler) {
-        final SimpleMessageContextBuilder mcb = initResponse(request);
-        try {
-            return handler.handleResponse(request, mcb).getValue();
-        } catch (final Exception e) {
-            final Message error = mcb.content(ByteBuffer.wrap(e.getMessage().getBytes())).buildMessage();
-            return error;
-        } finally {
-            mcbFactory.ungetService(mcb);
-        }
     }
 
     private PushStream<Message> handleResponses(final Message request, final ReplyToManySubscriptionHandler handler) {
@@ -203,7 +197,7 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
 
             if (subChannel == null) {
                 throw new RuntimeException(
-                        "The " + reference + " handler instance doesn't specify the reply-to subscription channel");
+                        "The '" + reference + "' handler instance doesn't specify the reply-to subscription channel");
             }
             if (pubChannel == null) {
                 boolean isMissingPubChannelAllowed = false;
@@ -217,11 +211,13 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
                 }
                 if (!isMissingPubChannelAllowed) {
                     throw new RuntimeException(
-                            "The " + reference + " handler instance doesn't specify the reply-to publish channel");
+                            "The '" + reference + "' handler instance doesn't specify the reply-to publish channel");
                 }
             }
-            final ChannelDTO pubDTO = initChannelDTO(pubChannel, null, true);
-            final ChannelDTO subDTO = initChannelDTO(subChannel, null, true);
+            // TODO does MQTT support routing key? I think AMQP does but not MQTT.
+            final String rountingKey = null; // no routing key for MQTT
+            final ChannelDTO pubDTO = initChannelDTO(pubChannel, rountingKey, true);
+            final ChannelDTO subDTO = initChannelDTO(subChannel, rountingKey, true);
 
             final ReplyToSubscriptionDTO subscriptionDTO = initReplyToSubscriptionDTO(pubDTO, subDTO, reference);
             subscriptions.put(reference, subscriptionDTO);

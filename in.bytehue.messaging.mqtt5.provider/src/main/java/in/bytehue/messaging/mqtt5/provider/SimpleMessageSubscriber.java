@@ -9,7 +9,6 @@ import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.findServi
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.initChannelDTO;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.toMessage;
 import static java.util.Objects.requireNonNull;
-import static org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED;
 import static org.osgi.service.messaging.Features.QOS;
 
 import java.util.HashMap;
@@ -49,7 +48,7 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
     @Reference
     private SimpleMessageClient messagingClient;
 
-    @Reference(scope = PROTOTYPE_REQUIRED)
+    @Reference
     private ComponentServiceObjects<SimpleMessageContextBuilder> mcbFactory;
 
     private final Map<PushStream<Message>, ChannelDTO> subscriptions = new HashMap<>();
