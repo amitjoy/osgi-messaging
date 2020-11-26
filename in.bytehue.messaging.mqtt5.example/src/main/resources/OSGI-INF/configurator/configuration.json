@@ -1,0 +1,7 @@
+{
+    ":configurator:resource-version" : 1,
+    
+    "org.osgi.service.log.admin" : {
+       "ROOT": "DEBUG"
+    }
+}
