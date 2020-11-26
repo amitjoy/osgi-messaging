@@ -1,5 +1,6 @@
 package in.bytehue.messaging.mqtt5.provider;
 
+import static com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode.NORMAL_DISCONNECTION;
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.PID.CLIENT;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.osgi.service.metatype.annotations.AttributeType.PASSWORD;
@@ -27,6 +28,7 @@ import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5ClientBuilder;
 import com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism;
 import com.hivemq.client.mqtt.mqtt5.message.connect.connack.Mqtt5ConnAck;
+import com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode;
 
 import in.bytehue.messaging.mqtt5.provider.SimpleMessageClient.Config;
 import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
@@ -123,8 +125,15 @@ public final class SimpleMessageClient {
 
         @AttributeDefinition(name = "Enhanced Authentication Service Filter")
         String enhancedAuthTargetFilter() default "";
+
+        @AttributeDefinition(name = "Reason for the disconnection when the component is stopped")
+        String disconnectionReasonDescription() default "OSGi Component Deactivated";
+
+        @AttributeDefinition(name = "Code for the disconnection when the component is stopped")
+        Mqtt5DisconnectReasonCode disconnectionReasonCode() default NORMAL_DISCONNECTION;
     }
 
+    Config config;
     Mqtt5AsyncClient client;
 
     @Activate
@@ -133,6 +142,7 @@ public final class SimpleMessageClient {
             final Config config, //
             @Reference(service = LoggerFactory.class) final Logger logger) {
 
+        this.config = config;
         final String clientId = config.id() != null ? config.id() : UUID.randomUUID().toString();
         // @formatter:off
         final Mqtt5ClientBuilder clientBuilder = Mqtt5Client.builder()
@@ -202,7 +212,12 @@ public final class SimpleMessageClient {
 
     @Deactivate
     void deactivate() {
-        client.disconnect();
+        // @formatter:off
+        client.disconnectWith()
+              .reasonCode(config.disconnectionReasonCode())
+              .reasonString(config.disconnectionReasonDescription())
+              .send();
+        // @formatter:on
     }
 
     private TrustManagerFactory getTrustManagerFactory(final Config config, final BundleContext bundleContext) {

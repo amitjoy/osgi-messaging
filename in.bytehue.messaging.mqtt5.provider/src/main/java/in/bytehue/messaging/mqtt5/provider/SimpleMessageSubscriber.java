@@ -3,6 +3,7 @@ package in.bytehue.messaging.mqtt5.provider;
 import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish.DEFAULT_QOS;
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.MQTT_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.MessageConstants.Component.MESSAGE_SUBSCRIBER;
+import static in.bytehue.messaging.mqtt5.api.MessageConstants.Extension.RECEIVE_LOCAL;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.acknowledgeMessage;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.findServiceRefAsDTO;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.initChannelDTO;
@@ -36,6 +37,8 @@ import com.hivemq.client.mqtt.datatypes.MqttQos;
 @MessagingFeature(name = MESSAGE_SUBSCRIBER, protocol = MQTT_PROTOCOL)
 @Component(service = { MessageSubscription.class, SimpleMessageSubscriber.class })
 public final class SimpleMessageSubscriber implements MessageSubscription {
+
+    // TODO how to unsubscribe?
 
     @Activate
     private BundleContext bundleContext;
@@ -73,19 +76,22 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
             requireNonNull(channel, "Channel cannot be null");
             final Map<String, Object> extensions = context.getExtensions();
             int qos = DEFAULT_QOS.getCode();
+            boolean receiveLocal;
 
             if (extensions != null) {
                 qos = (int) extensions.getOrDefault(QOS, DEFAULT_QOS.getCode());
+                receiveLocal = (boolean) extensions.getOrDefault(RECEIVE_LOCAL, false);
             } else {
                 qos = DEFAULT_QOS.getCode();
+                receiveLocal = true;
             }
             subscriptions.put(stream, initChannelDTO(channel, null, true));
 
             // @formatter:off
-            messagingClient.client.toAsync()
-                                  .subscribeWith()
+            messagingClient.client.subscribeWith()
                                   .topicFilter(channel)
                                   .qos(MqttQos.fromCode(qos))
+                                  .noLocal(receiveLocal)
                                   .callback(p -> {
                                       final SimpleMessageContextBuilder mcb = mcbFactory.getService();
                                       try {

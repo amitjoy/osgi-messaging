@@ -5,6 +5,7 @@ package in.bytehue.messaging.mqtt5.api;
  */
 public final class MessageConstants {
 
+    // TODO add copyright headers
     private MessageConstants() {
         throw new IllegalAccessError("Non-Instantiable");
     }
@@ -93,25 +94,38 @@ public final class MessageConstants {
         }
 
         /**
-         * The name of the {@code Message Expiry Interval} extension of the Messaging specification
+         * The name of the {@code Message Expiry Interval} extension of the Messaging specification.
+         * An integer value indicates the expiry interval of the messages.
          *
          * @since 1.0
          */
         public static final String MESSAGE_EXPIRY_INTERVAL = "messageExpiryInterval";
 
         /**
-         * The name of the {@code Message Retain} extension of the Messaging specification
+         * The name of the {@code Message Retain} extension of the Messaging specification.
+         * This indicates the message will be retained. A value of {code true} ensures
+         * successful retention of messages.
          *
          * @since 1.0
          */
         public static final String RETAIN = "retain";
 
         /**
-         * The name of the {@code User Properties} extension of the Messaging specification
+         * The name of the {@code User Properties} extension of the Messaging specification.
+         * A {@code Map&lt;String,String&gt; can be provided}.
          *
          * @since 1.0
          */
         public static final String USER_PROPERTIES = "userProperties";
+
+        /**
+         * The name of the {@code Local} extension of the Messaging specification. This ensures
+         * if we want to receive our own messages. A value of {code true} ascertains the receipt
+         * of own messages.
+         *
+         * @since 1.0
+         */
+        public static final String RECEIVE_LOCAL = "receiveLocal";
     }
 
     /**

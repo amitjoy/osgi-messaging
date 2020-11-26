@@ -59,17 +59,17 @@ public final class SimpleMessageReplyToPublisher implements ReplyToPublisher, Re
         @AttributeDefinition(name = "Prefix of the thread name")
         String threadNamePrefix() default "mqtt-replyto-publisher";
 
-        @AttributeDefinition(name = "Suffix of the thread name")
+        @AttributeDefinition(name = "Suffix of the thread name (supports only {@code %d} format specifier)")
         String threadNameSuffix() default "-%d";
     }
-
-    private final PromiseFactory factory;
 
     @Reference
     private SimpleMessagePublisher publisher;
 
     @Reference
     private SimpleMessageSubscriber subscriber;
+
+    private final PromiseFactory promiseFactory;
 
     @Activate
     public SimpleMessageReplyToPublisher(final Config config) {
@@ -78,7 +78,7 @@ public final class SimpleMessageReplyToPublisher implements ReplyToPublisher, Re
                         .setThreadFactoryName(config.threadNamePrefix()) //
                         .setThreadNameFormat(config.threadNameSuffix()) //
                         .build();
-        factory = new PromiseFactory(Executors.newFixedThreadPool(config.numThreads(), threadFactory));
+        promiseFactory = new PromiseFactory(Executors.newFixedThreadPool(config.numThreads(), threadFactory));
     }
 
     @Override
@@ -90,7 +90,7 @@ public final class SimpleMessageReplyToPublisher implements ReplyToPublisher, Re
     public Promise<Message> publishWithReply(final Message requestMessage, final MessageContext replyToContext) {
         autoGenerateMissingConfigs(requestMessage);
 
-        final Deferred<Message> deferred = factory.deferred();
+        final Deferred<Message> deferred = promiseFactory.deferred();
         final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
 
         // @formatter:off

@@ -9,6 +9,8 @@ import org.osgi.service.messaging.MessageContext;
 
 public final class SimpleMessage implements Message {
 
+    // TODO add gogo command to pub/sub
+
     public ByteBuffer byteBuffer;
     public MessageContext messageContext;
 

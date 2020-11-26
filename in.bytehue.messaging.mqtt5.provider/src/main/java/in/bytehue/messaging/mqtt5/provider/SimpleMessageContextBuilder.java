@@ -128,7 +128,10 @@ public final class SimpleMessageContextBuilder implements MessageContextBuilder,
 
     @Override
     public MessageContextBuilder channel(final String channelName, final String channelExtension) {
-        // TODO Auto-generated method stub
+        // TODO Can we configure routing keys?
+        // routing key ('channelExtension') is only required for AMQP
+        channel(channelName);
+        logger.debug("Channel extension will be ignored");
         return this;
     }
 
@@ -155,8 +158,6 @@ public final class SimpleMessageContextBuilder implements MessageContextBuilder,
         }
         return this;
     }
-
-    // ACKNOWLEDGES
 
     @Override
     public AcknowledgeMessageContextBuilder handleAcknowledge(final Consumer<Message> acknowledgeHandler) {
