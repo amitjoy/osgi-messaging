@@ -44,7 +44,7 @@ public final class SimpleMessageContextBuilder implements MessageContextBuilder,
     private final Logger logger;
     private final SimpleMessage message;
     private final BundleContext bundleContext;
-    private SimpleMessageContext messageContext;
+    private final SimpleMessageContext messageContext;
 
     @Activate
     public SimpleMessageContextBuilder( //
@@ -55,6 +55,8 @@ public final class SimpleMessageContextBuilder implements MessageContextBuilder,
         this.bundleContext = bundleContext;
         message = new SimpleMessage();
         messageContext = new SimpleMessageContext();
+
+        message.messageContext = messageContext;
         messageContext.protocolSpecificAcknowledgeHandler = acknowledgeHandler;
     }
 
@@ -71,7 +73,7 @@ public final class SimpleMessageContextBuilder implements MessageContextBuilder,
     @Override
     public MessageContextBuilder withContext(final MessageContext context) {
         if (context instanceof SimpleMessageContext) {
-            messageContext = (SimpleMessageContext) context;
+            message.messageContext = context;
         }
         return this;
     }

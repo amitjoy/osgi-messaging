@@ -26,6 +26,7 @@ import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5ClientBuilder;
 import com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism;
+import com.hivemq.client.mqtt.mqtt5.message.connect.connack.Mqtt5ConnAck;
 
 import in.bytehue.messaging.mqtt5.provider.SimpleMessageClient.Config;
 import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
@@ -48,11 +49,17 @@ public final class SimpleMessageClient {
         @AttributeDefinition(name = "Automatic Reconnection")
         boolean automticReconnect() default false;
 
+        @AttributeDefinition(name = "Resume Previously Established Session")
+        boolean cleanStart() default false;
+
         @AttributeDefinition(name = "Initial Delay if Automatic Reconnection is enabled")
         long initialDelay() default 1L;
 
         @AttributeDefinition(name = "Max Delay if Automatic Reconnection is enabled")
         long maxDelay() default 30L;
+
+        @AttributeDefinition(name = "Keep Session State")
+        long sessionExpiryInterval() default 30L;
 
         @AttributeDefinition(name = "Server Port", min = "1", max = "65535")
         int port() default 1883;
@@ -120,26 +127,27 @@ public final class SimpleMessageClient {
 
     Mqtt5AsyncClient client;
 
-    private final Logger logger;
-
     @Activate
     public SimpleMessageClient( //
             final BundleContext bundleContext, //
             final Config config, //
             @Reference(service = LoggerFactory.class) final Logger logger) {
-        this.logger = logger;
+
         final String clientId = config.id() != null ? config.id() : UUID.randomUUID().toString();
         // @formatter:off
         final Mqtt5ClientBuilder clientBuilder = Mqtt5Client.builder()
                                                             .identifier(clientId)
                                                             .serverHost(config.server())
                                                             .serverPort(config.port());
+
+        logger.debug("Applying automatic reconnect configuration");
         if (config.automticReconnect()) {
-            logger.debug("Applying automatic reconnect configuration");
             clientBuilder.automaticReconnect()
                              .initialDelay(config.initialDelay(), SECONDS)
                              .maxDelay(config.maxDelay(), SECONDS)
                          .applyAutomaticReconnect();
+        } else {
+            clientBuilder.automaticReconnectWithDefaultConfig();
         }
         if (config.simpleAuth()) {
             logger.debug("Applying Simple authentiation configuration");
@@ -172,20 +180,24 @@ public final class SimpleMessageClient {
             logger.debug("Applying Enhanced Authentication configuration");
             clientBuilder.enhancedAuth(getEnhancedAuth(config, bundleContext));
         }
-        // restrictions
-        logger.debug("Applying Server Restrictions");
-        clientBuilder.buildAsync()
-                     .connectWith()
-                     .restrictions()
-                         .receiveMaximum(config.receiveMaximum())
-                         .sendMaximum(config.sendMaximum())
-                         .maximumPacketSize(config.maximumPacketSize())
-                         .sendMaximumPacketSize(config.sendMaximumPacketSize())
-                         .sendTopicAliasMaximum(config.topicAliasMaximum())
-                     .applyRestrictions();
+
+        client = clientBuilder.buildAsync();
+
+        final Mqtt5ConnAck connAck = client.toBlocking()
+                                           .connectWith()
+                                           .cleanStart(config.cleanStart())
+                                           .sessionExpiryInterval(config.sessionExpiryInterval())
+                                           .restrictions()
+                                               .receiveMaximum(config.receiveMaximum())
+                                               .sendMaximum(config.sendMaximum())
+                                               .maximumPacketSize(config.maximumPacketSize())
+                                               .sendMaximumPacketSize(config.sendMaximumPacketSize())
+                                               .sendTopicAliasMaximum(config.topicAliasMaximum())
+                                           .applyRestrictions()
+                                           .send();
 
         // @formatter:on
-        client = clientBuilder.buildAsync();
+        logger.debug("Connection successfully established - {}", connAck);
     }
 
     @Deactivate
@@ -202,9 +214,9 @@ public final class SimpleMessageClient {
                         bundleContext);
             // @formatter:on
         } catch (final Exception e) {
-            logger.error("MQTT SSL Configuration Failed {}", e);
+            throw new RuntimeException(
+                    "MQTT SSL Configuration Failed since specified'TrustManagerFactory' service is not found");
         }
-        return null;
     }
 
     private Mqtt5EnhancedAuthMechanism getEnhancedAuth(final Config config, final BundleContext bundleContext) {
@@ -216,9 +228,9 @@ public final class SimpleMessageClient {
                     bundleContext);
             // @formatter:on
         } catch (final Exception e) {
-            logger.error("MQTT Enhanced Authentication Configuration Failed {}", e);
+            throw new RuntimeException(
+                    "MQTT Enhanced Authentication Configuration Failed since 'Mqtt5EnhancedAuthMechanism' service is not found");
         }
-        return null;
     }
 
 }

@@ -185,6 +185,8 @@ public final class MessageHelper {
                 } else {
                     ctx.acknowledgeState = REJECTED;
                 }
+            } else {
+                interimConsumer.accept(message);
             }
             if (ctx.acknowledgeConsumer != null) {
                 ctx.acknowledgeConsumer.accept(message);

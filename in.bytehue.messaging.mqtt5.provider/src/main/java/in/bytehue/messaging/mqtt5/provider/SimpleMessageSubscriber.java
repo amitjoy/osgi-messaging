@@ -19,6 +19,8 @@ import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.log.Logger;
+import org.osgi.service.log.LoggerFactory;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageSubscription;
@@ -38,6 +40,9 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
     @Activate
     private BundleContext bundleContext;
 
+    @Reference(service = LoggerFactory.class)
+    private Logger logger;
+
     @Reference
     private SimpleMessageClient messagingClient;
 
@@ -56,43 +61,53 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
         return subscribe(context, null);
     }
 
-    private PushStream<Message> subscribe(final MessageContext context, String channel) {
+    private PushStream<Message> subscribe(MessageContext context, final String channel) {
         final PushStreamProvider provider = new PushStreamProvider();
         final SimplePushEventSource<Message> source = provider.createSimpleEventSource(Message.class);
         final PushStream<Message> stream = provider.createStream(source);
+        try {
+            if (context == null) {
+                context = mcbFactory.getService().channel(channel).buildContext();
+            }
+            final SimpleMessageContext ctx = (SimpleMessageContext) context;
+            requireNonNull(channel, "Channel cannot be null");
+            final Map<String, Object> extensions = context.getExtensions();
+            int qos = DEFAULT_QOS.getCode();
 
-        if (context != null) {
-            channel = context.getChannel();
+            if (extensions != null) {
+                qos = (int) extensions.getOrDefault(QOS, DEFAULT_QOS.getCode());
+            } else {
+                qos = DEFAULT_QOS.getCode();
+            }
+            subscriptions.put(stream, initChannelDTO(channel, null, true));
+
+            // @formatter:off
+            messagingClient.client.toAsync()
+                                  .subscribeWith()
+                                  .topicFilter(channel)
+                                  .qos(MqttQos.fromCode(qos))
+                                  .callback(p -> {
+                                      final SimpleMessageContextBuilder mcb = mcbFactory.getService();
+                                      try {
+                                          final Message message = toMessage(p, mcb);
+                                          acknowledgeMessage(message, ctx, m -> source.publish(m));
+                                      } catch (final Throwable e) {
+                                          source.error(e);
+                                      } finally {
+                                        mcbFactory.ungetService(mcb);
+                                      }
+                                  })
+                                  .send();
+            // @formatter:on
+            stream.onClose(() -> {
+                final ChannelDTO dto = subscriptions.get(stream);
+                dto.connected = false;
+            });
+            return stream;
+        } catch (final Exception e) {
+            logger.error("Error while subscribing to {}", channel, e);
+            throw e;
         }
-        requireNonNull(channel, "Channel cannot be null");
-        final Map<String, Object> extensions = context.getExtensions();
-        final int qos = (int) extensions.getOrDefault(QOS, DEFAULT_QOS);
-
-        subscriptions.put(stream, initChannelDTO(channel, null, true));
-
-        // @formatter:off
-        messagingClient.client.toAsync()
-                              .subscribeWith()
-                              .topicFilter(channel)
-                              .qos(MqttQos.fromCode(qos))
-                              .callback(p -> {
-                                  final SimpleMessageContextBuilder mcb = mcbFactory.getService();
-                                  try {
-                                      final Message message = toMessage(p, mcb);
-                                      final SimpleMessageContext ctx = (SimpleMessageContext) context;
-                                      acknowledgeMessage(message, ctx, m -> source.publish(m));
-                                  } finally {
-                                      mcbFactory.ungetService(mcb);
-                                  }
-                              })
-                              .send();
-        // @formatter:on
-
-        stream.onClose(() -> {
-            final ChannelDTO dto = subscriptions.get(stream);
-            dto.connected = false;
-        });
-        return stream;
     }
 
     public SubscriptionDTO[] getSubscriptionDTOs() {

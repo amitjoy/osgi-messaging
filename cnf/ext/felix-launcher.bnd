@@ -1,9 +1,9 @@
 -runblacklist                   =         org.osgi.service.messaging 
 -runrepos                       =         Runtime, Workspace
 -runfw                          =         org.apache.felix.framework
+-runtrace                       =         true 
 -runee                          =         JavaSE-1.8
 -runvm                          =         -ea
--runtrace                       =         true
 -runsystempackages              =         com.sun.management,\
                                           sun.misc,\
                                           sun.net,\

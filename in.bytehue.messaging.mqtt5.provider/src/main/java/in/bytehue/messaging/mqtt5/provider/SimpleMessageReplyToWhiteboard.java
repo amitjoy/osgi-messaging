@@ -6,6 +6,7 @@ import static in.bytehue.messaging.mqtt5.api.ExtendedMessagingConstants.MQTT_PRO
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.findServiceRefAsDTO;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getServiceReferenceDTO;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.initChannelDTO;
+import static org.osgi.service.component.annotations.ReferenceCardinality.MULTIPLE;
 import static org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC;
 import static org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED;
 
@@ -42,7 +43,7 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
     // @formatter:off
     public static final String FILTER_HANDLER = ""
             + "(osgi.messaging.replyToSubscription.target="
-            + "(&(osgi.messaging.name=" + MQTT_MESSAGING_NAME + ")" // TODO think about user-defined name
+            + "(&(osgi.messaging.name=" + MQTT_MESSAGING_NAME + ")"
             + FILTER_MQTT
             + "(osgi.messaging.feature=replyTo)))";
     // @formatter:on
@@ -61,7 +62,7 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
 
     private final Map<ServiceReference<?>, ReplyToSubscriptionDTO> subscriptions = new ConcurrentHashMap<>();
 
-    @Reference(policy = DYNAMIC, target = FILTER_HANDLER)
+    @Reference(policy = DYNAMIC, cardinality = MULTIPLE, target = FILTER_HANDLER)
     synchronized void bindReplyToSingleSubscriptionHandler( //
             final ReplyToSingleSubscriptionHandler handler, //
             final ServiceReference<?> reference) {
@@ -80,7 +81,7 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
         subscriptions.remove(reference);
     }
 
-    @Reference(policy = DYNAMIC, target = FILTER_HANDLER)
+    @Reference(policy = DYNAMIC, cardinality = MULTIPLE, target = FILTER_HANDLER)
     synchronized void bindReplyToSubscriptionHandler( //
             final ReplyToSubscriptionHandler handler, //
             final ServiceReference<?> reference) {
@@ -98,7 +99,7 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
         subscriptions.remove(reference);
     }
 
-    @Reference(policy = DYNAMIC, target = FILTER_HANDLER)
+    @Reference(policy = DYNAMIC, cardinality = MULTIPLE, target = FILTER_HANDLER)
     synchronized void bindReplyToManySubscriptionHandler( //
             final ReplyToManySubscriptionHandler handler, //
             final ServiceReference<?> reference) {
