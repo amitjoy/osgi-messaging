@@ -3,9 +3,9 @@ package org.osgi.service.messaging;
 /**
  * Defines standard constants for the messaging specification.
  */
-public final class MessagingConstants {
+public final class MessageConstants {
 
-    private MessagingConstants() {
+    private MessageConstants() {
         // non-instantiable
     }
 

@@ -1,8 +1,23 @@
+/*******************************************************************************
+ * Copyright 2020 Amit Kumar Mondal
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
-import static in.bytehue.messaging.mqtt5.api.MessageConstants.MESSAGING_ID;
-import static in.bytehue.messaging.mqtt5.api.MessageConstants.MQTT_PROTOCOL;
-import static in.bytehue.messaging.mqtt5.api.MessageConstants.Component.MESSAGE_WHITEBOARD;
+import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MESSAGING_ID;
+import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MQTT_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Component.MESSAGE_WHITEBOARD;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.findServiceRefAsDTO;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getServiceReferenceDTO;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.initChannelDTO;
@@ -214,7 +229,6 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
                             "The '" + reference + "' handler instance doesn't specify the reply-to publish channel");
                 }
             }
-            // TODO does MQTT support routing key? I think AMQP does but not MQTT.
             final String rountingKey = null; // no routing key for MQTT
             final ChannelDTO pubDTO = initChannelDTO(pubChannel, rountingKey, true);
             final ChannelDTO subDTO = initChannelDTO(subChannel, rountingKey, true);

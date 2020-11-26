@@ -1,8 +1,8 @@
 package org.osgi.service.messaging.annotations;
 
 import static org.osgi.namespace.implementation.ImplementationNamespace.IMPLEMENTATION_NAMESPACE;
-import static org.osgi.service.messaging.MessagingConstants.MESSAGING_IMPLEMENTATION;
-import static org.osgi.service.messaging.MessagingConstants.MESSAGING_SPECIFICATION_VERSION;
+import static org.osgi.service.messaging.MessageConstants.MESSAGING_IMPLEMENTATION;
+import static org.osgi.service.messaging.MessageConstants.MESSAGING_SPECIFICATION_VERSION;
 
 import org.osgi.annotation.bundle.Capability;
 import org.osgi.service.messaging.Message;

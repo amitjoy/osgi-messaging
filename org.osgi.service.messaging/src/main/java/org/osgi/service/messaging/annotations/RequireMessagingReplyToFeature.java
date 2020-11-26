@@ -4,8 +4,8 @@ import static java.lang.annotation.ElementType.PACKAGE;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.CLASS;
 import static org.osgi.namespace.implementation.ImplementationNamespace.IMPLEMENTATION_NAMESPACE;
-import static org.osgi.service.messaging.MessagingConstants.MESSAGING_SPECIFICATION_VERSION;
-import static org.osgi.service.messaging.MessagingConstants.REPLY_TO_IMPLEMENTATION;
+import static org.osgi.service.messaging.MessageConstants.MESSAGING_SPECIFICATION_VERSION;
+import static org.osgi.service.messaging.MessageConstants.REPLY_TO_IMPLEMENTATION;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;

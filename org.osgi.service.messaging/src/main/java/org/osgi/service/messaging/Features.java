@@ -51,8 +51,6 @@ public interface Features {
      */
     String ACKNOWLEDGE = "acknowledge";
 
-    // EXTENSIONS
-
     /**
      * The name of the the {@code Guaranteed Ordering} extension of the Messaging specification
      *
