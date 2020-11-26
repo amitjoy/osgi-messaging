@@ -6,9 +6,11 @@ import static in.bytehue.messaging.mqtt5.api.MessageConstants.Component.MESSAGE_
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.findServiceRefAsDTO;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getServiceReferenceDTO;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.initChannelDTO;
+import static org.osgi.framework.Constants.OBJECTCLASS;
 import static org.osgi.service.component.annotations.ReferenceCardinality.MULTIPLE;
 import static org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC;
 import static org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED;
+import static org.osgi.service.messaging.Features.REPLY_TO;
 
 import java.nio.ByteBuffer;
 import java.util.Dictionary;
@@ -21,6 +23,8 @@ import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.log.Logger;
+import org.osgi.service.log.LoggerFactory;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageContextBuilder;
@@ -38,19 +42,27 @@ import org.osgi.util.pushstream.PushStream;
 @Component(service = { ReplyToWhiteboard.class, SimpleMessageReplyToWhiteboard.class })
 public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
 
-    public static final String FILTER_MQTT = "(osgi.messaging.protocol=" + MQTT_PROTOCOL + ")";
-
     // @formatter:off
-    // TODO Does this filter really make sense?
-    public static final String FILTER_HANDLER = ""
-            + "(osgi.messaging.replyToSubscription.target="
-            + "(&(osgi.messaging.name=" + MESSAGING_ID + ")"
-            + FILTER_MQTT
-            + "(osgi.messaging.feature=replyTo)))";
+    private static final String KEY_PROTOCOL       = "osgi.messaging.protocol";
+    private static final String KEY_SUB_CHANNEL    = "osgi.messaging.replyToSubscription.channel";
+    private static final String KEY_PUB_CHANNEL    = "osgi.messaging.replyToSubscription.replyChannel";
+
+    public static final String FILTER_MQTT         = "(" + KEY_PROTOCOL +"=" + MQTT_PROTOCOL + ")";
+    public static final String FILTER_MESSAGING_ID = "(" + KEY_PROTOCOL +"=" + MESSAGING_ID + ")";
+    public static final String FILTER_REPLY_TO     = "(" + KEY_PROTOCOL +"=" + REPLY_TO + ")";
+
+    private static final String FILTER_HANDLER =
+            "(osgi.messaging.replyToSubscription.target=(&" +
+                    FILTER_MQTT +
+                    FILTER_MESSAGING_ID +
+                    FILTER_REPLY_TO + "))";
     // @formatter:on
 
     @Activate
     private BundleContext bundleContext;
+
+    @Reference(service = LoggerFactory.class)
+    private Logger logger;
 
     @Reference
     private SimpleMessagePublisher publisher;
@@ -186,9 +198,28 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
             this.reference = reference;
             final Dictionary<String, Object> properties = reference.getProperties();
 
-            pubChannel = (String) properties.get("osgi.messaging.replyToSubscription.replyChannel");
-            subChannel = (String) properties.get("osgi.messaging.replyToSubscription.channel");
+            pubChannel = (String) properties.get(KEY_PUB_CHANNEL);
+            subChannel = (String) properties.get(KEY_SUB_CHANNEL);
 
+            if (subChannel == null) {
+                throw new RuntimeException(
+                        "The " + reference + " handler instance doesn't specify the reply-to subscription channel");
+            }
+            if (pubChannel == null) {
+                boolean isMissingPubChannelAllowed = false;
+
+                final String[] serviceTypes = (String[]) properties.get(OBJECTCLASS);
+                for (final String type : serviceTypes) {
+                    if (ReplyToSubscriptionHandler.class.getName().equals(type)) {
+                        isMissingPubChannelAllowed = true;
+                        break;
+                    }
+                }
+                if (!isMissingPubChannelAllowed) {
+                    throw new RuntimeException(
+                            "The " + reference + " handler instance doesn't specify the reply-to publish channel");
+                }
+            }
             final ChannelDTO pubDTO = initChannelDTO(pubChannel, null, true);
             final ChannelDTO subDTO = initChannelDTO(subChannel, null, true);
 

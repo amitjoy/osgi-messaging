@@ -16,6 +16,8 @@ import java.util.concurrent.ThreadFactory;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.log.Logger;
+import org.osgi.service.log.LoggerFactory;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.annotations.ProvideMessagingReplyToFeature;
@@ -62,6 +64,9 @@ public final class SimpleMessageReplyToPublisher implements ReplyToPublisher, Re
         @AttributeDefinition(name = "Suffix of the thread name (supports only {@code %d} format specifier)")
         String threadNameSuffix() default "-%d";
     }
+
+    @Reference(service = LoggerFactory.class)
+    private Logger logger;
 
     @Reference
     private SimpleMessagePublisher publisher;
@@ -126,9 +131,11 @@ public final class SimpleMessageReplyToPublisher implements ReplyToPublisher, Re
         final SimpleMessageContext context = (SimpleMessageContext) message.getContext();
         if (context.getCorrelationId() == null) {
             context.correlationId = UUID.randomUUID().toString();
+            logger.info("Auto-generated correlation ID '{}' as it is missing in the request", context.correlationId);
         }
         if (context.getReplyToChannel() == null) {
             context.replyToChannel = UUID.randomUUID().toString();
+            logger.info("Auto-generated reply-to channel '{}' as it is missing in the request", context.replyToChannel);
         }
     }
 

@@ -199,6 +199,9 @@ public final class MessageHelper {
     }
 
     public static ChannelDTO initChannelDTO(final String name, final String extension, final boolean isConnected) {
+        if (name == null) {
+            return null;
+        }
         final ChannelDTO dto = new ChannelDTO();
 
         dto.name = name;
