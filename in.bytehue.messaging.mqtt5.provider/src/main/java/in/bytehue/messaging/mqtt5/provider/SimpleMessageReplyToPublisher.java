@@ -50,7 +50,7 @@ import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 public final class SimpleMessageReplyToPublisher implements ReplyToPublisher, ReplyToManyPublisher {
 
     @ObjectClassDefinition( //
-            name = "MQTT Messaging Reply-ToPublisher Executor Configuration", //
+            name = "MQTT Messaging Reply-To Publisher Executor Configuration", //
             description = "This configuration is used to configure the internal thread pool size")
     @interface Config {
         @AttributeDefinition(name = "Number of Threads for the internal thread pool")
@@ -58,7 +58,7 @@ public final class SimpleMessageReplyToPublisher implements ReplyToPublisher, Re
     }
 
     private static final String THREAD_NAME_FORMAT = "-%d";
-    private static final String THREAD_FACTORY_NAME = "message-publisher";
+    private static final String THREAD_FACTORY_NAME = "mqtt-replyto-publisher";
 
     private final PromiseFactory factory;
 
@@ -108,7 +108,6 @@ public final class SimpleMessageReplyToPublisher implements ReplyToPublisher, Re
     @Override
     public PushStream<Message> publishWithReplyMany(final Message requestMessage, final MessageContext replyToContext) {
         autoGenerateMissingConfigs(requestMessage);
-
         final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
 
         // @formatter:off
