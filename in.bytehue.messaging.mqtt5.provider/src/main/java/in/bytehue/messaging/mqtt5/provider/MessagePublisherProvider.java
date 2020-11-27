@@ -59,14 +59,14 @@ import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishResult;
                 GUARANTEED_ORDERING,
                 MESSAGE_EXPIRY_INTERVAL })
 //@formatter:on
-@Component(service = { MessagePublisher.class, SimpleMessagePublisher.class })
-public final class SimpleMessagePublisher implements MessagePublisher {
+@Component(service = { MessagePublisher.class, MessagePublisherProvider.class })
+public final class MessagePublisherProvider implements MessagePublisher {
 
     @Reference(service = LoggerFactory.class)
     private Logger logger;
 
     @Reference
-    private SimpleMessageClient messagingClient;
+    private MessageClientProvider messagingClient;
 
     @Override
     public void publish(final Message message) {

@@ -26,7 +26,7 @@ import org.osgi.service.messaging.acknowledge.AcknowledgeHandler;
 import org.osgi.service.messaging.acknowledge.AcknowledgeMessageContext;
 import org.osgi.service.messaging.acknowledge.AcknowledgeType;
 
-public final class SimpleMessageContext implements MessageContext, AcknowledgeMessageContext {
+public final class MessageContextProvider implements MessageContext, AcknowledgeMessageContext {
 
     public String channel;
     public String contentType;

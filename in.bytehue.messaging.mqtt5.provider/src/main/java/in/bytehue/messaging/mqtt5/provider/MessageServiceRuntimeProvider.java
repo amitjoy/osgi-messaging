@@ -69,20 +69,20 @@ import org.osgi.service.messaging.runtime.MessageServiceRuntime;
                 GENERATE_CORRELATION_ID,
                 MESSAGE_CONTEXT_BUILDER })
 //@formatter:on
-public final class SimpleMessageServiceRuntime implements MessageServiceRuntime {
+public final class MessageServiceRuntimeProvider implements MessageServiceRuntime {
 
     @Activate
     private BundleContext bundleContext;
 
     @Reference
-    private SimpleSubscriptionRegistry subscriptionRegistry;
+    private MessageSubscriptionRegistry subscriptionRegistry;
 
     @Reference
-    private ComponentServiceObjects<SimpleMessageClient> messagingClient;
+    private ComponentServiceObjects<MessageClientProvider> messagingClient;
 
     @Override
     public MessagingRuntimeDTO getRuntimeDTO() {
-        final SimpleMessageClient client = messagingClient.getService();
+        final MessageClientProvider client = messagingClient.getService();
         try {
             final MessagingRuntimeDTO dto = new MessagingRuntimeDTO();
 

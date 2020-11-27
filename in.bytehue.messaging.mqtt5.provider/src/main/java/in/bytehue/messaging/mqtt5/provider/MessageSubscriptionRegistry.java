@@ -37,14 +37,14 @@ import org.osgi.service.messaging.dto.ReplyToSubscriptionDTO;
 import org.osgi.service.messaging.dto.SubscriptionDTO;
 import org.osgi.util.pushstream.PushStream;
 
-@Component(service = SimpleSubscriptionRegistry.class)
-public final class SimpleSubscriptionRegistry {
+@Component(service = MessageSubscriptionRegistry.class)
+public final class MessageSubscriptionRegistry {
 
     @Activate
     private BundleContext bundleContext;
 
     @Reference
-    private SimpleMessageClient messagingClient;
+    private MessageClientProvider messagingClient;
 
     private final Map<PushStream<Message>, ExtendedSubscriptionDTO> subscriptions = new HashMap<>();
 

@@ -47,7 +47,7 @@ import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
         scope = PROTOTYPE,
         service = {
                 MessageContextBuilder.class,
-                SimpleMessageContextBuilder.class,
+                MessageContextBuilderProvider.class,
                 AcknowledgeMessageContextBuilder.class
         })
 @MessagingFeature(
@@ -58,23 +58,23 @@ import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
                 ACKNOWLEDGE })
 @ProvideMessagingAcknowledgeFeature
 // @formatter:on
-public final class SimpleMessageContextBuilder implements MessageContextBuilder, AcknowledgeMessageContextBuilder {
+public final class MessageContextBuilderProvider implements MessageContextBuilder, AcknowledgeMessageContextBuilder {
 
     private final Logger logger;
-    private final SimpleMessage message;
+    private final MessageProvider message;
     private final BundleContext bundleContext;
-    private final SimpleMessageContext messageContext;
+    private final MessageContextProvider messageContext;
 
     @Activate
-    public SimpleMessageContextBuilder( //
+    public MessageContextBuilderProvider( //
             final BundleContext bundleContext, //
             @Reference(service = LoggerFactory.class) final Logger logger, //
-            @Reference final SimpleMessageAcknowledgeHandler acknowledgeHandler) {
+            @Reference final MessageAcknowledgeHandlerProvider acknowledgeHandler) {
 
         this.logger = logger;
         this.bundleContext = bundleContext;
-        message = new SimpleMessage();
-        messageContext = new SimpleMessageContext();
+        message = new MessageProvider();
+        messageContext = new MessageContextProvider();
 
         message.messageContext = messageContext;
         messageContext.protocolSpecificAcknowledgeHandler = acknowledgeHandler;
@@ -92,7 +92,7 @@ public final class SimpleMessageContextBuilder implements MessageContextBuilder,
 
     @Override
     public MessageContextBuilder withContext(final MessageContext context) {
-        if (context instanceof SimpleMessageContext) {
+        if (context instanceof MessageContextProvider) {
             message.messageContext = context;
         }
         return this;

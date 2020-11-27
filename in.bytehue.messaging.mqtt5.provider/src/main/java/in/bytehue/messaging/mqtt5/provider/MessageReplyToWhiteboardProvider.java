@@ -44,8 +44,8 @@ import org.osgi.service.messaging.replyto.ReplyToWhiteboard;
 import org.osgi.util.pushstream.PushStream;
 
 @MessagingFeature(name = MESSAGE_WHITEBOARD, protocol = MQTT_PROTOCOL)
-@Component(service = { ReplyToWhiteboard.class, SimpleMessageReplyToWhiteboard.class })
-public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
+@Component(service = { ReplyToWhiteboard.class, MessageReplyToWhiteboardProvider.class })
+public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard {
 
     // @formatter:off
     private static final String KEY_PROTOCOL         = "osgi.messaging.protocol";
@@ -64,13 +64,13 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
     // @formatter:on
 
     @Reference
-    private SimpleMessagePublisher publisher;
+    private MessagePublisherProvider publisher;
 
     @Reference
-    private SimpleMessageSubscriber subscriber;
+    private MessageSubscriberProvider subscriber;
 
     @Reference
-    private ComponentServiceObjects<SimpleMessageContextBuilder> mcbFactory;
+    private ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
 
     private final Map<ServiceReference<?>, PushStream<?>> streams = new ConcurrentHashMap<>();
 
@@ -134,7 +134,7 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
     }
 
     private Message handleResponse(final Message request, final ReplyToSingleSubscriptionHandler handler) {
-        final SimpleMessageContextBuilder mcb = getResponse(request);
+        final MessageContextBuilderProvider mcb = getResponse(request);
         try {
             return handler.handleResponse(request, mcb).getValue();
         } catch (final Exception e) {
@@ -144,12 +144,12 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
         }
     }
 
-    private SimpleMessageContextBuilder getResponse(final Message request) {
+    private MessageContextBuilderProvider getResponse(final Message request) {
         final MessageContext context = request.getContext();
         final String channel = context.getReplyToChannel();
         final String correlation = context.getCorrelationId();
         final MessageContextBuilder builder = mcbFactory.getService().channel(channel).correlationId(correlation);
-        return (SimpleMessageContextBuilder) builder;
+        return (MessageContextBuilderProvider) builder;
     }
 
     private PushStream<Message> handleResponses(final Message request, final ReplyToManySubscriptionHandler handler) {

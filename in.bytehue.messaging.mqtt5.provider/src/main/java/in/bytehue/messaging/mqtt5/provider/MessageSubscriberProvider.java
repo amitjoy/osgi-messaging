@@ -65,8 +65,8 @@ import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCo
                 ACKNOWLEDGE,
                 RECEIVE_LOCAL })
 //@formatter:on
-@Component(service = { MessageSubscription.class, SimpleMessageSubscriber.class })
-public final class SimpleMessageSubscriber implements MessageSubscription {
+@Component(service = { MessageSubscription.class, MessageSubscriberProvider.class })
+public final class MessageSubscriberProvider implements MessageSubscription {
 
     @Activate
     private BundleContext bundleContext;
@@ -75,13 +75,13 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
     private Logger logger;
 
     @Reference
-    private SimpleMessageClient messagingClient;
+    private MessageClientProvider messagingClient;
 
     @Reference
-    private SimpleSubscriptionRegistry subscriptionRegistry;
+    private MessageSubscriptionRegistry subscriptionRegistry;
 
     @Reference
-    private ComponentServiceObjects<SimpleMessageContextBuilder> mcbFactory;
+    private ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
 
     @Deactivate
     void stop() {
@@ -115,7 +115,7 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
         final SimplePushEventSource<Message> source = provider.createSimpleEventSource(Message.class);
         final PushStream<Message> stream = provider.createStream(source);
         try {
-            final SimpleMessageContextBuilder builder = mcbFactory.getService();
+            final MessageContextBuilderProvider builder = mcbFactory.getService();
             try {
                 if (context == null) {
                     context = builder.channel(subChannel).buildContext();
@@ -128,7 +128,7 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
             final int qos;
             final boolean receiveLocal;
             final boolean retainAsPublished;
-            final SimpleMessageContext ctx = (SimpleMessageContext) context;
+            final MessageContextProvider ctx = (MessageContextProvider) context;
             final Map<String, Object> extensions = context.getExtensions();
 
             if (extensions != null) {
@@ -148,7 +148,7 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
                                       .noLocal(receiveLocal)
                                       .retainAsPublished(retainAsPublished)
                                       .callback(p -> {
-                                          final SimpleMessageContextBuilder mcb = mcbFactory.getService();
+                                          final MessageContextBuilderProvider mcb = mcbFactory.getService();
                                           mcb.withContext(ctx);
                                           try {
                                               final Message message = toMessage(p, mcb);

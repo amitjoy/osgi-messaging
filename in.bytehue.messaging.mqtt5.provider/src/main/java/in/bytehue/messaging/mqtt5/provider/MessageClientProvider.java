@@ -48,12 +48,12 @@ import com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism;
 import com.hivemq.client.mqtt.mqtt5.message.connect.connack.Mqtt5ConnAck;
 import com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode;
 
-import in.bytehue.messaging.mqtt5.provider.SimpleMessageClient.Config;
+import in.bytehue.messaging.mqtt5.provider.MessageClientProvider.Config;
 
 @ProvideMessagingFeature
 @Designate(ocd = Config.class)
-@Component(service = SimpleMessageClient.class, configurationPid = CLIENT)
-public final class SimpleMessageClient {
+@Component(service = MessageClientProvider.class, configurationPid = CLIENT)
+public final class MessageClientProvider {
 
     @ObjectClassDefinition( //
             name = "MQTT v5 Messaging Client Configuration", //
@@ -163,7 +163,7 @@ public final class SimpleMessageClient {
     public final Mqtt5AsyncClient client;
 
     @Activate
-    public SimpleMessageClient( //
+    public MessageClientProvider( //
             final BundleContext bundleContext, //
             final Config config, //
             @Reference(service = LoggerFactory.class) final Logger logger) {

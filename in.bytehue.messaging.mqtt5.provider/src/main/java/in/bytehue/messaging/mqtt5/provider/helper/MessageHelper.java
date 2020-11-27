@@ -57,7 +57,7 @@ import com.hivemq.client.mqtt.datatypes.MqttUtf8String;
 import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserProperties;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
 
-import in.bytehue.messaging.mqtt5.provider.SimpleMessageContext;
+import in.bytehue.messaging.mqtt5.provider.MessageContextProvider;
 
 public final class MessageHelper {
 
@@ -189,7 +189,7 @@ public final class MessageHelper {
         return null;
     }
 
-    public static boolean acknowledgeMessage(final Message message, final SimpleMessageContext ctx,
+    public static boolean acknowledgeMessage(final Message message, final MessageContextProvider ctx,
             final Consumer<Message> interimConsumer) {
         // first verify if the protocol specific handler is okay with the received message
         final AcknowledgeHandler protocolSpecificAcknowledgeHandler = ctx.protocolSpecificAcknowledgeHandler;

@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2020 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -15,25 +15,33 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
-import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MQTT_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.asString;
 
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.messaging.acknowledge.AcknowledgeHandler;
-import org.osgi.service.messaging.propertytypes.MessagingFeature;
+import java.nio.ByteBuffer;
 
-@Component(service = { AcknowledgeHandler.class, SimpleMessageAcknowledgeHandler.class })
-@MessagingFeature(name = "mqtt5-procol-specific-acknowledge-handler", protocol = MQTT_PROTOCOL)
-public final class SimpleMessageAcknowledgeHandler implements AcknowledgeHandler {
+import org.osgi.service.messaging.Message;
+import org.osgi.service.messaging.MessageContext;
 
-    // TODO think about if we have any message restriction for this handler?
+public final class MessageProvider implements Message {
+
+    // TODO add gogo command to pub/sub
+
+    public ByteBuffer byteBuffer;
+    public MessageContext messageContext;
+
     @Override
-    public boolean acknowledge() {
-        return true;
+    public ByteBuffer payload() {
+        return byteBuffer;
     }
 
     @Override
-    public boolean reject() {
-        return false;
+    public MessageContext getContext() {
+        return messageContext;
+    }
+
+    @Override
+    public String toString() {
+        return "Message [payload=" + asString(byteBuffer) + ", messageContext=" + messageContext + "]";
     }
 
 }

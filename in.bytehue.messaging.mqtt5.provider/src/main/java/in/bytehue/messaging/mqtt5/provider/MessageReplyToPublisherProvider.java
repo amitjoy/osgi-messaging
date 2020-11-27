@@ -48,7 +48,7 @@ import org.osgi.util.promise.Promise;
 import org.osgi.util.promise.PromiseFactory;
 import org.osgi.util.pushstream.PushStream;
 
-import in.bytehue.messaging.mqtt5.provider.SimpleMessageReplyToPublisher.Config;
+import in.bytehue.messaging.mqtt5.provider.MessageReplyToPublisherProvider.Config;
 import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 
 //@formatter:off
@@ -66,7 +66,7 @@ import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
                 GENERATE_CORRELATION_ID,
                 GENERATE_REPLY_CHANNEL })
 //@formatter:on
-public final class SimpleMessageReplyToPublisher implements ReplyToPublisher, ReplyToManyPublisher {
+public final class MessageReplyToPublisherProvider implements ReplyToPublisher, ReplyToManyPublisher {
 
     @ObjectClassDefinition( //
             name = "MQTT Messaging Reply-To Publisher Executor Configuration", //
@@ -86,15 +86,15 @@ public final class SimpleMessageReplyToPublisher implements ReplyToPublisher, Re
     private Logger logger;
 
     @Reference
-    private SimpleMessagePublisher publisher;
+    private MessagePublisherProvider publisher;
 
     @Reference
-    private SimpleMessageSubscriber subscriber;
+    private MessageSubscriberProvider subscriber;
 
     private final PromiseFactory promiseFactory;
 
     @Activate
-    public SimpleMessageReplyToPublisher(final Config config) {
+    public MessageReplyToPublisherProvider(final Config config) {
         final ThreadFactory threadFactory = //
                 new ThreadFactoryBuilder() //
                         .setThreadFactoryName(config.threadNamePrefix()) //
@@ -145,7 +145,7 @@ public final class SimpleMessageReplyToPublisher implements ReplyToPublisher, Re
     }
 
     private void autoGenerateMissingConfigs(final Message message) {
-        final SimpleMessageContext context = (SimpleMessageContext) message.getContext();
+        final MessageContextProvider context = (MessageContextProvider) message.getContext();
         if (context.getCorrelationId() == null) {
             context.correlationId = UUID.randomUUID().toString();
             logger.info("Auto-generated correlation ID '{}' as it is missing in the request", context.correlationId);
