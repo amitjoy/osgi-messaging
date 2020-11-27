@@ -25,7 +25,6 @@
 	org.osgi.util.function;version='[1.1.0,1.1.1)',\
 	org.osgi.util.promise;version='[1.1.1,1.1.2)',\
 	org.osgi.util.pushstream;version='[1.0.1,1.0.2)',\
-	org.osgi.service.messaging;version=snapshot,\
 	org.apache.felix.cm.json;version='[1.0.2,1.0.3)',\
 	org.apache.felix.configurator;version='[1.0.12,1.0.13)',\
 	org.apache.felix.converter;version='[1.0.14,1.0.15)',\
