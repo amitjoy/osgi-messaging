@@ -40,6 +40,7 @@ import org.osgi.service.messaging.acknowledge.AcknowledgeMessageContextBuilder;
 import org.osgi.service.messaging.annotations.ProvideMessagingAcknowledgeFeature;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
 
+import in.bytehue.messaging.mqtt5.api.Mqtt5MessageContextBuilder;
 import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
 
 // @formatter:off
@@ -47,6 +48,7 @@ import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
         scope = PROTOTYPE,
         service = {
                 MessageContextBuilder.class,
+                Mqtt5MessageContextBuilder.class,
                 MessageContextBuilderProvider.class,
                 AcknowledgeMessageContextBuilder.class
         })
@@ -58,7 +60,8 @@ import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
                 ACKNOWLEDGE })
 @ProvideMessagingAcknowledgeFeature
 // @formatter:on
-public final class MessageContextBuilderProvider implements MessageContextBuilder, AcknowledgeMessageContextBuilder {
+public final class MessageContextBuilderProvider
+        implements Mqtt5MessageContextBuilder, MessageContextBuilder, AcknowledgeMessageContextBuilder {
 
     private final Logger logger;
     private final MessageProvider message;
