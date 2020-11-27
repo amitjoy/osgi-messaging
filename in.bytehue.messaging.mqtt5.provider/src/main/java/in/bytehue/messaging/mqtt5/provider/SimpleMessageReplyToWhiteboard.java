@@ -118,7 +118,7 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
 
         // @formatter:off
         subscriber.subscribe(replyToDTO.subChannel)
-                  .forEach(m -> handler.handleResponse(m))
+                  .forEach(handler::handleResponse)
                   .onResolve(replyToDTO::close);
         // @formatter:on
     }
@@ -181,23 +181,6 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
         return handler.handleResponses(request, mcb);
     }
 
-    private ReplyToSubscriptionDTO initReplyToSubscriptionDTO( //
-            final ChannelDTO pub, //
-            final ChannelDTO sub, //
-            final ServiceReference<?> reference) {
-
-        final ReplyToSubscriptionDTO subscriptionDTO = new ReplyToSubscriptionDTO();
-
-        subscriptionDTO.requestChannel = sub;
-        subscriptionDTO.responseChannel = pub;
-        subscriptionDTO.handlerService = getServiceReferenceDTO(reference, bundleContext.getBundle().getBundleId());
-        subscriptionDTO.serviceDTO = findServiceRefAsDTO(MessageSubscription.class, bundleContext);
-        subscriptionDTO.generateCorrelationId = true;
-        subscriptionDTO.generateReplyChannel = true;
-
-        return subscriptionDTO;
-    }
-
     private class ReplyToDTO {
         String pubChannel;
         String subChannel;
@@ -211,7 +194,7 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
             subChannel = (String) properties.get(KEY_SUB_CHANNEL);
 
             if (subChannel == null) {
-                throw new RuntimeException(
+                throw new IllegalArgumentException(
                         "The '" + reference + "' handler instance doesn't specify the reply-to subscription channel");
             }
             if (pubChannel == null) {
@@ -225,7 +208,7 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
                     }
                 }
                 if (!isMissingPubChannelAllowed) {
-                    throw new RuntimeException(
+                    throw new IllegalArgumentException(
                             "The '" + reference + "' handler instance doesn't specify the reply-to publish channel");
                 }
             }
@@ -241,6 +224,23 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
             final ReplyToSubscriptionDTO dto = subscriptions.get(reference);
             dto.requestChannel.connected = false;
             dto.responseChannel.connected = false;
+        }
+
+        ReplyToSubscriptionDTO initReplyToSubscriptionDTO( //
+                final ChannelDTO pub, //
+                final ChannelDTO sub, //
+                final ServiceReference<?> reference) {
+
+            final ReplyToSubscriptionDTO subscriptionDTO = new ReplyToSubscriptionDTO();
+
+            subscriptionDTO.requestChannel = sub;
+            subscriptionDTO.responseChannel = pub;
+            subscriptionDTO.handlerService = getServiceReferenceDTO(reference, bundleContext.getBundle().getBundleId());
+            subscriptionDTO.serviceDTO = findServiceRefAsDTO(MessageSubscription.class, bundleContext);
+            subscriptionDTO.generateCorrelationId = true;
+            subscriptionDTO.generateReplyChannel = true;
+
+            return subscriptionDTO;
         }
     }
 

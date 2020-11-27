@@ -131,8 +131,8 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
                                           final SimpleMessageContextBuilder mcb = mcbFactory.getService();
                                           try {
                                               final Message message = toMessage(p, mcb);
-                                              acknowledgeMessage(message, ctx, m -> source.publish(m));
-                                          } catch (final Throwable e) {
+                                              acknowledgeMessage(message, ctx, source::publish);
+                                          } catch (final Exception e) {
                                               source.error(e);
                                           } finally {
                                               mcbFactory.ungetService(mcb);

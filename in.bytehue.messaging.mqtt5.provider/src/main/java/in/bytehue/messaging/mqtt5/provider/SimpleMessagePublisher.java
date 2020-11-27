@@ -107,7 +107,7 @@ public final class SimpleMessagePublisher implements MessagePublisher {
                     (Map<String, String>) extensions.getOrDefault(USER_PROPERTIES, emptyMap());
 
             final Mqtt5UserPropertiesBuilder propsBuilder = Mqtt5UserProperties.builder();
-            userProperties.forEach((k, v) -> propsBuilder.add(k, v));
+            userProperties.forEach(propsBuilder::add);
 
             // @formatter:off
             final Complete<CompletableFuture<Mqtt5PublishResult>> publishRequest =

@@ -21,6 +21,7 @@ import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish.DEFAULT_
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MQTT_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.USER_PROPERTIES;
+import static java.lang.System.lineSeparator;
 import static java.util.stream.Collectors.toMap;
 import static org.osgi.framework.Constants.OBJECTCLASS;
 import static org.osgi.framework.Constants.SERVICE_RANKING;
@@ -40,6 +41,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.osgi.dto.DTO;
 import org.osgi.framework.Bundle;
@@ -76,7 +78,7 @@ public final class MessageHelper {
                                 (long) sr1.getProperty(SERVICE_RANKING),
                                 (long) sr2.getProperty(SERVICE_RANKING)))
                 .findFirst()
-                .map(sr -> context.getService(sr))
+                .map(context::getService)
                 .orElseThrow(() -> new RuntimeException("'" + clazz +"' service instance cannot be found"));
         // @formatter:on
     }
@@ -167,7 +169,6 @@ public final class MessageHelper {
 
     public static ServiceReferenceDTO findServiceRefAsDTO(final Class<?> clazz, final BundleContext bundleContext) {
         boolean isProtocolCompliant = false;
-        boolean isClazzCompliant = false;
 
         final ServiceReferenceDTO[] services = bundleContext.getBundle().adapt(ServiceReferenceDTO[].class);
         for (final ServiceReferenceDTO serviceDTO : services) {
@@ -177,11 +178,8 @@ public final class MessageHelper {
                 isProtocolCompliant = true;
             }
             for (final String type : serviceTypes) {
-                if (clazz.getName().equals(type)) {
-                    isClazzCompliant = true;
-                    if (isClazzCompliant && isProtocolCompliant) {
-                        return serviceDTO;
-                    }
+                if (clazz.getName().equals(type) && isProtocolCompliant) {
+                    return serviceDTO;
                 }
             }
         }
@@ -224,12 +222,10 @@ public final class MessageHelper {
     }
 
     public static String stackTraceToString(final Throwable t) {
-        String result = t.toString() + "\n";
+        final StringBuilder result = new StringBuilder(t.toString()).append(lineSeparator());
         final StackTraceElement[] trace = t.getStackTrace();
-        for (final StackTraceElement element : trace) {
-            result += element.toString() + "\n";
-        }
-        return result;
+        Stream.of(trace).forEach(e -> result.append(e.toString()).append(lineSeparator()));
+        return result.toString();
     }
 
     public static ChannelDTO initChannelDTO(final String name, final String extension, final boolean isConnected) {

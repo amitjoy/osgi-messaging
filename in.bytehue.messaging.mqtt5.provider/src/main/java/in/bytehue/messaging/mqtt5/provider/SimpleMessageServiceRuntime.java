@@ -113,7 +113,7 @@ public final class SimpleMessageServiceRuntime implements MessageServiceRuntime 
                             RECEIVE_LOCAL,
                             RETAIN,
                             USER_PROPERTIES };
-            // @formatter:on;
+            // @formatter:on
             dto.instanceId = messagingClient.getServiceReference().getProperties().get(SERVICE_ID).toString();
             dto.protocols = new String[] { MQTT_PROTOCOL };
             dto.providerName = PROVIDER;
