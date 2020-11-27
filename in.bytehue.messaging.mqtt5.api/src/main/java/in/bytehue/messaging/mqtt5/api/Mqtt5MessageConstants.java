@@ -29,7 +29,7 @@ public final class Mqtt5MessageConstants {
      *
      * @since 1.0
      */
-    public static final String MQTT_PROTOCOL = "mqtt5";
+    public static final String MESSAGING_PROTOCOL = "mqtt5";
 
     /**
      * The identifier of the {@code Messaging} instance
@@ -39,64 +39,11 @@ public final class Mqtt5MessageConstants {
     public static final String MESSAGING_ID = "mqtt5-hivemq-adapter";
 
     /**
-     * Defines standard constants for the MQTT messaging component names
+     * The name of the provider of the {@code Messaging} implementation
+     *
+     * @since 1.0
      */
-    public static final class Component {
-
-        private Component() {
-            throw new IllegalAccessError("Non-Instantiable");
-        }
-
-        /**
-         * The name of the {@code Message Context Builder}
-         *
-         * @since 1.0
-         */
-        public static final String MESSAGE_CONTEXT_BUILDER = "mqtt5-message-context-builder";
-
-        /**
-         * The name of the {@code Message Whiteboard}
-         *
-         * @since 1.0
-         */
-        public static final String MESSAGE_WHITEBOARD = "mqtt5-message-whiteboard";
-
-        /**
-         * The name of the {@code Message Runtime}
-         *
-         * @since 1.0
-         */
-        public static final String MESSAGE_RUNTIME = "mqtt5-message-runtime";
-
-        /**
-         * The name of the {@code Message Publisher}
-         *
-         * @since 1.0
-         */
-        public static final String MESSAGE_PUBLISHER = "mqtt5-message-publisher";
-
-        /**
-         * The name of the {@code Message Subscriber}
-         *
-         * @since 1.0
-         */
-        public static final String MESSAGE_SUBSCRIBER = "mqtt5-message-subscriber";
-
-        /**
-         * The name of the {@code Message Reply-To Publisher}
-         *
-         * @since 1.0
-         */
-        public static final String MESSAGE_REPLY_TO_PUBLISHER = "mqtt5-message-replyto-publisher";
-
-        /**
-         * The name of the {@code Implementation Provider} of the Messaging specification
-         *
-         * @since 1.0
-         */
-        public static final String PROVIDER = "MQTT-5-Provider-ByteHue";
-
-    }
+    public static final String MESSAGING_PROVIDER = "bytehue";
 
     /**
      * Defines standard constants for the MQTT messaging extension features

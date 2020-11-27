@@ -18,7 +18,7 @@ package in.bytehue.messaging.mqtt5.provider.helper;
 import static com.hivemq.client.mqtt.datatypes.MqttQos.EXACTLY_ONCE;
 import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatIndicator.UTF_8;
 import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish.DEFAULT_QOS;
-import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MQTT_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MESSAGING_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.USER_PROPERTIES;
 import static java.lang.System.lineSeparator;
@@ -177,7 +177,7 @@ public final class MessageHelper {
         for (final ServiceReferenceDTO serviceDTO : services) {
             final Map<String, Object> properties = serviceDTO.properties;
             final String[] serviceTypes = (String[]) properties.get(OBJECTCLASS);
-            if (MQTT_PROTOCOL.equals(properties.get("osgi.messaging.protocol"))) {
+            if (MESSAGING_PROTOCOL.equals(properties.get("osgi.messaging.protocol"))) {
                 isProtocolCompliant = true;
             }
             for (final String type : serviceTypes) {

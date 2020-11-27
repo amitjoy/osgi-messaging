@@ -15,8 +15,8 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
-import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MQTT_PROTOCOL;
-import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Component.MESSAGE_PUBLISHER;
+import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MESSAGING_ID;
+import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MESSAGING_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.MESSAGE_EXPIRY_INTERVAL;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.USER_PROPERTIES;
@@ -49,8 +49,8 @@ import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishResult;
 
 //@formatter:off
 @MessagingFeature(
-        name = MESSAGE_PUBLISHER,
-        protocol = MQTT_PROTOCOL,
+        name = MESSAGING_ID,
+        protocol = MESSAGING_PROTOCOL,
         feature = {
                 QOS,
                 RETAIN,

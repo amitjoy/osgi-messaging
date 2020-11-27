@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2020 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -15,8 +15,8 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
-import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MQTT_PROTOCOL;
-import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Component.MESSAGE_REPLY_TO_PUBLISHER;
+import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MESSAGING_ID;
+import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MESSAGING_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.PID.PUBLISHER;
 import static org.osgi.service.messaging.Features.GENERATE_CORRELATION_ID;
 import static org.osgi.service.messaging.Features.GENERATE_REPLY_CHANNEL;
@@ -57,8 +57,8 @@ import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 @Component(configurationPid = PUBLISHER)
 @ProvideMessagingReplyToManySubscribeFeature
 @MessagingFeature(
-        name = MESSAGE_REPLY_TO_PUBLISHER,
-        protocol = MQTT_PROTOCOL,
+        name = MESSAGING_ID,
+        protocol = MESSAGING_PROTOCOL,
         feature = {
                 REPLY_TO,
                 REPLY_TO_MANY_PUBLISH,

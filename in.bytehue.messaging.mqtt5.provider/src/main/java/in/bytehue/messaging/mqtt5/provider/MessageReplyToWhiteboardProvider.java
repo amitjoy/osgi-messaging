@@ -16,8 +16,7 @@
 package in.bytehue.messaging.mqtt5.provider;
 
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MESSAGING_ID;
-import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MQTT_PROTOCOL;
-import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Component.MESSAGE_WHITEBOARD;
+import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MESSAGING_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.prepareExceptionAsMessage;
 import static org.osgi.framework.Constants.OBJECTCLASS;
 import static org.osgi.service.component.annotations.ReferenceCardinality.MULTIPLE;
@@ -43,18 +42,20 @@ import org.osgi.service.messaging.replyto.ReplyToSubscriptionHandler;
 import org.osgi.service.messaging.replyto.ReplyToWhiteboard;
 import org.osgi.util.pushstream.PushStream;
 
-@MessagingFeature(name = MESSAGE_WHITEBOARD, protocol = MQTT_PROTOCOL)
+@MessagingFeature(name = MESSAGING_ID, protocol = MESSAGING_PROTOCOL)
 @Component(service = { ReplyToWhiteboard.class, MessageReplyToWhiteboardProvider.class })
 public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard {
 
     // @formatter:off
+    private static final String KEY_NAME             = "osgi.messaging.name";
+    private static final String KEY_FEATURE          = "osgi.messaging.feature";
     private static final String KEY_PROTOCOL         = "osgi.messaging.protocol";
     private static final String KEY_SUB_CHANNEL      = "osgi.messaging.replyToSubscription.channel";
     private static final String KEY_PUB_CHANNEL      = "osgi.messaging.replyToSubscription.replyChannel";
 
-    private static final String FILTER_MQTT          = "(" + KEY_PROTOCOL +"=" + MQTT_PROTOCOL + ")";
-    private static final String FILTER_MESSAGING_ID  = "(" + KEY_PROTOCOL +"=" + MESSAGING_ID + ")";
-    private static final String FILTER_REPLY_TO      = "(" + KEY_PROTOCOL +"=" + REPLY_TO + ")";
+    private static final String FILTER_MQTT          = "(" + KEY_PROTOCOL +"=" + MESSAGING_PROTOCOL + ")";
+    private static final String FILTER_REPLY_TO      = "(" + KEY_FEATURE +"=" + REPLY_TO + ")";
+    private static final String FILTER_MESSAGING_ID  = "(" + KEY_NAME +"=" + MESSAGING_ID + ")";
 
     private static final String FILTER_HANDLER =
             "(osgi.messaging.replyToSubscription.target=(&" +

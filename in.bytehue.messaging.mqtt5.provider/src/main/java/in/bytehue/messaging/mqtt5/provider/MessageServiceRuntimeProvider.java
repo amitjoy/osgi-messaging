@@ -15,9 +15,9 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
-import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MQTT_PROTOCOL;
-import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Component.MESSAGE_RUNTIME;
-import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Component.PROVIDER;
+import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MESSAGING_ID;
+import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MESSAGING_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MESSAGING_PROVIDER;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.MESSAGE_EXPIRY_INTERVAL;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.RECEIVE_LOCAL;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.RETAIN;
@@ -49,8 +49,8 @@ import org.osgi.service.messaging.runtime.MessageServiceRuntime;
 // @formatter:off
 @Component
 @MessagingFeature(
-        name = MESSAGE_RUNTIME,
-        protocol = MQTT_PROTOCOL,
+        name = MESSAGING_ID,
+        protocol = MESSAGING_PROTOCOL,
         feature = {
                 QOS,
                 RETAIN,
@@ -109,8 +109,8 @@ public final class MessageServiceRuntimeProvider implements MessageServiceRuntim
                             USER_PROPERTIES };
             // @formatter:on
             dto.instanceId = messagingClient.getServiceReference().getProperties().get(SERVICE_ID).toString();
-            dto.protocols = new String[] { MQTT_PROTOCOL };
-            dto.providerName = PROVIDER;
+            dto.protocols = new String[] { MESSAGING_PROTOCOL };
+            dto.providerName = MESSAGING_PROVIDER;
             dto.subscriptions = subscriptionRegistry.getSubscriptionDTOs();
             dto.replyToSubscriptions = subscriptionRegistry.getReplyToSubscriptionDTOs();
 

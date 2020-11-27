@@ -15,7 +15,8 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
-import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MQTT_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MESSAGING_ID;
+import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MESSAGING_PROTOCOL;
 import static org.osgi.service.component.annotations.ServiceScope.PROTOTYPE;
 import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
 import static org.osgi.service.messaging.Features.MESSAGE_CONTEXT_BUILDER;
@@ -39,7 +40,6 @@ import org.osgi.service.messaging.acknowledge.AcknowledgeMessageContextBuilder;
 import org.osgi.service.messaging.annotations.ProvideMessagingAcknowledgeFeature;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
 
-import in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants;
 import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
 
 // @formatter:off
@@ -51,8 +51,8 @@ import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
                 AcknowledgeMessageContextBuilder.class
         })
 @MessagingFeature(
-        protocol = MQTT_PROTOCOL,
-        name = Mqtt5MessageConstants.Component.MESSAGE_CONTEXT_BUILDER,
+        name = MESSAGING_ID,
+        protocol = MESSAGING_PROTOCOL,
         feature = {
                 MESSAGE_CONTEXT_BUILDER,
                 ACKNOWLEDGE })
