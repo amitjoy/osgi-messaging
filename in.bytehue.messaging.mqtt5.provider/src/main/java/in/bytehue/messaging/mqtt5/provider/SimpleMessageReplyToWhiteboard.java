@@ -18,34 +18,24 @@ package in.bytehue.messaging.mqtt5.provider;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MQTT_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Component.MESSAGE_WHITEBOARD;
-import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.findServiceRefAsDTO;
-import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getServiceReferenceDTO;
-import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.initChannelDTO;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.prepareExceptionAsMessage;
 import static org.osgi.framework.Constants.OBJECTCLASS;
 import static org.osgi.service.component.annotations.ReferenceCardinality.MULTIPLE;
 import static org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC;
-import static org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED;
 import static org.osgi.service.messaging.Features.REPLY_TO;
 
 import java.util.Dictionary;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.component.ComponentServiceObjects;
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.log.Logger;
-import org.osgi.service.log.LoggerFactory;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageContextBuilder;
-import org.osgi.service.messaging.MessageSubscription;
-import org.osgi.service.messaging.dto.ChannelDTO;
-import org.osgi.service.messaging.dto.ReplyToSubscriptionDTO;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
 import org.osgi.service.messaging.replyto.ReplyToManySubscriptionHandler;
 import org.osgi.service.messaging.replyto.ReplyToSingleSubscriptionHandler;
@@ -58,13 +48,13 @@ import org.osgi.util.pushstream.PushStream;
 public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
 
     // @formatter:off
-    private static final String KEY_PROTOCOL       = "osgi.messaging.protocol";
-    private static final String KEY_SUB_CHANNEL    = "osgi.messaging.replyToSubscription.channel";
-    private static final String KEY_PUB_CHANNEL    = "osgi.messaging.replyToSubscription.replyChannel";
+    private static final String KEY_PROTOCOL         = "osgi.messaging.protocol";
+    private static final String KEY_SUB_CHANNEL      = "osgi.messaging.replyToSubscription.channel";
+    private static final String KEY_PUB_CHANNEL      = "osgi.messaging.replyToSubscription.replyChannel";
 
-    public static final String FILTER_MQTT         = "(" + KEY_PROTOCOL +"=" + MQTT_PROTOCOL + ")";
-    public static final String FILTER_MESSAGING_ID = "(" + KEY_PROTOCOL +"=" + MESSAGING_ID + ")";
-    public static final String FILTER_REPLY_TO     = "(" + KEY_PROTOCOL +"=" + REPLY_TO + ")";
+    private static final String FILTER_MQTT          = "(" + KEY_PROTOCOL +"=" + MQTT_PROTOCOL + ")";
+    private static final String FILTER_MESSAGING_ID  = "(" + KEY_PROTOCOL +"=" + MESSAGING_ID + ")";
+    private static final String FILTER_REPLY_TO      = "(" + KEY_PROTOCOL +"=" + REPLY_TO + ")";
 
     private static final String FILTER_HANDLER =
             "(osgi.messaging.replyToSubscription.target=(&" +
@@ -73,22 +63,21 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
                     FILTER_REPLY_TO + "))";
     // @formatter:on
 
-    @Activate
-    private BundleContext bundleContext;
-
-    @Reference(service = LoggerFactory.class)
-    private Logger logger;
-
     @Reference
     private SimpleMessagePublisher publisher;
 
     @Reference
     private SimpleMessageSubscriber subscriber;
 
-    @Reference(scope = PROTOTYPE_REQUIRED)
+    @Reference
     private ComponentServiceObjects<SimpleMessageContextBuilder> mcbFactory;
 
-    private final Map<ServiceReference<?>, ReplyToSubscriptionDTO> subscriptions = new ConcurrentHashMap<>();
+    private final Map<ServiceReference<?>, PushStream<?>> streams = new ConcurrentHashMap<>();
+
+    @Deactivate
+    void stop() {
+        streams.values().forEach(PushStream::close);
+    }
 
     @Reference(policy = DYNAMIC, cardinality = MULTIPLE, target = FILTER_HANDLER)
     synchronized void bindReplyToSingleSubscriptionHandler( //
@@ -98,15 +87,14 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
         final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
 
         // @formatter:off
-        subscriber.subscribe(replyToDTO.subChannel)
+        replyToSubscribe(replyToDTO.subChannel, replyToDTO.pubChannel, reference)
                   .map(m -> handleResponse(m, handler))
-                  .forEach(m -> publisher.publish(m, replyToDTO.pubChannel))
-                  .onResolve(replyToDTO::close);
+                  .forEach(m -> publisher.publish(m, replyToDTO.pubChannel));
         // @formatter:on
     }
 
     void unbindReplyToSingleSubscriptionHandler(final ServiceReference<?> reference) {
-        subscriptions.remove(reference);
+        streams.remove(reference).close();
     }
 
     @Reference(policy = DYNAMIC, cardinality = MULTIPLE, target = FILTER_HANDLER)
@@ -117,14 +105,13 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
         final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
 
         // @formatter:off
-        subscriber.subscribe(replyToDTO.subChannel)
-                  .forEach(handler::handleResponse)
-                  .onResolve(replyToDTO::close);
+        replyToSubscribe(replyToDTO.subChannel, replyToDTO.pubChannel, reference)
+                  .forEach(handler::handleResponse);
         // @formatter:on
     }
 
     void unbindReplyToSubscriptionHandler(final ServiceReference<?> reference) {
-        subscriptions.remove(reference);
+        streams.remove(reference).close();
     }
 
     @Reference(policy = DYNAMIC, cardinality = MULTIPLE, target = FILTER_HANDLER)
@@ -135,30 +122,19 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
         final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
 
         // @formatter:off
-        subscriber.subscribe(replyToDTO.subChannel)
+        replyToSubscribe(replyToDTO.subChannel, replyToDTO.pubChannel, reference)
                   .map(m -> handleResponses(m, handler))
                   .flatMap(m -> m)
-                  .onClose(replyToDTO::close)
                   .forEach(m -> publisher.publish(m, replyToDTO.subChannel));
         // @formatter:on
     }
 
     void unbindReplyToManySubscriptionHandler(final ServiceReference<?> reference) {
-        subscriptions.remove(reference);
-    }
-
-    public ReplyToSubscriptionDTO[] getReplyToSubscriptionDTOs() {
-        final ReplyToSubscriptionDTO dto = new ReplyToSubscriptionDTO();
-
-        dto.generateCorrelationId = true;
-        dto.generateReplyChannel = true;
-        dto.serviceDTO = findServiceRefAsDTO(MessageSubscription.class, bundleContext);
-
-        return new ReplyToSubscriptionDTO[] { dto };
+        streams.remove(reference).close();
     }
 
     private Message handleResponse(final Message request, final ReplyToSingleSubscriptionHandler handler) {
-        final SimpleMessageContextBuilder mcb = initResponse(request);
+        final SimpleMessageContextBuilder mcb = getResponse(request);
         try {
             return handler.handleResponse(request, mcb).getValue();
         } catch (final Exception e) {
@@ -168,7 +144,7 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
         }
     }
 
-    private SimpleMessageContextBuilder initResponse(final Message request) {
+    private SimpleMessageContextBuilder getResponse(final Message request) {
         final MessageContext context = request.getContext();
         final String channel = context.getReplyToChannel();
         final String correlation = context.getCorrelationId();
@@ -177,17 +153,25 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
     }
 
     private PushStream<Message> handleResponses(final Message request, final ReplyToManySubscriptionHandler handler) {
-        final MessageContextBuilder mcb = initResponse(request);
+        final MessageContextBuilder mcb = getResponse(request);
         return handler.handleResponses(request, mcb);
     }
 
-    private class ReplyToDTO {
+    private PushStream<Message> replyToSubscribe( //
+            final String subChannel, //
+            final String pubChannel, //
+            final ServiceReference<?> reference) {
+
+        final PushStream<Message> stream = subscriber.replyToSubscribe(subChannel, pubChannel, reference);
+        streams.put(reference, stream);
+        return stream;
+    }
+
+    private static class ReplyToDTO {
         String pubChannel;
         String subChannel;
-        ServiceReference<?> reference;
 
         ReplyToDTO(final ServiceReference<?> reference) {
-            this.reference = reference;
             final Dictionary<String, Object> properties = reference.getProperties();
 
             pubChannel = (String) properties.get(KEY_PUB_CHANNEL);
@@ -212,36 +196,8 @@ public final class SimpleMessageReplyToWhiteboard implements ReplyToWhiteboard {
                             "The '" + reference + "' handler instance doesn't specify the reply-to publish channel");
                 }
             }
-            final String rountingKey = null; // no routing key for MQTT
-            final ChannelDTO pubDTO = initChannelDTO(pubChannel, rountingKey, true);
-            final ChannelDTO subDTO = initChannelDTO(subChannel, rountingKey, true);
-
-            final ReplyToSubscriptionDTO subscriptionDTO = initReplyToSubscriptionDTO(pubDTO, subDTO, reference);
-            subscriptions.put(reference, subscriptionDTO);
         }
 
-        void close() {
-            final ReplyToSubscriptionDTO dto = subscriptions.get(reference);
-            dto.requestChannel.connected = false;
-            dto.responseChannel.connected = false;
-        }
-
-        ReplyToSubscriptionDTO initReplyToSubscriptionDTO( //
-                final ChannelDTO pub, //
-                final ChannelDTO sub, //
-                final ServiceReference<?> reference) {
-
-            final ReplyToSubscriptionDTO subscriptionDTO = new ReplyToSubscriptionDTO();
-
-            subscriptionDTO.requestChannel = sub;
-            subscriptionDTO.responseChannel = pub;
-            subscriptionDTO.handlerService = getServiceReferenceDTO(reference, bundleContext.getBundle().getBundleId());
-            subscriptionDTO.serviceDTO = findServiceRefAsDTO(MessageSubscription.class, bundleContext);
-            subscriptionDTO.generateCorrelationId = true;
-            subscriptionDTO.generateReplyChannel = true;
-
-            return subscriptionDTO;
-        }
     }
 
 }

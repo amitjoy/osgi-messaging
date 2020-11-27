@@ -24,31 +24,28 @@ import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Component.MES
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.RECEIVE_LOCAL;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.acknowledgeMessage;
-import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.findQoS;
-import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.findServiceRefAsDTO;
-import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.initChannelDTO;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getQoS;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.toMessage;
 import static java.util.Objects.requireNonNull;
 import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
 import static org.osgi.service.messaging.Features.QOS;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.log.Logger;
 import org.osgi.service.log.LoggerFactory;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageSubscription;
-import org.osgi.service.messaging.dto.ChannelDTO;
-import org.osgi.service.messaging.dto.SubscriptionDTO;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
 import org.osgi.util.pushstream.PushStream;
 import org.osgi.util.pushstream.PushStreamProvider;
@@ -81,38 +78,61 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
     private SimpleMessageClient messagingClient;
 
     @Reference
+    private SimpleSubscriptionRegistry subscriptionRegistry;
+
+    @Reference
     private ComponentServiceObjects<SimpleMessageContextBuilder> mcbFactory;
 
-    private final Map<PushStream<Message>, ChannelDTO> subscriptions = new HashMap<>();
+    @Deactivate
+    void stop() {
+        subscriptionRegistry.clearAllSubscriptions();
+    }
 
     @Override
-    public PushStream<Message> subscribe(final String channel) {
-        return subscribe(null, channel);
+    public PushStream<Message> subscribe(final String subChannel) {
+        return subscribe(null, subChannel, null, null);
     }
 
     @Override
     public PushStream<Message> subscribe(final MessageContext context) {
-        return subscribe(context, null);
+        return subscribe(context, null, null, null);
     }
 
-    private PushStream<Message> subscribe(MessageContext context, final String channel) {
+    public PushStream<Message> replyToSubscribe( //
+            final String subChannel, //
+            final String pubChannel, //
+            final ServiceReference<?> reference) {
+        return subscribe(null, subChannel, pubChannel, reference);
+    }
+
+    private PushStream<Message> subscribe( //
+            MessageContext context, //
+            final String subChannel, //
+            final String pubChannel, //
+            final ServiceReference<?> reference) {
+
         final PushStreamProvider provider = new PushStreamProvider();
         final SimplePushEventSource<Message> source = provider.createSimpleEventSource(Message.class);
         final PushStream<Message> stream = provider.createStream(source);
         try {
-            if (context == null) {
-                context = mcbFactory.getService().channel(channel).buildContext();
+            final SimpleMessageContextBuilder builder = mcbFactory.getService();
+            try {
+                if (context == null) {
+                    context = builder.channel(subChannel).buildContext();
+                }
+            } finally {
+                mcbFactory.ungetService(builder);
             }
+            requireNonNull(subChannel, "Channel cannot be null");
+
+            final int qos;
+            final boolean receiveLocal;
+            final boolean retainAsPublished;
             final SimpleMessageContext ctx = (SimpleMessageContext) context;
-            requireNonNull(channel, "Channel cannot be null");
             final Map<String, Object> extensions = context.getExtensions();
 
-            int qos;
-            boolean receiveLocal;
-            boolean retainAsPublished;
-
             if (extensions != null) {
-                qos = findQoS(extensions);
+                qos = getQoS(extensions);
                 receiveLocal = (boolean) extensions.getOrDefault(RECEIVE_LOCAL, false);
                 retainAsPublished = (boolean) extensions.getOrDefault(RETAIN, false);
             } else {
@@ -123,12 +143,13 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
 
             // @formatter:off
             messagingClient.client.subscribeWith()
-                                      .topicFilter(channel)
+                                      .topicFilter(subChannel)
                                       .qos(MqttQos.fromCode(qos))
                                       .noLocal(receiveLocal)
                                       .retainAsPublished(retainAsPublished)
                                       .callback(p -> {
                                           final SimpleMessageContextBuilder mcb = mcbFactory.getService();
+                                          mcb.withContext(ctx);
                                           try {
                                               final Message message = toMessage(p, mcb);
                                               acknowledgeMessage(message, ctx, source::publish);
@@ -141,60 +162,31 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
                                       .send()
                                       .thenAccept(ack -> {
                                           if (isSubscriptionAcknowledged(ack)) {
-                                              subscriptions.put(
-                                                      stream,
-                                                      initChannelDTO(channel, null, true));
-                                              logger.debug("New subscription request for '{}' has been processed successfully", channel);
+                                              subscriptionRegistry.addSubscription(stream, subChannel, pubChannel, reference);
+                                              logger.debug("New subscription request for '{}' processed successfully - {}", subChannel, ack);
                                           } else {
-                                              logger.error("New subscription request for '{}' failed - {}", channel, ack);
+                                              logger.error("New subscription request for '{}' failed - {}", subChannel, ack);
                                           }
                                       });
             stream.onClose(() -> {
-                final ChannelDTO dto = subscriptions.get(stream);
-                dto.connected = false;
-                messagingClient.client.unsubscribeWith()
-                                          .addTopicFilter(channel)
-                                      .send();
-                subscriptions.remove(stream); // remove the subscription from registry
-                source.close();
-                // @formatter:on
-
+                subscriptionRegistry.removeSubscription(stream); // remove the subscription from registry
+                source.close(); // close the event source
             });
             return stream;
         } catch (final Exception e) {
-            logger.error("Error while subscribing to {}", channel, e);
+            logger.error("Error while subscribing to {}", subChannel, e);
             throw e;
         }
     }
 
-    public SubscriptionDTO[] getSubscriptionDTOs() {
-        // @formatter:off
-        return subscriptions.values()
-                            .stream()
-                            .map(this::initSubscriptionDTO)
-                            .toArray(SubscriptionDTO[]::new);
-        // @formatter:on
-    }
-
-    private SubscriptionDTO initSubscriptionDTO(final ChannelDTO channelDTO) {
-        final SubscriptionDTO subscriptionDTO = new SubscriptionDTO();
-
-        subscriptionDTO.serviceDTO = findServiceRefAsDTO(MessageSubscription.class, bundleContext);
-        subscriptionDTO.channel = channelDTO;
-
-        return subscriptionDTO;
-    }
-
     private boolean isSubscriptionAcknowledged(final Mqtt5SubAck ack) {
-        // @formatter:off
         final List<Mqtt5SubAckReasonCode> acceptedCodes = Arrays.asList(
                 GRANTED_QOS_0,
                 GRANTED_QOS_1,
                 GRANTED_QOS_2
         );
-        // @formatter:off
         final List<Mqtt5SubAckReasonCode> reasonCodes = ack.getReasonCodes();
-        return reasonCodes.stream().findFirst().filter(e -> acceptedCodes.contains(e)).isPresent();
+        return reasonCodes.stream().findFirst().filter(acceptedCodes::contains).isPresent();
     }
 
 }

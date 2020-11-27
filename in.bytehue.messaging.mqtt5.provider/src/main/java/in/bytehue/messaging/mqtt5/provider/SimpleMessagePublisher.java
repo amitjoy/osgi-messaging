@@ -20,7 +20,7 @@ import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Component.MES
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.MESSAGE_EXPIRY_INTERVAL;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.USER_PROPERTIES;
-import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.findQoS;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getQoS;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.stackTraceToString;
 import static java.util.Collections.emptyMap;
 import static org.osgi.service.messaging.Features.GUARANTEED_DELIVERY;
@@ -99,7 +99,7 @@ public final class SimpleMessagePublisher implements MessagePublisher {
             final String correlationId = ctxCorrelationId != null ? ctxCorrelationId : UUID.randomUUID().toString();
             final ByteBuffer content = message.payload();
             final Long messageExpiryInterval = (Long) extensions.getOrDefault(MESSAGE_EXPIRY_INTERVAL, null);
-            final int qos = findQoS(extensions);
+            final int qos = getQoS(extensions);
             final boolean retain = (boolean) extensions.getOrDefault(RETAIN, false);
 
             @SuppressWarnings("unchecked")

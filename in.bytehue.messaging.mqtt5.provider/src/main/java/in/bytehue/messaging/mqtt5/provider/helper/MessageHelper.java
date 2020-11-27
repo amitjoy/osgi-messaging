@@ -52,7 +52,6 @@ import org.osgi.framework.dto.ServiceReferenceDTO;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContextBuilder;
 import org.osgi.service.messaging.acknowledge.AcknowledgeHandler;
-import org.osgi.service.messaging.dto.ChannelDTO;
 
 import com.hivemq.client.mqtt.datatypes.MqttUtf8String;
 import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserProperties;
@@ -126,7 +125,7 @@ public final class MessageHelper {
         // @formatter:on
     }
 
-    public static ServiceReferenceDTO getServiceReferenceDTO(final ServiceReference<?> ref, final long bundleId) {
+    public static ServiceReferenceDTO serviceReferenceDTO(final ServiceReference<?> ref, final long bundleId) {
         final ServiceReferenceDTO dto = new ServiceReferenceDTO();
         dto.bundle = bundleId;
         dto.id = (Long) ref.getProperty(Constants.SERVICE_ID);
@@ -152,11 +151,14 @@ public final class MessageHelper {
         if (c.isArray()) {
             c = c.getComponentType();
         }
-        if (Number.class.isAssignableFrom(c) || Boolean.class.isAssignableFrom(c) || String.class.isAssignableFrom(c)
-                || DTO.class.isAssignableFrom(c)) {
+        if ( // @formatter:off
+                Number.class.isAssignableFrom(c)  ||
+                Boolean.class.isAssignableFrom(c) ||
+                String.class.isAssignableFrom(c)  ||
+                DTO.class.isAssignableFrom(c)) {
+            // @formatter:on
             return value;
         }
-
         if (value.getClass().isArray()) {
             final int length = Array.getLength(value);
             final String[] converted = new String[length];
@@ -165,11 +167,10 @@ public final class MessageHelper {
             }
             return converted;
         }
-
         return String.valueOf(value);
     }
 
-    public static ServiceReferenceDTO findServiceRefAsDTO(final Class<?> clazz, final BundleContext bundleContext) {
+    public static ServiceReferenceDTO getDTOFromClass(final Class<?> clazz, final BundleContext bundleContext) {
         boolean isProtocolCompliant = false;
 
         final ServiceReferenceDTO[] services = bundleContext.getBundle().adapt(ServiceReferenceDTO[].class);
@@ -230,20 +231,7 @@ public final class MessageHelper {
         return result.toString();
     }
 
-    public static ChannelDTO initChannelDTO(final String name, final String extension, final boolean isConnected) {
-        if (name == null) {
-            return null;
-        }
-        final ChannelDTO dto = new ChannelDTO();
-
-        dto.name = name;
-        dto.extension = extension;
-        dto.connected = isConnected;
-
-        return dto;
-    }
-
-    public static int findQoS(final Map<String, Object> extensions) {
+    public static int getQoS(final Map<String, Object> extensions) {
         // guaranteed deliver > guaranteed ordering > specified qos
         final boolean isGuaranteedDelivery = (boolean) extensions.getOrDefault(GUARANTEED_DELIVERY, false);
         if (!isGuaranteedDelivery) {

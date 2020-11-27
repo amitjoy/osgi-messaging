@@ -22,7 +22,7 @@ import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.MES
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.RECEIVE_LOCAL;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.USER_PROPERTIES;
-import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.findServiceRefAsDTO;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getDTOFromClass;
 import static org.osgi.framework.Constants.SERVICE_ID;
 import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
 import static org.osgi.service.messaging.Features.AUTO_ACKNOWLEDGE;
@@ -75,13 +75,7 @@ public final class SimpleMessageServiceRuntime implements MessageServiceRuntime 
     private BundleContext bundleContext;
 
     @Reference
-    private SimpleMessagePublisher publisher;
-
-    @Reference
-    private SimpleMessageSubscriber subscriber;
-
-    @Reference
-    private SimpleMessageReplyToWhiteboard whiteboard;
+    private SimpleSubscriptionRegistry subscriptionRegistry;
 
     @Reference
     private ComponentServiceObjects<SimpleMessageClient> messagingClient;
@@ -93,7 +87,7 @@ public final class SimpleMessageServiceRuntime implements MessageServiceRuntime 
             final MessagingRuntimeDTO dto = new MessagingRuntimeDTO();
 
             dto.connectionURI = client.client.getConfig().getServerHost();
-            dto.serviceDTO = findServiceRefAsDTO(MessageServiceRuntime.class, bundleContext);
+            dto.serviceDTO = getDTOFromClass(MessageServiceRuntime.class, bundleContext);
             // @formatter:off
             dto.features =
                     new String[] {
@@ -117,8 +111,8 @@ public final class SimpleMessageServiceRuntime implements MessageServiceRuntime 
             dto.instanceId = messagingClient.getServiceReference().getProperties().get(SERVICE_ID).toString();
             dto.protocols = new String[] { MQTT_PROTOCOL };
             dto.providerName = PROVIDER;
-            dto.subscriptions = subscriber.getSubscriptionDTOs();
-            dto.replyToSubscriptions = whiteboard.getReplyToSubscriptionDTOs();
+            dto.subscriptions = subscriptionRegistry.getSubscriptionDTOs();
+            dto.replyToSubscriptions = subscriptionRegistry.getReplyToSubscriptionDTOs();
 
             return dto;
         } finally {
