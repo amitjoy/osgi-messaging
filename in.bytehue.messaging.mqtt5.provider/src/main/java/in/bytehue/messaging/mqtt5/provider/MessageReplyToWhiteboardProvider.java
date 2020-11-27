@@ -149,8 +149,8 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
         final MessageContext context = request.getContext();
         final String channel = context.getReplyToChannel();
         final String correlation = context.getCorrelationId();
-        final MessageContextBuilder builder = mcbFactory.getService().channel(channel).correlationId(correlation);
-        return (MessageContextBuilderProvider) builder;
+
+        return (MessageContextBuilderProvider) mcbFactory.getService().channel(channel).correlationId(correlation);
     }
 
     private PushStream<Message> handleResponses(final Message request, final ReplyToManySubscriptionHandler handler) {
