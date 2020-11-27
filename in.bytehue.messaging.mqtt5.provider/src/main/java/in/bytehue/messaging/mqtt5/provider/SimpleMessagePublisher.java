@@ -62,11 +62,11 @@ import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishResult;
 @Component(service = { MessagePublisher.class, SimpleMessagePublisher.class })
 public final class SimpleMessagePublisher implements MessagePublisher {
 
-    @Reference
-    private SimpleMessageClient messagingClient;
-
     @Reference(service = LoggerFactory.class)
     private Logger logger;
+
+    @Reference
+    private SimpleMessageClient messagingClient;
 
     @Override
     public void publish(final Message message) {
@@ -112,12 +112,12 @@ public final class SimpleMessagePublisher implements MessagePublisher {
             // @formatter:off
             final Complete<CompletableFuture<Mqtt5PublishResult>> publishRequest =
                     messagingClient.client.publishWith()
-                                          .topic(channel)
-                                          .contentType(contentType)
-                                          .payload(content)
-                                          .qos(MqttQos.fromCode(qos))
-                                          .retain(retain)
-                                          .userProperties(propsBuilder.build());
+                                              .topic(channel)
+                                              .contentType(contentType)
+                                              .payload(content)
+                                              .qos(MqttQos.fromCode(qos))
+                                              .retain(retain)
+                                              .userProperties(propsBuilder.build());
             if (messageExpiryInterval == null) {
                 publishRequest.noMessageExpiry();
             } else {

@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2020 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -210,8 +210,8 @@ public final class SimpleMessageClient {
 
         final Mqtt5ConnAck connAck = client.toBlocking()
                                            .connectWith()
-                                           .cleanStart(config.cleanStart())
-                                           .sessionExpiryInterval(config.sessionExpiryInterval())
+                                               .cleanStart(config.cleanStart())
+                                               .sessionExpiryInterval(config.sessionExpiryInterval())
                                            .restrictions()
                                                .receiveMaximum(config.receiveMaximum())
                                                .sendMaximum(config.sendMaximum())
@@ -229,8 +229,8 @@ public final class SimpleMessageClient {
     void deactivate() {
         // @formatter:off
         client.disconnectWith()
-              .reasonCode(config.disconnectionReasonCode())
-              .reasonString(config.disconnectionReasonDescription())
+                  .reasonCode(config.disconnectionReasonCode())
+                  .reasonString(config.disconnectionReasonDescription())
               .send();
         // @formatter:on
     }
@@ -253,9 +253,9 @@ public final class SimpleMessageClient {
         try {
             // @formatter:off
             return MessageHelper.getService(
-                    Mqtt5EnhancedAuthMechanism.class,
-                    config.enhancedAuthTargetFilter(),
-                    bundleContext);
+                       Mqtt5EnhancedAuthMechanism.class,
+                       config.enhancedAuthTargetFilter(),
+                       bundleContext);
             // @formatter:on
         } catch (final Exception e) {
             throw new RuntimeException(

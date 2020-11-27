@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2020 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -123,37 +123,37 @@ public final class SimpleMessageSubscriber implements MessageSubscription {
 
             // @formatter:off
             messagingClient.client.subscribeWith()
-                                  .topicFilter(channel)
-                                  .qos(MqttQos.fromCode(qos))
-                                  .noLocal(receiveLocal)
-                                  .retainAsPublished(retainAsPublished)
-                                  .callback(p -> {
-                                      final SimpleMessageContextBuilder mcb = mcbFactory.getService();
-                                      try {
-                                          final Message message = toMessage(p, mcb);
-                                          acknowledgeMessage(message, ctx, m -> source.publish(m));
-                                      } catch (final Throwable e) {
-                                          source.error(e);
-                                      } finally {
-                                        mcbFactory.ungetService(mcb);
-                                      }
-                                  })
-                                  .send()
-                                  .thenAccept(ack -> {
-                                      if (isSubscriptionAcknowledged(ack)) {
-                                          subscriptions.put(
-                                                  stream,
-                                                  initChannelDTO(channel, null, true));
-                                          logger.debug("New subscription request for '{}' has been processed successfully", channel);
-                                      } else {
-                                          logger.error("New subscription request for '{}' failed - {}", channel, ack);
-                                      }
-                                  });
+                                      .topicFilter(channel)
+                                      .qos(MqttQos.fromCode(qos))
+                                      .noLocal(receiveLocal)
+                                      .retainAsPublished(retainAsPublished)
+                                      .callback(p -> {
+                                          final SimpleMessageContextBuilder mcb = mcbFactory.getService();
+                                          try {
+                                              final Message message = toMessage(p, mcb);
+                                              acknowledgeMessage(message, ctx, m -> source.publish(m));
+                                          } catch (final Throwable e) {
+                                              source.error(e);
+                                          } finally {
+                                              mcbFactory.ungetService(mcb);
+                                          }
+                                      })
+                                      .send()
+                                      .thenAccept(ack -> {
+                                          if (isSubscriptionAcknowledged(ack)) {
+                                              subscriptions.put(
+                                                      stream,
+                                                      initChannelDTO(channel, null, true));
+                                              logger.debug("New subscription request for '{}' has been processed successfully", channel);
+                                          } else {
+                                              logger.error("New subscription request for '{}' failed - {}", channel, ack);
+                                          }
+                                      });
             stream.onClose(() -> {
                 final ChannelDTO dto = subscriptions.get(stream);
                 dto.connected = false;
                 messagingClient.client.unsubscribeWith()
-                                      .addTopicFilter(channel)
+                                          .addTopicFilter(channel)
                                       .send();
                 subscriptions.remove(stream); // remove the subscription from registry
                 source.close();
