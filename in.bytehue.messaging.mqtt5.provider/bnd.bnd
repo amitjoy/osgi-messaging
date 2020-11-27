@@ -1,4 +1,4 @@
--buildpath          :   \
+-buildpath                     :   \
 	org.apache.felix.log,\
 	org.osgi.service.messaging,\
 	com.hivemq:hivemq-mqtt-client-shaded,\
@@ -6,15 +6,17 @@
 	in.bytehue.messaging.mqtt5.api,\
 	org.reactivestreams.reactive-streams
 
--includepackage     : org.osgi.service.messaging.*
--privatepackage     : in.bytehue.*
+-privatepackage                : \
+	in.bytehue.*,\
+	com.hivemq.*,\
+	io.reactivex.*,\
+	org.reactivestreams.*
 
--includeresource.1  : ${repo;com.hivemq:hivemq-mqtt-client-shaded};lib:=true
--includeresource.2  : ${repo;io.reactivex.rxjava2.rxjava};lib:=true
--includeresource.3  : ${repo;org.reactivestreams.reactive-streams};lib:=true
-
--exportcontents     : com.hivemq.client.mqtt.*
-Import-Package      : \
+-includepackage                : org.osgi.service.messaging.*
+-includeresource.hivemq.res    : @${repo;com.hivemq:hivemq-mqtt-client-shaded}!/META-INF/*
+-fixupmessages.private.package : 'private reference'
+Export-Package                 : com.hivemq.client.mqtt.*
+Import-Package                 : \
 	com.hivemq.client.internal.shaded.io.netty.internal.tcnative;'resolution:'=optional,\
 	com.jcraft.jzlib;'resolution:'=optional,\
 	org.slf4j;'resolution:'=optional,\
@@ -28,5 +30,3 @@ Import-Package      : \
 	org.eclipse.jetty.alpn;'resolution:'=optional,\
 	org.eclipse.jetty.npn;'resolution:'=optional,\
 	*
-
--fixupmessages.private.package : 'private reference'
