@@ -29,8 +29,8 @@ import org.osgi.service.messaging.MessageSubscription;
 
 @RequireConfigurator
 @GogoCommand(function = { "pub", "sub" }, scope = "test")
-@Component(service = Mqtt5Application.class, immediate = true)
-public final class Mqtt5Application {
+@Component(service = Mqtt5PubSubExample.class, immediate = true)
+public final class Mqtt5PubSubExample {
 
     @Reference
     private MessagePublisher publisher;
