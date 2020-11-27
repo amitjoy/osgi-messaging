@@ -17,12 +17,13 @@ package in.bytehue.messaging.mqtt5.provider;
 
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MESSAGING_PROTOCOL;
+import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.messaging.acknowledge.AcknowledgeHandler;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
 
-@MessagingFeature(name = MESSAGING_ID, protocol = MESSAGING_PROTOCOL)
+@MessagingFeature(name = MESSAGING_ID, protocol = MESSAGING_PROTOCOL, feature = ACKNOWLEDGE)
 @Component(service = { AcknowledgeHandler.class, MessageAcknowledgeHandlerProvider.class })
 public final class MessageAcknowledgeHandlerProvider implements AcknowledgeHandler {
 
