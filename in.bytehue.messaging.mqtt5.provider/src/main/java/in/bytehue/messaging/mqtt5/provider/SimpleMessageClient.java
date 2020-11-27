@@ -17,6 +17,7 @@ package in.bytehue.messaging.mqtt5.provider;
 
 import static com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode.NORMAL_DISCONNECTION;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.PID.CLIENT;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getService;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.osgi.service.metatype.annotations.AttributeType.PASSWORD;
 
@@ -38,6 +39,8 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 import com.hivemq.client.mqtt.datatypes.MqttQos;
+import com.hivemq.client.mqtt.lifecycle.MqttClientConnectedListener;
+import com.hivemq.client.mqtt.lifecycle.MqttClientDisconnectedListener;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5ClientBuilder;
@@ -46,7 +49,6 @@ import com.hivemq.client.mqtt.mqtt5.message.connect.connack.Mqtt5ConnAck;
 import com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode;
 
 import in.bytehue.messaging.mqtt5.provider.SimpleMessageClient.Config;
-import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
 
 @ProvideMessagingFeature
 @Designate(ocd = Config.class)
@@ -141,6 +143,15 @@ public final class SimpleMessageClient {
         @AttributeDefinition(name = "Enhanced Authentication Service Filter")
         String enhancedAuthTargetFilter() default "";
 
+        @AttributeDefinition(name = "Server Reauthentication")
+        boolean useServerReauth() default false;
+
+        @AttributeDefinition(name = "Connected Listener Service Filter")
+        String connectedListenerFilter() default "";
+
+        @AttributeDefinition(name = "Disconnected Listener Service Filter")
+        String disconnectedListenerFilter() default "";
+
         @AttributeDefinition(name = "Reason for the disconnection when the component is stopped")
         String disconnectionReasonDescription() default "OSGi Component Deactivated";
 
@@ -159,6 +170,7 @@ public final class SimpleMessageClient {
 
         this.config = config;
         final String clientId = config.id() != null ? config.id() : UUID.randomUUID().toString();
+
         // @formatter:off
         final Mqtt5ClientBuilder clientBuilder = Mqtt5Client.builder()
                                                             .identifier(clientId)
@@ -186,14 +198,17 @@ public final class SimpleMessageClient {
             clientBuilder.sslConfig()
                              .cipherSuites(Arrays.asList(config.cipherSuites()))
                              .handshakeTimeout(config.handshakeTimeout(), SECONDS)
-                             .trustManagerFactory(getTrustManagerFactory(config, bundleContext))
-                         .applySslConfig();
+                             .trustManagerFactory(
+                                     getService(
+                                             TrustManagerFactory.class,
+                                             config.trustManagerFactoryTargetFilter(),
+                                             bundleContext))
+                             .applySslConfig();
         }
-        final String lastWillTopic = config.lastWillTopic();
-        if (!lastWillTopic.isEmpty()) {
+        if (!config.lastWillTopic().isEmpty()) {
             logger.debug("Applying Last Will Configuration");
             clientBuilder.willPublish()
-                             .topic(lastWillTopic)
+                             .topic(config.lastWillTopic())
                              .qos(MqttQos.fromCode(config.lastWillQoS()))
                              .payload(config.lastWillPayLoad().getBytes())
                              .contentType(config.lastWillContentType())
@@ -203,11 +218,35 @@ public final class SimpleMessageClient {
         }
         if (config.useEnhancedAuthentication()) {
             logger.debug("Applying Enhanced Authentication configuration");
-            clientBuilder.enhancedAuth(getEnhancedAuth(config, bundleContext));
+            clientBuilder.enhancedAuth(
+                    getService(
+                           Mqtt5EnhancedAuthMechanism.class,
+                           config.enhancedAuthTargetFilter(),
+                           bundleContext));
+        }
+        if (!config.useServerReauth()) {
+            logger.debug("Applying Server Reauthentication configuration");
+            clientBuilder.advancedConfig()
+                         .allowServerReAuth(config.useServerReauth());
+        }
+        if (!config.connectedListenerFilter().isEmpty()) {
+            logger.debug("Applying Connected Listener configuration");
+            clientBuilder.addConnectedListener(
+                    getService(
+                            MqttClientConnectedListener.class,
+                            config.connectedListenerFilter(),
+                            bundleContext));
+        }
+        if (!config.disconnectedListenerFilter().isEmpty()) {
+            logger.debug("Applying Disconnected Listener configuration");
+            clientBuilder.addDisconnectedListener(
+                    getService(
+                            MqttClientDisconnectedListener.class,
+                            config.disconnectedListenerFilter(),
+                            bundleContext));
         }
 
         client = clientBuilder.buildAsync();
-
         final Mqtt5ConnAck connAck = client.toBlocking()
                                            .connectWith()
                                                .cleanStart(config.cleanStart())
@@ -220,47 +259,15 @@ public final class SimpleMessageClient {
                                                .sendTopicAliasMaximum(config.topicAliasMaximum())
                                            .applyRestrictions()
                                            .send();
-
-        // @formatter:on
         logger.debug("Connection successfully established - {}", connAck);
     }
 
     @Deactivate
     void deactivate() {
-        // @formatter:off
         client.disconnectWith()
                   .reasonCode(config.disconnectionReasonCode())
                   .reasonString(config.disconnectionReasonDescription())
               .send();
-        // @formatter:on
-    }
-
-    private TrustManagerFactory getTrustManagerFactory(final Config config, final BundleContext bundleContext) {
-        try {
-            // @formatter:off
-            return MessageHelper.getService(
-                        TrustManagerFactory.class,
-                        config.trustManagerFactoryTargetFilter(),
-                        bundleContext);
-            // @formatter:on
-        } catch (final Exception e) {
-            throw new RuntimeException(
-                    "MQTT SSL Configuration Failed since specified'TrustManagerFactory' service is not found");
-        }
-    }
-
-    private Mqtt5EnhancedAuthMechanism getEnhancedAuth(final Config config, final BundleContext bundleContext) {
-        try {
-            // @formatter:off
-            return MessageHelper.getService(
-                       Mqtt5EnhancedAuthMechanism.class,
-                       config.enhancedAuthTargetFilter(),
-                       bundleContext);
-            // @formatter:on
-        } catch (final Exception e) {
-            throw new RuntimeException(
-                    "MQTT Enhanced Authentication Configuration Failed since 'Mqtt5EnhancedAuthMechanism' service is not found");
-        }
     }
 
 }

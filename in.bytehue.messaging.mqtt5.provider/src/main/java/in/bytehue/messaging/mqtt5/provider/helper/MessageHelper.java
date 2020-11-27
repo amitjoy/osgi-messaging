@@ -47,7 +47,6 @@ import org.osgi.dto.DTO;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
-import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.dto.ServiceReferenceDTO;
 import org.osgi.service.messaging.Message;
@@ -67,10 +66,10 @@ public final class MessageHelper {
         throw new IllegalAccessError("Non-instantiable");
     }
 
-    public static <T> T getService(final Class<T> clazz, final String filter, final BundleContext context)
-            throws InvalidSyntaxException {
-        final Collection<ServiceReference<T>> serviceReferences = context.getServiceReferences(clazz, filter);
-        // get the service with highest service ranking
+    public static <T> T getService(final Class<T> clazz, final String filter, final BundleContext context) {
+        try {
+            final Collection<ServiceReference<T>> serviceReferences = context.getServiceReferences(clazz, filter);
+            // get the service with highest service ranking
         // @formatter:off
         return serviceReferences.stream()
                 .sorted(
@@ -81,6 +80,9 @@ public final class MessageHelper {
                 .map(context::getService)
                 .orElseThrow(() -> new RuntimeException("'" + clazz +"' service instance cannot be found"));
         // @formatter:on
+        } catch (final Exception e) {
+            throw new RuntimeException("Service '" + clazz.getName() + "' cannot be retrieved", e);
+        }
     }
 
     public static Message toMessage(final Mqtt5Publish publish, final MessageContextBuilder messageContextBuilder) {
