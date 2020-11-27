@@ -50,13 +50,13 @@ import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
                 SimpleMessageContextBuilder.class,
                 AcknowledgeMessageContextBuilder.class
         })
-@ProvideMessagingAcknowledgeFeature
 @MessagingFeature(
         protocol = MQTT_PROTOCOL,
         name = Mqtt5MessageConstants.Component.MESSAGE_CONTEXT_BUILDER,
         feature = {
                 MESSAGE_CONTEXT_BUILDER,
                 ACKNOWLEDGE })
+@ProvideMessagingAcknowledgeFeature
 // @formatter:on
 public final class SimpleMessageContextBuilder implements MessageContextBuilder, AcknowledgeMessageContextBuilder {
 
