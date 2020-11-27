@@ -1,10 +1,9 @@
 package org.osgi.service.messaging.acknowledge;
 
 import org.osgi.annotation.versioning.ProviderType;
-import org.osgi.service.messaging.MessageContext;
 
 @ProviderType
-public interface AcknowledgeMessageContext extends MessageContext {
+public interface AcknowledgeMessageContext {
 
     /**
      * Returns the state, if a message was acknowledge or not or none of them.

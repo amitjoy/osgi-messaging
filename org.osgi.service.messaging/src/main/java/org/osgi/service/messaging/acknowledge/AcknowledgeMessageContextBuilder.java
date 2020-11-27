@@ -14,7 +14,7 @@ import org.osgi.service.messaging.MessageContextBuilder;
  * This builder supports the programmatic way of declaring ack/reject behavior as well a using services.
  */
 @ProviderType
-public interface AcknowledgeMessageContextBuilder extends MessageContextBuilder {
+public interface AcknowledgeMessageContextBuilder {
 
     /**
      * A consumer that is called to do custom acknowledge logic.
