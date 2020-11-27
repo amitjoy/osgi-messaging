@@ -20,6 +20,6 @@ public interface ReplyToSingleSubscriptionHandler {
      * @param responseBuilder the builder for the response message
      * @return the response {@link Message}, must not be null
      */
-    Promise<Message> handleResponse(Message requestMessage, MessageContextBuilder responseBuilder);
+    Message handleResponse(Message requestMessage, MessageContextBuilder responseBuilder);
 
 }

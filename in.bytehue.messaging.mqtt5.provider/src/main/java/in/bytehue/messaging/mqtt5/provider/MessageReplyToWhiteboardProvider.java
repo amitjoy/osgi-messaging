@@ -137,7 +137,7 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
     private Message handleResponse(final Message request, final ReplyToSingleSubscriptionHandler handler) {
         final MessageContextBuilderProvider mcb = getResponse(request);
         try {
-            return handler.handleResponse(request, mcb).getValue();
+            return handler.handleResponse(request, mcb);
         } catch (final Exception e) {
             return prepareExceptionAsMessage(e, mcb);
         } finally {
