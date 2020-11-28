@@ -64,8 +64,8 @@ import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCo
                 RETAIN,
                 ACKNOWLEDGE,
                 RECEIVE_LOCAL })
-@Component(service = { MessageSubscription.class, MessageSubscriberProvider.class })
-public final class MessageSubscriberProvider implements MessageSubscription {
+@Component(service = { MessageSubscription.class, MessageSubscriptionProvider.class })
+public final class MessageSubscriptionProvider implements MessageSubscription {
 
     @Activate
     private BundleContext bundleContext;
@@ -112,7 +112,7 @@ public final class MessageSubscriberProvider implements MessageSubscription {
 
         final PushStreamProvider provider = new PushStreamProvider();
         final SimplePushEventSource<Message> source = provider.createSimpleEventSource(Message.class);
-        final PushStream<Message> stream = provider.createStream(source);
+        final PushStream<Message> stream = provider.createStream(source); //NOSONAR
         try {
             final MessageContextBuilderProvider builder = mcbFactory.getService();
             try {

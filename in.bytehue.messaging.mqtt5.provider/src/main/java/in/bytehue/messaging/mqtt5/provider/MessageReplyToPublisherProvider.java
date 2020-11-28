@@ -89,7 +89,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
     private MessagePublisherProvider publisher;
 
     @Reference
-    private MessageSubscriberProvider subscriber;
+    private MessageSubscriptionProvider subscriber;
 
     private final PromiseFactory promiseFactory;
 

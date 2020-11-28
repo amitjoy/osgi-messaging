@@ -65,7 +65,7 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
     public static final String KEY_PUB_CHANNEL  = "osgi.messaging.replyToSubscription.replyChannel";
 
     private final MessagePublisherProvider publisher;
-    private final MessageSubscriberProvider subscriber;
+    private final MessageSubscriptionProvider subscriber;
     private final Map<ServiceReference<?>, List<PushStream<?>>> streams;
     private final ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
 
@@ -74,7 +74,7 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
             @Reference
             final MessagePublisherProvider publisher,
             @Reference
-            final MessageSubscriberProvider subscriber,
+            final MessageSubscriptionProvider subscriber,
             @Reference
             final ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory) {
 

@@ -214,11 +214,10 @@ public final class MessageHelper {
             if (ctx.acknowledgeConsumer != null) {
                 ctx.acknowledgeConsumer.accept(message);
             }
-            return ctx.acknowledgeState == ACKNOWLEDGED;
         } else {
             ctx.acknowledgeState = UNSUPPORTED;
-            return false;
         }
+        return ctx.acknowledgeState == ACKNOWLEDGED;
     }
 
     public static Message prepareExceptionAsMessage(final Throwable t, final MessageContextBuilder mcb) {
