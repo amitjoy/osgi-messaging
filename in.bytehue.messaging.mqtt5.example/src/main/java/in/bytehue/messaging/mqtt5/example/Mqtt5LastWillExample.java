@@ -41,8 +41,8 @@ public final class Mqtt5LastWillExample {
             final Message lastWill =
                     mcb.channel("last-will-channel")
                        .content(ByteBuffer.wrap("EXIT".getBytes()))
-                       .extensionEntry(Features.QOS, "2")
-                       .extensionEntry(Features.LAST_WILL, Boolean.TRUE)
+                       .extensionEntry(Features.EXTENSION_QOS, "2")
+                       .extensionEntry(Features.EXTENSION_LAST_WILL, Boolean.TRUE)
                        .buildMessage();
             // @formatter:on
             mqttPublisher.publish(lastWill);

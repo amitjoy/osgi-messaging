@@ -27,9 +27,9 @@ import static java.util.stream.Collectors.toMap;
 import static org.osgi.framework.Constants.OBJECTCLASS;
 import static org.osgi.framework.Constants.SERVICE_ID;
 import static org.osgi.framework.Constants.SERVICE_RANKING;
-import static org.osgi.service.messaging.Features.GUARANTEED_DELIVERY;
-import static org.osgi.service.messaging.Features.GUARANTEED_ORDERING;
-import static org.osgi.service.messaging.Features.QOS;
+import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_DELIVERY;
+import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_ORDERING;
+import static org.osgi.service.messaging.Features.EXTENSION_QOS;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.ACKNOWLEDGED;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.RECEIVED;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.REJECTED;
@@ -109,7 +109,7 @@ public final class MessageHelper {
                                                                     e -> e.getValue().toString()));
 
         final Map<String, Object> extensions = new HashMap<>();
-        extensions.put(QOS, qos);
+        extensions.put(EXTENSION_QOS, qos);
         extensions.put(RETAIN, retain);
         extensions.put(USER_PROPERTIES, userProperties);
 
@@ -234,11 +234,11 @@ public final class MessageHelper {
 
     public static int getQoS(final Map<String, Object> extensions) {
         // guaranteed deliver > guaranteed ordering > specified qos
-        final boolean isGuaranteedDelivery = (boolean) extensions.getOrDefault(GUARANTEED_DELIVERY, false);
+        final boolean isGuaranteedDelivery = (boolean) extensions.getOrDefault(EXTENSION_GUARANTEED_DELIVERY, false);
         if (!isGuaranteedDelivery) {
-            final boolean isGuranteedOrdering = (boolean) extensions.getOrDefault(GUARANTEED_ORDERING, false);
+            final boolean isGuranteedOrdering = (boolean) extensions.getOrDefault(EXTENSION_GUARANTEED_ORDERING, false);
             if (!isGuranteedOrdering) {
-                return (int) extensions.getOrDefault(QOS, DEFAULT_QOS.getCode());
+                return (int) extensions.getOrDefault(EXTENSION_QOS, DEFAULT_QOS.getCode());
             }
         }
         return EXACTLY_ONCE.getCode();

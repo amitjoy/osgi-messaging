@@ -28,7 +28,7 @@ import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getQoS;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.toMessage;
 import static java.util.Objects.requireNonNull;
 import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
-import static org.osgi.service.messaging.Features.QOS;
+import static org.osgi.service.messaging.Features.EXTENSION_QOS;
 
 import java.util.Arrays;
 import java.util.List;
@@ -60,7 +60,7 @@ import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCo
         name = MESSAGING_ID,
         protocol = MESSAGING_PROTOCOL,
         feature = {
-                QOS,
+                EXTENSION_QOS,
                 RETAIN,
                 ACKNOWLEDGE,
                 RECEIVE_LOCAL })

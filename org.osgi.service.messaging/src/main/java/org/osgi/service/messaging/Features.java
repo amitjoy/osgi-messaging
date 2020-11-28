@@ -56,34 +56,34 @@ public interface Features {
      *
      * @since 1.0
      */
-    String GUARANTEED_ORDERING = "guaranteedOrdering";
+    String EXTENSION_GUARANTEED_ORDERING = "guaranteedOrdering";
 
     /**
      * The name of the the {@code Guaranteed Delivery} extension of the Messaging specification
      *
      * @since 1.0
      */
-    String GUARANTEED_DELIVERY = "guaranteedDelivery";
+    String EXTENSION_GUARANTEED_DELIVERY = "guaranteedDelivery";
 
     /**
      * The name of the the {@code Automatic Acknowledgement} extension of the Messaging specification
      *
      * @since 1.0
      */
-    String AUTO_ACKNOWLEDGE = "autoAcknowledge"; // TODO what is it?
+    String EXTENSION_AUTO_ACKNOWLEDGE = "autoAcknowledge"; // TODO what is it?
 
     /**
      * The name of the the {@code Last Will} extension of the Messaging specification
      *
      * @since 1.0
      */
-    String LAST_WILL = "lastWill";
+    String EXTENSION_LAST_WILL = "lastWill";
 
     /**
      * The name of the the {@code Quality of Service} extension of the Messaging specification
      *
      * @since 1.0
      */
-    String QOS = "qos";
+    String EXTENSION_QOS = "qos";
 
 }

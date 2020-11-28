@@ -23,9 +23,9 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getQoS;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.stackTraceToString;
 import static java.util.Collections.emptyMap;
-import static org.osgi.service.messaging.Features.GUARANTEED_DELIVERY;
-import static org.osgi.service.messaging.Features.GUARANTEED_ORDERING;
-import static org.osgi.service.messaging.Features.QOS;
+import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_DELIVERY;
+import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_ORDERING;
+import static org.osgi.service.messaging.Features.EXTENSION_QOS;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -52,11 +52,11 @@ import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishResult;
         name = MESSAGING_ID,
         protocol = MESSAGING_PROTOCOL,
         feature = {
-                QOS,
+                EXTENSION_QOS,
                 RETAIN,
                 USER_PROPERTIES,
-                GUARANTEED_DELIVERY,
-                GUARANTEED_ORDERING,
+                EXTENSION_GUARANTEED_DELIVERY,
+                EXTENSION_GUARANTEED_ORDERING,
                 MESSAGE_EXPIRY_INTERVAL })
 //@formatter:on
 @Component(service = { MessagePublisher.class, MessagePublisherProvider.class })
