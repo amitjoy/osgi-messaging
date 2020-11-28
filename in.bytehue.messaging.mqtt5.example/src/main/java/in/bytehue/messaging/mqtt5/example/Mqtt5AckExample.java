@@ -31,71 +31,103 @@ import org.osgi.util.pushstream.PushStream;
 @Component(service = Mqtt5AckExample.class, immediate = true)
 public final class Mqtt5AckExample {
 
-    @Reference(target = "(osgi.messaging.feature=acknowledge)")
+    @Reference(target = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.feature=acknowledge))")
     private MessageSubscription mqttSubscription;
 
-    @Reference
+    @Reference(target = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.feature=acknowledge))")
     private ComponentServiceObjects<AcknowledgeMessageContextBuilder> amcbFactory;
 
-    @Reference
+    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
     private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
 
     volatile boolean good = true;
 
     public void subscribeMessage1() {
         final AcknowledgeMessageContextBuilder ackBuilder = amcbFactory.getService();
-        final MessageContext context = ackBuilder
-                .filterAcknowledge(m -> m.getContext().getContentType().equals("plain/text"))
-                .messageContextBuilder()
-                .channel("/demo").buildContext();
-        mqttSubscription.subscribe(context);
+        try {
+            final MessageContext context = ackBuilder
+                    .filterAcknowledge(m -> m.getContext().getContentType().equals("plain/text"))
+                    .messageContextBuilder()
+                    .channel("/demo").buildContext();
+            mqttSubscription.subscribe(context);
+        } finally {
+            amcbFactory.ungetService(ackBuilder);
+        }
     }
 
     public void subscribeMessage2() {
         final AcknowledgeMessageContextBuilder ackBuilder = amcbFactory.getService();
-        final MessageContext context = ackBuilder.handleAcknowledge(m -> {
-            final AcknowledgeMessageContext ctx = (AcknowledgeMessageContext) m.getContext();
-            final AcknowledgeHandler handler = ctx.getAcknowledgeHandler();
-            if (good) {
-                handler.acknowledge();
-            } else {
-                handler.reject();
-            }
-        }).postAcknowledge(m -> {
-            final AcknowledgeMessageContext ctx = (AcknowledgeMessageContext) m.getContext();
-            System.out.println("Acknowledge state is: " + ctx.getAcknowledgeState());
-        }).messageContextBuilder()
-          .channel("/demo")
-          .buildContext();
-        mqttSubscription.subscribe(context);
+        try {
+            final MessageContext context = ackBuilder.handleAcknowledge(m -> {
+                final AcknowledgeMessageContext ctx = (AcknowledgeMessageContext) m.getContext();
+                final AcknowledgeHandler handler = ctx.getAcknowledgeHandler();
+                if (good) {
+                    handler.acknowledge();
+                } else {
+                    handler.reject();
+                }
+            }).postAcknowledge(m -> {
+                final AcknowledgeMessageContext ctx = (AcknowledgeMessageContext) m.getContext();
+                System.out.println("Acknowledge state is: " + ctx.getAcknowledgeState());
+            }).messageContextBuilder()
+              .channel("/demo")
+              .buildContext();
+            mqttSubscription.subscribe(context);
+        } finally {
+            amcbFactory.ungetService(ackBuilder);
+        }
     }
 
     public void subscribeMessage3() {
         final AcknowledgeMessageContextBuilder ackBuilder = amcbFactory.getService();
-        final MessageContext context = ackBuilder
-                .handleAcknowledge("(foo=bar)")
-                .postAcknowledge(m -> {
-                        final AcknowledgeMessageContext ctx = (AcknowledgeMessageContext) m.getContext();
-                        System.out.println("Acknowledge state is: " + ctx.getAcknowledgeState());
-                        })
-                .messageContextBuilder()
-                .channel("/demo")
-                .buildContext();
-        mqttSubscription.subscribe(context);
+        try {
+            final MessageContext context = ackBuilder
+                    .handleAcknowledge("(foo=bar)")
+                    .postAcknowledge(m -> {
+                            final AcknowledgeMessageContext ctx = (AcknowledgeMessageContext) m.getContext();
+                            System.out.println("Acknowledge state is: " + ctx.getAcknowledgeState());
+                      })
+                    .messageContextBuilder()
+                    .channel("/demo")
+                    .buildContext();
+            mqttSubscription.subscribe(context);
+        } finally {
+            amcbFactory.ungetService(ackBuilder);
+        }
     }
 
     public void subscribeMessage4() {
-        final MessageContext context = mcbFactory.getService().channel("/demo").buildContext();
-        final PushStream<Message> messageStream = mqttSubscription.subscribe(context);
-        messageStream.forEach(m -> {
-            final AcknowledgeMessageContext ctx = (AcknowledgeMessageContext) m.getContext();
-            final AcknowledgeHandler handler = ctx.getAcknowledgeHandler();
-            if (good) {
-                handler.acknowledge();
-            } else {
-                handler.reject();
-            }
-        });
+        final MessageContextBuilder mcb = mcbFactory.getService();
+        try {
+            final MessageContext context = mcb.channel("/demo").buildContext();
+            final PushStream<Message> messageStream = mqttSubscription.subscribe(context);
+            messageStream.forEach(m -> {
+                final AcknowledgeMessageContext ctx = (AcknowledgeMessageContext) m.getContext();
+                final AcknowledgeHandler handler = ctx.getAcknowledgeHandler();
+                if (good) {
+                    handler.acknowledge();
+                } else {
+                    handler.reject();
+                }
+            });
+        } finally {
+            mcbFactory.ungetService(mcb);
+        }
+    }
+
+    public void subscribeMessage5() {
+        final AcknowledgeMessageContextBuilder ackBuilder = amcbFactory.getService();
+        try {
+            final MessageContext context = ackBuilder
+                    .filterAcknowledge("(foo=bar)")
+                    .postAcknowledge("(myConsumer=true)")
+                    .messageContextBuilder()
+                    .channel("sample-topic")
+                    .buildContext();
+            mqttSubscription.subscribe(context);
+        } finally {
+            amcbFactory.ungetService(ackBuilder);
+        }
     }
 
 }

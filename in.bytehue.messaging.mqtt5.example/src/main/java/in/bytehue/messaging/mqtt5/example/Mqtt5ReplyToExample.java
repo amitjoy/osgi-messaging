@@ -16,52 +16,38 @@
 package in.bytehue.messaging.mqtt5.example;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 
-import org.apache.felix.service.command.annotations.GogoCommand;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.configurator.annotations.RequireConfigurator;
+import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContextBuilder;
-import org.osgi.service.messaging.MessagePublisher;
-import org.osgi.service.messaging.MessageSubscription;
+import org.osgi.service.messaging.replyto.ReplyToPublisher;
 
-@RequireConfigurator
-@GogoCommand(function = { "pub", "sub" }, scope = "test")
-@Component(service = Mqtt5PubSubExample.class, immediate = true)
-public final class Mqtt5PubSubExample {
+@Component
+public class Mqtt5ReplyToExample {
 
     @Reference(target = "(osgi.messaging.protocol=mqtt5)")
-    private MessagePublisher publisher;
-
-    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
-    private MessageSubscription subscriber;
+    private ReplyToPublisher mqttPublisher;
 
     @Reference(target = "(osgi.messaging.protocol=mqtt5)")
     private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
 
-    public String sub(final String channel) {
-        subscriber.subscribe(channel).forEach(m -> {
-            System.out.println("Message Received");
-            System.out.println(StandardCharsets.UTF_8.decode(m.payload()).toString());
-        });
-        return "Subscribed to " + channel;
-    }
-
-    public String pub(final String channel, final String data) {
+    public void publishReplyToMessage() {
         final MessageContextBuilder mcb = mcbFactory.getService();
         try {
             // @formatter:off
-            publisher.publish(
-                    mcb.content(ByteBuffer.wrap(data.getBytes()))
-                       .channel(channel)
-                       .buildMessage());
+            final Message request =
+                    mcb.channel("/demo")
+                       .correlationId("test123")
+                       .replyTo("demo_response")
+                       .content(ByteBuffer.wrap("Hello Word!".getBytes()))
+                       .buildMessage();
             // @formatter:on
+            mqttPublisher.publishWithReply(request);
         } finally {
             mcbFactory.ungetService(mcb);
         }
-        return "Published to " + channel;
     }
 
 }
