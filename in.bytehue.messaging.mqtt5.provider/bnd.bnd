@@ -1,12 +1,15 @@
 -buildpath                     :   \
+	osgi.core,\
 	org.apache.felix.log,\
 	org.osgi.service.messaging,\
 	com.hivemq:hivemq-mqtt-client-shaded,\
 	io.reactivex.rxjava2.rxjava,\
 	in.bytehue.messaging.mqtt5.api,\
-	org.reactivestreams.reactive-streams
+	org.reactivestreams.reactive-streams,\
+	biz.aQute.bndlib;packages=*
 
 -privatepackage                : \
+	aQute.*,\
 	in.bytehue.*,\
 	com.hivemq.*,\
 	io.reactivex.*,\
@@ -18,6 +21,7 @@
 Export-Package                 : com.hivemq.client.mqtt.*
 Import-Package                 : \
 	com.hivemq.client.internal.shaded.io.netty.internal.tcnative;'resolution:'=optional,\
+	org.osgi.service.repository;'resolution:'=optional,\
 	com.jcraft.jzlib;'resolution:'=optional,\
 	org.slf4j;'resolution:'=optional,\
 	org.slf4j.helpers;'resolution:'=optional,\

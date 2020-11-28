@@ -25,8 +25,10 @@ import static org.osgi.service.messaging.Features.REPLY_TO;
 
 import java.util.ArrayList;
 import java.util.Dictionary;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
@@ -46,33 +48,19 @@ import org.osgi.service.messaging.replyto.ReplyToSubscriptionHandler;
 import org.osgi.service.messaging.replyto.ReplyToWhiteboard;
 import org.osgi.util.pushstream.PushStream;
 
+import aQute.bnd.osgi.resource.FilterParser;
+import aQute.bnd.osgi.resource.FilterParser.Expression;
+
 @MessagingFeature(name = MESSAGING_ID, protocol = MESSAGING_PROTOCOL)
 @Component(service = { ReplyToWhiteboard.class, MessageReplyToWhiteboardProvider.class }, immediate = true)
 public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard {
 
-    // @formatter:off
-    private static final String KEY_NAME             = "osgi.messaging.name";
-    private static final String KEY_FEATURE          = "osgi.messaging.feature";
-    private static final String KEY_PROTOCOL         = "osgi.messaging.protocol";
-    private static final String KEY_SUB_CHANNEL      = "osgi.messaging.replyToSubscription.channel";
-    private static final String KEY_PUB_CHANNEL      = "osgi.messaging.replyToSubscription.replyChannel";
-
-    private static final String FILTER_MQTT          = "(" + KEY_PROTOCOL +"=" + MESSAGING_PROTOCOL + ")";
-    private static final String FILTER_REPLY_TO      = "(" + KEY_FEATURE +"=" + REPLY_TO + ")";
-    private static final String FILTER_MESSAGING_ID  = "(" + KEY_NAME +"=" + MESSAGING_ID + ")";
-
-    private static final String FILTER_HANDLER =
-            "(osgi.messaging.replyToSubscription.target=(&" +
-                    FILTER_MQTT +
-                    FILTER_MESSAGING_ID +
-                    FILTER_REPLY_TO + "))";
-
     private final MessagePublisherProvider publisher;
     private final MessageSubscriberProvider subscriber;
+    private final Map<ServiceReference<?>, List<PushStream<?>>> streams;
     private final ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
 
-    private final Map<ServiceReference<?>, List<PushStream<?>>> streams = new ConcurrentHashMap<>();
-
+    // @formatter:off
     @Activate
     public MessageReplyToWhiteboardProvider(
             @Reference
@@ -81,9 +69,12 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
             final MessageSubscriberProvider subscriber,
             @Reference
             final ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory) {
+
         this.publisher = publisher;
         this.subscriber = subscriber;
         this.mcbFactory = mcbFactory;
+
+        streams = new ConcurrentHashMap<>();
     }
     // @formatter:on
 
@@ -92,12 +83,15 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
         streams.values().forEach(list -> list.forEach(PushStream::close));
     }
 
-    @Reference(policy = DYNAMIC, cardinality = MULTIPLE, target = FILTER_HANDLER)
+    @Reference(policy = DYNAMIC, cardinality = MULTIPLE)
     synchronized void bindReplyToSingleSubscriptionHandler( //
             final ReplyToSingleSubscriptionHandler handler, //
             final ServiceReference<?> reference) {
 
         final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
+        if (!replyToDTO.isConform) {
+            return;
+        }
 
         // @formatter:off
         Stream.of(replyToDTO.subChannels)
@@ -108,15 +102,18 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
     }
 
     void unbindReplyToSingleSubscriptionHandler(final ServiceReference<?> reference) {
-        closeConnectedStreams(reference);
+        closeConnectedPushstreams(reference);
     }
 
-    @Reference(policy = DYNAMIC, cardinality = MULTIPLE, target = FILTER_HANDLER)
+    @Reference(policy = DYNAMIC, cardinality = MULTIPLE)
     synchronized void bindReplyToSubscriptionHandler( //
             final ReplyToSubscriptionHandler handler, //
             final ServiceReference<?> reference) {
 
         final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
+        if (!replyToDTO.isConform) {
+            return;
+        }
 
         // @formatter:off
         Stream.of(replyToDTO.subChannels)
@@ -126,15 +123,18 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
     }
 
     void unbindReplyToSubscriptionHandler(final ServiceReference<?> reference) {
-        closeConnectedStreams(reference);
+        closeConnectedPushstreams(reference);
     }
 
-    @Reference(policy = DYNAMIC, cardinality = MULTIPLE, target = FILTER_HANDLER)
+    @Reference(policy = DYNAMIC, cardinality = MULTIPLE)
     synchronized void bindReplyToManySubscriptionHandler( //
             final ReplyToManySubscriptionHandler handler, //
             final ServiceReference<?> reference) {
 
         final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
+        if (!replyToDTO.isConform) {
+            return;
+        }
 
         // @formatter:off
         Stream.of(replyToDTO.subChannels)
@@ -146,7 +146,7 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
     }
 
     void unbindReplyToManySubscriptionHandler(final ServiceReference<?> reference) {
-        closeConnectedStreams(reference);
+        closeConnectedPushstreams(reference);
     }
 
     private Message handleResponse(final Message request, final ReplyToSingleSubscriptionHandler handler) {
@@ -184,11 +184,21 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
     }
 
     private static class ReplyToDTO {
+
+        boolean isConform;
         String pubChannel;
         String[] subChannels;
 
+        private static final String KEY_NAME = "osgi.messaging.name";
+        private static final String KEY_FEATURE = "osgi.messaging.feature";
+        private static final String KEY_PROTOCOL = "osgi.messaging.protocol";
+        private static final String KEY_TARGET = "osgi.messaging.replyToSubscription.target";
+
+        private static final String KEY_SUB_CHANNEL = "osgi.messaging.replyToSubscription.channel";
+        private static final String KEY_PUB_CHANNEL = "osgi.messaging.replyToSubscription.replyChannel";
+
         ReplyToDTO(final ServiceReference<?> reference) {
-            final Dictionary<String, Object> properties = reference.getProperties();
+            final Dictionary<String, ?> properties = reference.getProperties();
 
             pubChannel = (String) properties.get(KEY_PUB_CHANNEL);
             subChannels = (String[]) properties.get(KEY_SUB_CHANNEL);
@@ -212,11 +222,22 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
                             "The '" + reference + "' handler instance doesn't specify the reply-to publish channel");
                 }
             }
+            final String replyToSubTarget = (String) properties.get(KEY_TARGET);
+            final FilterParser fp = new FilterParser();
+            final Expression exp = fp.parse(replyToSubTarget);
+
+            final Map<String, String> requiredValues = new HashMap<>();
+
+            requiredValues.put(KEY_NAME, MESSAGING_ID);
+            requiredValues.put(KEY_FEATURE, REPLY_TO);
+            requiredValues.put(KEY_PROTOCOL, MESSAGING_PROTOCOL);
+
+            isConform = exp.eval(requiredValues);
         }
     }
 
-    private void closeConnectedStreams(final ServiceReference<?> reference) {
-        streams.remove(reference).forEach(PushStream::close);
+    private void closeConnectedPushstreams(final ServiceReference<?> reference) {
+        Optional.ofNullable(streams.remove(reference)).ifPresent(s -> s.forEach(PushStream::close));
     }
 
 }
