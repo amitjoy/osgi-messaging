@@ -18,10 +18,12 @@ package in.bytehue.messaging.mqtt5.api;
 /**
  * Defines standard constants for the MQTT messaging
  */
-public final class Mqtt5MessageConstants {
+public final class MqttMessageConstants {
 
-    private Mqtt5MessageConstants() {
-        throw new IllegalAccessError("Non-Instantiable");
+    private static final String NON_INSTANTIABLE = "Non-Instantiable";
+
+    private MqttMessageConstants() {
+        throw new IllegalAccessError(NON_INSTANTIABLE);
     }
 
     /**
@@ -51,7 +53,7 @@ public final class Mqtt5MessageConstants {
     public static final class Extension {
 
         private Extension() {
-            throw new IllegalAccessError("Non-Instantiable");
+            throw new IllegalAccessError(NON_INSTANTIABLE);
         }
 
         /**
@@ -95,7 +97,7 @@ public final class Mqtt5MessageConstants {
     public static final class PID {
 
         private PID() {
-            throw new IllegalAccessError("Non-Instantiable");
+            throw new IllegalAccessError(NON_INSTANTIABLE);
         }
 
         /**

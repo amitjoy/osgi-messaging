@@ -15,9 +15,9 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
-import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MESSAGING_ID;
-import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MESSAGING_PROTOCOL;
-import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.PID.PUBLISHER;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.PID.PUBLISHER;
 import static org.osgi.service.messaging.Features.GENERATE_CORRELATION_ID;
 import static org.osgi.service.messaging.Features.GENERATE_REPLY_CHANNEL;
 import static org.osgi.service.messaging.Features.REPLY_TO;

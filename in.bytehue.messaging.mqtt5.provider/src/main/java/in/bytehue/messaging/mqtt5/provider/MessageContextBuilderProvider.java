@@ -15,8 +15,8 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
-import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MESSAGING_ID;
-import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MESSAGING_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
 import static org.osgi.service.component.annotations.ServiceScope.PROTOTYPE;
 import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
 import static org.osgi.service.messaging.Features.MESSAGE_CONTEXT_BUILDER;
@@ -40,7 +40,7 @@ import org.osgi.service.messaging.acknowledge.AcknowledgeMessageContextBuilder;
 import org.osgi.service.messaging.annotations.ProvideMessagingAcknowledgeFeature;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
 
-import in.bytehue.messaging.mqtt5.api.Mqtt5MessageContextBuilder;
+import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
 import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
 
 // @formatter:off
@@ -48,7 +48,7 @@ import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
         scope = PROTOTYPE,
         service = {
                 MessageContextBuilder.class,
-                Mqtt5MessageContextBuilder.class,
+                MqttMessageContextBuilder.class,
                 MessageContextBuilderProvider.class,
                 AcknowledgeMessageContextBuilder.class
         })
@@ -60,7 +60,7 @@ import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
                 ACKNOWLEDGE })
 @ProvideMessagingAcknowledgeFeature
 public final class MessageContextBuilderProvider
-        implements Mqtt5MessageContextBuilder, MessageContextBuilder, AcknowledgeMessageContextBuilder {
+        implements MqttMessageContextBuilder, MessageContextBuilder, AcknowledgeMessageContextBuilder {
 
     private final Logger logger;
     private final MessageProvider message;

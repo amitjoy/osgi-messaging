@@ -15,17 +15,17 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.api;
 
-import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.MESSAGE_EXPIRY_INTERVAL;
-import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.RECEIVE_LOCAL;
-import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.RETAIN;
-import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.USER_PROPERTIES;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.MESSAGE_EXPIRY_INTERVAL;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RECEIVE_LOCAL;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
 
 import java.util.Map;
 
 import org.osgi.service.messaging.MessageContextBuilder;
 
 /**
- * The {@link Mqtt5MessageContextBuilder} service is the application access point to the
+ * The {@link MqttMessageContextBuilder} service is the application access point to the
  * build a MQTT v5 message.
  *
  * <p>
@@ -43,15 +43,15 @@ import org.osgi.service.messaging.MessageContextBuilder;
  *
  * @see MessageContextBuilder
  */
-public interface Mqtt5MessageContextBuilder extends MessageContextBuilder {
+public interface MqttMessageContextBuilder extends MessageContextBuilder {
 
     /**
      * Sets the retain flag for the MQTT communication.
      *
      * @param retain {@code true} to retain the messages, otherwise {@code false}
-     * @return the {@link Mqtt5MessageContextBuilder} instance
+     * @return the {@link MqttMessageContextBuilder} instance
      */
-    default Mqtt5MessageContextBuilder withRetain(final boolean retain) {
+    default MqttMessageContextBuilder withRetain(final boolean retain) {
         extensionEntry(RETAIN, retain);
         return this;
     }
@@ -60,9 +60,9 @@ public interface Mqtt5MessageContextBuilder extends MessageContextBuilder {
      * Sets the message expiry interval for the MQTT communication.
      *
      * @param interval the interval to set
-     * @return the {@link Mqtt5MessageContextBuilder} instance
+     * @return the {@link MqttMessageContextBuilder} instance
      */
-    default Mqtt5MessageContextBuilder withMessageExpiryInterval(final long interval) {
+    default MqttMessageContextBuilder withMessageExpiryInterval(final long interval) {
         extensionEntry(MESSAGE_EXPIRY_INTERVAL, interval);
         return this;
     }
@@ -71,9 +71,9 @@ public interface Mqtt5MessageContextBuilder extends MessageContextBuilder {
      * Sets the user specified properties for the MQTT communication.
      *
      * @param userProperties the user properties
-     * @return the {@link Mqtt5MessageContextBuilder} instance
+     * @return the {@link MqttMessageContextBuilder} instance
      */
-    default Mqtt5MessageContextBuilder withUserProperties(final Map<String, String> userProperties) {
+    default MqttMessageContextBuilder withUserProperties(final Map<String, String> userProperties) {
         extensionEntry(USER_PROPERTIES, userProperties);
         return this;
     }
@@ -82,9 +82,9 @@ public interface Mqtt5MessageContextBuilder extends MessageContextBuilder {
      * Sets the the flag to receive own messages
      *
      * @param receiveLocal {@code true} to receive own messages, otherwise {@code false}
-     * @return the {@link Mqtt5MessageContextBuilder} instance
+     * @return the {@link MqttMessageContextBuilder} instance
      */
-    default Mqtt5MessageContextBuilder withReceiveLocal(final boolean receiveLocal) {
+    default MqttMessageContextBuilder withReceiveLocal(final boolean receiveLocal) {
         extensionEntry(RECEIVE_LOCAL, receiveLocal);
         return this;
     }
