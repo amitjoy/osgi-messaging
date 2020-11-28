@@ -140,7 +140,7 @@ public final class MessagePublisherProvider implements MessagePublisher {
                           });
             // @formatter:on
         } catch (final Exception e) {
-            logger.error("Eror while publishing data", e);
+            logger.error("Error while publishing data", e);
         }
     }
 

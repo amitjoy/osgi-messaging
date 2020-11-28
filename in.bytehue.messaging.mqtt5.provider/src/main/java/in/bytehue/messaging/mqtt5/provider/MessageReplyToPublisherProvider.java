@@ -65,11 +65,10 @@ import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
                 REPLY_TO_MANY_SUBSCRIBE,
                 GENERATE_CORRELATION_ID,
                 GENERATE_REPLY_CHANNEL })
-//@formatter:on
 public final class MessageReplyToPublisherProvider implements ReplyToPublisher, ReplyToManyPublisher {
 
-    @ObjectClassDefinition( //
-            name = "MQTT Messaging Reply-To Publisher Executor Configuration", //
+    @ObjectClassDefinition(
+            name = "MQTT Messaging Reply-To Publisher Executor Configuration",
             description = "This configuration is used to configure the internal thread pool")
     @interface Config {
         @AttributeDefinition(name = "Number of Threads for the internal thread pool")
@@ -81,6 +80,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
         @AttributeDefinition(name = "Suffix of the thread name (supports only {@code %d} format specifier)")
         String threadNameSuffix() default "-%d";
     }
+    //@formatter:on
 
     @Reference(service = LoggerFactory.class)
     private Logger logger;
@@ -95,12 +95,14 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 
     @Activate
     public MessageReplyToPublisherProvider(final Config config) {
-        final ThreadFactory threadFactory = //
-                new ThreadFactoryBuilder() //
-                        .setThreadFactoryName(config.threadNamePrefix()) //
-                        .setThreadNameFormat(config.threadNameSuffix()) //
+        //@formatter:off
+        final ThreadFactory threadFactory =
+                new ThreadFactoryBuilder()
+                        .setThreadFactoryName(config.threadNamePrefix())
+                        .setThreadNameFormat(config.threadNameSuffix())
                         .build();
         promiseFactory = new PromiseFactory(Executors.newFixedThreadPool(config.numThreads(), threadFactory));
+        //@formatter:on
     }
 
     @Override
@@ -146,10 +148,12 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 
     private void autoGenerateMissingConfigs(final Message message) {
         final MessageContextProvider context = (MessageContextProvider) message.getContext();
+
         if (context.getCorrelationId() == null) {
             context.correlationId = UUID.randomUUID().toString();
             logger.info("Auto-generated correlation ID '{}' as it is missing in the request", context.correlationId);
         }
+
         if (context.getReplyToChannel() == null) {
             context.replyToChannel = UUID.randomUUID().toString();
             logger.info("Auto-generated reply-to channel '{}' as it is missing in the request", context.replyToChannel);

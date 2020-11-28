@@ -37,6 +37,7 @@ import org.osgi.service.messaging.dto.ReplyToSubscriptionDTO;
 import org.osgi.service.messaging.dto.SubscriptionDTO;
 import org.osgi.util.pushstream.PushStream;
 
+//@formatter:off
 @Component(service = MessageSubscriptionRegistry.class)
 public final class MessageSubscriptionRegistry {
 
@@ -48,10 +49,10 @@ public final class MessageSubscriptionRegistry {
 
     private final Map<PushStream<Message>, ExtendedSubscriptionDTO> subscriptions = new HashMap<>();
 
-    public void addSubscription( //
-            final PushStream<Message> stream, //
-            final String pubChannel, //
-            final String subChannel, //
+    public void addSubscription(
+            final PushStream<Message> stream,
+            final String pubChannel,
+            final String subChannel,
             final ServiceReference<?> handlerReference) {
         subscriptions.put(stream, new ExtendedSubscriptionDTO(pubChannel, subChannel, handlerReference));
     }
@@ -73,12 +74,13 @@ public final class MessageSubscriptionRegistry {
         ChannelDTO subChannel;
         ServiceReference<?> handlerReference;
 
-        public ExtendedSubscriptionDTO( //
-                final String pubChannel, //
-                final String subChannel, //
+        public ExtendedSubscriptionDTO(
+                final String pubChannel,
+                final String subChannel,
                 final ServiceReference<?> handlerReference) {
 
-            final boolean isConnected = true; // a channel is always connected if a subscription exists
+            // a channel is always connected if a subscription in client exists
+            final boolean isConnected = true;
             this.pubChannel = createChannelDTO(pubChannel, isConnected);
             this.subChannel = createChannelDTO(subChannel, isConnected);
             this.handlerReference = handlerReference;
@@ -101,35 +103,32 @@ public final class MessageSubscriptionRegistry {
 
     public SubscriptionDTO[] getSubscriptionDTOs() {
         final List<ChannelDTO> subChannels = subscriptionChannels();
-        // @formatter:off
         return subChannels.stream()
                           .map(this::getSubscriptionDTO)
                           .toArray(SubscriptionDTO[]::new);
-        // @formatter:on
     }
 
     private List<ChannelDTO> subscriptionChannels() {
-        // @formatter:off
         return subscriptions.values()
                             .stream()
                             .map(c -> c.subChannel)
                             .collect(toList());
-        // @formatter:on
     }
 
     public ReplyToSubscriptionDTO[] getReplyToSubscriptionDTOs() {
         final List<ReplyToSubscriptionDTO> replyToSubscriptions = new ArrayList<>();
 
         for (final Entry<PushStream<Message>, ExtendedSubscriptionDTO> dto : subscriptions.entrySet()) {
+
             final ExtendedSubscriptionDTO subscription = dto.getValue();
             if (subscription.handlerReference != null) {
-                // @formatter:off
+
                 final ReplyToSubscriptionDTO replyToSub =
                         getReplyToSubscriptionDTO(
                                 subscription.pubChannel,
                                 subscription.subChannel,
                                 subscription.handlerReference);
-                // @formatter:on
+
                 replyToSubscriptions.add(replyToSub);
             }
         }
@@ -145,9 +144,9 @@ public final class MessageSubscriptionRegistry {
         return subscriptionDTO;
     }
 
-    private ReplyToSubscriptionDTO getReplyToSubscriptionDTO( //
-            final ChannelDTO pubDTO, //
-            final ChannelDTO subDTO, //
+    private ReplyToSubscriptionDTO getReplyToSubscriptionDTO(
+            final ChannelDTO pubDTO,
+            final ChannelDTO subDTO,
             final ServiceReference<?> handlerReference) {
 
         final ReplyToSubscriptionDTO subscriptionDTO = new ReplyToSubscriptionDTO();

@@ -64,7 +64,6 @@ import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCo
                 RETAIN,
                 ACKNOWLEDGE,
                 RECEIVE_LOCAL })
-//@formatter:on
 @Component(service = { MessageSubscription.class, MessageSubscriberProvider.class })
 public final class MessageSubscriberProvider implements MessageSubscription {
 
@@ -98,17 +97,17 @@ public final class MessageSubscriberProvider implements MessageSubscription {
         return subscribe(context, null, null, null);
     }
 
-    public PushStream<Message> replyToSubscribe( //
-            final String subChannel, //
-            final String pubChannel, //
+    public PushStream<Message> replyToSubscribe(
+            final String subChannel,
+            final String pubChannel,
             final ServiceReference<?> reference) {
         return subscribe(null, subChannel, pubChannel, reference);
     }
 
-    private PushStream<Message> subscribe( //
-            MessageContext context, //
-            final String subChannel, //
-            final String pubChannel, //
+    private PushStream<Message> subscribe(
+            MessageContext context,
+            final String subChannel,
+            final String pubChannel,
             final ServiceReference<?> reference) {
 
         final PushStreamProvider provider = new PushStreamProvider();

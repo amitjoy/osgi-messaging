@@ -59,7 +59,6 @@ import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
                 MESSAGE_CONTEXT_BUILDER,
                 ACKNOWLEDGE })
 @ProvideMessagingAcknowledgeFeature
-// @formatter:on
 public final class MessageContextBuilderProvider
         implements Mqtt5MessageContextBuilder, MessageContextBuilder, AcknowledgeMessageContextBuilder {
 
@@ -69,10 +68,12 @@ public final class MessageContextBuilderProvider
     private final MessageContextProvider messageContext;
 
     @Activate
-    public MessageContextBuilderProvider( //
-            final BundleContext bundleContext, //
-            @Reference(service = LoggerFactory.class) final Logger logger, //
-            @Reference final MessageAcknowledgeHandlerProvider acknowledgeHandler) {
+    public MessageContextBuilderProvider(
+            final BundleContext bundleContext,
+            @Reference(service = LoggerFactory.class)
+            final Logger logger,
+            @Reference
+            final MessageAcknowledgeHandlerProvider acknowledgeHandler) {
 
         this.logger = logger;
         this.bundleContext = bundleContext;
@@ -82,6 +83,7 @@ public final class MessageContextBuilderProvider
         message.messageContext = messageContext;
         messageContext.protocolSpecificAcknowledgeHandler = acknowledgeHandler;
     }
+    //@formatter:on
 
     @Override
     public MessageContext buildContext() {

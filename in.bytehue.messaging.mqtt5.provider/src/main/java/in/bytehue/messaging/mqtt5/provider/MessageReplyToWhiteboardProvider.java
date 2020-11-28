@@ -51,16 +51,24 @@ import org.osgi.util.pushstream.PushStream;
 import aQute.bnd.osgi.resource.FilterParser;
 import aQute.bnd.osgi.resource.FilterParser.Expression;
 
+// TODO remove immediate = true
+// @formatter:off
 @MessagingFeature(name = MESSAGING_ID, protocol = MESSAGING_PROTOCOL)
 @Component(service = { ReplyToWhiteboard.class, MessageReplyToWhiteboardProvider.class }, immediate = true)
 public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard {
+
+    public static final String KEY_NAME         = "osgi.messaging.name";
+    public static final String KEY_TARGET       = "osgi.messaging.replyToSubscription.target";
+    public static final String KEY_FEATURE      = "osgi.messaging.feature";
+    public static final String KEY_PROTOCOL     = "osgi.messaging.protocol";
+    public static final String KEY_SUB_CHANNEL  = "osgi.messaging.replyToSubscription.channel";
+    public static final String KEY_PUB_CHANNEL  = "osgi.messaging.replyToSubscription.replyChannel";
 
     private final MessagePublisherProvider publisher;
     private final MessageSubscriberProvider subscriber;
     private final Map<ServiceReference<?>, List<PushStream<?>>> streams;
     private final ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
 
-    // @formatter:off
     @Activate
     public MessageReplyToWhiteboardProvider(
             @Reference
@@ -76,7 +84,6 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
 
         streams = new ConcurrentHashMap<>();
     }
-    // @formatter:on
 
     @Deactivate
     void stop() {
@@ -93,12 +100,10 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
             return;
         }
 
-        // @formatter:off
         Stream.of(replyToDTO.subChannels)
               .forEach(c -> replyToSubscribe(c, replyToDTO.pubChannel, reference)
                                   .map(m -> handleResponse(m, handler))
                                   .forEach(m -> publisher.publish(m, replyToDTO.pubChannel)));
-        // @formatter:on
     }
 
     void unbindReplyToSingleSubscriptionHandler(final ServiceReference<?> reference) {
@@ -106,8 +111,8 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
     }
 
     @Reference(policy = DYNAMIC, cardinality = MULTIPLE)
-    synchronized void bindReplyToSubscriptionHandler( //
-            final ReplyToSubscriptionHandler handler, //
+    synchronized void bindReplyToSubscriptionHandler(
+            final ReplyToSubscriptionHandler handler,
             final ServiceReference<?> reference) {
 
         final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
@@ -115,11 +120,9 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
             return;
         }
 
-        // @formatter:off
         Stream.of(replyToDTO.subChannels)
               .forEach(c -> replyToSubscribe(c, replyToDTO.pubChannel, reference)
                                   .forEach(handler::handleResponse));
-        // @formatter:on
     }
 
     void unbindReplyToSubscriptionHandler(final ServiceReference<?> reference) {
@@ -127,8 +130,8 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
     }
 
     @Reference(policy = DYNAMIC, cardinality = MULTIPLE)
-    synchronized void bindReplyToManySubscriptionHandler( //
-            final ReplyToManySubscriptionHandler handler, //
+    synchronized void bindReplyToManySubscriptionHandler(
+            final ReplyToManySubscriptionHandler handler,
             final ServiceReference<?> reference) {
 
         final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
@@ -136,13 +139,11 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
             return;
         }
 
-        // @formatter:off
         Stream.of(replyToDTO.subChannels)
               .forEach(c -> replyToSubscribe(c, replyToDTO.pubChannel, reference)
                                   .map(m -> handleResponses(m, handler))
                                   .flatMap(m -> m)
                                   .forEach(m -> publisher.publish(m, replyToDTO.pubChannel)));
-        // @formatter:on
     }
 
     void unbindReplyToManySubscriptionHandler(final ServiceReference<?> reference) {
@@ -173,9 +174,9 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
         return handler.handleResponses(request, mcb);
     }
 
-    private PushStream<Message> replyToSubscribe( //
-            final String subChannel, //
-            final String pubChannel, //
+    private PushStream<Message> replyToSubscribe(
+            final String subChannel,
+            final String pubChannel,
             final ServiceReference<?> reference) {
 
         final PushStream<Message> stream = subscriber.replyToSubscribe(subChannel, pubChannel, reference);
@@ -188,14 +189,6 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
         boolean isConform;
         String pubChannel;
         String[] subChannels;
-
-        private static final String KEY_NAME = "osgi.messaging.name";
-        private static final String KEY_FEATURE = "osgi.messaging.feature";
-        private static final String KEY_PROTOCOL = "osgi.messaging.protocol";
-        private static final String KEY_TARGET = "osgi.messaging.replyToSubscription.target";
-
-        private static final String KEY_SUB_CHANNEL = "osgi.messaging.replyToSubscription.channel";
-        private static final String KEY_PUB_CHANNEL = "osgi.messaging.replyToSubscription.replyChannel";
 
         ReplyToDTO(final ServiceReference<?> reference) {
             final Dictionary<String, ?> properties = reference.getProperties();

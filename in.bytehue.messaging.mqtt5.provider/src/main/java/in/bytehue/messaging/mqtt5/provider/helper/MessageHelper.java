@@ -21,9 +21,11 @@ import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish.DEFAULT_
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.MESSAGING_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.Mqtt5MessageConstants.Extension.USER_PROPERTIES;
+import static in.bytehue.messaging.mqtt5.provider.MessageReplyToWhiteboardProvider.KEY_PROTOCOL;
 import static java.lang.System.lineSeparator;
 import static java.util.stream.Collectors.toMap;
 import static org.osgi.framework.Constants.OBJECTCLASS;
+import static org.osgi.framework.Constants.SERVICE_ID;
 import static org.osgi.framework.Constants.SERVICE_RANKING;
 import static org.osgi.service.messaging.Features.GUARANTEED_DELIVERY;
 import static org.osgi.service.messaging.Features.GUARANTEED_ORDERING;
@@ -46,7 +48,6 @@ import java.util.stream.Stream;
 import org.osgi.dto.DTO;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.dto.ServiceReferenceDTO;
 import org.osgi.service.messaging.Message;
@@ -69,16 +70,16 @@ public final class MessageHelper {
         try {
             final Collection<ServiceReference<T>> serviceReferences = context.getServiceReferences(clazz, filter);
             // get the service with highest service ranking
-        // @formatter:off
-        return serviceReferences.stream()
-                .sorted(
-                        (sr1, sr2) -> Long.compare(
-                                (long) sr1.getProperty(SERVICE_RANKING),
-                                (long) sr2.getProperty(SERVICE_RANKING)))
-                .findFirst()
-                .map(context::getService)
-                .orElseThrow(() -> new RuntimeException("'" + clazz +"' service instance cannot be found"));
-        // @formatter:on
+            // @formatter:off
+            return serviceReferences.stream()
+                    .sorted(
+                            (sr1, sr2) -> Long.compare(
+                                    (long) sr1.getProperty(SERVICE_RANKING),
+                                    (long) sr2.getProperty(SERVICE_RANKING)))
+                    .findFirst()
+                    .map(context::getService)
+                    .orElseThrow(() -> new RuntimeException("'" + clazz +"' service instance cannot be found"));
+            // @formatter:on
         } catch (final Exception e) {
             throw new RuntimeException("Service '" + clazz.getName() + "' cannot be retrieved", e);
         }
@@ -92,7 +93,7 @@ public final class MessageHelper {
                                             .filter(e -> e == UTF_8)
                                             .map(e -> "UTF-8")
                                             .orElse(null);
-        // @formatter:on
+
         final String contentType = publish.getContentType().map(MessageHelper::asString).orElse(null);
         final String channel = publish.getTopic().toString();
         final String correlationId = publish.getCorrelationData().map(MessageHelper::asString).orElse(null);
@@ -100,21 +101,18 @@ public final class MessageHelper {
         final boolean retain = publish.isRetain();
         final Mqtt5UserProperties properties = publish.getUserProperties();
 
-        // @formatter:off
         final Map<String, String> userProperties =  properties
                                                         .asList()
                                                         .stream()
                                                         .collect(toMap(
                                                                     e -> e.getName().toString(),
                                                                     e -> e.getValue().toString()));
-        // @formatter:on
 
         final Map<String, Object> extensions = new HashMap<>();
         extensions.put(QOS, qos);
         extensions.put(RETAIN, retain);
         extensions.put(USER_PROPERTIES, userProperties);
 
-        // @formatter:off
         return messageContextBuilder.channel(channel)
                                     .content(payload)
                                     .contentType(contentType)
@@ -127,14 +125,18 @@ public final class MessageHelper {
 
     public static ServiceReferenceDTO serviceReferenceDTO(final ServiceReference<?> ref, final long bundleId) {
         final ServiceReferenceDTO dto = new ServiceReferenceDTO();
+
         dto.bundle = bundleId;
-        dto.id = (Long) ref.getProperty(Constants.SERVICE_ID);
+        dto.id = (Long) ref.getProperty(SERVICE_ID);
         dto.properties = new HashMap<>();
+
         for (final String key : ref.getPropertyKeys()) {
             final Object val = ref.getProperty(key);
             dto.properties.put(key, getDTOValue(val));
         }
+
         final Bundle[] usingBundles = ref.getUsingBundles();
+
         if (usingBundles == null) {
             dto.usingBundles = new long[0];
         } else {
@@ -177,7 +179,7 @@ public final class MessageHelper {
         for (final ServiceReferenceDTO serviceDTO : services) {
             final Map<String, Object> properties = serviceDTO.properties;
             final String[] serviceTypes = (String[]) properties.get(OBJECTCLASS);
-            if (MESSAGING_PROTOCOL.equals(properties.get("osgi.messaging.protocol"))) {
+            if (MESSAGING_PROTOCOL.equals(properties.get(KEY_PROTOCOL))) {
                 isProtocolCompliant = true;
             }
             for (final String type : serviceTypes) {

@@ -55,8 +55,9 @@ import in.bytehue.messaging.mqtt5.provider.MessageClientProvider.Config;
 @Component(service = MessageClientProvider.class, configurationPid = CLIENT)
 public final class MessageClientProvider {
 
-    @ObjectClassDefinition( //
-            name = "MQTT v5 Messaging Client Configuration", //
+    //@formatter:off
+    @ObjectClassDefinition(
+            name = "MQTT v5 Messaging Client Configuration",
             description = "This configuration is used to configure the messaging connection")
     @interface Config {
         @AttributeDefinition(name = "Client Identifier")
@@ -163,9 +164,9 @@ public final class MessageClientProvider {
     public final Mqtt5AsyncClient client;
 
     @Activate
-    public MessageClientProvider( //
-            final BundleContext bundleContext, //
-            final Config config, //
+    public MessageClientProvider(
+            final BundleContext bundleContext,
+            final Config config,
             @Reference(service = LoggerFactory.class) final Logger logger) {
 
         this.config = config;
