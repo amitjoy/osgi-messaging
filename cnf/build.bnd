@@ -2,6 +2,7 @@
 -includeresource.all                  =         -src/main/resources
 -donotcopy                            =         \.gitignore|\.DS_Store
 
+Bundle-License                        =         https://www.apache.org/licenses/LICENSE-2.0.txt
 Bundle-Version                        =         1.${sprint}.${hotfix}.${qualifier}
 Bundle-Copyright                      =         Amit Kumar Mondal (c) 2020
 Bundle-Developers                     =         amit.kumar.mondal; \
@@ -25,6 +26,7 @@ javac.encoding                        =         UTF-8
 -nodefaultversion                     =         true
 -noimportjava                         =         true
 -remoteworkspace                      =         true
+-removeheaders                        =         Created-By 
 
 src                                   =         src/main/java, src/main/resources
 bin                                   =         ${bin.directory}

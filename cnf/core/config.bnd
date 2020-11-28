@@ -7,7 +7,3 @@ qualifier                             =         ${tstamp;yyyyMMddHHmmssSSS}
 bin.directory                         =         ${if;${is;${driver};gradle};target/gradle/classes;target/classes}
 testbin.directory                     =         ${if;${is;${driver};gradle};target/gradle/test-classes;target/test-classes}
 bin.testbin.directory                 =         ${if;${is;${driver};gradle};target/gradle/classes,target/gradle/test-classes;target/classes,target/test-classes}
-
-Sprint-Number                         =         ${sprint}
-Git-Branch                            =         ${env;GIT_BRANCH;No name defined}
-Git-Commit                            =         ${env;GIT_COMMIT_SHA;No commit SHA}
