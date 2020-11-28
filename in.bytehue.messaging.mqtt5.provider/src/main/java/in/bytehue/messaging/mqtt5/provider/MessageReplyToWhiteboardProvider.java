@@ -23,12 +23,16 @@ import static org.osgi.service.component.annotations.ReferenceCardinality.MULTIP
 import static org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC;
 import static org.osgi.service.messaging.Features.REPLY_TO;
 
+import java.util.ArrayList;
 import java.util.Dictionary;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.component.ComponentServiceObjects;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
@@ -43,7 +47,7 @@ import org.osgi.service.messaging.replyto.ReplyToWhiteboard;
 import org.osgi.util.pushstream.PushStream;
 
 @MessagingFeature(name = MESSAGING_ID, protocol = MESSAGING_PROTOCOL)
-@Component(service = { ReplyToWhiteboard.class, MessageReplyToWhiteboardProvider.class })
+@Component(service = { ReplyToWhiteboard.class, MessageReplyToWhiteboardProvider.class }, immediate = true)
 public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard {
 
     // @formatter:off
@@ -62,22 +66,30 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
                     FILTER_MQTT +
                     FILTER_MESSAGING_ID +
                     FILTER_REPLY_TO + "))";
+
+    private final MessagePublisherProvider publisher;
+    private final MessageSubscriberProvider subscriber;
+    private final ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
+
+    private final Map<ServiceReference<?>, List<PushStream<?>>> streams = new ConcurrentHashMap<>();
+
+    @Activate
+    public MessageReplyToWhiteboardProvider(
+            @Reference
+            final MessagePublisherProvider publisher,
+            @Reference
+            final MessageSubscriberProvider subscriber,
+            @Reference
+            final ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory) {
+        this.publisher = publisher;
+        this.subscriber = subscriber;
+        this.mcbFactory = mcbFactory;
+    }
     // @formatter:on
-
-    @Reference
-    private MessagePublisherProvider publisher;
-
-    @Reference
-    private MessageSubscriberProvider subscriber;
-
-    @Reference
-    private ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
-
-    private final Map<ServiceReference<?>, PushStream<?>> streams = new ConcurrentHashMap<>();
 
     @Deactivate
     void stop() {
-        streams.values().forEach(PushStream::close);
+        streams.values().forEach(list -> list.forEach(PushStream::close));
     }
 
     @Reference(policy = DYNAMIC, cardinality = MULTIPLE, target = FILTER_HANDLER)
@@ -88,14 +100,15 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
         final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
 
         // @formatter:off
-        replyToSubscribe(replyToDTO.subChannel, replyToDTO.pubChannel, reference)
-                  .map(m -> handleResponse(m, handler))
-                  .forEach(m -> publisher.publish(m, replyToDTO.pubChannel));
+        Stream.of(replyToDTO.subChannels)
+              .forEach(c -> replyToSubscribe(c, replyToDTO.pubChannel, reference)
+                                  .map(m -> handleResponse(m, handler))
+                                  .forEach(m -> publisher.publish(m, replyToDTO.pubChannel)));
         // @formatter:on
     }
 
     void unbindReplyToSingleSubscriptionHandler(final ServiceReference<?> reference) {
-        streams.remove(reference).close();
+        closeConnectedStreams(reference);
     }
 
     @Reference(policy = DYNAMIC, cardinality = MULTIPLE, target = FILTER_HANDLER)
@@ -106,13 +119,14 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
         final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
 
         // @formatter:off
-        replyToSubscribe(replyToDTO.subChannel, replyToDTO.pubChannel, reference)
-                  .forEach(handler::handleResponse);
+        Stream.of(replyToDTO.subChannels)
+              .forEach(c -> replyToSubscribe(c, replyToDTO.pubChannel, reference)
+                                  .forEach(handler::handleResponse));
         // @formatter:on
     }
 
     void unbindReplyToSubscriptionHandler(final ServiceReference<?> reference) {
-        streams.remove(reference).close();
+        closeConnectedStreams(reference);
     }
 
     @Reference(policy = DYNAMIC, cardinality = MULTIPLE, target = FILTER_HANDLER)
@@ -123,15 +137,16 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
         final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
 
         // @formatter:off
-        replyToSubscribe(replyToDTO.subChannel, replyToDTO.pubChannel, reference)
-                  .map(m -> handleResponses(m, handler))
-                  .flatMap(m -> m)
-                  .forEach(m -> publisher.publish(m, replyToDTO.subChannel));
+        Stream.of(replyToDTO.subChannels)
+              .forEach(c -> replyToSubscribe(c, replyToDTO.pubChannel, reference)
+                                  .map(m -> handleResponses(m, handler))
+                                  .flatMap(m -> m)
+                                  .forEach(m -> publisher.publish(m, replyToDTO.pubChannel)));
         // @formatter:on
     }
 
     void unbindReplyToManySubscriptionHandler(final ServiceReference<?> reference) {
-        streams.remove(reference).close();
+        closeConnectedStreams(reference);
     }
 
     private Message handleResponse(final Message request, final ReplyToSingleSubscriptionHandler handler) {
@@ -164,23 +179,23 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
             final ServiceReference<?> reference) {
 
         final PushStream<Message> stream = subscriber.replyToSubscribe(subChannel, pubChannel, reference);
-        streams.put(reference, stream);
+        streams.computeIfAbsent(reference, s -> new ArrayList<>()).add(stream);
         return stream;
     }
 
     private static class ReplyToDTO {
         String pubChannel;
-        String subChannel;
+        String[] subChannels;
 
         ReplyToDTO(final ServiceReference<?> reference) {
             final Dictionary<String, Object> properties = reference.getProperties();
 
             pubChannel = (String) properties.get(KEY_PUB_CHANNEL);
-            subChannel = (String) properties.get(KEY_SUB_CHANNEL);
+            subChannels = (String[]) properties.get(KEY_SUB_CHANNEL);
 
-            if (subChannel == null) {
-                throw new IllegalArgumentException(
-                        "The '" + reference + "' handler instance doesn't specify the reply-to subscription channel");
+            if (subChannels == null) {
+                throw new IllegalArgumentException("The '" + reference
+                        + "' handler instance doesn't specify the reply-to subscription channel(s)");
             }
             if (pubChannel == null) {
                 boolean isMissingPubChannelAllowed = false;
@@ -198,7 +213,10 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
                 }
             }
         }
+    }
 
+    private void closeConnectedStreams(final ServiceReference<?> reference) {
+        streams.remove(reference).forEach(PushStream::close);
     }
 
 }
