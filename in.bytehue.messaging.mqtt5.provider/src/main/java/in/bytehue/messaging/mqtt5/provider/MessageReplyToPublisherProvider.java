@@ -19,6 +19,8 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.PUBLISHER;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPLY_TO_MANY_PREDICATE;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPLY_TO_MANY_PREDICATE_FILTER;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getService;
 import static org.osgi.service.messaging.Features.GENERATE_CORRELATION_ID;
 import static org.osgi.service.messaging.Features.GENERATE_REPLY_CHANNEL;
 import static org.osgi.service.messaging.Features.REPLY_TO;
@@ -31,6 +33,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Predicate;
 
+import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -82,6 +85,9 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 
         @AttributeDefinition(name = "Suffix of the thread name (supports only {@code %d} format specifier)")
         String threadNameSuffix() default "-%d";
+
+        @AttributeDefinition(name = "Flag to set if the threads will be daemon threads")
+        boolean isDaemon() default false;
     }
     //@formatter:on
 
@@ -94,6 +100,9 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
     @Reference
     private MessageSubscriptionProvider subscriber;
 
+    @Activate
+    private BundleContext bundleContext;
+
     private final PromiseFactory promiseFactory;
 
     @Activate
@@ -103,6 +112,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
                 new ThreadFactoryBuilder()
                         .setThreadFactoryName(config.threadNamePrefix())
                         .setThreadNameFormat(config.threadNameSuffix())
+                        .setDaemon(config.isDaemon())
                         .build();
         promiseFactory = new PromiseFactory(Executors.newFixedThreadPool(config.numThreads(), threadFactory));
         //@formatter:on
@@ -181,10 +191,21 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 
             if (isReplyToMany) {
                 final Map<String, Object> extensions = context.getExtensions();
-                if (extensions == null || extensions.containsKey(REPLY_TO_MANY_PREDICATE)) {
+                // @formatter:off
+                if (
+                    extensions == null ||
+                    extensions.containsKey(REPLY_TO_MANY_PREDICATE) ||
+                    extensions.containsKey(REPLY_TO_MANY_PREDICATE_FILTER)) {
+
                     throw new IllegalStateException("Reply-To Many Predicate is not set for Reply-To Many request");
                 }
+                // @formatter:on
                 replyToManyEndPredicate = (Predicate<Message>) extensions.get(REPLY_TO_MANY_PREDICATE);
+                final String replyToManyEndPredicateFilter = (String) extensions.get(REPLY_TO_MANY_PREDICATE_FILTER);
+
+                if (replyToManyEndPredicate == null) {
+                    replyToManyEndPredicate = getService(Predicate.class, replyToManyEndPredicateFilter, bundleContext);
+                }
             }
         }
     }

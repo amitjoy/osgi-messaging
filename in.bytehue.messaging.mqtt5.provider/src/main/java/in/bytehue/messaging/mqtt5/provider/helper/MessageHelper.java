@@ -21,7 +21,6 @@ import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish.DEFAULT_
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
-import static in.bytehue.messaging.mqtt5.provider.MessageReplyToWhiteboardProvider.KEY_PROTOCOL;
 import static java.lang.System.lineSeparator;
 import static java.util.stream.Collectors.toMap;
 import static org.osgi.framework.Constants.OBJECTCLASS;
@@ -30,6 +29,7 @@ import static org.osgi.framework.Constants.SERVICE_RANKING;
 import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_DELIVERY;
 import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_ORDERING;
 import static org.osgi.service.messaging.Features.EXTENSION_QOS;
+import static org.osgi.service.messaging.MessageConstants.MESSAGING_PROTOCOL_PROPERTY;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.ACKNOWLEDGED;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.RECEIVED;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.REJECTED;
@@ -179,7 +179,7 @@ public final class MessageHelper {
         for (final ServiceReferenceDTO serviceDTO : services) {
             final Map<String, Object> properties = serviceDTO.properties;
             final String[] serviceTypes = (String[]) properties.get(OBJECTCLASS);
-            if (MESSAGING_PROTOCOL.equals(properties.get(KEY_PROTOCOL))) {
+            if (MESSAGING_PROTOCOL.equals(properties.get(MESSAGING_PROTOCOL_PROPERTY))) {
                 isProtocolCompliant = true;
             }
             for (final String type : serviceTypes) {

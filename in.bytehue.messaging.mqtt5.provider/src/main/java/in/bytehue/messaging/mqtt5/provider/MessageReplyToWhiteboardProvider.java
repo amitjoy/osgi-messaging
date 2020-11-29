@@ -17,11 +17,19 @@ package in.bytehue.messaging.mqtt5.provider;
 
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.REPLY_TO_SUBSCRIPTION_END_CHANNEL_PROPERTY;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getService;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.prepareExceptionAsMessage;
 import static org.osgi.framework.Constants.OBJECTCLASS;
 import static org.osgi.service.component.annotations.ReferenceCardinality.MULTIPLE;
 import static org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC;
 import static org.osgi.service.messaging.Features.REPLY_TO;
+import static org.osgi.service.messaging.MessageConstants.MESSAGING_FEATURE_PROPERTY;
+import static org.osgi.service.messaging.MessageConstants.MESSAGING_NAME_PROPERTY;
+import static org.osgi.service.messaging.MessageConstants.MESSAGING_PROTOCOL_PROPERTY;
+import static org.osgi.service.messaging.MessageConstants.REPLY_TO_SUBSCRIPTION_REQUEST_CHANNEL_PROPERTY;
+import static org.osgi.service.messaging.MessageConstants.REPLY_TO_SUBSCRIPTION_RESPONSE_CHANNEL_PROPERTY;
+import static org.osgi.service.messaging.MessageConstants.REPLY_TO_SUBSCRIPTION_TARGET_PROPERTY;
 
 import java.util.ArrayList;
 import java.util.Dictionary;
@@ -30,8 +38,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
@@ -57,13 +67,7 @@ import aQute.bnd.osgi.resource.FilterParser.Expression;
 @Component(service = { ReplyToWhiteboard.class, MessageReplyToWhiteboardProvider.class }, immediate = true)
 public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard {
 
-    public static final String KEY_NAME         = "osgi.messaging.name";
-    public static final String KEY_TARGET       = "osgi.messaging.replyToSubscription.target";
-    public static final String KEY_FEATURE      = "osgi.messaging.feature";
-    public static final String KEY_PROTOCOL     = "osgi.messaging.protocol";
-    public static final String KEY_SUB_CHANNEL  = "osgi.messaging.replyToSubscription.channel";
-    public static final String KEY_PUB_CHANNEL  = "osgi.messaging.replyToSubscription.replyChannel";
-
+    private final BundleContext bundleContext;
     private final MessagePublisherProvider publisher;
     private final MessageSubscriptionProvider subscriber;
     private final Map<ServiceReference<?>, List<PushStream<?>>> streams;
@@ -71,6 +75,7 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
 
     @Activate
     public MessageReplyToWhiteboardProvider(
+            final BundleContext bundleContext,
             @Reference
             final MessagePublisherProvider publisher,
             @Reference
@@ -81,6 +86,7 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
         this.publisher = publisher;
         this.subscriber = subscriber;
         this.mcbFactory = mcbFactory;
+        this.bundleContext = bundleContext;
 
         streams = new ConcurrentHashMap<>();
     }
@@ -96,9 +102,7 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
             final ServiceReference<?> reference) {
 
         final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
-        if (!replyToDTO.isConform) {
-            return;
-        }
+
         Stream.of(replyToDTO.subChannels)
               .forEach(c -> replyToSubscribe(c, replyToDTO.pubChannel, reference)
                                   .map(m -> handleResponse(m, handler))
@@ -115,9 +119,7 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
             final ServiceReference<?> reference) {
 
         final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
-        if (!replyToDTO.isConform) {
-            return;
-        }
+
         Stream.of(replyToDTO.subChannels)
               .forEach(c -> replyToSubscribe(c, replyToDTO.pubChannel, reference)
                                   .forEach(handler::handleResponse));
@@ -133,14 +135,20 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
             final ServiceReference<?> reference) {
 
         final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
-        if (!replyToDTO.isConform) {
-            return;
-        }
+
         Stream.of(replyToDTO.subChannels)
-              .forEach(c -> replyToSubscribe(c, replyToDTO.pubChannel, reference)
-                                  .map(m -> handleResponses(m, handler))
-                                  .flatMap(m -> m)
-                                  .forEach(m -> publisher.publish(m, replyToDTO.pubChannel)));
+              .forEach(c -> {
+                final PushStream<Message> stream = replyToSubscribe(c, replyToDTO.pubChannel, reference)
+                                                      .map(m -> handleResponses(m, handler))
+                                                      .flatMap(m -> m);
+
+                                                   stream.forEach(m -> {
+                                                        if (replyToDTO.replyToManyPredicateFilter.test(m)) {
+                                                            stream.close();
+                                                        }
+                                                        publisher.publish(m, replyToDTO.pubChannel);
+                                                   });
+               });
     }
 
     void unbindReplyToManySubscriptionHandler(final ServiceReference<?> reference) {
@@ -181,20 +189,22 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
         return stream;
     }
 
-    private static class ReplyToDTO {
+    private class ReplyToDTO {
 
         boolean isConform;
         String pubChannel;
         String[] subChannels;
+        Predicate<Message> replyToManyPredicateFilter;
 
+        @SuppressWarnings("unchecked")
         ReplyToDTO(final ServiceReference<?> reference) {
             final Dictionary<String, ?> properties = reference.getProperties();
 
-            pubChannel = (String) properties.get(KEY_PUB_CHANNEL);
-            subChannels = (String[]) properties.get(KEY_SUB_CHANNEL);
+            pubChannel = (String) properties.get(REPLY_TO_SUBSCRIPTION_RESPONSE_CHANNEL_PROPERTY);
+            subChannels = (String[]) properties.get(REPLY_TO_SUBSCRIPTION_REQUEST_CHANNEL_PROPERTY);
 
             if (subChannels == null) {
-                throw new IllegalArgumentException("The '" + reference
+                throw new IllegalStateException("The '" + reference
                         + "' handler instance doesn't specify the reply-to subscription channel(s)");
             }
             if (pubChannel == null) {
@@ -208,21 +218,43 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
                     }
                 }
                 if (!isMissingPubChannelAllowed) {
-                    throw new IllegalArgumentException(
+                    throw new IllegalStateException(
                             "The '" + reference + "' handler instance doesn't specify the reply-to publish channel");
                 }
             }
-            final String replyToSubTarget = (String) properties.get(KEY_TARGET);
+            final String replyToSubTarget = (String) properties.get(REPLY_TO_SUBSCRIPTION_TARGET_PROPERTY);
             final FilterParser fp = new FilterParser();
             final Expression exp = fp.parse(replyToSubTarget);
 
             final Map<String, String> requiredValues = new HashMap<>();
 
-            requiredValues.put(KEY_NAME, MESSAGING_ID);
-            requiredValues.put(KEY_FEATURE, REPLY_TO);
-            requiredValues.put(KEY_PROTOCOL, MESSAGING_PROTOCOL);
+            requiredValues.put(MESSAGING_NAME_PROPERTY, MESSAGING_ID);
+            requiredValues.put(MESSAGING_FEATURE_PROPERTY, REPLY_TO);
+            requiredValues.put(MESSAGING_PROTOCOL_PROPERTY, MESSAGING_PROTOCOL);
 
             isConform = exp.eval(requiredValues);
+
+            if (!isConform) {
+                throw new IllegalStateException(
+                        "The '" + reference + "' handler instance doesn't specify the reply-to target property");
+            }
+
+            final String predicateFilter = (String) reference.getProperty(REPLY_TO_SUBSCRIPTION_END_CHANNEL_PROPERTY);
+            if (predicateFilter == null && isReplyToManyHandler(reference)) {
+                throw new IllegalStateException(
+                        "The '" + reference + "' handler instance doesn't specify the reply-to target filter");
+            }
+            replyToManyPredicateFilter = getService(Predicate.class, predicateFilter, bundleContext);
+        }
+
+        private boolean isReplyToManyHandler(final ServiceReference<?> reference) {
+            final String[] serviceTypes = (String[]) reference.getProperty(OBJECTCLASS);
+            for (final String type : serviceTypes) {
+                if (ReplyToManySubscriptionHandler.class.getName().equals(type)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
