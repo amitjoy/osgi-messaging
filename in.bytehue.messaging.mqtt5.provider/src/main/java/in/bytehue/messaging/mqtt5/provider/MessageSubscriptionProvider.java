@@ -161,7 +161,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
                                       .send()
                                       .thenAccept(ack -> {
                                           if (isSubscriptionAcknowledged(ack)) {
-                                              subscriptionRegistry.addSubscription(subChannel, pubChannel, stream, reference);
+                                              subscriptionRegistry.addSubscription(pubChannel, subChannel, stream, reference);
                                               logger.debug("New subscription request for '{}' processed successfully - {}", subChannel, ack);
                                           } else {
                                               logger.error("New subscription request for '{}' failed - {}", subChannel, ack);
