@@ -99,7 +99,6 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
         if (!replyToDTO.isConform) {
             return;
         }
-
         Stream.of(replyToDTO.subChannels)
               .forEach(c -> replyToSubscribe(c, replyToDTO.pubChannel, reference)
                                   .map(m -> handleResponse(m, handler))
@@ -119,7 +118,6 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
         if (!replyToDTO.isConform) {
             return;
         }
-
         Stream.of(replyToDTO.subChannels)
               .forEach(c -> replyToSubscribe(c, replyToDTO.pubChannel, reference)
                                   .forEach(handler::handleResponse));
@@ -138,7 +136,6 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
         if (!replyToDTO.isConform) {
             return;
         }
-
         Stream.of(replyToDTO.subChannels)
               .forEach(c -> replyToSubscribe(c, replyToDTO.pubChannel, reference)
                                   .map(m -> handleResponses(m, handler))
