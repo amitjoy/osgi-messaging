@@ -18,15 +18,18 @@ package in.bytehue.messaging.mqtt5.provider;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.PUBLISHER;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPLY_TO_MANY_PREDICATE;
 import static org.osgi.service.messaging.Features.GENERATE_CORRELATION_ID;
 import static org.osgi.service.messaging.Features.GENERATE_REPLY_CHANNEL;
 import static org.osgi.service.messaging.Features.REPLY_TO;
 import static org.osgi.service.messaging.Features.REPLY_TO_MANY_PUBLISH;
 import static org.osgi.service.messaging.Features.REPLY_TO_MANY_SUBSCRIBE;
 
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.function.Predicate;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -115,14 +118,14 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
         autoGenerateMissingConfigs(requestMessage);
 
         final Deferred<Message> deferred = promiseFactory.deferred();
-        final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
+        final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext, false);
 
         // @formatter:off
         subscriber.subscribe(dto.subChannel)
                   .forEach(m -> {
-                      publisher.publish(m, dto.pubChannel);
-                      deferred.resolve(m);
-                  });
+                              publisher.publish(m, dto.pubChannel);
+                              deferred.resolve(m); // resolve the promise on first response
+                          });
         // @formatter:off
         return deferred.getPromise();
     }
@@ -135,15 +138,18 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
     @Override
     public PushStream<Message> publishWithReplyMany(final Message requestMessage, final MessageContext replyToContext) {
         autoGenerateMissingConfigs(requestMessage);
-        final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
+        final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext, true);
 
+        final PushStream<Message> pushStream = subscriber.subscribe(dto.subChannel);
         // @formatter:off
-        return subscriber.subscribe(dto.subChannel)
-                         .map(m -> {
-                             publisher.publish(m, dto.pubChannel);
-                             return m;
-                          });
-        // @formatter:off
+        return pushStream.map(m -> {
+                                 publisher.publish(m, dto.pubChannel);
+                                 if (dto.replyToManyEndPredicate.test(m)) {
+                                     pushStream.close(); // close the stream when predicate satisfies
+                                 }
+                                 return m;
+                              });
+        // @formatter:on
     }
 
     private void autoGenerateMissingConfigs(final Message message) {
@@ -163,13 +169,23 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
     private class ReplyToDTO {
         String pubChannel;
         String subChannel;
+        Predicate<Message> replyToManyEndPredicate;
 
-        ReplyToDTO(final Message message, MessageContext context) {
+        @SuppressWarnings("unchecked")
+        ReplyToDTO(final Message message, MessageContext context, final boolean isReplyToMany) {
             if (context == null) {
                 context = message.getContext();
             }
             pubChannel = context.getReplyToChannel();
             subChannel = context.getChannel();
+
+            if (isReplyToMany) {
+                final Map<String, Object> extensions = context.getExtensions();
+                if (extensions == null || extensions.containsKey(REPLY_TO_MANY_PREDICATE)) {
+                    throw new IllegalStateException("Reply-To Many Predicate is not set for Reply-To Many request");
+                }
+                replyToManyEndPredicate = (Predicate<Message>) extensions.get(REPLY_TO_MANY_PREDICATE);
+            }
         }
     }
 

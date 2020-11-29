@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2020 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -17,11 +17,14 @@ package in.bytehue.messaging.mqtt5.api;
 
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.MESSAGE_EXPIRY_INTERVAL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RECEIVE_LOCAL;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPLY_TO_MANY_PREDICATE;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
 
 import java.util.Map;
+import java.util.function.Predicate;
 
+import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContextBuilder;
 
 /**
@@ -86,6 +89,18 @@ public interface MqttMessageContextBuilder extends MessageContextBuilder {
      */
     default MqttMessageContextBuilder withReceiveLocal(final boolean receiveLocal) {
         extensionEntry(RECEIVE_LOCAL, receiveLocal);
+        return this;
+    }
+
+    /**
+     * Sets the the {@link Predicate} that is used to check when to end the Reply-To-Many request
+     * connection
+     *
+     * @param predicate the {@link Predicate} instance
+     * @return the {@link MqttMessageContextBuilder} instance
+     */
+    default MqttMessageContextBuilder withReplyToManyEndPredicate(final Predicate<Message> predicate) {
+        extensionEntry(REPLY_TO_MANY_PREDICATE, predicate);
         return this;
     }
 
