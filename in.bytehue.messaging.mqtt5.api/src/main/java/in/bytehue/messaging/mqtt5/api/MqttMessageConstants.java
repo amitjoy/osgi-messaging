@@ -94,9 +94,9 @@ public final class MqttMessageConstants {
     /**
      * Defines standard constants for the MQTT messaging configuration PIDs
      */
-    public static final class PID {
+    public static final class ConfigurationPid {
 
-        private PID() {
+        private ConfigurationPid() {
             throw new IllegalAccessError(NON_INSTANTIABLE);
         }
 

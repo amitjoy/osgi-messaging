@@ -17,7 +17,7 @@ package in.bytehue.messaging.mqtt5.provider;
 
 import static com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode.NO_SUBSCRIPTIONS_EXISTED;
 import static com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode.SUCCESS;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.PID.CLIENT;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.CLIENT;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getDTOFromClass;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.serviceReferenceDTO;
 import static java.util.stream.Collectors.toList;
