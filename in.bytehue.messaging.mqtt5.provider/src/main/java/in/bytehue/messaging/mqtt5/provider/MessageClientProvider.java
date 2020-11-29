@@ -108,13 +108,13 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "Last Will Topic")
         String lastWillTopic() default "";
 
-        @AttributeDefinition(name = "Last Will QoS")
+        @AttributeDefinition(name = "Last Will QoS", min = "0", max = "2")
         int lastWillQoS() default 2;
 
         @AttributeDefinition(name = "Last Will Payload")
         String lastWillPayLoad() default "";
 
-        @AttributeDefinition(name = "Last Will Payload")
+        @AttributeDefinition(name = "Last Will Content Type")
         String lastWillContentType() default "";
 
         @AttributeDefinition(name = "Last Will Message Expiry Interval")
