@@ -161,15 +161,15 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
                                       .send()
                                       .thenAccept(ack -> {
                                           if (isSubscriptionAcknowledged(ack)) {
-                                              subscriptionRegistry.addSubscription(stream, subChannel, pubChannel, reference);
+                                              subscriptionRegistry.addSubscription(subChannel, pubChannel, stream, reference);
                                               logger.debug("New subscription request for '{}' processed successfully - {}", subChannel, ack);
                                           } else {
                                               logger.error("New subscription request for '{}' failed - {}", subChannel, ack);
                                           }
                                       });
             stream.onClose(() -> {
-                subscriptionRegistry.removeSubscription(stream); // remove the subscription from registry
-                source.close(); // close the event source
+                subscriptionRegistry.removeSubscription(subChannel, ps -> ps == stream);
+                source.close();
             });
             return stream;
         } catch (final Exception e) {

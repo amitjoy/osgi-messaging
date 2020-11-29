@@ -15,21 +15,29 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
+import static com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode.NO_SUBSCRIPTIONS_EXISTED;
+import static com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode.SUCCESS;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.PID.CLIENT;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getDTOFromClass;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.serviceReferenceDTO;
 import static java.util.stream.Collectors.toList;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Predicate;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.log.Logger;
+import org.osgi.service.log.LoggerFactory;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageSubscription;
 import org.osgi.service.messaging.dto.ChannelDTO;
@@ -37,33 +45,77 @@ import org.osgi.service.messaging.dto.ReplyToSubscriptionDTO;
 import org.osgi.service.messaging.dto.SubscriptionDTO;
 import org.osgi.util.pushstream.PushStream;
 
+import com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAck;
+import com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode;
+
 //@formatter:off
-@Component(service = MessageSubscriptionRegistry.class)
+@Component(service = MessageSubscriptionRegistry.class, configurationPid = CLIENT)
 public final class MessageSubscriptionRegistry {
+
+    @interface Config {
+        boolean cleanStart() default false;
+    }
+
+    @Activate
+    private Config config;
 
     @Activate
     private BundleContext bundleContext;
 
+    @Reference(service = LoggerFactory.class)
+    private Logger logger;
+
     @Reference
     private MessageClientProvider messagingClient;
 
-    private final Map<PushStream<Message>, ExtendedSubscriptionDTO> subscriptions = new HashMap<>();
+    private final Map<String, ExtendedSubscriptionDTO> subscriptions = new HashMap<>();
 
     public void addSubscription(
-            final PushStream<Message> stream,
             final String pubChannel,
             final String subChannel,
+            final PushStream<Message> stream,
             final ServiceReference<?> handlerReference) {
-        subscriptions.put(stream, new ExtendedSubscriptionDTO(pubChannel, subChannel, handlerReference));
+
+        final String topicFilter = toTopicFilter(subChannel);
+        subscriptions.computeIfAbsent(
+                            topicFilter,
+                            e -> new ExtendedSubscriptionDTO(
+                                    pubChannel,
+                                    subChannel,
+                                    handlerReference))
+                     .connectedStreams
+                     .add(stream);
     }
 
-    public void removeSubscription(final PushStream<Message> stream) {
-        final ExtendedSubscriptionDTO channel = subscriptions.remove(stream);
-        if (channel != null) {
-            messagingClient.client.unsubscribeWith().addTopicFilter(channel.subChannel.name).send();
+    public void removeSubscription(final String subChannel) {
+        removeSubscription(subChannel, ps -> true);
+    }
+
+    public void removeSubscription(final String subChannel, final Predicate<PushStream<Message>> predicate) {
+        final String topicFilter = toTopicFilter(subChannel);
+
+        if (subscriptions.containsKey(topicFilter)) {
+            final List<PushStream<Message>> connectedStreams = subscriptions.get(topicFilter).connectedStreams;
+            connectedStreams.removeIf(predicate::test);
+
+            if (connectedStreams.isEmpty() && !config.cleanStart()) {
+                messagingClient.client
+                               .unsubscribeWith()
+                               .addTopicFilter(topicFilter)
+                               .send()
+                               .thenAccept(ack -> {
+                                   if (isUnsubscriptionAcknowledged(ack)) {
+                                       subscriptions.remove(topicFilter);
+                                       logger.debug("Unsubscription request for '{}' processed successfully - {}", subChannel, ack);
+                                   } else {
+                                       logger.error("Unsubscription request for '{}' failed - {}", subChannel, ack);
+                                   }
+                               });
+            }
         }
     }
 
+    @Deactivate
     public void clearAllSubscriptions() {
         subscriptions.keySet().forEach(this::removeSubscription);
     }
@@ -73,6 +125,7 @@ public final class MessageSubscriptionRegistry {
         ChannelDTO pubChannel;
         ChannelDTO subChannel;
         ServiceReference<?> handlerReference;
+        List<PushStream<Message>> connectedStreams;
 
         public ExtendedSubscriptionDTO(
                 final String pubChannel,
@@ -81,9 +134,12 @@ public final class MessageSubscriptionRegistry {
 
             // a channel is always connected if a subscription in client exists
             final boolean isConnected = true;
-            this.pubChannel = createChannelDTO(pubChannel, isConnected);
-            this.subChannel = createChannelDTO(subChannel, isConnected);
+
+            this.pubChannel       = createChannelDTO(pubChannel, isConnected);
+            this.subChannel       = createChannelDTO(subChannel, isConnected);
             this.handlerReference = handlerReference;
+
+            connectedStreams = new ArrayList<>();
         }
 
         private ChannelDTO createChannelDTO(final String name, final boolean isConnected) {
@@ -118,7 +174,7 @@ public final class MessageSubscriptionRegistry {
     public ReplyToSubscriptionDTO[] getReplyToSubscriptionDTOs() {
         final List<ReplyToSubscriptionDTO> replyToSubscriptions = new ArrayList<>();
 
-        for (final Entry<PushStream<Message>, ExtendedSubscriptionDTO> dto : subscriptions.entrySet()) {
+        for (final Entry<String, ExtendedSubscriptionDTO> dto : subscriptions.entrySet()) {
 
             final ExtendedSubscriptionDTO subscription = dto.getValue();
             if (subscription.handlerReference != null) {
@@ -159,6 +215,20 @@ public final class MessageSubscriptionRegistry {
         subscriptionDTO.generateReplyChannel = true;
 
         return subscriptionDTO;
+    }
+
+    private String toTopicFilter(final String subChannel) {
+        final int indexOfFirstSlash = subChannel.indexOf('/');
+        return indexOfFirstSlash != -1 ? subChannel.substring(0, indexOfFirstSlash) + "/#" : subChannel;
+    }
+
+    private boolean isUnsubscriptionAcknowledged(final Mqtt5UnsubAck ack) {
+        final List<Mqtt5UnsubAckReasonCode> acceptedCodes = Arrays.asList(
+                SUCCESS,
+                NO_SUBSCRIPTIONS_EXISTED
+        );
+        final List<Mqtt5UnsubAckReasonCode> reasonCodes = ack.getReasonCodes();
+        return reasonCodes.stream().findFirst().filter(acceptedCodes::contains).isPresent();
     }
 
 }
