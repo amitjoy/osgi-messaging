@@ -99,3 +99,4 @@ public final class Mqtt5Application {
 
 }
 ```
+For more details, have a look at the [example](https://github.com/amitjoy/osgi-messaging/tree/main/in.bytehue.messaging.mqtt5.example) project
