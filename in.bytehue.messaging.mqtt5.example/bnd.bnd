@@ -2,7 +2,8 @@
 	in.bytehue.messaging.mqtt5.api,\
 	org.osgi.service.messaging,\
 	org.apache.felix.gogo.command,\
-	org.apache.felix.gogo.runtime
+	org.apache.felix.gogo.runtime,\
+	org.apache.commons.lang3
 -runrequires: \
 	bnd.identity;id='in.bytehue.messaging.mqtt5.example',\
 	bnd.identity;id='org.apache.felix.gogo.shell',\
@@ -30,4 +31,5 @@
 	org.apache.felix.converter;version='[1.0.14,1.0.15)',\
 	org.apache.sling.commons.johnzon;version='[1.2.6,1.2.7)',\
 	slf4j.api;version='[1.7.30,1.7.31)',\
-	slf4j.simple;version='[1.7.30,1.7.31)'
+	slf4j.simple;version='[1.7.30,1.7.31)',\
+	org.apache.commons.lang3;version='[3.11.0,3.11.1)'

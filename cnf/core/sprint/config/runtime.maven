@@ -2,6 +2,7 @@
 
 org.apache.commons:org.apache.commons.collections:3.2.0.v2013030210310
 org.apache.sling:org.apache.sling.commons.johnzon:1.2.6
+org.apache.commons:commons-lang3:3.11
 
 # bnd
 
