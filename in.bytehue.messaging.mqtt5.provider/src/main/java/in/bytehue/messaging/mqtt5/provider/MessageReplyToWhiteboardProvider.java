@@ -140,11 +140,10 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
               .forEach(c -> {
                   final PushStream<Message> stream = replyToSubscribe(c, replyToDTO.pubChannel, reference);
                   stream.forEach(m -> {
-                              handleResponses(m, handler);
+                              handleResponses(m, handler).forEach(msg -> publisher.publish(msg, replyToDTO.pubChannel));
                               if (replyToDTO.replyToManyPredicateFilter.test(m)) {
                                   stream.close();
                               }
-                              publisher.publish(m, replyToDTO.pubChannel);
                   });
         });
     }
@@ -230,8 +229,8 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
 
             final Map<String, String> requiredValues = new HashMap<>();
 
-            requiredValues.put(MESSAGING_NAME_PROPERTY, MESSAGING_ID);
             requiredValues.put(MESSAGING_FEATURE_PROPERTY, REPLY_TO);
+            requiredValues.put(MESSAGING_NAME_PROPERTY, MESSAGING_ID);
             requiredValues.put(MESSAGING_PROTOCOL_PROPERTY, MESSAGING_PROTOCOL);
 
             isConform = exp.eval(requiredValues);
