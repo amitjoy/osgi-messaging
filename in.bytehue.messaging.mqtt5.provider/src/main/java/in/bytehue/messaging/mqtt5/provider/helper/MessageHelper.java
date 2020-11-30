@@ -54,6 +54,7 @@ import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContextBuilder;
 import org.osgi.service.messaging.acknowledge.AcknowledgeHandler;
 
+import com.hivemq.client.internal.mqtt.message.publish.MqttPublish;
 import com.hivemq.client.mqtt.datatypes.MqttUtf8String;
 import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserProperties;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
@@ -86,7 +87,8 @@ public final class MessageHelper {
     }
 
     public static Message toMessage(final Mqtt5Publish publish, final MessageContextBuilder messageContextBuilder) {
-        final ByteBuffer payload = publish.getPayload().orElse(null);
+        final MqttPublish pub = (MqttPublish) publish;
+        final ByteBuffer payload = pub.getRawPayload();
         // @formatter:off
         final String contentEncoding = publish
                                             .getPayloadFormatIndicator()
@@ -96,7 +98,7 @@ public final class MessageHelper {
 
         final String contentType = publish.getContentType().map(MessageHelper::asString).orElse(null);
         final String channel = publish.getTopic().toString();
-        final String correlationId = publish.getCorrelationData().map(MessageHelper::asString).orElse(null);
+        final String correlationId = asString(pub.getRawCorrelationData());
         final int qos = publish.getQos().getCode();
         final boolean retain = publish.isRetain();
         final Mqtt5UserProperties properties = publish.getUserProperties();
@@ -245,11 +247,11 @@ public final class MessageHelper {
     }
 
     public static String asString(final MqttUtf8String string) {
-        return asString(string.toByteBuffer());
+        return string.toString();
     }
 
     public static String asString(final ByteBuffer buffer) {
-        return StandardCharsets.UTF_8.decode(buffer).toString();
+        return new String(buffer.array(), StandardCharsets.UTF_8);
     }
 
 }
