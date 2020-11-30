@@ -20,13 +20,18 @@ import java.nio.charset.StandardCharsets;
 
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContextBuilder;
 import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.MessageSubscription;
+import org.osgi.util.pushstream.PushStream;
 
 @Component(service = Mqtt5PubSubExample.class, immediate = true)
 public final class Mqtt5PubSubExample {
+
+    private PushStream<Message> stream;
 
     @Reference(target = "(osgi.messaging.protocol=mqtt5)")
     private MessagePublisher publisher;
@@ -37,8 +42,14 @@ public final class Mqtt5PubSubExample {
     @Reference(target = "(osgi.messaging.protocol=mqtt5)")
     private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
 
+    @Deactivate
+    void deactivate() {
+        stream.close();
+    }
+
     public String sub(final String channel) {
-        subscriber.subscribe(channel).forEach(m -> {
+        stream = subscriber.subscribe(channel);
+        stream.forEach(m -> {
             System.out.println("Message Received");
             System.out.println(StandardCharsets.UTF_8.decode(m.payload()).toString());
         });
