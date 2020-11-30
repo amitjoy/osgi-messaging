@@ -138,17 +138,15 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
 
         Stream.of(replyToDTO.subChannels)
               .forEach(c -> {
-                final PushStream<Message> stream = replyToSubscribe(c, replyToDTO.pubChannel, reference)
-                                                      .map(m -> handleResponses(m, handler))
-                                                      .flatMap(m -> m);
-
-                                                   stream.forEach(m -> {
-                                                        if (replyToDTO.replyToManyPredicateFilter.test(m)) {
-                                                            stream.close();
-                                                        }
-                                                        publisher.publish(m, replyToDTO.pubChannel);
-                                                   });
-               });
+                  final PushStream<Message> stream = replyToSubscribe(c, replyToDTO.pubChannel, reference);
+                  stream.forEach(m -> {
+                              handleResponses(m, handler);
+                              if (replyToDTO.replyToManyPredicateFilter.test(m)) {
+                                  stream.close();
+                              }
+                              publisher.publish(m, replyToDTO.pubChannel);
+                  });
+        });
     }
 
     void unbindReplyToManySubscriptionHandler(final ServiceReference<?> reference) {
@@ -171,7 +169,11 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
         final String channel = context.getReplyToChannel();
         final String correlation = context.getCorrelationId();
 
-        return (MessageContextBuilderProvider) mcbFactory.getService().channel(channel).correlationId(correlation);
+        return (MessageContextBuilderProvider)
+                    mcbFactory.getService()
+                              .channel(channel)
+                              .correlationId(correlation)
+                              .content(request.payload());
     }
 
     private PushStream<Message> handleResponses(final Message request, final ReplyToManySubscriptionHandler handler) {
