@@ -65,22 +65,90 @@ This project is licensed under Apache License [![License](http://img.shields.io/
 
 ### Usage
 
-```java
-@GogoCommand(function = { "pub", "sub" }, scope = "test")
-@Component(service = Mqtt5Application.class, immediate = true)
-public final class Mqtt5Application {
+#### Client Configuration
 
-    @Reference
+The `in.bytehue.messaging.client` can be used to configure the client.
+
+* `id` - Client Identifier (mandatory)
+* `server` - Server Address (optional) (default: `broker.hivemq.com`)
+* `port` - Server Port (optional) (default: `1883`)
+* `automticReconnect` - Automatic Reconnection (optional) (default: `false`)
+* `cleanStart` - Resume Previously Established Session (optional) (default: `false`)
+* `initialDelay` - Initial Delay if Automatic Reconnection is enabled (optional) (default: `1` second)
+* `maxDelay` - Max Delay if Automatic Reconnection is enabled (optional) (default: `30` seconds)
+* `sessionExpiryInterval` - Keep Session State (optional) (default: `30` seconds)
+* `simpleAuth` - Simple Authentication (optional) (default: `false`)
+* `username` - Simple Authentication Username (optional) (default: ` ` empty string)
+* `password` - Simple Authentication Password (optional) (default: ` ` empty string)
+* `useSSL` - SSL Configuration (optional) (default: `false`)
+* `cipherSuites` - SSL Configuration Cipher Suites (optional) (default: ` ` empty array)
+* `handshakeTimeout` - SSL Configuration Handshake Timeout (optional) (default: `1` second)
+* `trustManagerFactoryTargetFilter` - SSL Configuration Trust Manager Factory Service Target Filter (optional) (default: ` ` empty string) (Refer to `javax.net.ssl.TrustManagerFactory`)
+* `lastWillTopic` - Last Will Topic (optional) (default: ` ` empty string)
+* `lastWillQoS` - Last Will QoS (optional) (default: `2`)
+* `lastWillPayLoad` - Last Will Payload (optional) (default: ` ` empty string)
+* `lastWillContentType` - Last Will Content Type (optional) (default: ` `  empty string)
+* `lastWillMessageExpiryInterval` - Last Will Message Expiry Interval" (optional) (default: `120` seconds)
+* `delayInterval` - Last Will Delay Interval (optional) (default: `30` seconds)
+* `receiveMaximum` - Maximum concurrent messages to be received (optional) (default: `10`)
+* `sendMaximum` - Maximum concurrent messages to be sent (optional) (default: `10`)
+* `maximumPacketSize` - Maximum Packet Size for receiving (optional) (default: `10240` - 10 KB)
+* `sendMaximumPacketSize` - Maximum Packet Size for sending (optional) (default: `10240` - 10 KB)
+* `topicAliasMaximum` - Maximum Topic Aliases (optional) (default: `0`)
+* `useEnhancedAuthentication` - Enhanced Authentication (optional) (default: `false`)
+* `enhancedAuthTargetFilter` - Enhanced Authentication Service Filter (optional) (default: ` ` empty string) (Refer to `com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism`)
+* `useServerReauth` - Server Reauthentication (optional) (default: `false`)
+* `connectedListenerFilter` - Connected Listener Service Filter (optional) (default: ` ` empty string) (Refer to `com.hivemq.client.mqtt.lifecycle.MqttClientConnectedListener`)
+* `disconnectedListenerFilter` - Disconnected Listener Service Filter (optional) (default: `` empty string) (Refer to `com.hivemq.client.mqtt.lifecycle.MqttClientDisconnectedListener`)
+* `disconnectionReasonDescription` - Reason for the disconnection when the component is stopped (optional) (default: `OSGi Component Deactivated`)
+* `disconnectionReasonCode` - Code for the disconnection when the component is stopped (optional) (default: `NORMAL_DISCONNECTION`) (Refer to `com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode`)
+
+#### Primary APIs
+
+* `org.osgi.service.messaging.MessagePublisher` - service to publish to specific topic
+* `org.osgi.service.messaging.MessageSubscription` - service to subscribe to specific topic
+* `org.osgi.service.messaging.Message` - a message that is exchanged between subscriber and publisher
+* `org.osgi.service.messaging.MessageContext` - configuration for a specific message
+* `org.osgi.service.messaging.MessageContextBuilder` - service to prepare a specific message
+* `in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder` - extended service to prepare a specific MQTT message
+* `org.osgi.service.messaging.acknowledge.AcknowledgeMessageContext` - configuration denoting if a message has been acknowledged (this requires the implementation to support `acknowledge` feature)
+* `org.osgi.service.messaging.acknowledge.AcknowledgeMessageContextBuilder` - service to prepare a messaging configuration for acknowledgement
+* `org.osgi.service.messaging.replyto.ReplyToPublisher` - service to send a request for receiving a response
+* `org.osgi.service.messaging.replyto.ReplyToSingleSubscriptionHandler` - consumer API to handle response for a request and pusblish the response
+* `org.osgi.service.messaging.replyto.ReplyToSubscriptionHandler` - consumer API to handle only responses without publishing
+* `org.osgi.service.messaging.replyto.ReplyToManySubscriptionHandler` - consumer API to handle to handle stream of requests and publish stream of responses
+* `org.osgi.service.messaging.runtime.MessageServiceRuntime` - service to respresent the runtime information of a Message Service instance of an implementation.
+
+The included APIs also provide several helpful annotations for implementors as well as consumers. Refer to `org.osgi.service.messaging.propertytypes` and `org.osgi.service.messaging.annotations` packages.
+
+The OSGi messaging specification is catered to provide a unified solution to accomodate the trending messaging solutions such as AMQP, MQTT etc. That's why no generic API exists for MQTT. To fill in this gap, an implementation specific API exists in `in.bytehue.messaging.mqtt5.api`.
+
+
+* Simple Pub/Sub Example:
+
+```java
+@Component(service = Mqtt5PubSubExample.class, immediate = true)
+public final class Mqtt5PubSubExample {
+
+    private PushStream<Message> stream;
+
+    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
     private MessagePublisher publisher;
 
-    @Reference
+    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
     private MessageSubscription subscriber;
 
-    @Reference
+    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
     private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
 
+    @Deactivate
+    void deactivate() {
+        stream.close();
+    }
+
     public String sub(final String channel) {
-        subscriber.subscribe(channel).forEach(m -> {
+        stream = subscriber.subscribe(channel);
+        stream.forEach(m -> {
             System.out.println("Message Received");
             System.out.println(StandardCharsets.UTF_8.decode(m.payload()).toString());
         });
@@ -90,7 +158,12 @@ public final class Mqtt5Application {
     public String pub(final String channel, final String data) {
         final MessageContextBuilder mcb = mcbFactory.getService();
         try {
-            publisher.publish(mcb.content(ByteBuffer.wrap(data.getBytes())).channel(channel).buildMessage());
+            // @formatter:off
+            publisher.publish(
+                    mcb.content(ByteBuffer.wrap(data.getBytes()))
+                       .channel(channel)
+                       .buildMessage());
+            // @formatter:on
         } finally {
             mcbFactory.ungetService(mcb);
         }
@@ -99,4 +172,57 @@ public final class Mqtt5Application {
 
 }
 ```
-For more details, have a look at the [example](https://github.com/amitjoy/osgi-messaging/tree/main/in.bytehue.messaging.mqtt5.example) project
+
+* Simple Reply-To Publishing Example:
+
+```java
+@Component
+public class Mqtt5ReplyToExample {
+
+    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
+    private ReplyToPublisher mqttPublisher;
+
+    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
+    private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
+
+    public void publishReplyToMessage() {
+        final MessageContextBuilder mcb = mcbFactory.getService();
+        try {
+            // @formatter:off
+            final Message request =
+                    mcb.channel("/demo")
+                       .correlationId("test123")
+                       .replyTo("demo_response")
+                       .content(ByteBuffer.wrap("Hello Word!".getBytes()))
+                       .buildMessage();
+            // @formatter:on
+            mqttPublisher.publishWithReply(request);
+        } finally {
+            mcbFactory.ungetService(mcb);
+        }
+    }
+}
+```
+
+* Simple Reply-To Single Subscription Handler Example:
+
+```java
+@Component
+@ReplyToSubscription(target = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo)))", channel = "a/b", replyChannel = "c/d")
+public final class Mqtt5ReplyToSingleSubscriptionHandler implements ReplyToSingleSubscriptionHandler {
+
+    @Override
+    public Message handleResponse(final Message requestMessage, final MessageContextBuilder responseBuilder) {
+        final String content = StandardCharsets.UTF_8.decode(requestMessage.payload()).append("EXAMPLE").toString();
+        return responseBuilder.content(ByteBuffer.wrap(content.getBytes())).buildMessage();
+    }
+
+}
+```
+
+#### Useful Notes
+
+* Since more than once implementations can coexist in the OSGi runtime, we can search for the MQTT services by means of the provided service properties.
+* Refer to the examples above.
+* Also note that, the `in.bytehue.messaging.mqtt5.provider` bundle packages the APIs and implementation together. This bundle also packages and exports the HiveMQ Java client APIs to perform enhanced configuration to the client.
+* For more details, have a look at the [example](https://github.com/amitjoy/osgi-messaging/tree/main/in.bytehue.messaging.mqtt5.example) project
