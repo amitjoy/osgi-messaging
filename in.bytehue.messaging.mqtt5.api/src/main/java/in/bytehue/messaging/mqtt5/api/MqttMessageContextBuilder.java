@@ -22,10 +22,14 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPL
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
 
+import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.osgi.service.messaging.Features;
 import org.osgi.service.messaging.Message;
+import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageContextBuilder;
 
 /**
@@ -48,6 +52,128 @@ import org.osgi.service.messaging.MessageContextBuilder;
  * @see MessageContextBuilder
  */
 public interface MqttMessageContextBuilder extends MessageContextBuilder {
+
+    /**
+     * Sets the provided {@link MessageContext} instance. If this context is set,
+     * calling message context builder functions on this builder will no override
+     * the values from the given context.
+     *
+     * @param context an existing context
+     * @return the {@link MqttMessageContextBuilder} instance
+     */
+    @Override
+    MqttMessageContextBuilder withContext(MessageContext context);
+
+    /**
+     * Adds the content to the message
+     *
+     * @param byteBuffer the content
+     * @return the {@link MqttMessageContextBuilder} instance
+     */
+    @Override
+    MqttMessageContextBuilder content(ByteBuffer byteBuffer);
+
+    /**
+     * Adds typed content to the message and maps it using the provided mapping function
+     *
+     * @param <T> the content type
+     * @param object the input object
+     * @param contentMapper a mapping function to map T into the {@link ByteBuffer}
+     * @return the {@link MqttMessageContextBuilder} instance
+     */
+    @Override
+    <T> MqttMessageContextBuilder content(T object, Function<T, ByteBuffer> contentMapper);
+
+    /**
+     * Defines a reply to address when submitting a reply-to request. So the receiver will
+     * knows, where to send the reply.
+     *
+     * @param replyToAddress the reply address
+     * @return the {@link MqttMessageContextBuilder} instance
+     */
+    @Override
+    MqttMessageContextBuilder replyTo(String replyToAddress);
+
+    /**
+     * Defines a correlation id that is usually used for reply-to requests.
+     *
+     * The correlation id is an identifier to assign a response to its corresponding request.
+     *
+     * This options can be used when the underlying system doesn't provide the generation of these
+     * correlation ids
+     *
+     * @param correlationId the correlationId
+     * @return the {@link MqttMessageContextBuilder} instance
+     */
+    @Override
+    MqttMessageContextBuilder correlationId(String correlationId);
+
+    /**
+     * Defines a content encoding
+     *
+     * @param content the content encoding
+     * @return the {@link MqttMessageContextBuilder} instance
+     */
+    @Override
+    MqttMessageContextBuilder contentEncoding(String contentEncoding);
+
+    /**
+     * Defines a content-type like the content mime-type.
+     *
+     * @param contentType the content type
+     * @return the {@link MqttMessageContextBuilder} instance
+     */
+    @Override
+    MqttMessageContextBuilder contentType(String contentType);
+
+    /**
+     * Defines a channel name and a routing key
+     *
+     * @param channelName the channel name
+     * @param channelExtension the special key for routing a message
+     * @return the {@link MqttMessageContextBuilder} instance
+     */
+    @Override
+    MqttMessageContextBuilder channel(String channelName, String channelExtension);
+
+    /**
+     * Defines a channel name that can be a topic or queue name
+     *
+     * @param channelName the channel name
+     * @return the {@link MqttMessageContextBuilder} instance
+     */
+    @Override
+    MqttMessageContextBuilder channel(String channelName);
+
+    /**
+     * Adds an options entry with the given key and the given value
+     *
+     * @param key the option/property key
+     * @param value the option value
+     * @return the {@link MqttMessageContextBuilder} instance
+     */
+    @Override
+    MqttMessageContextBuilder extensionEntry(String key, Object value);
+
+    /**
+     * Appends the given options to the context options
+     *
+     * @param options the options map to be added to the options
+     * @return the {@link MqttMessageContextBuilder} instance
+     */
+    @Override
+    MqttMessageContextBuilder extensions(Map<String, Object> extension);
+
+    /**
+     * Sets the quality of service
+     *
+     * @param qos the qos value
+     * @return the {@link MqttMessageContextBuilder} instance
+     */
+    default MqttMessageContextBuilder withQoS(final int qos) {
+        extensionEntry(Features.EXTENSION_QOS, qos);
+        return this;
+    }
 
     /**
      * Sets the retain flag for the MQTT communication.
@@ -83,7 +209,7 @@ public interface MqttMessageContextBuilder extends MessageContextBuilder {
     }
 
     /**
-     * Sets the the flag to receive own messages
+     * Sets the flag to receive own messages
      *
      * @param receiveLocal {@code true} to receive own messages, otherwise {@code false}
      * @return the {@link MqttMessageContextBuilder} instance
@@ -94,7 +220,7 @@ public interface MqttMessageContextBuilder extends MessageContextBuilder {
     }
 
     /**
-     * Sets the the {@link Predicate} that is used to check when to end the Reply-To-Many request
+     * Sets the {@link Predicate} that is used to check when to end the Reply-To-Many request
      * connection
      *
      * @param predicate the {@link Predicate} instance
@@ -106,7 +232,7 @@ public interface MqttMessageContextBuilder extends MessageContextBuilder {
     }
 
     /**
-     * Sets the the target filter of the service implementing {@link Predicate} that is used to check
+     * Sets the target filter of the service implementing {@link Predicate} that is used to check
      * when to end the Reply-To-Many request connection
      *
      * @param predicate the {@link Predicate} instance

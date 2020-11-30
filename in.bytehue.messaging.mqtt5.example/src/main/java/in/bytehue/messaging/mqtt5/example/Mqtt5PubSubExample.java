@@ -18,17 +18,13 @@ package in.bytehue.messaging.mqtt5.example;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.felix.service.command.annotations.GogoCommand;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.configurator.annotations.RequireConfigurator;
 import org.osgi.service.messaging.MessageContextBuilder;
 import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.MessageSubscription;
 
-@RequireConfigurator
-@GogoCommand(function = { "pub", "sub" }, scope = "test")
 @Component(service = Mqtt5PubSubExample.class, immediate = true)
 public final class Mqtt5PubSubExample {
 

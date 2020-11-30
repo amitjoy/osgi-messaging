@@ -118,7 +118,7 @@ public final class MessagePublisherProvider implements MessagePublisher {
                                               .qos(MqttQos.fromCode(qos))
                                               .retain(retain)
                                               .userProperties(propsBuilder.build());
-            if (messageExpiryInterval == null) {
+            if (messageExpiryInterval == null || messageExpiryInterval == 0) {
                 publishRequest.noMessageExpiry();
             } else {
                 publishRequest.messageExpiryInterval(messageExpiryInterval);

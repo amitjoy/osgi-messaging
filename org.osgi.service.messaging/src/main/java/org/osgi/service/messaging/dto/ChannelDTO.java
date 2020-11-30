@@ -15,6 +15,6 @@ public class ChannelDTO extends DTO {
     public String extension;
 
     /** <code>true</code>, if the channel is connected */
-    public boolean connected; // TODO what does this mean?
+    public boolean connected;
 
 }

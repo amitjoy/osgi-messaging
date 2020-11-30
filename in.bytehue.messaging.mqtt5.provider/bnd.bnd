@@ -7,7 +7,8 @@ Bundle-Name                    : OSGi MQTT v5 Implementation
 	io.reactivex.rxjava2.rxjava,\
 	in.bytehue.messaging.mqtt5.api,\
 	org.reactivestreams.reactive-streams,\
-	biz.aQute.bndlib;packages=*
+	biz.aQute.bndlib;packages=*,\
+	org.apache.felix.gogo.runtime
 
 -privatepackage                : \
 	aQute.*,\
@@ -20,8 +21,9 @@ Bundle-Name                    : OSGi MQTT v5 Implementation
 -includeresource.hivemq.res    : @${repo;com.hivemq:hivemq-mqtt-client-shaded}!/META-INF/*
 -fixupmessages.private.package : 'private reference'
 Export-Package                 : com.hivemq.client.mqtt.*
-Import-Package                 : \
+Import-Package: \
 	com.hivemq.client.internal.shaded.io.netty.internal.tcnative;'resolution:'=optional,\
+	org.apache.felix.service.command;'resolution:'=optional,\
 	org.osgi.service.repository;'resolution:'=optional,\
 	com.jcraft.jzlib;'resolution:'=optional,\
 	org.slf4j;'resolution:'=optional,\

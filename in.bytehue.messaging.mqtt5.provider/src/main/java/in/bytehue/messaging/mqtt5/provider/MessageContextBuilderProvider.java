@@ -96,7 +96,7 @@ public final class MessageContextBuilderProvider
     }
 
     @Override
-    public MessageContextBuilder withContext(final MessageContext context) {
+    public MqttMessageContextBuilder withContext(final MessageContext context) {
         if (context instanceof MessageContextProvider) {
             message.messageContext = context;
         }
@@ -104,7 +104,7 @@ public final class MessageContextBuilderProvider
     }
 
     @Override
-    public MessageContextBuilder content(final ByteBuffer byteBuffer) {
+    public MqttMessageContextBuilder content(final ByteBuffer byteBuffer) {
         if (byteBuffer != null) {
             message.byteBuffer = byteBuffer;
         }
@@ -112,7 +112,7 @@ public final class MessageContextBuilderProvider
     }
 
     @Override
-    public <T> MessageContextBuilder content(final T object, final Function<T, ByteBuffer> contentMapper) {
+    public <T> MqttMessageContextBuilder content(final T object, final Function<T, ByteBuffer> contentMapper) {
         if (object != null && contentMapper != null) {
             message.byteBuffer = contentMapper.apply(object);
         }
@@ -120,7 +120,7 @@ public final class MessageContextBuilderProvider
     }
 
     @Override
-    public MessageContextBuilder replyTo(final String replyToAddress) {
+    public MqttMessageContextBuilder replyTo(final String replyToAddress) {
         if (replyToAddress != null) {
             messageContext.replyToChannel = replyToAddress;
         }
@@ -128,7 +128,7 @@ public final class MessageContextBuilderProvider
     }
 
     @Override
-    public MessageContextBuilder correlationId(final String correlationId) {
+    public MqttMessageContextBuilder correlationId(final String correlationId) {
         if (correlationId != null) {
             messageContext.correlationId = correlationId;
         }
@@ -136,7 +136,7 @@ public final class MessageContextBuilderProvider
     }
 
     @Override
-    public MessageContextBuilder contentEncoding(final String contentEncoding) {
+    public MqttMessageContextBuilder contentEncoding(final String contentEncoding) {
         if (contentEncoding != null) {
             messageContext.contentEncoding = contentEncoding;
         }
@@ -144,7 +144,7 @@ public final class MessageContextBuilderProvider
     }
 
     @Override
-    public MessageContextBuilder contentType(final String contentType) {
+    public MqttMessageContextBuilder contentType(final String contentType) {
         if (contentType != null) {
             messageContext.contentType = contentType;
         }
@@ -152,7 +152,7 @@ public final class MessageContextBuilderProvider
     }
 
     @Override
-    public MessageContextBuilder channel(final String channelName, final String channelExtension) {
+    public MqttMessageContextBuilder channel(final String channelName, final String channelExtension) {
         // routing key ('channelExtension') is not required by MQTT
         channel(channelName);
         logger.debug("Channel extension will be ignored");
@@ -160,7 +160,7 @@ public final class MessageContextBuilderProvider
     }
 
     @Override
-    public MessageContextBuilder channel(final String channelName) {
+    public MqttMessageContextBuilder channel(final String channelName) {
         if (channelName != null) {
             messageContext.channel = channelName;
         }
@@ -168,7 +168,7 @@ public final class MessageContextBuilderProvider
     }
 
     @Override
-    public MessageContextBuilder extensionEntry(final String key, final Object value) {
+    public MqttMessageContextBuilder extensionEntry(final String key, final Object value) {
         if (key != null && value != null) {
             messageContext.extensions.put(key, value);
         }
@@ -176,7 +176,7 @@ public final class MessageContextBuilderProvider
     }
 
     @Override
-    public MessageContextBuilder extensions(final Map<String, Object> extension) {
+    public MqttMessageContextBuilder extensions(final Map<String, Object> extension) {
         if (extension != null) {
             messageContext.extensions.putAll(extension);
         }

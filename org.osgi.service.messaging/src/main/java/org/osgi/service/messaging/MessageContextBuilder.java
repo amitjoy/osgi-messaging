@@ -18,7 +18,7 @@ public interface MessageContextBuilder extends MessageContextProvider {
      * the values from the given context.
      *
      * @param context an existing context
-     * @return the {@link MessageBuilder} instance
+     * @return the {@link MessageContextBuilder} instance
      */
     MessageContextBuilder withContext(MessageContext context);
 
@@ -26,7 +26,7 @@ public interface MessageContextBuilder extends MessageContextProvider {
      * Adds the content to the message
      *
      * @param byteBuffer the content
-     * @return the {@link MessageBuilder} instance
+     * @return the {@link MessageContextBuilder} instance
      */
     MessageContextBuilder content(ByteBuffer byteBuffer);
 
@@ -36,7 +36,7 @@ public interface MessageContextBuilder extends MessageContextProvider {
      * @param <T> the content type
      * @param object the input object
      * @param contentMapper a mapping function to map T into the {@link ByteBuffer}
-     * @return the {@link MessageBuilder} instance
+     * @return the {@link MessageContextBuilder} instance
      */
     <T> MessageContextBuilder content(T object, Function<T, ByteBuffer> contentMapper);
 
