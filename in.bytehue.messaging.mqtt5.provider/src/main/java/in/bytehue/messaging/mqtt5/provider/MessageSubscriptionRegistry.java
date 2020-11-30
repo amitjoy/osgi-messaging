@@ -247,7 +247,7 @@ public final class MessageSubscriptionRegistry {
 
         subscriptionDTO.requestChannel = subDTO;
         subscriptionDTO.responseChannel = pubDTO;
-        subscriptionDTO.handlerService = serviceReferenceDTO(handlerReference, bundleContext.getBundle().getBundleId());
+        subscriptionDTO.handlerService = serviceReferenceDTO(handlerReference);
         subscriptionDTO.serviceDTO = getDTOFromClass(MessageSubscription.class, bundleContext);
         subscriptionDTO.generateCorrelationId = true;
         subscriptionDTO.generateReplyChannel = true;

@@ -130,10 +130,10 @@ public final class MessageHelper {
         // @formatter:on
     }
 
-    public static ServiceReferenceDTO serviceReferenceDTO(final ServiceReference<?> ref, final long bundleId) {
+    public static ServiceReferenceDTO serviceReferenceDTO(final ServiceReference<?> ref) {
         final ServiceReferenceDTO dto = new ServiceReferenceDTO();
 
-        dto.bundle = bundleId;
+        dto.bundle = ref.getBundle().getBundleId();
         dto.id = (Long) ref.getProperty(SERVICE_ID);
         dto.properties = new HashMap<>();
 
