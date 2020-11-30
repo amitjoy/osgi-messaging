@@ -94,7 +94,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 
     @Override
     public PushStream<Message> subscribe(final MessageContext context) {
-        return subscribe(context, null, null, null);
+        return subscribe(context, context.getChannel(), null, null);
     }
 
     public PushStream<Message> replyToSubscribe(
