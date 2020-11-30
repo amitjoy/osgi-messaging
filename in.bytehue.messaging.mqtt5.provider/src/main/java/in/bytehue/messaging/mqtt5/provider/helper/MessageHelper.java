@@ -186,7 +186,8 @@ public final class MessageHelper {
         for (final ServiceReferenceDTO serviceDTO : services) {
             final Map<String, Object> properties = serviceDTO.properties;
             final String[] serviceTypes = (String[]) properties.get(OBJECTCLASS);
-            if (MESSAGING_PROTOCOL.equals(properties.get(MESSAGING_PROTOCOL_PROPERTY))) {
+            final Object property = properties.get(MESSAGING_PROTOCOL_PROPERTY);
+            if (property != null && MESSAGING_PROTOCOL.equals(((String[]) property)[0])) {
                 isProtocolCompliant = true;
             }
             for (final String type : serviceTypes) {

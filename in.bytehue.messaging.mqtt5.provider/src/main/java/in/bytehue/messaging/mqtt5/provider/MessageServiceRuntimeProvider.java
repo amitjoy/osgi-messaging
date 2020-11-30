@@ -20,6 +20,8 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROT
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROVIDER;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.MESSAGE_EXPIRY_INTERVAL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RECEIVE_LOCAL;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPLY_TO_MANY_PREDICATE;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPLY_TO_MANY_PREDICATE_FILTER;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getDTOFromClass;
@@ -46,6 +48,8 @@ import org.osgi.service.messaging.dto.MessagingRuntimeDTO;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
 import org.osgi.service.messaging.runtime.MessageServiceRuntime;
 
+import in.bytehue.messaging.mqtt5.provider.helper.GogoCommand;
+
 // @formatter:off
 @Component
 @MessagingFeature(
@@ -68,6 +72,7 @@ import org.osgi.service.messaging.runtime.MessageServiceRuntime;
                 EXTENSION_AUTO_ACKNOWLEDGE,
                 EXTENSION_GUARANTEED_DELIVERY,
                 EXTENSION_GUARANTEED_ORDERING })
+@GogoCommand(scope = "mqtt", function = "runtime")
 //@formatter:on
 public final class MessageServiceRuntimeProvider implements MessageServiceRuntime {
 
@@ -79,6 +84,10 @@ public final class MessageServiceRuntimeProvider implements MessageServiceRuntim
 
     @Reference
     private ComponentServiceObjects<MessageClientProvider> messagingClient;
+
+    public MessagingRuntimeDTO runtime() {
+        return getRuntimeDTO();
+    }
 
     @Override
     public MessagingRuntimeDTO getRuntimeDTO() {
@@ -103,10 +112,12 @@ public final class MessageServiceRuntimeProvider implements MessageServiceRuntim
                             MESSAGE_EXPIRY_INTERVAL,
                             GENERATE_CORRELATION_ID,
                             REPLY_TO_MANY_SUBSCRIBE,
+                            REPLY_TO_MANY_PREDICATE,
                             MESSAGE_CONTEXT_BUILDER,
                             EXTENSION_AUTO_ACKNOWLEDGE,
                             EXTENSION_GUARANTEED_ORDERING,
-                            EXTENSION_GUARANTEED_DELIVERY };
+                            EXTENSION_GUARANTEED_DELIVERY,
+                            REPLY_TO_MANY_PREDICATE_FILTER };
             // @formatter:on
             dto.instanceId = messagingClient.getServiceReference().getProperties().get(SERVICE_ID).toString();
             dto.protocols = new String[] { MESSAGING_PROTOCOL };
