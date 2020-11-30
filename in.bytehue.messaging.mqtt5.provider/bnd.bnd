@@ -7,11 +7,9 @@ Bundle-Name                    : OSGi MQTT v5 Implementation
 	io.reactivex.rxjava2.rxjava,\
 	in.bytehue.messaging.mqtt5.api,\
 	org.reactivestreams.reactive-streams,\
-	biz.aQute.bndlib;packages=*,\
 	org.apache.felix.gogo.runtime
 
 -privatepackage                : \
-	aQute.*,\
 	in.bytehue.*,\
 	com.hivemq.*,\
 	io.reactivex.*,\

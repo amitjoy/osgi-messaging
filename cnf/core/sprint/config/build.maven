@@ -1,6 +1,5 @@
 # bnd
 
-biz.aQute.bnd:biz.aQute.bndlib:5.2.0
 biz.aQute.bnd:biz.aQute.launchpad:5.2.0
 
 # OSGi

@@ -58,8 +58,8 @@ import org.osgi.service.messaging.replyto.ReplyToSubscriptionHandler;
 import org.osgi.service.messaging.replyto.ReplyToWhiteboard;
 import org.osgi.util.pushstream.PushStream;
 
-import aQute.bnd.osgi.resource.FilterParser;
-import aQute.bnd.osgi.resource.FilterParser.Expression;
+import in.bytehue.messaging.mqtt5.provider.helper.FilterParser;
+import in.bytehue.messaging.mqtt5.provider.helper.FilterParser.Expression;
 
 // TODO remove immediate = true
 // @formatter:off
