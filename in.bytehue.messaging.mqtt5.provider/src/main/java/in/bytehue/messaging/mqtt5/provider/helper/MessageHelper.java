@@ -43,6 +43,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.ToLongFunction;
 import java.util.stream.Stream;
 
 import org.osgi.dto.DTO;
@@ -70,13 +71,17 @@ public final class MessageHelper {
     public static <T> T getService(final Class<T> clazz, final String filter, final BundleContext context) {
         try {
             final Collection<ServiceReference<T>> serviceReferences = context.getServiceReferences(clazz, filter);
-            // get the service with highest service ranking
             // @formatter:off
+            final ToLongFunction<ServiceReference<?>> srFunc =
+                    sr -> Optional.ofNullable(sr.getProperty(SERVICE_RANKING))
+                                  .map(long.class::cast)
+                                  .orElse(0L);
+            // get the service with highest service ranking
             return serviceReferences.stream()
                     .sorted(
                             (sr1, sr2) -> Long.compare(
-                                    (long) sr1.getProperty(SERVICE_RANKING),
-                                    (long) sr2.getProperty(SERVICE_RANKING)))
+                                    srFunc.applyAsLong(sr1),
+                                    srFunc.applyAsLong(sr2)))
                     .findFirst()
                     .map(context::getService)
                     .orElseThrow(() -> new RuntimeException("'" + clazz +"' service instance cannot be found"));
