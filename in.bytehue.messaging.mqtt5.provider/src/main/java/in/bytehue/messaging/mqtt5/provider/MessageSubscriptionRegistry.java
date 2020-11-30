@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 import org.osgi.framework.BundleContext;
@@ -68,23 +69,37 @@ public final class MessageSubscriptionRegistry {
     @Reference
     private MessageClientProvider messagingClient;
 
-    private final Map<String, ExtendedSubscriptionDTO> subscriptions = new HashMap<>();
+    // map containing wildcard topic filter as key and list of extended subscription DTOs as values
+    private final Map<String, List<ExtendedSubscriptionDTO>> subscriptions = new HashMap<>();
 
     public void addSubscription(
             final String pubChannel,
             final String subChannel,
-            final PushStream<Message> stream,
+            final PushStream<Message> pushStream,
             final ServiceReference<?> handlerReference) {
 
         final String topicFilter = toTopicFilter(subChannel);
-        subscriptions.computeIfAbsent(
-                            topicFilter,
-                            e -> new ExtendedSubscriptionDTO(
-                                    pubChannel,
-                                    subChannel,
-                                    handlerReference))
-                     .connectedStreams
-                     .add(stream);
+        final ExtendedSubscriptionDTO subDTO =  new ExtendedSubscriptionDTO(
+                                                            pubChannel,
+                                                            subChannel,
+                                                            pushStream,
+                                                            handlerReference);
+
+        // there can be multiple subscriptions under the same wild card filter
+        if (subscriptions.containsKey(topicFilter)) {
+            final List<ExtendedSubscriptionDTO> dtos = subscriptions.get(topicFilter);
+            for (final ExtendedSubscriptionDTO dto : dtos) {
+                if (dto.handlerReference == handlerReference) {
+                    // there can be multiple connected streams for the same handler
+                    dto.connectedStreams.add(pushStream);
+                }
+            }
+            dtos.add(subDTO);
+        } else {
+            final List<ExtendedSubscriptionDTO> dtos = new ArrayList<>();
+            dtos.add(subDTO);
+            subscriptions.put(topicFilter, dtos);
+        }
     }
 
     public void removeSubscription(final String subChannel) {
@@ -94,11 +109,33 @@ public final class MessageSubscriptionRegistry {
     public void removeSubscription(final String subChannel, final Predicate<PushStream<Message>> predicate) {
         final String topicFilter = toTopicFilter(subChannel);
 
+        // check if there exists the wildcard topic filter for the input subscription topic
         if (subscriptions.containsKey(topicFilter)) {
-            final List<PushStream<Message>> connectedStreams = subscriptions.get(topicFilter).connectedStreams;
-            connectedStreams.removeIf(predicate::test);
+            final List<ExtendedSubscriptionDTO> dtos = subscriptions.get(topicFilter);
 
-            if (connectedStreams.isEmpty() && !config.cleanStart()) {
+            for(final ExtendedSubscriptionDTO dto: dtos) {
+                final List<PushStream<Message>> pushStreams = dto.connectedStreams;
+
+                // only remove the input pushstream from the list of associated pushstreams as
+                // multiple pushstreams from the same handler can exist simultaneously
+                pushStreams.removeIf(predicate::test);
+
+                // if there exists no associated pushstreams, the channels are disconnected
+                if (!pushStreams.isEmpty()) {
+                    Optional.ofNullable(dto.pubChannel).ifPresent(e -> e.connected = false);
+                    Optional.ofNullable(dto.subChannel).ifPresent(e -> e.connected = false);
+                }
+            }
+            // remove only if there exists no connected streams
+            dtos.removeIf(e -> e.connectedStreams.isEmpty());
+
+            // if there exists no subscriptions associated with the wildcard entry, then send
+            // an unsubscription request for the wildcard. Since we are using wildcard for the
+            // unsubscription, the server will unsubscribe all registered topics under it.
+            // Such an action is only required if and only if the clean start flag is set to false.
+            // Otherwise, we store the subscriptions in the server so that after client reconnects,
+            // all the previous subscriptions will be available once again.
+            if (dtos.isEmpty() && !config.cleanStart()) {
                 messagingClient.client
                                .unsubscribeWith()
                                .addTopicFilter(topicFilter)
@@ -130,9 +167,10 @@ public final class MessageSubscriptionRegistry {
         public ExtendedSubscriptionDTO(
                 final String pubChannel,
                 final String subChannel,
+                final PushStream<Message> stream,
                 final ServiceReference<?> handlerReference) {
 
-            // a channel is always connected if a subscription in client exists
+            // a channel is connected if a subscription in client exists
             final boolean isConnected = true;
 
             this.pubChannel       = createChannelDTO(pubChannel, isConnected);
@@ -140,6 +178,7 @@ public final class MessageSubscriptionRegistry {
             this.handlerReference = handlerReference;
 
             connectedStreams = new ArrayList<>();
+            connectedStreams.add(stream);
         }
 
         private ChannelDTO createChannelDTO(final String name, final boolean isConnected) {
@@ -167,6 +206,7 @@ public final class MessageSubscriptionRegistry {
     private List<ChannelDTO> subscriptionChannels() {
         return subscriptions.values()
                             .stream()
+                            .flatMap(List::stream)
                             .map(c -> c.subChannel)
                             .collect(toList());
     }
@@ -174,18 +214,16 @@ public final class MessageSubscriptionRegistry {
     public ReplyToSubscriptionDTO[] getReplyToSubscriptionDTOs() {
         final List<ReplyToSubscriptionDTO> replyToSubscriptions = new ArrayList<>();
 
-        for (final Entry<String, ExtendedSubscriptionDTO> dto : subscriptions.entrySet()) {
-
-            final ExtendedSubscriptionDTO subscription = dto.getValue();
-            if (subscription.handlerReference != null) {
-
-                final ReplyToSubscriptionDTO replyToSub =
-                        getReplyToSubscriptionDTO(
-                                subscription.pubChannel,
-                                subscription.subChannel,
-                                subscription.handlerReference);
-
-                replyToSubscriptions.add(replyToSub);
+        for (final Entry<String, List<ExtendedSubscriptionDTO>> entry : subscriptions.entrySet()) {
+            for (final ExtendedSubscriptionDTO dto : entry.getValue()) {
+                if (dto.handlerReference != null) {
+                    final ReplyToSubscriptionDTO replyToSub =
+                            getReplyToSubscriptionDTO(
+                                    dto.pubChannel,
+                                    dto.subChannel,
+                                    dto.handlerReference);
+                    replyToSubscriptions.add(replyToSub);
+                }
             }
         }
         return replyToSubscriptions.toArray(new ReplyToSubscriptionDTO[0]);
