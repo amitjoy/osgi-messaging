@@ -219,11 +219,16 @@ public final class MessageHelper {
                 } else {
                     ctx.acknowledgeState = REJECTED;
                 }
+            } else if (ctx.acknowledgeHandler != null) {
+                ctx.acknowledgeState = ACKNOWLEDGED;
+                ctx.acknowledgeHandler.accept(message);
             } else {
-                interimConsumer.accept(message);
+                ctx.acknowledgeState = ACKNOWLEDGED;
             }
+            interimConsumer.accept(message);
             if (ctx.acknowledgeConsumer != null) {
                 ctx.acknowledgeConsumer.accept(message);
+                ctx.acknowledgeState = ACKNOWLEDGED;
             }
         } else {
             ctx.acknowledgeState = UNSUPPORTED;
