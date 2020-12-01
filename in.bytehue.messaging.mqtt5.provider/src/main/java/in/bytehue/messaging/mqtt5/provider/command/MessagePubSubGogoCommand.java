@@ -25,7 +25,6 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.felix.service.command.Descriptor;
 import org.apache.felix.service.command.Parameter;
-import org.apache.felix.service.command.annotations.GogoCommand;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -35,6 +34,7 @@ import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.MessageSubscription;
 
 import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
+import in.bytehue.messaging.mqtt5.provider.helper.GogoCommand;
 
 // @formatter:off
 @GogoCommand(scope = "mqtt", function = { "pub", "sub" })
