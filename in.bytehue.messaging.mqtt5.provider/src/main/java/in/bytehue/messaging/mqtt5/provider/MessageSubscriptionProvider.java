@@ -149,7 +149,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
                                       .callback(p -> {
                                           final MessageContextBuilderProvider mcb = mcbFactory.getService();
                                           try {
-                                              final Message message = toMessage(p, mcb);
+                                              final Message message = toMessage(p, ctx, mcb);
                                               acknowledgeMessage(message, ctx, source::publish);
                                           } catch (final Exception e) {
                                               source.error(e);

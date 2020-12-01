@@ -97,7 +97,6 @@ public final class MessageContextBuilderProvider
 
     @Override
     public MqttMessageContextBuilder withContext(final MessageContext context) {
-        // TODO think about it
         if (context instanceof MessageContextProvider) {
             message.messageContext = context;
         }

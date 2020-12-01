@@ -52,6 +52,7 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.dto.ServiceReferenceDTO;
 import org.osgi.service.messaging.Message;
+import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageContextBuilder;
 import org.osgi.service.messaging.acknowledge.AcknowledgeHandler;
 
@@ -85,16 +86,18 @@ public final class MessageHelper {
                     .findFirst()
                     .map(context::getService)
                     .orElseThrow(() -> new RuntimeException("'" + clazz +"' service instance cannot be found"));
-            // @formatter:on
         } catch (final Exception e) {
             throw new RuntimeException("Service '" + clazz.getName() + "' cannot be retrieved", e);
         }
     }
 
-    public static Message toMessage(final Mqtt5Publish publish, final MessageContextBuilder messageContextBuilder) {
+    public static Message toMessage(
+            final Mqtt5Publish publish,
+            final MessageContext context,
+            final MessageContextBuilder messageContextBuilder) {
+
         final MqttPublish pub = (MqttPublish) publish;
         final ByteBuffer payload = pub.getRawPayload();
-        // @formatter:off
         final String contentEncoding = publish
                                             .getPayloadFormatIndicator() // TODO always null
                                             .filter(e -> e == UTF_8)
@@ -115,7 +118,7 @@ public final class MessageHelper {
                                                                     e -> e.getName().toString(),
                                                                     e -> e.getValue().toString()));
 
-        final Map<String, Object> extensions = new HashMap<>();
+        final Map<String, Object> extensions = new HashMap<>(context.getExtensions());
         extensions.put(EXTENSION_QOS, qos);
         extensions.put(RETAIN, retain);
         extensions.put(USER_PROPERTIES, userProperties);
@@ -243,13 +246,12 @@ public final class MessageHelper {
     public static int getQoS(final Map<String, Object> extensions) {
         // guaranteed delivery > guaranteed ordering > specified qos
         final boolean isGuaranteedDelivery = (boolean) extensions.getOrDefault(EXTENSION_GUARANTEED_DELIVERY, false);
-        if (!isGuaranteedDelivery) {
-            final boolean isGuranteedOrdering = (boolean) extensions.getOrDefault(EXTENSION_GUARANTEED_ORDERING, false);
-            if (!isGuranteedOrdering) {
-                return (int) extensions.getOrDefault(EXTENSION_QOS, DEFAULT_QOS.getCode());
-            }
+        final boolean isGuranteedOrdering = (boolean) extensions.getOrDefault(EXTENSION_GUARANTEED_ORDERING, false);
+
+        if (isGuaranteedDelivery || isGuranteedOrdering) {
+            return EXACTLY_ONCE.getCode();
         }
-        return EXACTLY_ONCE.getCode();
+        return (int) extensions.getOrDefault(EXTENSION_QOS, DEFAULT_QOS.getCode());
     }
 
     public static String asString(final MqttUtf8String string) {

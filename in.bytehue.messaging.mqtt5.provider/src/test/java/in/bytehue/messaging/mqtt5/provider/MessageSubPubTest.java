@@ -4,12 +4,15 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.osgi.service.messaging.Features;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageContextBuilder;
@@ -160,6 +163,91 @@ public final class MessageSubPubTest {
             final String ctype = m.getContext().getContentType();
             final String content = new String(m.payload().array(), UTF_8);
 
+            assertThat(inputChannel).isEqualTo(topic);
+            assertThat(payload).isEqualTo(content);
+            assertThat(contentType).isEqualTo(ctype);
+        });
+
+        waitForRequestProcessing();
+
+        // messageContext has higher priority over message.getContext().getChannel()
+        publisher.publish(message, messageContext);
+
+        waitForRequestProcessing();
+    }
+
+    @Test
+    public void test_sub_pub_extensions_guaranteedDelivery() throws Exception {
+        final String channel = "a/b";
+        final String inputChannel = "c/d";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        final Map<String, Object> extensions = new HashMap<>();
+        extensions.put(Features.EXTENSION_GUARANTEED_DELIVERY, true);
+
+        // @formatter:off
+        final Message message = mcb.channel(channel)
+                .contentType(contentType)
+                .content(ByteBuffer.wrap(payload.getBytes()))
+                .extensions(extensions)
+                .buildMessage();
+
+        final MessageContext messageContext = mcb.channel(inputChannel).extensions(extensions)
+                .buildContext();
+        // @formatter:on
+
+        subscriber.subscribe(messageContext).forEach(m -> {
+            final MessageContext context = m.getContext();
+            final String topic = context.getChannel();
+            final String ctype = context.getContentType();
+            final String content = new String(m.payload().array(), UTF_8);
+
+            final Map<String, Object> ext = context.getExtensions();
+
+            assertThat(2).isEqualTo(ext.get(Features.EXTENSION_QOS));
+            assertThat(inputChannel).isEqualTo(topic);
+            assertThat(payload).isEqualTo(content);
+            assertThat(contentType).isEqualTo(ctype);
+        });
+
+        waitForRequestProcessing();
+
+        // messageContext has higher priority over message.getContext().getChannel()
+        publisher.publish(message, messageContext);
+
+        waitForRequestProcessing();
+    }
+
+    @Test
+    public void test_sub_pub_extensions_guaranteedOrdering() throws Exception {
+        final String channel = "a/b";
+        final String inputChannel = "c/d";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        final Map<String, Object> extensions = new HashMap<>();
+        extensions.put(Features.EXTENSION_GUARANTEED_ORDERING, true);
+
+        // @formatter:off
+        final Message message = mcb.channel(channel)
+                .contentType(contentType)
+                .content(ByteBuffer.wrap(payload.getBytes()))
+                .buildMessage();
+
+        final MessageContext messageContext = mcb.channel(inputChannel).extensions(extensions)
+                .buildContext();
+        // @formatter:on
+
+        subscriber.subscribe(messageContext).forEach(m -> {
+            final MessageContext context = m.getContext();
+            final String topic = context.getChannel();
+            final String ctype = context.getContentType();
+            final String content = new String(m.payload().array(), UTF_8);
+
+            final Map<String, Object> ext = context.getExtensions();
+
+            assertThat(2).isEqualTo(ext.get(Features.EXTENSION_QOS));
             assertThat(inputChannel).isEqualTo(topic);
             assertThat(payload).isEqualTo(content);
             assertThat(contentType).isEqualTo(ctype);
