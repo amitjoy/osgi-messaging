@@ -193,18 +193,21 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
                 final Map<String, Object> extensions = context.getExtensions();
                 // @formatter:off
                 if (
-                    extensions == null ||
-                    extensions.containsKey(REPLY_TO_MANY_PREDICATE) ||
-                    extensions.containsKey(REPLY_TO_MANY_PREDICATE_FILTER)) {
-
-                    throw new IllegalStateException("Reply-To Many Predicate is not set for Reply-To Many request");
-                }
+                        extensions != null &&
+                        (
+                                extensions.containsKey(REPLY_TO_MANY_PREDICATE) ||
+                                extensions.containsKey(REPLY_TO_MANY_PREDICATE_FILTER))) {
                 // @formatter:on
-                replyToManyEndPredicate = (Predicate<Message>) extensions.get(REPLY_TO_MANY_PREDICATE);
-                final String replyToManyEndPredicateFilter = (String) extensions.get(REPLY_TO_MANY_PREDICATE_FILTER);
+                    replyToManyEndPredicate = (Predicate<Message>) extensions.get(REPLY_TO_MANY_PREDICATE);
+                    final String replyToManyEndPredicateFilter = (String) extensions
+                            .get(REPLY_TO_MANY_PREDICATE_FILTER);
 
-                if (replyToManyEndPredicate == null) {
-                    replyToManyEndPredicate = getService(Predicate.class, replyToManyEndPredicateFilter, bundleContext);
+                    if (replyToManyEndPredicate == null) {
+                        replyToManyEndPredicate = getService(Predicate.class, replyToManyEndPredicateFilter,
+                                bundleContext);
+                    }
+                } else {
+                    throw new IllegalStateException("Reply-To Many Predicate is not set for Reply-To Many request");
                 }
             }
         }
