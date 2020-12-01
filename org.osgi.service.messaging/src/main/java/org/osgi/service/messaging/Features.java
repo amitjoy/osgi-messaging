@@ -77,7 +77,7 @@ public interface Features {
      *
      * @since 1.0
      */
-    String EXTENSION_LAST_WILL = "lastWill";
+    String EXTENSION_LAST_WILL = "lastWill"; // TODO why is it an extension in message? it is required for client config
 
     /**
      * The name of the the {@code Quality of Service} extension of the Messaging specification
