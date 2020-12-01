@@ -241,11 +241,14 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
             }
 
             final String predicateFilter = (String) reference.getProperty(REPLY_TO_SUBSCRIPTION_END_CHANNEL_PROPERTY);
-            if (predicateFilter == null && isReplyToManyHandler(reference)) {
-                throw new IllegalStateException(
-                        "The '" + reference + "' handler instance doesn't specify the reply-to target filter");
+            if (isReplyToManyHandler(reference)) {
+                if (predicateFilter == null) {
+                    throw new IllegalStateException(
+                            "The '" + reference + "' handler instance doesn't specify the reply-to target filter");
+                } else {
+                    replyToManyPredicateFilter = getService(Predicate.class, predicateFilter, bundleContext);
+                }
             }
-            replyToManyPredicateFilter = getService(Predicate.class, predicateFilter, bundleContext);
         }
 
         private boolean isReplyToManyHandler(final ServiceReference<?> reference) {
