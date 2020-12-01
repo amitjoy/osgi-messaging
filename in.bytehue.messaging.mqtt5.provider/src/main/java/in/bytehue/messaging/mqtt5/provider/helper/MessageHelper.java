@@ -96,7 +96,7 @@ public final class MessageHelper {
         final ByteBuffer payload = pub.getRawPayload();
         // @formatter:off
         final String contentEncoding = publish
-                                            .getPayloadFormatIndicator()
+                                            .getPayloadFormatIndicator() // TODO always null
                                             .filter(e -> e == UTF_8)
                                             .map(e -> "UTF-8")
                                             .orElse(null);
@@ -241,7 +241,7 @@ public final class MessageHelper {
     }
 
     public static int getQoS(final Map<String, Object> extensions) {
-        // guaranteed deliver > guaranteed ordering > specified qos
+        // guaranteed delivery > guaranteed ordering > specified qos
         final boolean isGuaranteedDelivery = (boolean) extensions.getOrDefault(EXTENSION_GUARANTEED_DELIVERY, false);
         if (!isGuaranteedDelivery) {
             final boolean isGuranteedOrdering = (boolean) extensions.getOrDefault(EXTENSION_GUARANTEED_ORDERING, false);

@@ -148,7 +148,6 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
                                       .retainAsPublished(retainAsPublished)
                                       .callback(p -> {
                                           final MessageContextBuilderProvider mcb = mcbFactory.getService();
-                                          mcb.withContext(ctx);
                                           try {
                                               final Message message = toMessage(p, mcb);
                                               acknowledgeMessage(message, ctx, source::publish);
