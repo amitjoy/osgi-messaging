@@ -222,7 +222,7 @@ public final class Mqtt5ReplyToSingleSubscriptionHandler implements ReplyToSingl
 
 #### Useful Notes
 
-* Since more than once implementations can coexist in the OSGi runtime, we can search for the MQTT services by means of the provided service properties.
+* Since more than one implementations can coexist in the OSGi runtime, we can search for the MQTT services by means of the provided service properties.
 * Refer to the examples above.
 * Also note that, the `in.bytehue.messaging.mqtt5.provider` bundle packages the APIs and implementation together. This bundle also packages and exports the HiveMQ Java client APIs to perform enhanced configuration to the client.
 * For more details, have a look at the [example](https://github.com/amitjoy/osgi-messaging/tree/main/in.bytehue.messaging.mqtt5.example) project
