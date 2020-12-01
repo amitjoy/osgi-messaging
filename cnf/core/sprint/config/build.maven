@@ -2,6 +2,10 @@
 
 biz.aQute.bnd:biz.aQute.launchpad:5.2.0
 
+# Apache
+
+org.apache.commons:commons-lang3:3.11
+
 # OSGi
 
 org.apache.felix:org.apache.felix.framework.security:2.6.1
@@ -22,8 +26,8 @@ org.reactivestreams:reactive-streams:1.0.2
 
 net.bytebuddy:byte-buddy:1.8.12
 net.bytebuddy:byte-buddy-agent:1.8.12
-org.assertj:assertj-core:3.12.2
-org.awaitility:awaitility:3.1.6
+org.assertj:assertj-core:3.18.1
+org.awaitility:awaitility:4.0.3
 org.javassist:javassist:3.24.1-GA
 org.mockito:mockito-core:2.18.3
 org.objenesis:objenesis:2.6

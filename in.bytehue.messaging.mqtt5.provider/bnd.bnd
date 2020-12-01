@@ -9,6 +9,12 @@ Bundle-Name                    : OSGi MQTT v5 Implementation
 	org.reactivestreams.reactive-streams,\
 	org.apache.felix.gogo.runtime
 
+-testpath                      : \
+    biz.aQute.launchpad,\
+    assertj-core,\
+    org.apache.commons.lang3,\
+    slf4j.api
+
 -privatepackage                : \
 	in.bytehue.*,\
 	com.hivemq.*,\
