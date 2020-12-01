@@ -1,13 +1,12 @@
 -runbundles: \
 	assertj-core,\
 	org.apache.felix.configadmin,\
-	org.apache.felix.gogo.command,\
-	org.apache.felix.gogo.runtime,\
-	org.apache.felix.gogo.shell,\
 	org.apache.felix.log,\
 	org.apache.felix.scr,\
+	org.awaitility,\
 	org.osgi.util.function,\
 	org.osgi.util.promise,\
 	org.osgi.util.pushstream,\
+	osgi.enroute.hamcrest.wrapper,\
 	slf4j.api,\
 	slf4j.simple

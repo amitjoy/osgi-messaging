@@ -2,14 +2,14 @@ package in.bytehue.messaging.mqtt5.provider;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.service.messaging.Features;
@@ -41,16 +41,10 @@ public final class MessageSubPubTest {
 
     static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
 
-    @Before
-    public void setup() {
-    }
-
-    @After
-    public void teardown() {
-    }
-
     @Test
     public void test_sub_pub_with_1() throws Exception {
+        final AtomicBoolean flag = new AtomicBoolean();
+
         final String channel = "a/b";
         final String payload = "abc";
         final String contentType = "text/plain";
@@ -70,17 +64,17 @@ public final class MessageSubPubTest {
             assertThat(channel).isEqualTo(topic);
             assertThat(payload).isEqualTo(content);
             assertThat(contentType).isEqualTo(ctype);
+
+            flag.set(true);
         });
-
-        waitForRequestProcessing();
-
         publisher.publish(message);
-
-        waitForRequestProcessing();
+        waitForRequestProcessing(flag);
     }
 
     @Test
     public void test_sub_pub_with_2() throws Exception {
+        final AtomicBoolean flag = new AtomicBoolean();
+
         final String channel = "a/b";
         final String payload = "abc";
         final String contentType = "text/plain";
@@ -100,17 +94,17 @@ public final class MessageSubPubTest {
             assertThat(channel).isEqualTo(topic);
             assertThat(payload).isEqualTo(content);
             assertThat(contentType).isEqualTo(ctype);
+
+            flag.set(true);
         });
-
-        waitForRequestProcessing();
-
         publisher.publish(message);
-
-        waitForRequestProcessing();
+        waitForRequestProcessing(flag);
     }
 
     @Test
     public void test_sub_pub_with_3() throws Exception {
+        final AtomicBoolean flag = new AtomicBoolean();
+
         final String channel = "a/b";
         final String inputChannel = "c/d";
         final String payload = "abc";
@@ -131,18 +125,18 @@ public final class MessageSubPubTest {
             assertThat(inputChannel).isEqualTo(topic);
             assertThat(payload).isEqualTo(content);
             assertThat(contentType).isEqualTo(ctype);
+
+            flag.set(true);
         });
-
-        waitForRequestProcessing();
-
         // inputChannel has higher priority over message.getContext().getChannel()
         publisher.publish(message, inputChannel);
-
-        waitForRequestProcessing();
+        waitForRequestProcessing(flag);
     }
 
     @Test
     public void test_sub_pub_with_4() throws Exception {
+        final AtomicBoolean flag = new AtomicBoolean();
+
         final String channel = "a/b";
         final String inputChannel = "c/d";
         final String payload = "abc";
@@ -166,18 +160,18 @@ public final class MessageSubPubTest {
             assertThat(inputChannel).isEqualTo(topic);
             assertThat(payload).isEqualTo(content);
             assertThat(contentType).isEqualTo(ctype);
+
+            flag.set(true);
         });
-
-        waitForRequestProcessing();
-
         // messageContext has higher priority over message.getContext().getChannel()
         publisher.publish(message, messageContext);
-
-        waitForRequestProcessing();
+        waitForRequestProcessing(flag);
     }
 
     @Test
     public void test_sub_pub_extensions_guaranteedDelivery() throws Exception {
+        final AtomicBoolean flag = new AtomicBoolean();
+
         final String channel = "a/b";
         final String inputChannel = "c/d";
         final String payload = "abc";
@@ -209,18 +203,18 @@ public final class MessageSubPubTest {
             assertThat(inputChannel).isEqualTo(topic);
             assertThat(payload).isEqualTo(content);
             assertThat(contentType).isEqualTo(ctype);
+
+            flag.set(true);
         });
-
-        waitForRequestProcessing();
-
         // messageContext has higher priority over message.getContext().getChannel()
         publisher.publish(message, messageContext);
-
-        waitForRequestProcessing();
+        waitForRequestProcessing(flag);
     }
 
     @Test
     public void test_sub_pub_extensions_guaranteedOrdering() throws Exception {
+        final AtomicBoolean flag = new AtomicBoolean();
+
         final String channel = "a/b";
         final String inputChannel = "c/d";
         final String payload = "abc";
@@ -251,18 +245,16 @@ public final class MessageSubPubTest {
             assertThat(inputChannel).isEqualTo(topic);
             assertThat(payload).isEqualTo(content);
             assertThat(contentType).isEqualTo(ctype);
+
+            flag.set(true);
         });
-
-        waitForRequestProcessing();
-
         // messageContext has higher priority over message.getContext().getChannel()
         publisher.publish(message, messageContext);
-
-        waitForRequestProcessing();
+        waitForRequestProcessing(flag);
     }
 
-    private static void waitForRequestProcessing() throws InterruptedException {
-        TimeUnit.SECONDS.sleep(1);
+    private static void waitForRequestProcessing(final AtomicBoolean flag) throws InterruptedException {
+        await().atMost(3, TimeUnit.SECONDS).untilTrue(flag);
     }
 
 }

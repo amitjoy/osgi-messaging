@@ -13,6 +13,7 @@ Bundle-Name                    : OSGi MQTT v5 Implementation
     biz.aQute.launchpad,\
     assertj-core,\
     org.apache.commons.lang3,\
+    org.awaitility,\
     slf4j.api
 
 -privatepackage                : \
