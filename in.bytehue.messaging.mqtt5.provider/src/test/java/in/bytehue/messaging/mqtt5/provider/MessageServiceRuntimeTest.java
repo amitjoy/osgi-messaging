@@ -21,6 +21,7 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPL
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPLY_TO_MANY_PREDICATE_FILTER;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
 import static org.osgi.service.messaging.Features.EXTENSION_AUTO_ACKNOWLEDGE;
@@ -35,11 +36,16 @@ import static org.osgi.service.messaging.Features.REPLY_TO;
 import static org.osgi.service.messaging.Features.REPLY_TO_MANY_PUBLISH;
 import static org.osgi.service.messaging.Features.REPLY_TO_MANY_SUBSCRIBE;
 
+import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.dto.ServiceReferenceDTO;
+import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContextBuilder;
 import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.MessageSubscription;
@@ -137,6 +143,42 @@ public final class MessageServiceRuntimeTest {
         assertThat(runtimeDTO.serviceDTO.properties).isEqualTo(dto.properties);
         assertThat(runtimeDTO.serviceDTO.bundle).isEqualTo(dto.bundle);
         assertThat(runtimeDTO.serviceDTO.usingBundles).isEqualTo(dto.usingBundles);
+    }
+
+    @Test
+    public void test_subscription() throws Exception {
+        final AtomicBoolean flag = new AtomicBoolean();
+
+        final String channel = "a/b";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        // @formatter:off
+        final Message message = mcb.channel(channel)
+                                   .contentType(contentType)
+                                   .content(ByteBuffer.wrap(payload.getBytes()))
+                                   .buildMessage();
+        // @formatter:on
+
+        subscriber.subscribe(channel).forEach(m -> {
+            final String topic = m.getContext().getChannel();
+            final String ctype = m.getContext().getContentType();
+            final String content = new String(m.payload().array(), UTF_8);
+
+            assertThat(channel).isEqualTo(topic);
+            assertThat(payload).isEqualTo(content);
+            assertThat(contentType).isEqualTo(ctype);
+
+            flag.set(true);
+        });
+        publisher.publish(message);
+        TimeUnit.SECONDS.sleep(3);
+
+        final MessagingRuntimeDTO runtimeDTO = runtime.getRuntimeDTO();
+
+        assertThat(runtimeDTO.subscriptions).hasSize(1);
+        assertThat(runtimeDTO.subscriptions[0].channel.connected).isTrue();
+        assertThat(runtimeDTO.subscriptions[0].channel.name).isEqualTo(channel);
     }
 
 }
