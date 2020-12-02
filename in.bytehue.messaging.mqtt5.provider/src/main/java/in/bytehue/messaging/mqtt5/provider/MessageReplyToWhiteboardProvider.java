@@ -194,20 +194,9 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
                 throw new IllegalStateException("The '" + reference
                         + "' handler instance doesn't specify the reply-to subscription channel(s)");
             }
-            if (pubChannel == null) {
-                boolean isMissingPubChannelAllowed = false;
-
-                final String[] serviceTypes = (String[]) properties.get(OBJECTCLASS);
-                for (final String type : serviceTypes) {
-                    if (ReplyToSubscriptionHandler.class.getName().equals(type)) {
-                        isMissingPubChannelAllowed = true;
-                        break;
-                    }
-                }
-                if (!isMissingPubChannelAllowed) {
-                    throw new IllegalStateException(
-                            "The '" + reference + "' handler instance doesn't specify the reply-to publish channel");
-                }
+            if (pubChannel == null && !isReplyToSubscriptionHandler(reference)) {
+                throw new IllegalStateException(
+                        "The '" + reference + "' handler instance doesn't specify the reply-to publish channel");
             }
             final String replyToSubTarget = (String) properties.get(REPLY_TO_SUBSCRIPTION_TARGET_PROPERTY);
             final FilterParser fp = new FilterParser();
@@ -226,6 +215,16 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
                         "The '" + reference + "' handler instance doesn't specify the reply-to target property");
             }
 
+        }
+
+        private boolean isReplyToSubscriptionHandler(final ServiceReference<?> ref) {
+            final String[] serviceTypes = (String[]) ref.getProperty(OBJECTCLASS);
+            for(final String serviceType : serviceTypes) {
+                if (ReplyToSubscriptionHandler.class.getName().equals(serviceType)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
     }
