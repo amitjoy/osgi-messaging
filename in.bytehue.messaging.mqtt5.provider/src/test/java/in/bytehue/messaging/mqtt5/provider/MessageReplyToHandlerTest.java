@@ -55,7 +55,6 @@ public final class MessageReplyToHandlerTest {
         final AtomicBoolean flag = new AtomicBoolean();
 
         final String channel = "a/b";
-        final String replyToChannel = "c/d";
         final String payload = "abc";
         final String contentType = "text/plain";
 
@@ -68,11 +67,7 @@ public final class MessageReplyToHandlerTest {
         final String channelKey = "osgi.messaging.replyToSubscription.channel";
         final String[] channelValue = new String[] { channel };
 
-        final String replyToChannelKey = "osgi.messaging.replyToSubscription.replyChannel";
-        final String replyToChannelValue = replyToChannel;
-
-        launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue,
-                replyToChannelKey, replyToChannelValue);
+        launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
 
         // @formatter:off
         final Message message = mcb.channel(channel)
