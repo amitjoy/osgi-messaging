@@ -197,13 +197,13 @@ public final class MessageSubscriptionRegistry {
     }
 
     public SubscriptionDTO[] getSubscriptionDTOs() {
-        final List<ChannelDTO> subChannels = subscriptionChannels();
+        final List<ChannelDTO> subChannels = getSubscriptionChannelDTOs();
         return subChannels.stream()
                           .map(this::getSubscriptionDTO)
                           .toArray(SubscriptionDTO[]::new);
     }
 
-    private List<ChannelDTO> subscriptionChannels() {
+    private List<ChannelDTO> getSubscriptionChannelDTOs() {
         return subscriptions.values()
                             .stream()
                             .flatMap(List::stream)
