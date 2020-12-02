@@ -30,7 +30,7 @@ public final class Mqtt5ReplyToSingleSubscriptionHandler implements ReplyToSingl
 
     @Override
     public Message handleResponse(final Message requestMessage, final MessageContextBuilder responseBuilder) {
-        final String content = StandardCharsets.UTF_8.decode(requestMessage.payload()).append("EXAMPLE").toString();
+        final String content = new String(requestMessage.payload().array(), StandardCharsets.UTF_8);
         return responseBuilder.content(ByteBuffer.wrap(content.getBytes())).buildMessage();
     }
 
