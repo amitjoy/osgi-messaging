@@ -17,8 +17,6 @@ package in.bytehue.messaging.mqtt5.provider;
 
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.REPLY_TO_SUBSCRIPTION_END_CHANNEL_PROPERTY;
-import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getService;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.prepareExceptionAsMessage;
 import static org.osgi.framework.Constants.OBJECTCLASS;
 import static org.osgi.service.component.annotations.ReferenceCardinality.MULTIPLE;
@@ -38,10 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
@@ -67,7 +63,6 @@ import in.bytehue.messaging.mqtt5.provider.helper.FilterParser.Expression;
 @Component(service = { ReplyToWhiteboard.class, MessageReplyToWhiteboardProvider.class }, immediate = true)
 public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard {
 
-    private final BundleContext bundleContext;
     private final MessagePublisherProvider publisher;
     private final MessageSubscriptionProvider subscriber;
     private final Map<ServiceReference<?>, List<PushStream<?>>> streams;
@@ -75,7 +70,6 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
 
     @Activate
     public MessageReplyToWhiteboardProvider(
-            final BundleContext bundleContext,
             @Reference
             final MessagePublisherProvider publisher,
             @Reference
@@ -86,7 +80,6 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
         this.publisher = publisher;
         this.subscriber = subscriber;
         this.mcbFactory = mcbFactory;
-        this.bundleContext = bundleContext;
 
         streams = new ConcurrentHashMap<>();
     }
@@ -137,15 +130,10 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
         final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
 
         Stream.of(replyToDTO.subChannels)
-              .forEach(c -> {
-                  final PushStream<Message> stream = replyToSubscribe(c, replyToDTO.pubChannel, reference);
-                  stream.forEach(m -> {
-                              handleResponses(m, handler).forEach(msg -> publisher.publish(msg, replyToDTO.pubChannel));
-                              if (replyToDTO.replyToManyPredicateFilter.test(m)) {
-                                  stream.close();
-                              }
-                  });
-        });
+              .forEach(c -> replyToSubscribe(c, replyToDTO.pubChannel, reference)
+                                  .forEach(m ->
+                                      handleResponses(m, handler)
+                                          .forEach(msg -> publisher.publish(msg, replyToDTO.pubChannel))));
     }
 
     void unbindReplyToManySubscriptionHandler(final ServiceReference<?> reference) {
@@ -195,9 +183,7 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
         boolean isConform;
         String pubChannel;
         String[] subChannels;
-        Predicate<Message> replyToManyPredicateFilter;
 
-        @SuppressWarnings("unchecked")
         ReplyToDTO(final ServiceReference<?> reference) {
             final Dictionary<String, ?> properties = reference.getProperties();
 
@@ -240,26 +226,8 @@ public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard
                         "The '" + reference + "' handler instance doesn't specify the reply-to target property");
             }
 
-            final String predicateFilter = (String) reference.getProperty(REPLY_TO_SUBSCRIPTION_END_CHANNEL_PROPERTY);
-            if (isReplyToManyHandler(reference)) {
-                if (predicateFilter == null) {
-                    throw new IllegalStateException(
-                            "The '" + reference + "' handler instance doesn't specify the reply-to target filter");
-                } else {
-                    replyToManyPredicateFilter = getService(Predicate.class, predicateFilter, bundleContext);
-                }
-            }
         }
 
-        private boolean isReplyToManyHandler(final ServiceReference<?> reference) {
-            final String[] serviceTypes = (String[]) reference.getProperty(OBJECTCLASS);
-            for (final String type : serviceTypes) {
-                if (ReplyToManySubscriptionHandler.class.getName().equals(type)) {
-                    return true;
-                }
-            }
-            return false;
-        }
     }
 
     private void closeConnectedPushstreams(final ServiceReference<?> reference) {
