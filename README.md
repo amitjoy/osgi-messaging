@@ -6,6 +6,12 @@ This repository comprises the rudimentary API extracted from the [OSGi RFC 246](
 
 --------------------------------------------------------------------------------------------------------------
 
+### Badges
+
+https://img.shields.io/gitlab/pipeline/amitjoy/osgi-messaging/main
+
+--------------------------------------------------------------------------------------------------------------
+
 ### Minimum Requirements
 
 1. Java 8
