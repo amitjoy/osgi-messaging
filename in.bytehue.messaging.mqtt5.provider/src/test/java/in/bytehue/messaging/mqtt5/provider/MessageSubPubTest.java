@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2020 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -15,14 +15,13 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
+import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForRequestProcessing;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
@@ -266,10 +265,6 @@ public final class MessageSubPubTest {
         // messageContext has higher priority over message.getContext().getChannel()
         publisher.publish(message, messageContext);
         waitForRequestProcessing(flag);
-    }
-
-    private static void waitForRequestProcessing(final AtomicBoolean flag) throws InterruptedException {
-        await().atMost(3, TimeUnit.SECONDS).untilTrue(flag);
     }
 
 }
