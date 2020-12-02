@@ -52,6 +52,7 @@ import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.MessageSubscription;
 import org.osgi.service.messaging.dto.MessagingRuntimeDTO;
 import org.osgi.service.messaging.replyto.ReplyToSingleSubscriptionHandler;
+import org.osgi.service.messaging.replyto.ReplyToSubscriptionHandler;
 import org.osgi.service.messaging.runtime.MessageServiceRuntime;
 
 import aQute.launchpad.Launchpad;
@@ -238,6 +239,47 @@ public final class MessageServiceRuntimeTest {
         assertThat(runtimeDTO.replyToSubscriptions[0].generateReplyChannel).isTrue();
         assertThat(runtimeDTO.replyToSubscriptions[0].requestChannel.name).isEqualTo(channel);
         assertThat(runtimeDTO.replyToSubscriptions[0].responseChannel.name).isEqualTo(replyToChannel);
+    }
+
+    @Test
+    public void test_reply_to_subscription() throws Exception {
+        final AtomicBoolean flag = new AtomicBoolean();
+
+        final String channel = "a/b";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        final ReplyToSubscriptionHandler handler = m -> {
+            flag.set(true);
+        };
+        final String targetKey = "osgi.messaging.replyToSubscription.target";
+        final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
+
+        final String channelKey = "osgi.messaging.replyToSubscription.channel";
+        final String[] channelValue = new String[] { channel };
+
+        launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
+
+        // @formatter:off
+        final Message message = mcb.channel(channel)
+                                   .contentType(contentType)
+                                   .content(ByteBuffer.wrap(payload.getBytes()))
+                                   .buildMessage();
+        // @formatter:on
+
+        publisher.publish(message);
+        waitForRequestProcessing(flag);
+
+        final MessagingRuntimeDTO runtimeDTO = runtime.getRuntimeDTO();
+
+        assertThat(runtimeDTO.subscriptions).isEmpty();
+        assertThat(runtimeDTO.replyToSubscriptions).hasSize(1);
+        assertThat(runtimeDTO.replyToSubscriptions[0].responseChannel).isNull();
+        assertThat(runtimeDTO.replyToSubscriptions[0].requestChannel).isNotNull();
+        assertThat(runtimeDTO.replyToSubscriptions[0].requestChannel.name).isEqualTo(channel);
+        assertThat(runtimeDTO.replyToSubscriptions[0].serviceDTO).isNotNull();
+        assertThat(runtimeDTO.replyToSubscriptions[0].generateCorrelationId).isTrue();
+        assertThat(runtimeDTO.replyToSubscriptions[0].generateReplyChannel).isTrue();
     }
 
 }
