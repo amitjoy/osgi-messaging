@@ -15,7 +15,12 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.example;
 
+import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
+
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContextBuilder;
 import org.osgi.service.messaging.propertytypes.ReplyToSubscription;
@@ -24,22 +29,42 @@ import org.osgi.util.pushstream.PushStream;
 import org.osgi.util.pushstream.PushStreamProvider;
 import org.osgi.util.pushstream.SimplePushEventSource;
 
-import in.bytehue.messaging.mqtt5.api.ReplyToManySubscriptionEndFilter;
-
 @Component
-@ReplyToManySubscriptionEndFilter(filter = "(foo1=bar1)")
 @ReplyToSubscription(target = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo)))", channel = "a/b", replyChannel = "c/d")
 public final class Mqtt5ReplyToManySubscriptionHandler implements ReplyToManySubscriptionHandler {
 
     final PushStreamProvider provider = new PushStreamProvider();
     final SimplePushEventSource<Message> source = provider.createSimpleEventSource(Message.class);
-    final PushStream<Message> stream = provider.createStream(source); // NOSONAR
+
+    volatile String requestPayLoad;
+
+    @Reference(target = "(foo1=bar1)")
+    private Predicate<Message> filter;
+
+    private Thread thread;
 
     @Override
     public PushStream<Message> handleResponses(final Message requestMessage,
             final MessageContextBuilder responseBuilder) {
-        source.publish(responseBuilder.buildMessage());
-        return stream;
+        thread = new Thread(() -> {
+            try {
+                while (!filter.test(requestMessage)) {
+                    final Message responseMessage = responseBuilder.content(ByteBuffer.wrap("AMIT".getBytes()))
+                            .buildMessage();
+                    source.publish(responseMessage);
+                    try {
+                        TimeUnit.SECONDS.sleep(1L);
+                    } catch (final InterruptedException e) {
+                        source.error(e);
+                    }
+                }
+            } finally {
+                thread.interrupt();
+            }
+        });
+        thread.start();
+        source.endOfStream();
+        return provider.createStream(source);
     }
 
 }
