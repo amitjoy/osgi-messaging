@@ -21,6 +21,7 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPL
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPLY_TO_MANY_PREDICATE_FILTER;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
+import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForRequestProcessing;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
@@ -50,6 +51,7 @@ import org.osgi.service.messaging.MessageContextBuilder;
 import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.MessageSubscription;
 import org.osgi.service.messaging.dto.MessagingRuntimeDTO;
+import org.osgi.service.messaging.replyto.ReplyToSingleSubscriptionHandler;
 import org.osgi.service.messaging.runtime.MessageServiceRuntime;
 
 import aQute.launchpad.Launchpad;
@@ -179,6 +181,63 @@ public final class MessageServiceRuntimeTest {
         assertThat(runtimeDTO.subscriptions).hasSize(1);
         assertThat(runtimeDTO.subscriptions[0].channel.connected).isTrue();
         assertThat(runtimeDTO.subscriptions[0].channel.name).isEqualTo(channel);
+    }
+
+    @Test
+    public void test_reply_to_single_subscription() throws Exception {
+        final AtomicBoolean flag1 = new AtomicBoolean();
+        final AtomicBoolean flag2 = new AtomicBoolean();
+
+        final String channel = "a/b";
+        final String replyToChannel = "c/d";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        final ReplyToSingleSubscriptionHandler handler = (m, mcb) -> {
+            // @formatter:off
+            final Message message = mcb.contentType(contentType)
+                                       .content(ByteBuffer.wrap(payload.getBytes()))
+                                       .buildMessage();
+            // @formatter:on
+            flag1.set(true);
+            return message;
+        };
+        final String targetKey = "osgi.messaging.replyToSubscription.target";
+        final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
+
+        final String channelKey = "osgi.messaging.replyToSubscription.channel";
+        final String[] channelValue = new String[] { channel };
+
+        final String replyToChannelKey = "osgi.messaging.replyToSubscription.replyChannel";
+        final String replyToChannelValue = replyToChannel;
+
+        launchpad.register(ReplyToSingleSubscriptionHandler.class, handler, targetKey, targetValue, channelKey,
+                channelValue, replyToChannelKey, replyToChannelValue);
+
+        // @formatter:off
+        final Message message = mcb.channel(channel)
+                                   .contentType(contentType)
+                                   .content(ByteBuffer.wrap(payload.getBytes()))
+                                   .buildMessage();
+        // @formatter:on
+
+        subscriber.subscribe(replyToChannel).forEach(m -> flag2.set(true));
+
+        publisher.publish(message);
+        waitForRequestProcessing(flag1);
+        waitForRequestProcessing(flag2);
+
+        final MessagingRuntimeDTO runtimeDTO = runtime.getRuntimeDTO();
+
+        assertThat(runtimeDTO.subscriptions).hasSize(1);
+        assertThat(runtimeDTO.replyToSubscriptions).hasSize(1);
+        assertThat(runtimeDTO.replyToSubscriptions[0].responseChannel).isNotNull();
+        assertThat(runtimeDTO.replyToSubscriptions[0].requestChannel).isNotNull();
+        assertThat(runtimeDTO.replyToSubscriptions[0].serviceDTO).isNotNull();
+        assertThat(runtimeDTO.replyToSubscriptions[0].generateCorrelationId).isTrue();
+        assertThat(runtimeDTO.replyToSubscriptions[0].generateReplyChannel).isTrue();
+        assertThat(runtimeDTO.replyToSubscriptions[0].requestChannel.name).isEqualTo(channel);
+        assertThat(runtimeDTO.replyToSubscriptions[0].responseChannel.name).isEqualTo(replyToChannel);
     }
 
 }

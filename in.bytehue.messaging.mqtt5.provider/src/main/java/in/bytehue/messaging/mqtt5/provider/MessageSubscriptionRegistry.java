@@ -207,6 +207,7 @@ public final class MessageSubscriptionRegistry {
         return subscriptions.values()
                             .stream()
                             .flatMap(List::stream)
+                            .filter(c -> c.handlerReference == null)
                             .map(c -> c.subChannel)
                             .collect(toList());
     }
