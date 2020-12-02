@@ -7,8 +7,12 @@ This repository comprises the rudimentary API extracted from the [OSGi RFC 246](
 --------------------------------------------------------------------------------------------------------------
 
 ### Badges
-
-https://img.shields.io/gitlab/pipeline/amitjoy/osgi-messaging/main
+[![amitjoy - osgi-messaging](https://img.shields.io/static/v1?label=amitjoy&message=osgi-messaging&color=blue&logo=github)](https://github.com/amitjoy/osgi-messaging)
+[![stars - osgi-messaging](https://img.shields.io/github/stars/amitjoy/osgi-messaging?style=social)](https://github.com/amitjoy/osgi-messaging)
+[![forks - osgi-messaging](https://img.shields.io/github/forks/amitjoy/osgi-messaging?style=social)](https://github.com/amitjoy/osgi-messaging)
+[![License - Apache](https://img.shields.io/badge/License-Apache-blue)](#license)
+[![Build - Passing](https://img.shields.io/badge/Build-Passing-brightgreen)](https://github.com/amitjoy/osgi-messaging/runs/1485969918)
+[![GitHub release](https://img.shields.io/github/release/amitjoy/osgi-messaging?include_prereleases&sort=semver)](https://github.com/amitjoy/osgi-messaging/releases/)
 
 --------------------------------------------------------------------------------------------------------------
 
