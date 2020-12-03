@@ -369,4 +369,49 @@ public final class MessageSubPubWithAcknowledgeTest {
         assertThat(acknowledgeState).isEqualTo(ACKNOWLEDGED);
     }
 
+    @Test
+    public void test_handle_acknowledge_order_of_execution() throws Exception {
+        final AtomicBoolean flag1 = new AtomicBoolean();
+        final AtomicBoolean flag2 = new AtomicBoolean();
+        final AtomicBoolean flag3 = new AtomicBoolean();
+        final AtomicBoolean flag4 = new AtomicBoolean();
+
+        final String channel = "a/b";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        final Predicate<Message> acknowledgeFilter = m -> flag1.compareAndSet(false, true);
+        final Consumer<Message> acknowledgeHandler = m -> {
+            if (flag1.get()) {
+                flag2.set(true);
+            }
+        };
+        final Consumer<Message> postAcknowledgeConsumer = m -> {
+            if (flag2.get()) {
+                flag3.set(true);
+            }
+        };
+        // @formatter:off
+        final Message message = amcb.filterAcknowledge(acknowledgeFilter)
+                                    .handleAcknowledge(acknowledgeHandler)
+                                    .postAcknowledge(postAcknowledgeConsumer)
+                                    .messageContextBuilder()
+                                    .channel(channel)
+                                    .contentType(contentType)
+                                    .content(ByteBuffer.wrap(payload.getBytes()))
+                                    .buildMessage();
+        // @formatter:on
+
+        final MessageContext context = message.getContext();
+        subscriber.subscribe(context).forEach(m -> {
+            flag4.set(true);
+        });
+        publisher.publish(message);
+
+        waitForRequestProcessing(flag1);
+        waitForRequestProcessing(flag2);
+        waitForRequestProcessing(flag3);
+        waitForRequestProcessing(flag4);
+    }
+
 }
