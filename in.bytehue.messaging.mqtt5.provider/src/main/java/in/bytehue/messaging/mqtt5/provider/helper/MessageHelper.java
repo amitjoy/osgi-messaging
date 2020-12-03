@@ -88,8 +88,8 @@ public final class MessageHelper {
             return serviceReferences.stream()
                     .sorted(
                             (sr1, sr2) -> Long.compare(
-                                    srFunc.applyAsLong(sr1),
-                                    srFunc.applyAsLong(sr2)))
+                                                srFunc.applyAsLong(sr1),
+                                                srFunc.applyAsLong(sr2)))
                     .findFirst()
                     .map(context::getService)
                     .orElseThrow(() -> new RuntimeException("'" + clazz +"' service instance cannot be found"));
