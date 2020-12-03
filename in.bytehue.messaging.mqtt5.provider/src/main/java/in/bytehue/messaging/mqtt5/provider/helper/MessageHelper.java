@@ -32,7 +32,6 @@ import static org.osgi.service.messaging.MessageConstants.MESSAGING_PROTOCOL_PRO
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.ACKNOWLEDGED;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.RECEIVED;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.REJECTED;
-import static org.osgi.service.messaging.acknowledge.AcknowledgeType.UNSUPPORTED;
 
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
@@ -232,7 +231,7 @@ public final class MessageHelper {
                 invokeConsumer(ctx, message);
             }
         } else {
-            ctx.acknowledgeState = UNSUPPORTED;
+            ctx.acknowledgeState = REJECTED;
         }
         return ctx.acknowledgeState == ACKNOWLEDGED;
     }
