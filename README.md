@@ -136,7 +136,7 @@ The OSGi messaging specification is catered to provide a unified solution to acc
 * Simple Pub/Sub Example:
 
 ```java
-@Component(service = Mqtt5PubSubExample.class, immediate = true)
+@Component
 public final class Mqtt5PubSubExample {
 
     private PushStream<Message> stream;
@@ -178,54 +178,6 @@ public final class Mqtt5PubSubExample {
         }
         return "Published to " + channel;
     }
-
-}
-```
-
-* Simple Reply-To Publishing Example:
-
-```java
-@Component
-public class Mqtt5ReplyToExample {
-
-    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
-    private ReplyToPublisher mqttPublisher;
-
-    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
-    private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
-
-    public void publishReplyToMessage() {
-        final MessageContextBuilder mcb = mcbFactory.getService();
-        try {
-            // @formatter:off
-            final Message request =
-                    mcb.channel("/demo")
-                       .correlationId("test123")
-                       .replyTo("demo_response")
-                       .content(ByteBuffer.wrap("Hello Word!".getBytes()))
-                       .buildMessage();
-            // @formatter:on
-            mqttPublisher.publishWithReply(request);
-        } finally {
-            mcbFactory.ungetService(mcb);
-        }
-    }
-}
-```
-
-* Simple Reply-To Single Subscription Handler Example:
-
-```java
-@Component
-@ReplyToSubscription(target = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo)))", channel = "a/b", replyChannel = "c/d")
-public final class Mqtt5ReplyToSingleSubscriptionHandler implements ReplyToSingleSubscriptionHandler {
-
-    @Override
-    public Message handleResponse(final Message requestMessage, final MessageContextBuilder responseBuilder) {
-        final String content = StandardCharsets.UTF_8.decode(requestMessage.payload()).append("EXAMPLE").toString();
-        return responseBuilder.content(ByteBuffer.wrap(content.getBytes())).buildMessage();
-    }
-
 }
 ```
 
@@ -257,7 +209,54 @@ public final class Mqtt5ReplyToExample {
             mcbFactory.ungetService(mcb);
         }
     }
+}
+```
 
+* Simple Reply-To Single Subscription Handler Example:
+
+```java
+@Component
+@ReplyToSubscription(target = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo)))", channel = "a/b", replyChannel = "c/d")
+public final class Mqtt5ReplyToSingleSubscriptionHandler implements ReplyToSingleSubscriptionHandler {
+
+    @Override
+    public Message handleResponse(final Message requestMessage, final MessageContextBuilder responseBuilder) {
+        final String content = StandardCharsets.UTF_8.decode(requestMessage.payload()).append("EXAMPLE").toString();
+        return responseBuilder.content(ByteBuffer.wrap(content.getBytes())).buildMessage();
+    }
+
+}
+```
+
+* Simple Message Acknowledgement Example:
+
+```java
+@Component
+public final class Mqtt5AckExample {
+
+    @Reference(target = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.feature=acknowledge))")
+    private MessageSubscription mqttSubscription;
+
+    @Reference(target = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.feature=acknowledge))")
+    private ComponentServiceObjects<AcknowledgeMessageContextBuilder> amcbFactory;
+
+    public void subscribeMessage3() {
+        final AcknowledgeMessageContextBuilder ackBuilder = amcbFactory.getService();
+        try {
+            final MessageContext context = ackBuilder
+                    .handleAcknowledge("(foo=bar)")
+                    .postAcknowledge(m -> {
+                            final AcknowledgeMessageContext ctx = (AcknowledgeMessageContext) m.getContext();
+                            System.out.println("Acknowledge state is: " + ctx.getAcknowledgeState());
+                      })
+                    .messageContextBuilder()
+                    .channel("/demo")
+                    .buildContext();
+            mqttSubscription.subscribe(context);
+        } finally {
+            amcbFactory.ungetService(ackBuilder);
+        }
+    }
 }
 ```
 
