@@ -206,6 +206,17 @@ public final class MessageClientProvider {
               .send();
     }
 
+    public void updateLastWill(final MqttWillPublish lastWillMessage) {
+        client.disconnectWith()
+                  .reasonCode(NORMAL_DISCONNECTION)
+                  .reasonString("Last will updated dynamically using publish request message")
+              .send()
+              .thenAccept(v -> {
+                  initLastWill(lastWillMessage);
+                  connect();
+              });
+    }
+
     private void connect() {
         logger.debug("Applying automatic reconnect configuration");
         if (config.automticReconnect()) {
@@ -243,7 +254,7 @@ public final class MessageClientProvider {
                            config.enhancedAuthTargetFilter(),
                            bundleContext));
         }
-        if (!config.useServerReauth()) {
+        if (config.useServerReauth()) {
             logger.debug("Applying Server Reauthentication configuration");
             clientBuilder.advancedConfig()
                          .allowServerReAuth(config.useServerReauth());
@@ -329,11 +340,6 @@ public final class MessageClientProvider {
         } else {
             return config.id();
         }
-    }
-
-    public void updateLastWill(final MqttWillPublish lastWillMessage) {
-        initLastWill(lastWillMessage);
-        connect();
     }
 
 }

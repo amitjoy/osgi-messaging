@@ -22,12 +22,14 @@ import static org.osgi.service.messaging.Features.EXTENSION_QOS;
 
 import java.nio.ByteBuffer;
 
+import org.apache.felix.service.command.annotations.GogoCommand;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.messaging.MessageContextBuilder;
 import org.osgi.service.messaging.MessagePublisher;
 
+@GogoCommand(scope = "example", function = "lastWillPublish")
 @Component(service = Mqtt5LastWillPublish.class, immediate = true)
 public final class Mqtt5LastWillPublish {
 
