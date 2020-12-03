@@ -51,17 +51,15 @@ import org.osgi.service.messaging.propertytypes.MessagingFeature;
 import org.osgi.service.messaging.replyto.ReplyToManySubscriptionHandler;
 import org.osgi.service.messaging.replyto.ReplyToSingleSubscriptionHandler;
 import org.osgi.service.messaging.replyto.ReplyToSubscriptionHandler;
-import org.osgi.service.messaging.replyto.ReplyToWhiteboard;
 import org.osgi.util.pushstream.PushStream;
 
 import in.bytehue.messaging.mqtt5.provider.helper.FilterParser;
 import in.bytehue.messaging.mqtt5.provider.helper.FilterParser.Expression;
 
-// TODO remove immediate = true
-// @formatter:off
+@Component
 @MessagingFeature(name = MESSAGING_ID, protocol = MESSAGING_PROTOCOL)
-@Component(service = { ReplyToWhiteboard.class, MessageReplyToWhiteboardProvider.class }, immediate = true)
-public final class MessageReplyToWhiteboardProvider implements ReplyToWhiteboard {
+// @formatter:off
+public final class MessageReplyToWhiteboardProvider {
 
     private final MessagePublisherProvider publisher;
     private final MessageSubscriptionProvider subscriber;
