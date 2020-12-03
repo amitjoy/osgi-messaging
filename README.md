@@ -98,7 +98,7 @@ The `in.bytehue.messaging.client` can be used to configure the client.
 * `lastWillPayLoad` - Last Will Payload (optional) (default: ` ` empty string)
 * `lastWillContentType` - Last Will Content Type (optional) (default: ` `  empty string)
 * `lastWillMessageExpiryInterval` - Last Will Message Expiry Interval" (optional) (default: `120` seconds)
-* `delayInterval` - Last Will Delay Interval (optional) (default: `30` seconds)
+* `lastWillDelayInterval` - Last Will Delay Interval (optional) (default: `30` seconds)
 * `receiveMaximum` - Maximum concurrent messages to be received (optional) (default: `10`)
 * `sendMaximum` - Maximum concurrent messages to be sent (optional) (default: `10`)
 * `maximumPacketSize` - Maximum Packet Size for receiving (optional) (default: `10240` - 10 KB)

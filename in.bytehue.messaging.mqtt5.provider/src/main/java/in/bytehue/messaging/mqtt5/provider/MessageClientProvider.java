@@ -21,8 +21,6 @@ import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getServic
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.osgi.service.metatype.annotations.AttributeType.PASSWORD;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.UUID;
 
@@ -40,10 +38,9 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-import com.hivemq.client.internal.mqtt.MqttClientConfig;
-import com.hivemq.client.internal.mqtt.MqttClientConfig.ConnectDefaults;
 import com.hivemq.client.internal.mqtt.message.publish.MqttWillPublish;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
+import com.hivemq.client.mqtt.datatypes.MqttUtf8String;
 import com.hivemq.client.mqtt.lifecycle.MqttClientConnectedListener;
 import com.hivemq.client.mqtt.lifecycle.MqttClientDisconnectedListener;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
@@ -126,7 +123,7 @@ public final class MessageClientProvider {
         long lastWillMessageExpiryInterval() default 120L;
 
         @AttributeDefinition(name = "Last Will Delay Interval")
-        long delayInterval() default 30L;
+        long lastWillDelayInterval() default 30L;
 
         @AttributeDefinition(name = "Maximum concurrent messages to be received")
         int receiveMaximum() default 10;
@@ -167,8 +164,12 @@ public final class MessageClientProvider {
 
     private static final String CLIENT_ID_FRAMEWORK_PROPERTY = "in.bytehue.client.id";
 
-    private final Config config;
     public final Mqtt5AsyncClient client;
+
+    private final Logger logger;
+    private final Config config;
+    private final BundleContext bundleContext;
+    private final Mqtt5ClientBuilder clientBuilder;
 
     @Activate
     public MessageClientProvider(
@@ -176,15 +177,36 @@ public final class MessageClientProvider {
             final BundleContext bundleContext,
             @Reference(service = LoggerFactory.class) final Logger logger) {
 
+        this.logger = logger;
         this.config = config;
+        this.bundleContext = bundleContext;
+
         final String clientId = clientID(bundleContext);
 
         // @formatter:off
-        final Mqtt5ClientBuilder clientBuilder = Mqtt5Client.builder()
-                                                            .identifier(clientId)
-                                                            .serverHost(config.server())
-                                                            .serverPort(config.port());
+        clientBuilder = Mqtt5Client.builder()
+                                   .identifier(clientId)
+                                   .serverHost(config.server())
+                                   .serverPort(config.port());
+        client = clientBuilder.buildAsync();
 
+        // last will can be configured in two different ways =>
+        // 1. using initial configuration
+        // 2. client can send a special publish request which will be used as will message
+        // In case of the second scenario, a reconnection happens
+        initLastWill(null);
+        connect();
+    }
+
+    @Deactivate
+    void deactivate() {
+        client.disconnectWith()
+                  .reasonCode(config.disconnectionReasonCode())
+                  .reasonString(config.disconnectionReasonDescription())
+              .send();
+    }
+
+    private void connect() {
         logger.debug("Applying automatic reconnect configuration");
         if (config.automticReconnect()) {
             clientBuilder.automaticReconnect()
@@ -212,17 +234,6 @@ public final class MessageClientProvider {
                                              config.trustManagerFactoryTargetFilter(),
                                              bundleContext))
                              .applySslConfig();
-        }
-        if (!config.lastWillTopic().isEmpty()) {
-            logger.debug("Applying Last Will Configuration");
-            clientBuilder.willPublish()
-                             .topic(config.lastWillTopic())
-                             .qos(MqttQos.fromCode(config.lastWillQoS()))
-                             .payload(config.lastWillPayLoad().getBytes())
-                             .contentType(config.lastWillContentType())
-                             .messageExpiryInterval(config.lastWillMessageExpiryInterval())
-                             .delayInterval(config.lastWillMessageExpiryInterval())
-                         .applyWillPublish();
         }
         if (config.useEnhancedAuthentication()) {
             logger.debug("Applying Enhanced Authentication configuration");
@@ -254,7 +265,6 @@ public final class MessageClientProvider {
                             bundleContext));
         }
 
-        client = clientBuilder.buildAsync();
         final Mqtt5ConnAck connAck = client.toBlocking()
                                            .connectWith()
                                                .cleanStart(config.cleanStart())
@@ -271,12 +281,42 @@ public final class MessageClientProvider {
         logger.debug("Connection successfully established - {}", connAck);
     }
 
-    @Deactivate
-    void deactivate() {
-        client.disconnectWith()
-                  .reasonCode(config.disconnectionReasonCode())
-                  .reasonString(config.disconnectionReasonDescription())
-              .send();
+    private void initLastWill(final MqttWillPublish publish) {
+
+        String topic = null;
+        MqttQos qos = null;
+        byte[] payload = null;
+        String contentType = null;
+        long messageExpiryInterval = 0;
+        long delayInterval = 0;
+
+        if (publish == null) {
+            topic = config.lastWillTopic();
+            qos = MqttQos.fromCode(config.lastWillQoS());
+            payload = config.lastWillPayLoad().getBytes();
+            contentType = config.lastWillContentType();
+            messageExpiryInterval = config.lastWillMessageExpiryInterval();
+            delayInterval = config.lastWillDelayInterval();
+        } else {
+            topic = publish.getTopic().toString();
+            qos = publish.getQos();
+            payload = publish.getPayloadAsBytes();
+            contentType = publish.getContentType().map(MqttUtf8String::toString).orElse(null);
+            messageExpiryInterval = publish.getRawMessageExpiryInterval();
+            delayInterval = publish.getDelayInterval();
+        }
+
+        if (!topic.isEmpty()) {
+            logger.debug("Applying Last Will Configuration");
+            clientBuilder.willPublish()
+                             .topic(topic)
+                             .qos(qos)
+                             .payload(payload)
+                             .contentType(contentType)
+                             .messageExpiryInterval(messageExpiryInterval)
+                             .delayInterval(delayInterval)
+                         .applyWillPublish();
+        }
     }
 
     private String clientID(final BundleContext bundleContext) {
@@ -291,19 +331,9 @@ public final class MessageClientProvider {
         }
     }
 
-    public void updateLastWill(final MqttWillPublish lastWillMessage) throws Exception {
-
-        final MqttClientConfig clientConfig = (MqttClientConfig) client.getConfig();
-        final ConnectDefaults connectDefaults = clientConfig.getConnectDefaults();
-
-        final Field field = connectDefaults.getClass().getDeclaredField("willPublish");
-        field.setAccessible(true);
-
-        final Field modifiersField = Field.class.getDeclaredField("modifiers");
-        modifiersField.setAccessible(true);
-        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-
-        field.set(connectDefaults, lastWillMessage);
+    public void updateLastWill(final MqttWillPublish lastWillMessage) {
+        initLastWill(lastWillMessage);
+        connect();
     }
 
 }
