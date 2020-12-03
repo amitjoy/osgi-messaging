@@ -18,6 +18,8 @@ package in.bytehue.messaging.mqtt5.provider;
 import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForRequestProcessing;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.osgi.service.messaging.acknowledge.AcknowledgeType.ACKNOWLEDGED;
+import static org.osgi.service.messaging.acknowledge.AcknowledgeType.REJECTED;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,9 +29,12 @@ import java.util.function.Predicate;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.service.messaging.Message;
+import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.MessageSubscription;
+import org.osgi.service.messaging.acknowledge.AcknowledgeMessageContext;
 import org.osgi.service.messaging.acknowledge.AcknowledgeMessageContextBuilder;
+import org.osgi.service.messaging.acknowledge.AcknowledgeType;
 
 import aQute.launchpad.Launchpad;
 import aQute.launchpad.LaunchpadBuilder;
@@ -272,6 +277,96 @@ public final class MessageSubPubWithAcknowledgeTest {
         waitForRequestProcessing(flag1);
         waitForRequestProcessing(flag2);
         waitForRequestProcessing(flag3);
+    }
+
+    @Test
+    public void test_handle_acknowledge_with_filter_when_message_acknowledged() throws Exception {
+        final AtomicBoolean flag1 = new AtomicBoolean();
+        final AtomicBoolean flag2 = new AtomicBoolean();
+
+        final String channel = "a/b";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        // @formatter:off
+        final Message message = amcb.filterAcknowledge(m -> { flag1.set(true); return flag1.get(); })
+                                    .messageContextBuilder()
+                                    .channel(channel)
+                                    .contentType(contentType)
+                                    .content(ByteBuffer.wrap(payload.getBytes()))
+                                    .buildMessage();
+        // @formatter:on
+
+        final MessageContext context = message.getContext();
+        subscriber.subscribe(context).forEach(m -> {
+            final String topic = m.getContext().getChannel();
+            final String ctype = m.getContext().getContentType();
+            final String content = new String(m.payload().array(), UTF_8);
+            final AcknowledgeType acknowledgeState = ((AcknowledgeMessageContext) context).getAcknowledgeState();
+
+            assertThat(channel).isEqualTo(topic);
+            assertThat(payload).isEqualTo(content);
+            assertThat(contentType).isEqualTo(ctype);
+            assertThat(acknowledgeState).isEqualTo(ACKNOWLEDGED);
+
+            flag2.set(true);
+        });
+        publisher.publish(message);
+        waitForRequestProcessing(flag1);
+        waitForRequestProcessing(flag2);
+    }
+
+    @Test
+    public void test_handle_acknowledge_with_filter_when_message_not_acknowledged() throws Exception {
+        final AtomicBoolean flag = new AtomicBoolean();
+
+        final String channel = "a/b";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        // @formatter:off
+        final Message message = amcb.filterAcknowledge(m -> { flag.set(true); return false; })
+                                    .messageContextBuilder()
+                                    .channel(channel)
+                                    .contentType(contentType)
+                                    .content(ByteBuffer.wrap(payload.getBytes()))
+                                    .buildMessage();
+        // @formatter:on
+
+        final MessageContext context = message.getContext();
+        subscriber.subscribe(context).forEach(m -> {
+            throw new AssertionError("This will never be called");
+        });
+        publisher.publish(message);
+
+        waitForRequestProcessing(flag);
+        final AcknowledgeType acknowledgeState = ((AcknowledgeMessageContext) context).getAcknowledgeState();
+        assertThat(acknowledgeState).isEqualTo(REJECTED);
+    }
+
+    @Test
+    public void test_handle_acknowledge_without_filter() throws Exception {
+        final AtomicBoolean flag = new AtomicBoolean();
+
+        final String channel = "a/b";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        // @formatter:off
+        final Message message = amcb.messageContextBuilder()
+                                    .channel(channel)
+                                    .contentType(contentType)
+                                    .content(ByteBuffer.wrap(payload.getBytes()))
+                                    .buildMessage();
+        // @formatter:on
+
+        final MessageContext context = message.getContext();
+        subscriber.subscribe(context).forEach(m -> flag.set(true));
+        publisher.publish(message);
+
+        waitForRequestProcessing(flag);
+        final AcknowledgeType acknowledgeState = ((AcknowledgeMessageContext) context).getAcknowledgeState();
+        assertThat(acknowledgeState).isEqualTo(ACKNOWLEDGED);
     }
 
 }
