@@ -25,7 +25,7 @@ import org.osgi.service.messaging.MessageContextBuilder;
 import org.osgi.service.messaging.replyto.ReplyToPublisher;
 
 @Component
-public class Mqtt5ReplyToExample {
+public final class Mqtt5ReplyToExample {
 
     @Reference(target = "(osgi.messaging.protocol=mqtt5)")
     private ReplyToPublisher mqttPublisher;
@@ -44,7 +44,7 @@ public class Mqtt5ReplyToExample {
                        .content(ByteBuffer.wrap("Hello Word!".getBytes()))
                        .buildMessage();
             // @formatter:on
-            mqttPublisher.publishWithReply(request);
+            mqttPublisher.publishWithReply(request).onSuccess(System.out::println);
         } finally {
             mcbFactory.ungetService(mcb);
         }
