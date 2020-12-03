@@ -70,7 +70,7 @@ public interface Features {
      *
      * @since 1.0
      */
-    String EXTENSION_AUTO_ACKNOWLEDGE = "autoAcknowledge"; // TODO what is it?
+    String EXTENSION_AUTO_ACKNOWLEDGE = "autoAcknowledge";
 
     /**
      * The name of the the {@code Last Will} extension of the Messaging specification

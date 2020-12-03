@@ -221,7 +221,7 @@ public final class MessageHelper {
                     ctx.acknowledgeState = REJECTED;
                 }
             } else {
-                // if the filter is not set, directly acknowledge the message
+                // if the filter is not set, automatically acknowledge the message
                 ctx.acknowledgeState = ACKNOWLEDGED;
             }
             // execute the pre- and post-handlers if the message is acknowledged
