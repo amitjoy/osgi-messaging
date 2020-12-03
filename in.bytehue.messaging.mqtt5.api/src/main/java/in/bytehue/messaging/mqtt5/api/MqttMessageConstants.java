@@ -91,6 +91,14 @@ public final class MqttMessageConstants {
         public static final String RECEIVE_LOCAL = "receiveLocal";
 
         /**
+         * The name of the {@code last will delay interval} extension of the MQTT v5 specification.
+         * A value of {code Long} can be provided.
+         *
+         * @since 1.0
+         */
+        public static final String LAST_WILL_DELAY_INTERVAL = "lastWillDelayInterval";
+
+        /**
          * The name of the {@code Reply-To Many End Predicate} extension of the messaging specification.
          * This ensures that when to close the reply-to many response connection.
          *

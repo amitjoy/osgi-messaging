@@ -21,6 +21,7 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROT
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
 import static java.lang.System.lineSeparator;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 import static org.osgi.framework.Constants.OBJECTCLASS;
 import static org.osgi.framework.Constants.SERVICE_ID;
@@ -54,9 +55,16 @@ import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageContextBuilder;
 import org.osgi.service.messaging.acknowledge.AcknowledgeHandler;
 
+import com.hivemq.client.internal.mqtt.datatypes.MqttTopicImpl;
+import com.hivemq.client.internal.mqtt.datatypes.MqttUserPropertiesImpl;
+import com.hivemq.client.internal.mqtt.datatypes.MqttUtf8StringImpl;
 import com.hivemq.client.internal.mqtt.message.publish.MqttPublish;
+import com.hivemq.client.internal.mqtt.message.publish.MqttWillPublish;
+import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.datatypes.MqttUtf8String;
 import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserProperties;
+import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserPropertiesBuilder;
+import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatIndicator;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
 
 import in.bytehue.messaging.mqtt5.provider.MessageContextProvider;
@@ -269,6 +277,66 @@ public final class MessageHelper {
         }
         return (int) extensions.getOrDefault(EXTENSION_QOS, DEFAULT_QOS.getCode());
     }
+
+    // @formatter:off
+    public static MqttWillPublish toLastWill(
+            final String channel,
+            final ByteBuffer payload,
+            final int qos,
+            final boolean isRetain,
+            final long messageExpiryInterval,
+            final String contentEncoding,
+            final String contentType,
+            final String responseChannel,
+            final String correlationId,
+            final Map<String, String> userProperties,
+            final long delayInterval) {
+
+        requireNonNull(channel, "Last will topic cannot be null");
+        requireNonNull(userProperties, "User Properties cannot be null");
+
+        final MqttTopicImpl topic = MqttTopicImpl.of(channel);
+        final MqttQos qosInstance = MqttQos.fromCode(qos);
+
+        Mqtt5PayloadFormatIndicator encoding = null;
+        if (contentEncoding != null) {
+            encoding = Mqtt5PayloadFormatIndicator.valueOf(contentEncoding);
+        }
+
+        MqttUtf8StringImpl cType = null;
+        if (contentType != null) {
+            cType = MqttUtf8StringImpl.of(contentType);
+        }
+
+        MqttTopicImpl replyTopic = null;
+        if (responseChannel != null) {
+            replyTopic = MqttTopicImpl.of(responseChannel);
+        }
+
+        ByteBuffer correlationData = null;
+        if (correlationId != null) {
+            correlationData = ByteBuffer.wrap(correlationId.getBytes());
+        }
+
+        final Mqtt5UserPropertiesBuilder propsBuilder = Mqtt5UserProperties.builder();
+        userProperties.forEach(propsBuilder::add);
+
+        final MqttUserPropertiesImpl props = (MqttUserPropertiesImpl) propsBuilder.build();
+
+        return new MqttWillPublish(
+                topic,
+                payload,
+                qosInstance,
+                isRetain,
+                messageExpiryInterval,
+                encoding,
+                cType,
+                replyTopic,
+                correlationData,
+                props,
+                delayInterval);
+    }
+    // @formatter:on
 
     public static String asString(final MqttUtf8String string) {
         return string.toString();

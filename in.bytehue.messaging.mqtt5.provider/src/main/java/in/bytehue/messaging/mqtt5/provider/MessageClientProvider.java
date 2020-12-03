@@ -21,6 +21,8 @@ import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getServic
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.osgi.service.metatype.annotations.AttributeType.PASSWORD;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.UUID;
 
@@ -38,6 +40,9 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
+import com.hivemq.client.internal.mqtt.MqttClientConfig;
+import com.hivemq.client.internal.mqtt.MqttClientConfig.ConnectDefaults;
+import com.hivemq.client.internal.mqtt.message.publish.MqttWillPublish;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.lifecycle.MqttClientConnectedListener;
 import com.hivemq.client.mqtt.lifecycle.MqttClientDisconnectedListener;
@@ -262,6 +267,7 @@ public final class MessageClientProvider {
                                                .sendTopicAliasMaximum(config.topicAliasMaximum())
                                            .applyRestrictions()
                                            .send();
+
         logger.debug("Connection successfully established - {}", connAck);
     }
 
@@ -283,6 +289,21 @@ public final class MessageClientProvider {
         } else {
             return config.id();
         }
+    }
+
+    public void updateLastWill(final MqttWillPublish lastWillMessage) throws Exception {
+
+        final MqttClientConfig clientConfig = (MqttClientConfig) client.getConfig();
+        final ConnectDefaults connectDefaults = clientConfig.getConnectDefaults();
+
+        final Field field = connectDefaults.getClass().getDeclaredField("willPublish");
+        field.setAccessible(true);
+
+        final Field modifiersField = Field.class.getDeclaredField("modifiers");
+        modifiersField.setAccessible(true);
+        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+
+        field.set(connectDefaults, lastWillMessage);
     }
 
 }
