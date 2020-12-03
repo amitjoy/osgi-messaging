@@ -229,6 +229,38 @@ public final class Mqtt5ReplyToSingleSubscriptionHandler implements ReplyToSingl
 }
 ```
 
+* Simple Reply-To Publish Example
+
+```java
+@Component
+public final class Mqtt5ReplyToExample {
+
+    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
+    private ReplyToPublisher mqttPublisher;
+
+    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
+    private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
+
+    public void publishReplyToMessage() {
+        final MessageContextBuilder mcb = mcbFactory.getService();
+        try {
+            // @formatter:off
+            final Message request =
+                    mcb.channel("/demo")
+                       .correlationId("test123")
+                       .replyTo("demo_response")
+                       .content(ByteBuffer.wrap("Hello Word!".getBytes()))
+                       .buildMessage();
+            // @formatter:on
+            mqttPublisher.publishWithReply(request).onSuccess(System.out::println);
+        } finally {
+            mcbFactory.ungetService(mcb);
+        }
+    }
+
+}
+```
+
 #### Useful Notes
 
 * Since more than one implementations can coexist in the OSGi runtime, we can search for the MQTT services by means of the provided service properties.
