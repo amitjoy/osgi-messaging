@@ -21,6 +21,7 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROT
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
 import static java.lang.System.lineSeparator;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 import static org.osgi.framework.Constants.OBJECTCLASS;
@@ -36,7 +37,6 @@ import static org.osgi.service.messaging.acknowledge.AcknowledgeType.REJECTED;
 
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -214,11 +214,11 @@ public final class MessageHelper {
             final MessageContextProvider ctx,
             final Consumer<Message> interimConsumer) {
     // @formatter:on
-
         final AcknowledgeHandler protocolSpecificAcknowledgeHandler = ctx.protocolSpecificAcknowledgeHandler;
 
         // first verify if the protocol specific handler is okay with the received message
         if (protocolSpecificAcknowledgeHandler.acknowledge() || !protocolSpecificAcknowledgeHandler.reject()) {
+            // message is received but not yet acknowledged
             ctx.acknowledgeState = RECEIVED;
 
             // check for the existence of filter
@@ -351,7 +351,7 @@ public final class MessageHelper {
     }
 
     public static String asString(final ByteBuffer buffer) {
-        return new String(buffer.array(), StandardCharsets.UTF_8);
+        return new String(buffer.array(), UTF_8);
     }
 
 }
