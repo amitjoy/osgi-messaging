@@ -224,11 +224,11 @@ public final class MessageHelper {
                 // if the filter is not set, automatically acknowledge the message
                 ctx.acknowledgeState = ACKNOWLEDGED;
             }
-            // execute the pre- and post-handlers if the message is acknowledged
+            // invoke the pre- and post-handlers if the message is acknowledged
             if (ctx.acknowledgeState == ACKNOWLEDGED) {
-                invokeHandler(ctx, message);
+                invokePreHandler(ctx, message);
                 interimConsumer.accept(message);
-                invokeConsumer(ctx, message);
+                invokePostHandler(ctx, message);
             }
         } else {
             ctx.acknowledgeState = REJECTED;
@@ -236,13 +236,13 @@ public final class MessageHelper {
         return ctx.acknowledgeState == ACKNOWLEDGED;
     }
 
-    private static void invokeHandler(final MessageContextProvider ctx, final Message message) {
+    private static void invokePreHandler(final MessageContextProvider ctx, final Message message) {
         if (ctx.acknowledgeHandler != null) {
             ctx.acknowledgeHandler.accept(message);
         }
     }
 
-    private static void invokeConsumer(final MessageContextProvider ctx, final Message message) {
+    private static void invokePostHandler(final MessageContextProvider ctx, final Message message) {
         if (ctx.acknowledgeConsumer != null) {
             ctx.acknowledgeConsumer.accept(message);
         }
