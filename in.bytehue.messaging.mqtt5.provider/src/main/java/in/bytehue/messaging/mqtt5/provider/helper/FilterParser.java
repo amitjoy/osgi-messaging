@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2020 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -32,7 +32,8 @@ import org.osgi.resource.Capability;
 import org.osgi.resource.Requirement;
 import org.osgi.resource.Resource;
 
-public class FilterParser {
+public final class FilterParser {
+
     final Map<String, Expression> cache = new HashMap<>();
 
     public enum Op {
@@ -76,7 +77,7 @@ public class FilterParser {
         }
     }
 
-    public static abstract class Expression {
+    public abstract static class Expression {
         static Expression TRUE = new Expression() {
 
             @Override
@@ -554,7 +555,7 @@ public class FilterParser {
         }
     }
 
-    public static abstract class SubExpression extends Expression {
+    public abstract static class SubExpression extends Expression {
         Expression[] expressions;
 
         @Override
@@ -835,7 +836,7 @@ public class FilterParser {
         }
     }
 
-    public static abstract class ExpressionVisitor<T> {
+    public abstract static class ExpressionVisitor<T> {
         private final T defaultValue;
 
         public ExpressionVisitor(final T defaultValue) {
@@ -971,7 +972,6 @@ public class FilterParser {
             while (current() != ')') {
                 final char c = next();
                 if (c == '\\') {
-                    // TODO verify if they escape other chars?
                     this.n++;
                 }
             }
