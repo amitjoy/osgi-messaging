@@ -54,6 +54,7 @@ import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageContextBuilder;
 import org.osgi.service.messaging.acknowledge.AcknowledgeHandler;
+import org.osgi.util.converter.Converter;
 
 import com.hivemq.client.internal.mqtt.datatypes.MqttTopicImpl;
 import com.hivemq.client.internal.mqtt.datatypes.MqttUserPropertiesImpl;
@@ -268,9 +269,12 @@ public final class MessageHelper {
         return result.toString();
     }
 
-    public static int getQoS(final Map<String, Object> extensions) {
-        final boolean isGuaranteedDelivery = (boolean) extensions.getOrDefault(EXTENSION_GUARANTEED_DELIVERY, false);
-        final boolean isGuranteedOrdering = (boolean) extensions.getOrDefault(EXTENSION_GUARANTEED_ORDERING, false);
+    public static int getQoS(final Map<String, Object> extensions, final Converter converter) {
+        final Object isGuaranteedDeliveryProp = extensions.getOrDefault(EXTENSION_GUARANTEED_DELIVERY, false);
+        final Object isGuranteedOrderingProp = extensions.getOrDefault(EXTENSION_GUARANTEED_ORDERING, false);
+
+        final boolean isGuaranteedDelivery = adaptTo(isGuranteedOrderingProp, boolean.class, converter);
+        final boolean isGuranteedOrdering = adaptTo(isGuaranteedDeliveryProp, boolean.class, converter);
 
         if (isGuaranteedDelivery || isGuranteedOrdering) {
             return EXACTLY_ONCE.getCode();
@@ -337,6 +341,10 @@ public final class MessageHelper {
                 delayInterval);
     }
     // @formatter:on
+
+    public static <T> T adaptTo(final Object value, final Class<T> to, final Converter converter) {
+        return converter.convert(value).to(to);
+    }
 
     public static String asString(final MqttUtf8String string) {
         return string.toString();

@@ -24,6 +24,7 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROT
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RECEIVE_LOCAL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.acknowledgeMessage;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adaptTo;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getQoS;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.toMessage;
 import static java.util.Objects.requireNonNull;
@@ -47,6 +48,8 @@ import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageSubscription;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
+import org.osgi.util.converter.Converter;
+import org.osgi.util.converter.Converters;
 import org.osgi.util.pushstream.PushStream;
 import org.osgi.util.pushstream.PushStreamProvider;
 import org.osgi.util.pushstream.SimplePushEventSource;
@@ -67,6 +70,8 @@ import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCo
 @Component(service = { MessageSubscription.class, MessageSubscriptionProvider.class })
 public final class MessageSubscriptionProvider implements MessageSubscription {
 
+    private final Converter cnv;
+
     @Activate
     private BundleContext bundleContext;
 
@@ -81,6 +86,11 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 
     @Reference
     private ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
+
+    @Activate
+    public MessageSubscriptionProvider() {
+        cnv = Converters.standardConverter();
+    }
 
     @Deactivate
     void stop() {
@@ -131,9 +141,13 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
             final Map<String, Object> extensions = context.getExtensions();
 
             if (extensions != null) {
-                qos = getQoS(extensions);
-                receiveLocal = (boolean) extensions.getOrDefault(RECEIVE_LOCAL, false);
-                retainAsPublished = (boolean) extensions.getOrDefault(RETAIN, false);
+                qos = getQoS(extensions, cnv);
+
+                final Object receiveLcl = extensions.getOrDefault(RECEIVE_LOCAL, false);
+                receiveLocal = adaptTo(receiveLcl, boolean.class, cnv);
+
+                final Object isRetainAsPublished = extensions.getOrDefault(RETAIN, false);
+                retainAsPublished = adaptTo(isRetainAsPublished, boolean.class, cnv);
             } else {
                 qos = DEFAULT_QOS.getCode();
                 receiveLocal = true;

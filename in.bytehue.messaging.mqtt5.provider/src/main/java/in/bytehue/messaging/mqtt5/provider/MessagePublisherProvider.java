@@ -15,17 +15,20 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
+import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatIndicator.UTF_8;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.LAST_WILL_DELAY_INTERVAL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.MESSAGE_EXPIRY_INTERVAL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adaptTo;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getQoS;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.stackTraceToString;
 import static java.util.Collections.emptyMap;
 import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_DELIVERY;
 import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_ORDERING;
+import static org.osgi.service.messaging.Features.EXTENSION_LAST_WILL;
 import static org.osgi.service.messaging.Features.EXTENSION_QOS;
 
 import java.nio.ByteBuffer;
@@ -33,15 +36,17 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.log.Logger;
 import org.osgi.service.log.LoggerFactory;
-import org.osgi.service.messaging.Features;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
+import org.osgi.util.converter.Converter;
+import org.osgi.util.converter.Converters;
 
 import com.hivemq.client.internal.mqtt.message.publish.MqttWillPublish;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
@@ -71,8 +76,15 @@ public final class MessagePublisherProvider implements MessagePublisher {
     @Reference(service = LoggerFactory.class)
     private Logger logger;
 
+    private final Converter cnv;
+
     @Reference
     private MessageClientProvider messagingClient;
+
+    @Activate
+    public MessagePublisherProvider() {
+        cnv = Converters.standardConverter();
+    }
 
     @Override
     public void publish(final Message message) {
@@ -104,20 +116,28 @@ public final class MessagePublisherProvider implements MessagePublisher {
             final String ctxCorrelationId = context.getCorrelationId();
             final String correlationId = ctxCorrelationId != null ? ctxCorrelationId : UUID.randomUUID().toString();
             final ByteBuffer content = message.payload();
-            final Long messageExpiryInterval = (Long) extensions.getOrDefault(MESSAGE_EXPIRY_INTERVAL, null);
-            final int qos = getQoS(extensions);
-            final boolean retain = (boolean) extensions.getOrDefault(RETAIN, false);
+
+            final Object messageExpiry = extensions.getOrDefault(MESSAGE_EXPIRY_INTERVAL, null);
+            final Long messageExpiryInterval = adaptTo(messageExpiry, Long.class, cnv);
+
+            final int qos = getQoS(extensions, cnv);
+
+            final Object isRetain = extensions.getOrDefault(RETAIN, false);
+            final boolean retain = adaptTo(isRetain, boolean.class, cnv);
+
             final String contentEncoding = context.getContentEncoding();
-            final long lastWillDelayInterval = (Long) extensions.getOrDefault(LAST_WILL_DELAY_INTERVAL, 0L);
+
+            final Object lastWillDelay = extensions.getOrDefault(LAST_WILL_DELAY_INTERVAL, 0L);
+            final long lastWillDelayInterval = adaptTo(lastWillDelay, long.class, cnv);
 
             Mqtt5PayloadFormatIndicator payloadFormat = null;
             if ("UTF-8".equalsIgnoreCase(contentEncoding)) {
-                payloadFormat = Mqtt5PayloadFormatIndicator.UTF_8;
+                payloadFormat = UTF_8;
             }
 
+            final Object userProp = extensions.getOrDefault(USER_PROPERTIES, emptyMap());
             @SuppressWarnings("unchecked")
-            final Map<String, String> userProperties = //
-                    (Map<String, String>) extensions.getOrDefault(USER_PROPERTIES, emptyMap());
+            final Map<String, String> userProperties = adaptTo(userProp, Map.class, cnv);
 
             final Mqtt5UserPropertiesBuilder propsBuilder = Mqtt5UserProperties.builder();
             userProperties.forEach(propsBuilder::add);
@@ -132,21 +152,24 @@ public final class MessagePublisherProvider implements MessagePublisher {
                                               .qos(MqttQos.fromCode(qos))
                                               .retain(retain)
                                               .userProperties(propsBuilder.build());
+
             if (messageExpiryInterval == null || messageExpiryInterval == 0) {
                 publishRequest.noMessageExpiry();
             } else {
                 publishRequest.messageExpiryInterval(messageExpiryInterval);
             }
+
             final String replyToChannel = context.getReplyToChannel();
             if (replyToChannel != null) {
                 publishRequest.responseTopic(replyToChannel);
             }
+
             if (correlationId != null) {
                 publishRequest.correlationData(correlationId.getBytes());
             }
 
             // check if it is a last will publish
-            final boolean isLastWillPublish = extensions.containsKey(Features.EXTENSION_LAST_WILL);
+            final boolean isLastWillPublish = extensions.containsKey(EXTENSION_LAST_WILL);
             if (isLastWillPublish) {
                 final MqttWillPublish will =
                         MessageHelper.toLastWill(
@@ -161,6 +184,7 @@ public final class MessagePublisherProvider implements MessagePublisher {
                                                 correlationId,
                                                 userProperties,
                                                 lastWillDelayInterval);
+
                 messagingClient.updateLastWill(will);
                 return;
             }

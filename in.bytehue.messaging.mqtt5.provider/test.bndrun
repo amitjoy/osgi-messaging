@@ -1,6 +1,7 @@
 -runbundles: \
 	assertj-core,\
 	org.apache.felix.configadmin,\
+	org.apache.felix.converter,\
 	org.apache.felix.log,\
 	org.apache.felix.scr,\
 	org.awaitility,\
