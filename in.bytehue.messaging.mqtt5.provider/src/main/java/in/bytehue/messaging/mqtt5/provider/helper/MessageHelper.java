@@ -16,7 +16,6 @@
 package in.bytehue.messaging.mqtt5.provider.helper;
 
 import static com.hivemq.client.mqtt.datatypes.MqttQos.EXACTLY_ONCE;
-import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatIndicator.UTF_8;
 import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish.DEFAULT_QOS;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
@@ -99,9 +98,8 @@ public final class MessageHelper {
         final MqttPublish pub = (MqttPublish) publish;
         final ByteBuffer payload = pub.getRawPayload();
         final String contentEncoding = publish
-                                            .getPayloadFormatIndicator() // TODO always null
-                                            .filter(e -> e == UTF_8)
-                                            .map(e -> "UTF-8")
+                                            .getPayloadFormatIndicator()
+                                            .map(e -> e.name().toLowerCase())
                                             .orElse(null);
 
         final String contentType = publish.getContentType().map(MessageHelper::asString).orElse(null);
