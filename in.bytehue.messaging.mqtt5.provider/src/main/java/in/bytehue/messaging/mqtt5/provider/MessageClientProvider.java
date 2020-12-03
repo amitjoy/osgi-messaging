@@ -61,7 +61,7 @@ public final class MessageClientProvider {
             description = "This configuration is used to configure the messaging connection")
     @interface Config {
         @AttributeDefinition(name = "Client Identifier")
-        String id();
+        String id() default "";
 
         @AttributeDefinition(name = "Server Host Address")
         String server() default "broker.hivemq.com";
@@ -160,17 +160,19 @@ public final class MessageClientProvider {
         Mqtt5DisconnectReasonCode disconnectionReasonCode() default NORMAL_DISCONNECTION;
     }
 
+    private static final String CLIENT_ID_FRAMEWORK_PROPERTY = "in.bytehue.client.id";
+
     private final Config config;
     public final Mqtt5AsyncClient client;
 
     @Activate
     public MessageClientProvider(
-            final BundleContext bundleContext,
             final Config config,
+            final BundleContext bundleContext,
             @Reference(service = LoggerFactory.class) final Logger logger) {
 
         this.config = config;
-        final String clientId = config.id() != null ? config.id() : UUID.randomUUID().toString();
+        final String clientId = clientID(bundleContext);
 
         // @formatter:off
         final Mqtt5ClientBuilder clientBuilder = Mqtt5Client.builder()
@@ -269,6 +271,18 @@ public final class MessageClientProvider {
                   .reasonCode(config.disconnectionReasonCode())
                   .reasonString(config.disconnectionReasonDescription())
               .send();
+    }
+
+    private String clientID(final BundleContext bundleContext) {
+        // check for the existence of configuration
+        if(config.id().isEmpty()) {
+            // check for framework property if available
+            final String id = bundleContext.getProperty(CLIENT_ID_FRAMEWORK_PROPERTY);
+            // generate client ID if framework property is absent
+            return id == null ? UUID.randomUUID().toString() : id;
+        } else {
+            return config.id();
+        }
     }
 
 }
