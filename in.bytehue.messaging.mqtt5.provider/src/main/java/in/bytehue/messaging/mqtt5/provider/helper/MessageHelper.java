@@ -200,38 +200,53 @@ public final class MessageHelper {
         return null;
     }
 
-    public static boolean acknowledgeMessage(final Message message, final MessageContextProvider ctx,
+    // @formatter:off
+    public static boolean acknowledgeMessage(
+            final Message message,
+            final MessageContextProvider ctx,
             final Consumer<Message> interimConsumer) {
-        // first verify if the protocol specific handler is okay with the received message
+    // @formatter:on
+
         final AcknowledgeHandler protocolSpecificAcknowledgeHandler = ctx.protocolSpecificAcknowledgeHandler;
+
+        // first verify if the protocol specific handler is okay with the received message
         if (protocolSpecificAcknowledgeHandler.acknowledge() || !protocolSpecificAcknowledgeHandler.reject()) {
             ctx.acknowledgeState = RECEIVED;
+
+            // check for the existence of filter
             if (ctx.acknowledgeFilter != null) {
                 final boolean isAcknowledged = ctx.acknowledgeFilter.test(message);
                 if (isAcknowledged) {
                     ctx.acknowledgeState = ACKNOWLEDGED;
-                    if (ctx.acknowledgeHandler != null) {
-                        ctx.acknowledgeHandler.accept(message);
-                    }
-                    interimConsumer.accept(message);
                 } else {
                     ctx.acknowledgeState = REJECTED;
                 }
-            } else if (ctx.acknowledgeHandler != null) {
-                ctx.acknowledgeState = ACKNOWLEDGED;
-                ctx.acknowledgeHandler.accept(message);
             } else {
+                // if the filter is not set, directly acknowledge the message
                 ctx.acknowledgeState = ACKNOWLEDGED;
             }
-            interimConsumer.accept(message);
-            if (ctx.acknowledgeConsumer != null) {
-                ctx.acknowledgeConsumer.accept(message);
-                ctx.acknowledgeState = ACKNOWLEDGED;
+            // execute the pre- and post-handlers if the message is acknowledged
+            if (ctx.acknowledgeState == ACKNOWLEDGED) {
+                invokeHandler(ctx, message);
+                interimConsumer.accept(message);
+                invokeConsumer(ctx, message);
             }
         } else {
             ctx.acknowledgeState = UNSUPPORTED;
         }
         return ctx.acknowledgeState == ACKNOWLEDGED;
+    }
+
+    private static void invokeHandler(final MessageContextProvider ctx, final Message message) {
+        if (ctx.acknowledgeHandler != null) {
+            ctx.acknowledgeHandler.accept(message);
+        }
+    }
+
+    private static void invokeConsumer(final MessageContextProvider ctx, final Message message) {
+        if (ctx.acknowledgeConsumer != null) {
+            ctx.acknowledgeConsumer.accept(message);
+        }
     }
 
     public static Message prepareExceptionAsMessage(final Throwable t, final MessageContextBuilder mcb) {
@@ -247,7 +262,6 @@ public final class MessageHelper {
     }
 
     public static int getQoS(final Map<String, Object> extensions) {
-        // guaranteed delivery > guaranteed ordering > specified qos
         final boolean isGuaranteedDelivery = (boolean) extensions.getOrDefault(EXTENSION_GUARANTEED_DELIVERY, false);
         final boolean isGuranteedOrdering = (boolean) extensions.getOrDefault(EXTENSION_GUARANTEED_ORDERING, false);
 
