@@ -1,9 +1,8 @@
--include                              =         ${.}/core/config.bnd, -${.}/core/local.bnd
 -includeresource.all                  =         -src/main/resources
 -donotcopy                            =         \.gitignore|\.DS_Store
 
 Bundle-License                        =         https://www.apache.org/licenses/LICENSE-2.0.txt
-Bundle-Version                        =         1.${sprint}.${hotfix}.${qualifier}
+Bundle-Version                        =         0.1.0-SNAPSHOT
 Bundle-Copyright                      =         Amit Kumar Mondal (c) 2020
 Bundle-Developers                     =         amit.kumar.mondal; \
                                                    email=admin@amitinside.com; \
@@ -22,7 +21,6 @@ javac.encoding                        =         UTF-8
 -sources                              =         false
 -resolve.effective                    =         resolve, active
 -x-overwritestrategy                  =         gc
--nouses                               =         true
 -nodefaultversion                     =         true
 -noimportjava                         =         true
 -remoteworkspace                      =         true
@@ -33,6 +31,12 @@ bin                                   =         ${bin.directory}
 testsrc                               =         src/test/java
 testbin                               =         ${testbin.directory}
 target-dir                            =         target
+
+repo.url                              =         https://repo.maven.apache.org/maven2/
+
+bin.directory                         =         ${if;${is;${driver};gradle};target/gradle/classes;target/classes}
+testbin.directory                     =         ${if;${is;${driver};gradle};target/gradle/test-classes;target/test-classes}
+bin.testbin.directory                 =         ${if;${is;${driver};gradle};target/gradle/classes,target/gradle/test-classes;target/classes,target/test-classes}
 
 -diffignore                           =         Git-Commit, Git-Branch
 -builderignore                        =         ${bin.testbin.directory}
@@ -52,7 +56,7 @@ target-dir                            =         target
           releaseUrl          = "${repo.url}"; \
           noupdateOnRelease   = false; \
           name                = "Build"; \
-          index               = ${config.root}/build.maven
+          index               = ${.}/maven/build.maven
 
 -plugin.2.Runtime             = \
     aQute.bnd.repository.maven.provider.MavenBndRepository; \
@@ -60,4 +64,4 @@ target-dir                            =         target
           releaseUrl          = "${repo.url}"; \
           noupdateOnRelease   = false; \
           name                = "Runtime"; \
-          index               = ${config.root}/runtime.maven
+          index               = ${.}/maven/runtime.maven
