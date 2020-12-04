@@ -193,6 +193,7 @@ public final class MessagePublisherProvider implements MessagePublisher {
                                                 lastWillDelayInterval);
 
                 messagingClient.updateLastWill(will);
+                logger.info("New publish request to udpate LWT has been sent successfully - '{}'", will);
                 return;
             }
 
