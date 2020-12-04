@@ -42,8 +42,7 @@ import org.osgi.service.log.Logger;
 import org.osgi.service.log.LoggerFactory;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
-import org.osgi.service.messaging.annotations.ProvideMessagingReplyToFeature;
-import org.osgi.service.messaging.annotations.ProvideMessagingReplyToManySubscribeFeature;
+import org.osgi.service.messaging.annotations.ProvideMessagingReplyToManyFeature;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
 import org.osgi.service.messaging.replyto.ReplyToManyPublisher;
 import org.osgi.service.messaging.replyto.ReplyToPublisher;
@@ -62,9 +61,8 @@ import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 
 //@formatter:off
 @Designate(ocd = Config.class)
-@ProvideMessagingReplyToFeature
+@ProvideMessagingReplyToManyFeature
 @Component(configurationPid = PUBLISHER)
-@ProvideMessagingReplyToManySubscribeFeature
 @MessagingFeature(
         name = MESSAGING_ID,
         protocol = MESSAGING_PROTOCOL,

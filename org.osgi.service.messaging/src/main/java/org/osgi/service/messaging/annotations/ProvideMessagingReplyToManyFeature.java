@@ -25,8 +25,8 @@ import org.osgi.service.messaging.replyto.ReplyToManyPublisher;
         name = REPLY_TO_IMPLEMENTATION, //
         namespace = IMPLEMENTATION_NAMESPACE, //
         version = MESSAGING_SPECIFICATION_VERSION, //
-        attribute = "many=publish", //
+        attribute = "many:List<String>='publish,subscribe'", //
         uses = { Message.class, ReplyToManyPublisher.class })
-public @interface ProvideMessagingReplyToManyPublishFeature {
+public @interface ProvideMessagingReplyToManyFeature {
 
 }
