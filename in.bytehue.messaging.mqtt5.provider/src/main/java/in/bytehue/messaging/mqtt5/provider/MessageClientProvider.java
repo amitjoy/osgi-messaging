@@ -17,7 +17,7 @@ package in.bytehue.messaging.mqtt5.provider;
 
 import static com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode.NORMAL_DISCONNECTION;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.CLIENT;
-import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getService;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalService;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.osgi.service.metatype.annotations.AttributeType.PASSWORD;
 
@@ -46,6 +46,11 @@ import com.hivemq.client.mqtt.lifecycle.MqttClientDisconnectedListener;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5ClientBuilder;
+import com.hivemq.client.mqtt.mqtt5.advanced.Mqtt5ClientAdvancedConfigBuilder.Nested;
+import com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos1.Mqtt5IncomingQos1Interceptor;
+import com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos1.Mqtt5OutgoingQos1Interceptor;
+import com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos2.Mqtt5IncomingQos2Interceptor;
+import com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos2.Mqtt5OutgoingQos2Interceptor;
 import com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism;
 import com.hivemq.client.mqtt.mqtt5.message.connect.connack.Mqtt5ConnAck;
 import com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode;
@@ -155,6 +160,18 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "Disconnected Listener Service Filter")
         String disconnectedListenerFilter() default "";
 
+        @AttributeDefinition(name = "QoS 1 Incoming Interceptor Service Filter")
+        String qos1IncomingInterceptorFilter() default "";
+
+        @AttributeDefinition(name = "QoS 2 Incoming Interceptor Service Filter")
+        String qos2IncomingInterceptorFilter() default "";
+
+        @AttributeDefinition(name = "QoS 1 Outgoing Interceptor Service Filter")
+        String qos1OutgoingInterceptorFilter() default "";
+
+        @AttributeDefinition(name = "QoS 2 Outgoing Interceptor Service Filter")
+        String qos2OutgoingInterceptorFilter() default "";
+
         @AttributeDefinition(name = "Reason for the disconnection when the component is stopped")
         String disconnectionReasonDescription() default "OSGi Component Deactivated";
 
@@ -222,8 +239,10 @@ public final class MessageClientProvider {
     }
 
     private void connect() {
-        logger.debug("Applying automatic reconnect configuration");
+        final Nested<? extends Mqtt5ClientBuilder> advancedConfig = clientBuilder.advancedConfig();
+
         if (config.automticReconnect()) {
+            logger.debug("Applying automatic reconnect configuration");
             clientBuilder.automaticReconnect()
                              .initialDelay(config.initialDelay(), SECONDS)
                              .maxDelay(config.maxDelay(), SECONDS)
@@ -244,41 +263,75 @@ public final class MessageClientProvider {
                              .cipherSuites(Arrays.asList(config.cipherSuites()))
                              .handshakeTimeout(config.handshakeTimeout(), SECONDS)
                              .trustManagerFactory(
-                                     getService(
+                                     getOptionalService(
                                              TrustManagerFactory.class,
                                              config.trustManagerFactoryTargetFilter(),
-                                             bundleContext))
+                                             bundleContext,
+                                             logger).orElse(null))
                              .applySslConfig();
         }
         if (config.useEnhancedAuthentication()) {
             logger.debug("Applying Enhanced Authentication configuration");
             clientBuilder.enhancedAuth(
-                    getService(
+                    getOptionalService(
                            Mqtt5EnhancedAuthMechanism.class,
                            config.enhancedAuthTargetFilter(),
-                           bundleContext));
+                           bundleContext,
+                           logger).orElse(null));
         }
         if (config.useServerReauth()) {
             logger.debug("Applying Server Reauthentication configuration");
-            clientBuilder.advancedConfig()
-                         .allowServerReAuth(config.useServerReauth());
+            advancedConfig.allowServerReAuth(config.useServerReauth());
         }
         if (!config.connectedListenerFilter().isEmpty()) {
             logger.debug("Applying Connected Listener configuration");
             clientBuilder.addConnectedListener(
-                    getService(
+                    getOptionalService(
                             MqttClientConnectedListener.class,
                             config.connectedListenerFilter(),
-                            bundleContext));
+                            bundleContext,
+                            logger).orElse(null));
         }
         if (!config.disconnectedListenerFilter().isEmpty()) {
             logger.debug("Applying Disconnected Listener configuration");
             clientBuilder.addDisconnectedListener(
-                    getService(
+                    getOptionalService(
                             MqttClientDisconnectedListener.class,
                             config.disconnectedListenerFilter(),
-                            bundleContext));
+                            bundleContext,
+                            logger).orElse(null));
         }
+
+        if (!config.qos1IncomingInterceptorFilter().isEmpty()) {
+            logger.debug("Applying Incoming and Outgoing Interceptors' configuration");
+            advancedConfig.interceptors()
+                              .incomingQos1Interceptor(
+                                      getOptionalService(
+                                              Mqtt5IncomingQos1Interceptor.class,
+                                              config.qos1IncomingInterceptorFilter(),
+                                              bundleContext,
+                                              logger).orElse(null))
+                              .incomingQos2Interceptor(
+                                      getOptionalService(
+                                              Mqtt5IncomingQos2Interceptor.class,
+                                              config.qos1IncomingInterceptorFilter(),
+                                              bundleContext,
+                                              logger).orElse(null))
+                              .outgoingQos1Interceptor(
+                                      getOptionalService(
+                                              Mqtt5OutgoingQos1Interceptor.class,
+                                              config.qos1IncomingInterceptorFilter(),
+                                              bundleContext,
+                                              logger).orElse(null))
+                              .outgoingQos2Interceptor(
+                                      getOptionalService(
+                                              Mqtt5OutgoingQos2Interceptor.class,
+                                              config.qos1IncomingInterceptorFilter(),
+                                              bundleContext,
+                                              logger).orElse(null))
+                          .applyInterceptors();
+        }
+        advancedConfig.applyAdvancedConfig();
 
         final Mqtt5ConnAck connAck = client.toBlocking()
                                            .connectWith()

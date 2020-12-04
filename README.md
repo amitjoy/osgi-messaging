@@ -109,6 +109,10 @@ The `in.bytehue.messaging.client` can be used to configure the client.
 * `useServerReauth` - Server Reauthentication (optional) (default: `false`)
 * `connectedListenerFilter` - Connected Listener Service Filter (optional) (default: empty string) (Refer to `com.hivemq.client.mqtt.lifecycle.MqttClientConnectedListener`)
 * `disconnectedListenerFilter` - Disconnected Listener Service Filter (optional) (default: empty string) (Refer to `com.hivemq.client.mqtt.lifecycle.MqttClientDisconnectedListener`)
+* `qos1IncomingInterceptorFilter` - QoS 1 Incoming Interceptor Service Filter (optional) (default: empty string) (Refer to `com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos1.Mqtt5IncomingQos1Interceptor`)
+* `qos2IncomingInterceptorFilter` - QoS 2 Incoming Interceptor Service Filter (optional) (default: empty string) (Refer to `com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos1.Mqtt5IncomingQos2Interceptor`)
+* `qos1OutgoingInterceptorFilter` - QoS 1 Outgoing Interceptor Service Filter (optional) (default: empty string) (Refer to `com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos1.Mqtt5OutgoingQos1Interceptor`)
+* `qos2OutgoingInterceptorFilter` - QoS 2 Outgoing Interceptor Service Filter (optional) (default: empty string) (Refer to `com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos1.Mqtt5OutgoingQos2Interceptor`)
 * `disconnectionReasonDescription` - Reason for the disconnection when the component is stopped (optional) (default: `OSGi Component Deactivated`)
 * `disconnectionReasonCode` - Code for the disconnection when the component is stopped (optional) (default: `NORMAL_DISCONNECTION`) (Refer to `com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode`)
 

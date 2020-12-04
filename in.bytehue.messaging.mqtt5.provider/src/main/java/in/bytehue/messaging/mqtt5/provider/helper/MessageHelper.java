@@ -51,6 +51,7 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.dto.ServiceReferenceDTO;
+import org.osgi.service.log.Logger;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageContextBuilder;
@@ -94,6 +95,16 @@ public final class MessageHelper {
                              .orElseThrow(() -> new RuntimeException("'" + clazz +"' service instance cannot be found"));
         } catch (final Exception e) {
             throw new RuntimeException("Service '" + clazz.getName() + "' cannot be retrieved", e);
+        }
+    }
+
+    public static <T> Optional<T> getOptionalService(final Class<T> clazz, final String filter, final BundleContext context, final Logger logger) {
+        try {
+            final T service = getService(clazz, filter, context);
+            return Optional.ofNullable(service);
+        } catch (final Exception e) {
+            logger.warn("Service '{}' cannot be retrieved", clazz.getName(), e);
+            return Optional.empty();
         }
     }
 
