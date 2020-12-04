@@ -57,6 +57,9 @@ import in.bytehue.messaging.mqtt5.provider.MessageClientProvider.Config;
 @Component(service = MessageClientProvider.class, configurationPid = CLIENT)
 public final class MessageClientProvider {
 
+    // keep the previous session alive until reconnection due to last will update
+    private static final long SESSION_EXPIRY_ON_LAST_WILL_UPDATE_DISCONNECT = 600L;
+
     //@formatter:off
     @ObjectClassDefinition(
             name = "MQTT v5 Messaging Client Configuration",
@@ -210,6 +213,7 @@ public final class MessageClientProvider {
         client.disconnectWith()
                   .reasonCode(NORMAL_DISCONNECTION)
                   .reasonString("Last will updated dynamically using publish request message")
+                  .sessionExpiryInterval(SESSION_EXPIRY_ON_LAST_WILL_UPDATE_DISCONNECT)
               .send()
               .thenAccept(v -> {
                   initLastWill(lastWillMessage);
