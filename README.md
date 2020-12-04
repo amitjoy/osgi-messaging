@@ -78,7 +78,7 @@ This project is licensed under Apache License [![License](http://img.shields.io/
 
 The `in.bytehue.messaging.client` can be used to configure the client.
 
-* `id` - Client Identifier (optional) (default: ` ` empty string) - if empty, `in.bytehue.client.id` framework property is checked and if unavailable, a random identifier will be generated.
+* `id` - Client Identifier (optional) (default: empty string) - if empty, `in.bytehue.client.id` framework property is checked and if unavailable, a random identifier will be generated.
 * `server` - Server Address (optional) (default: `broker.hivemq.com`)
 * `port` - Server Port (optional) (default: `1883`)
 * `automticReconnect` - Automatic Reconnection (optional) (default: `false`)
@@ -87,16 +87,16 @@ The `in.bytehue.messaging.client` can be used to configure the client.
 * `maxDelay` - Max Delay if Automatic Reconnection is enabled (optional) (default: `30` seconds)
 * `sessionExpiryInterval` - Keep Session State (optional) (default: `30` seconds)
 * `simpleAuth` - Simple Authentication (optional) (default: `false`)
-* `username` - Simple Authentication Username (optional) (default: ` ` empty string)
-* `password` - Simple Authentication Password (optional) (default: ` ` empty string)
+* `username` - Simple Authentication Username (optional) (default: empty string)
+* `password` - Simple Authentication Password (optional) (default: empty string)
 * `useSSL` - SSL Configuration (optional) (default: `false`)
-* `cipherSuites` - SSL Configuration Cipher Suites (optional) (default: ` ` empty array)
+* `cipherSuites` - SSL Configuration Cipher Suites (optional) (default: empty array)
 * `handshakeTimeout` - SSL Configuration Handshake Timeout (optional) (default: `1` second)
-* `trustManagerFactoryTargetFilter` - SSL Configuration Trust Manager Factory Service Target Filter (optional) (default: ` ` empty string) (Refer to `javax.net.ssl.TrustManagerFactory`)
-* `lastWillTopic` - Last Will Topic (optional) (default: ` ` empty string)
+* `trustManagerFactoryTargetFilter` - SSL Configuration Trust Manager Factory Service Target Filter (optional) (default: empty string) (Refer to `javax.net.ssl.TrustManagerFactory`)
+* `lastWillTopic` - Last Will Topic (optional) (default: empty string)
 * `lastWillQoS` - Last Will QoS (optional) (default: `2`)
-* `lastWillPayLoad` - Last Will Payload (optional) (default: ` ` empty string)
-* `lastWillContentType` - Last Will Content Type (optional) (default: ` `  empty string)
+* `lastWillPayLoad` - Last Will Payload (optional) (default: empty string)
+* `lastWillContentType` - Last Will Content Type (optional) (default: empty string)
 * `lastWillMessageExpiryInterval` - Last Will Message Expiry Interval" (optional) (default: `120` seconds)
 * `lastWillDelayInterval` - Last Will Delay Interval (optional) (default: `30` seconds)
 * `receiveMaximum` - Maximum concurrent messages to be received (optional) (default: `10`)
@@ -105,10 +105,10 @@ The `in.bytehue.messaging.client` can be used to configure the client.
 * `sendMaximumPacketSize` - Maximum Packet Size for sending (optional) (default: `10240` - 10 KB)
 * `topicAliasMaximum` - Maximum Topic Aliases (optional) (default: `0`)
 * `useEnhancedAuthentication` - Enhanced Authentication (optional) (default: `false`)
-* `enhancedAuthTargetFilter` - Enhanced Authentication Service Filter (optional) (default: ` ` empty string) (Refer to `com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism`)
+* `enhancedAuthTargetFilter` - Enhanced Authentication Service Filter (optional) (default: empty string) (Refer to `com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism`)
 * `useServerReauth` - Server Reauthentication (optional) (default: `false`)
-* `connectedListenerFilter` - Connected Listener Service Filter (optional) (default: ` ` empty string) (Refer to `com.hivemq.client.mqtt.lifecycle.MqttClientConnectedListener`)
-* `disconnectedListenerFilter` - Disconnected Listener Service Filter (optional) (default: `` empty string) (Refer to `com.hivemq.client.mqtt.lifecycle.MqttClientDisconnectedListener`)
+* `connectedListenerFilter` - Connected Listener Service Filter (optional) (default: empty string) (Refer to `com.hivemq.client.mqtt.lifecycle.MqttClientConnectedListener`)
+* `disconnectedListenerFilter` - Disconnected Listener Service Filter (optional) (default: empty string) (Refer to `com.hivemq.client.mqtt.lifecycle.MqttClientDisconnectedListener`)
 * `disconnectionReasonDescription` - Reason for the disconnection when the component is stopped (optional) (default: `OSGi Component Deactivated`)
 * `disconnectionReasonCode` - Code for the disconnection when the component is stopped (optional) (default: `NORMAL_DISCONNECTION`) (Refer to `com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode`)
 
