@@ -106,7 +106,7 @@ public final class MessageReplyToWhiteboardProvider {
     }
 
     void unbindReplyToSingleSubscriptionHandler(final ServiceReference<?> reference) {
-        closeConnectedPushstreams(reference);
+        closeConnectedPushStreams(reference);
     }
 
     @Reference(policy = DYNAMIC, cardinality = MULTIPLE)
@@ -122,7 +122,7 @@ public final class MessageReplyToWhiteboardProvider {
     }
 
     void unbindReplyToSubscriptionHandler(final ServiceReference<?> reference) {
-        closeConnectedPushstreams(reference);
+        closeConnectedPushStreams(reference);
     }
 
     @Reference(policy = DYNAMIC, cardinality = MULTIPLE)
@@ -140,7 +140,7 @@ public final class MessageReplyToWhiteboardProvider {
     }
 
     void unbindReplyToManySubscriptionHandler(final ServiceReference<?> reference) {
-        closeConnectedPushstreams(reference);
+        closeConnectedPushStreams(reference);
     }
 
     private Message handleResponse(final Message request, final ReplyToSingleSubscriptionHandler handler) {
@@ -238,7 +238,7 @@ public final class MessageReplyToWhiteboardProvider {
 
     }
 
-    private void closeConnectedPushstreams(final ServiceReference<?> reference) {
+    private void closeConnectedPushStreams(final ServiceReference<?> reference) {
         Optional.ofNullable(streams.remove(reference)).ifPresent(s -> s.forEach(PushStream::close));
     }
 
