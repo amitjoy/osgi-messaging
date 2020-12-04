@@ -17,7 +17,6 @@ package in.bytehue.messaging.mqtt5.provider;
 
 import static com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode.NO_SUBSCRIPTIONS_EXISTED;
 import static com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode.SUCCESS;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.CLIENT;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getDTOFromClass;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.serviceReferenceDTO;
 import static java.util.stream.Collectors.toList;
@@ -50,15 +49,8 @@ import com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAck;
 import com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode;
 
 //@formatter:off
-@Component(service = MessageSubscriptionRegistry.class, configurationPid = CLIENT)
+@Component(service = MessageSubscriptionRegistry.class)
 public final class MessageSubscriptionRegistry {
-
-    @interface Config {
-        boolean cleanStart() default false;
-    }
-
-    @Activate
-    private Config config;
 
     @Activate
     private BundleContext bundleContext;
@@ -69,7 +61,7 @@ public final class MessageSubscriptionRegistry {
     @Reference
     private MessageClientProvider messagingClient;
 
-    // map containing wildcard topic filter as key and list of extended subscription DTOs as values
+    // wildcard topic filter as key
     private final Map<String, List<ExtendedSubscriptionDTO>> subscriptions = new HashMap<>();
 
     public void addSubscription(
@@ -120,7 +112,8 @@ public final class MessageSubscriptionRegistry {
                 // multiple pushstreams from the same handler can exist simultaneously
                 pushStreams.removeIf(predicate::test);
 
-                // if there exists no associated pushstreams, the channels are disconnected
+                // if there exists no active pushstreams, the channels are disconnected since
+                // messages will never arrive to these topics until further subscription
                 if (!pushStreams.isEmpty()) {
                     Optional.ofNullable(dto.pubChannel).ifPresent(e -> e.connected = false);
                     Optional.ofNullable(dto.subChannel).ifPresent(e -> e.connected = false);
@@ -132,10 +125,7 @@ public final class MessageSubscriptionRegistry {
             // if there exists no subscriptions associated with the wildcard entry, then send
             // an unsubscription request for the wildcard. Since we are using wildcard for the
             // unsubscription, the server will unsubscribe all registered topics under it.
-            // Such an action is only required if and only if the clean start flag is set to false.
-            // Otherwise, we store the subscriptions in the server so that after client reconnects,
-            // all the previous subscriptions will be available once again.
-            if (dtos.isEmpty() && !config.cleanStart()) {
+            if (dtos.isEmpty()) {
                 messagingClient.client
                                .unsubscribeWith()
                                .addTopicFilter(topicFilter)
