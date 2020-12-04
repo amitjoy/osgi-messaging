@@ -25,7 +25,6 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adapt;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adaptTo;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getQoS;
-import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.stackTraceToString;
 import static java.util.Collections.emptyMap;
 import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_DELIVERY;
 import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_ORDERING;
@@ -115,6 +114,7 @@ public final class MessagePublisherProvider implements MessagePublisher {
             final Map<String, Object> extensions = context.getExtensions();
 
             final String contentType = context.getContentType();
+            final String replyToChannel = context.getReplyToChannel();
             final String ctxCorrelationId = context.getCorrelationId();
             final String correlationId = ctxCorrelationId != null ? ctxCorrelationId : UUID.randomUUID().toString();
             final ByteBuffer content = message.payload();
@@ -158,6 +158,8 @@ public final class MessagePublisherProvider implements MessagePublisher {
                                               .payload(content)
                                               .qos(MqttQos.fromCode(qos))
                                               .retain(retain)
+                                              .responseTopic(replyToChannel)
+                                              .correlationData(correlationId.getBytes())
                                               .userProperties(propsBuilder.build());
 
             if (messageExpiryInterval == null || messageExpiryInterval == 0) {
@@ -166,18 +168,9 @@ public final class MessagePublisherProvider implements MessagePublisher {
                 publishRequest.messageExpiryInterval(messageExpiryInterval);
             }
 
-            final String replyToChannel = context.getReplyToChannel();
-            if (replyToChannel != null) {
-                publishRequest.responseTopic(replyToChannel);
-            }
-
-            if (correlationId != null) {
-                publishRequest.correlationData(correlationId.getBytes());
-            }
-
-            // check if it is a last will publish
-            final boolean isLastWillPublish = extensions.containsKey(EXTENSION_LAST_WILL);
-            if (isLastWillPublish) {
+            // check if it is a LWT publish
+            final boolean isLastWillPublishReq = extensions.containsKey(EXTENSION_LAST_WILL);
+            if (isLastWillPublishReq) {
                 final MqttWillPublish will =
                         MessageHelper.toLastWill(
                                                 channel,
@@ -191,7 +184,6 @@ public final class MessagePublisherProvider implements MessagePublisher {
                                                 correlationId,
                                                 userProperties,
                                                 lastWillDelayInterval);
-
                 messagingClient.updateLastWill(will);
                 logger.info("New publish request to udpate LWT has been sent successfully - '{}'", will);
                 return;
@@ -202,7 +194,7 @@ public final class MessagePublisherProvider implements MessagePublisher {
                               if (isPublishSuccessful(result)) {
                                   logger.debug("New publish request for '{}' has been processed successfully", ch);
                               } else {
-                                  logger.error("New publish request for '{}' failed - {}", ch, stackTraceToString(result.getError().get()));
+                                  logger.error("New publish request for '{}' failed - {}", ch, result.getError().get());
                               }
                           });
             // @formatter:on
@@ -212,7 +204,7 @@ public final class MessagePublisherProvider implements MessagePublisher {
     }
 
     private boolean isPublishSuccessful(final Mqtt5PublishResult result) {
-        return result.getError().isPresent();
+        return !result.getError().isPresent();
     }
 
 }
