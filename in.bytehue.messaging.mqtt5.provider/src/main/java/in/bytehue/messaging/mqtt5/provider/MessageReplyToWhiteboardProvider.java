@@ -223,7 +223,6 @@ public final class MessageReplyToWhiteboardProvider {
                 throw new IllegalStateException(
                         "The '" + reference + "' handler instance doesn't specify the reply-to target property");
             }
-
         }
 
         private boolean isReplyToSubscriptionHandler(final ServiceReference<?> ref) {
@@ -235,7 +234,6 @@ public final class MessageReplyToWhiteboardProvider {
             }
             return false;
         }
-
     }
 
     private void closeConnectedPushStreams(final ServiceReference<?> reference) {

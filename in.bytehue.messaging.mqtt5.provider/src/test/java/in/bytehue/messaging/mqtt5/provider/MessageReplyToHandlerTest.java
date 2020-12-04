@@ -20,6 +20,7 @@ import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForRequestProce
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.awaitility.core.ConditionTimeoutException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.service.messaging.Message;
@@ -68,6 +69,240 @@ public final class MessageReplyToHandlerTest {
         final String[] channelValue = new String[] { channel };
 
         launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
+
+        // @formatter:off
+        final Message message = mcb.channel(channel)
+                                   .contentType(contentType)
+                                   .content(ByteBuffer.wrap(payload.getBytes()))
+                                   .buildMessage();
+        // @formatter:on
+
+        publisher.publish(message);
+        waitForRequestProcessing(flag);
+    }
+
+    @Test(expected = ConditionTimeoutException.class)
+    public void test_reply_to_subscription_handler_without_protocol_in_target_key() throws Exception {
+        final AtomicBoolean flag = new AtomicBoolean();
+
+        final String channel = "a/b";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        final ReplyToSubscriptionHandler handler = m -> {
+            flag.set(true);
+        };
+        final String targetKey = "osgi.messaging.replyToSubscription.target";
+        final String targetValue = "(&(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
+
+        final String channelKey = "osgi.messaging.replyToSubscription.channel";
+        final String[] channelValue = new String[] { channel };
+
+        launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
+
+        // @formatter:off
+        final Message message = mcb.channel(channel)
+                .contentType(contentType)
+                .content(ByteBuffer.wrap(payload.getBytes()))
+                .buildMessage();
+        // @formatter:on
+
+        publisher.publish(message);
+        waitForRequestProcessing(flag);
+    }
+
+    @Test(expected = ConditionTimeoutException.class)
+    public void test_reply_to_subscription_handler_without_messaging_name_in_target_key() throws Exception {
+        final AtomicBoolean flag = new AtomicBoolean();
+
+        final String channel = "a/b";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        final ReplyToSubscriptionHandler handler = m -> {
+            flag.set(true);
+        };
+        final String targetKey = "osgi.messaging.replyToSubscription.target";
+        final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.feature=replyTo))";
+
+        final String channelKey = "osgi.messaging.replyToSubscription.channel";
+        final String[] channelValue = new String[] { channel };
+
+        launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
+
+        // @formatter:off
+        final Message message = mcb.channel(channel)
+                .contentType(contentType)
+                .content(ByteBuffer.wrap(payload.getBytes()))
+                .buildMessage();
+        // @formatter:on
+
+        publisher.publish(message);
+        waitForRequestProcessing(flag);
+    }
+
+    @Test(expected = ConditionTimeoutException.class)
+    public void test_reply_to_subscription_handler_without_feature_in_target_key() throws Exception {
+        final AtomicBoolean flag = new AtomicBoolean();
+
+        final String channel = "a/b";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        final ReplyToSubscriptionHandler handler = m -> {
+            flag.set(true);
+        };
+        final String targetKey = "osgi.messaging.replyToSubscription.target";
+        final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter))";
+
+        final String channelKey = "osgi.messaging.replyToSubscription.channel";
+        final String[] channelValue = new String[] { channel };
+
+        launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
+
+        // @formatter:off
+        final Message message = mcb.channel(channel)
+                .contentType(contentType)
+                .content(ByteBuffer.wrap(payload.getBytes()))
+                .buildMessage();
+        // @formatter:on
+
+        publisher.publish(message);
+        waitForRequestProcessing(flag);
+    }
+
+    @Test(expected = ConditionTimeoutException.class)
+    public void test_reply_to_subscription_handler_with_different_feature_in_target_key() throws Exception {
+        final AtomicBoolean flag = new AtomicBoolean();
+
+        final String channel = "a/b";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        final ReplyToSubscriptionHandler handler = m -> {
+            flag.set(true);
+        };
+        final String targetKey = "osgi.messaging.replyToSubscription.target";
+        final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=abc))";
+
+        final String channelKey = "osgi.messaging.replyToSubscription.channel";
+        final String[] channelValue = new String[] { channel };
+
+        launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
+
+        // @formatter:off
+        final Message message = mcb.channel(channel)
+                .contentType(contentType)
+                .content(ByteBuffer.wrap(payload.getBytes()))
+                .buildMessage();
+        // @formatter:on
+
+        publisher.publish(message);
+        waitForRequestProcessing(flag);
+    }
+
+    @Test(expected = ConditionTimeoutException.class)
+    public void test_reply_to_subscription_handler_with_different_messaging_name_in_target_key() throws Exception {
+        final AtomicBoolean flag = new AtomicBoolean();
+
+        final String channel = "a/b";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        final ReplyToSubscriptionHandler handler = m -> {
+            flag.set(true);
+        };
+        final String targetKey = "osgi.messaging.replyToSubscription.target";
+        final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=blahblah)(osgi.messaging.feature=replyTo))";
+
+        final String channelKey = "osgi.messaging.replyToSubscription.channel";
+        final String[] channelValue = new String[] { channel };
+
+        launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
+
+        // @formatter:off
+        final Message message = mcb.channel(channel)
+                .contentType(contentType)
+                .content(ByteBuffer.wrap(payload.getBytes()))
+                .buildMessage();
+        // @formatter:on
+
+        publisher.publish(message);
+        waitForRequestProcessing(flag);
+    }
+
+    @Test(expected = ConditionTimeoutException.class)
+    public void test_reply_to_subscription_handler_with_different_protocol_in_target_key() throws Exception {
+        final AtomicBoolean flag = new AtomicBoolean();
+
+        final String channel = "a/b";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        final ReplyToSubscriptionHandler handler = m -> {
+            flag.set(true);
+        };
+        final String targetKey = "osgi.messaging.replyToSubscription.target";
+        final String targetValue = "(&(osgi.messaging.protocol=amqp)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
+
+        final String channelKey = "osgi.messaging.replyToSubscription.channel";
+        final String[] channelValue = new String[] { channel };
+
+        launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
+
+        // @formatter:off
+        final Message message = mcb.channel(channel)
+                .contentType(contentType)
+                .content(ByteBuffer.wrap(payload.getBytes()))
+                .buildMessage();
+        // @formatter:on
+
+        publisher.publish(message);
+        waitForRequestProcessing(flag);
+    }
+
+    @Test(expected = ConditionTimeoutException.class)
+    public void test_reply_to_subscription_handler_without_target_key() throws Exception {
+        final AtomicBoolean flag = new AtomicBoolean();
+
+        final String channel = "a/b";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        final ReplyToSubscriptionHandler handler = m -> {
+            flag.set(true);
+        };
+        final String channelKey = "osgi.messaging.replyToSubscription.channel";
+        final String[] channelValue = new String[] { channel };
+
+        launchpad.register(ReplyToSubscriptionHandler.class, handler, channelKey, channelValue);
+
+        // @formatter:off
+        final Message message = mcb.channel(channel)
+                .contentType(contentType)
+                .content(ByteBuffer.wrap(payload.getBytes()))
+                .buildMessage();
+        // @formatter:on
+
+        publisher.publish(message);
+        waitForRequestProcessing(flag);
+    }
+
+    @Test(expected = ConditionTimeoutException.class)
+    public void test_reply_to_subscription_handler_without_channel_key() throws Exception {
+        final AtomicBoolean flag = new AtomicBoolean();
+
+        final String channel = "a/b";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        final ReplyToSubscriptionHandler handler = m -> {
+            flag.set(true);
+        };
+        final String targetKey = "osgi.messaging.replyToSubscription.target";
+        final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
+
+        launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue);
 
         // @formatter:off
         final Message message = mcb.channel(channel)

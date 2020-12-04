@@ -601,6 +601,9 @@ public final class FilterParser {
 
         @Override
         public boolean eval(final Map<String, ?> map) {
+            if (map.size() > expressions.length) {
+                return false;
+            }
             for (final Expression e : expressions) {
                 if (!e.eval(map)) {
                     return false;
