@@ -15,13 +15,13 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider.command;
 
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.provider.command.MessagePubSubGogoCommand.PID;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.osgi.service.component.annotations.ConfigurationPolicy.REQUIRE;
-import static org.osgi.service.messaging.MessageConstants.MESSAGING_PROTOCOL_PROPERTY;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.felix.service.command.Descriptor;
 import org.apache.felix.service.command.Parameter;
@@ -30,10 +30,10 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
-import org.osgi.service.messaging.MessagePublisher;
-import org.osgi.service.messaging.MessageSubscription;
 
 import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
+import in.bytehue.messaging.mqtt5.provider.MessagePublisherProvider;
+import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionProvider;
 import in.bytehue.messaging.mqtt5.provider.helper.GogoCommand;
 
 // @formatter:off
@@ -48,20 +48,17 @@ public final class MessagePubSubGogoCommand {
 
     public static final String PID = "in.bytehue.messaging.mqtt.command";
 
-    private static final String FILTER = "(" + MESSAGING_PROTOCOL_PROPERTY + "=" + MESSAGING_PROTOCOL + ")";
+    @Reference
+    private MessagePublisherProvider publisher;
 
-    @Reference(target = FILTER)
-    private MessagePublisher publisher;
+    @Reference
+    private MessageSubscriptionProvider subscriber;
 
-    @Reference(target = FILTER)
-    private MessageSubscription subscriber;
-
-    @Reference(target = FILTER)
+    @Reference
     private ComponentServiceObjects<MqttMessageContextBuilder> mcbFactory;
 
     @Descriptor("Subscribes to specific topic/filter with the input context")
     public String sub(
-
             @Descriptor("Topic/Filter")
             @Parameter(names = { "-t", "-topic" }, absentValue = "")
             final String topic,
@@ -90,7 +87,7 @@ public final class MessagePubSubGogoCommand {
                                               .buildContext();
             subscriber.subscribe(context).forEach(m -> {
                 System.out.println("Message Received");
-                System.out.println(new String(m.payload().array(), StandardCharsets.UTF_8));
+                System.out.println(new String(m.payload().array(), UTF_8));
             });
             return "Subscribed to " + topic;
         } catch (final Exception e) {
@@ -103,7 +100,6 @@ public final class MessagePubSubGogoCommand {
 
     @Descriptor("Publishes to specific topic/filter with the input context")
     public String pub(
-
             @Descriptor("Topic/Filter")
             @Parameter(names = { "-t", "-topic" }, absentValue = "")
             final String topic,
@@ -130,19 +126,26 @@ public final class MessagePubSubGogoCommand {
 
             @Descriptor("Message Expiry Interval")
             @Parameter(names = { "-e", "-expiry" }, absentValue = "0")
-            final long messageExpiryInterval) {
+            final long messageExpiryInterval,
+
+
+            @Descriptor("User Properties, such as 'A=B#C=D#E=F'")
+            @Parameter(names = { "-u", "-userProperties" }, absentValue = "")
+            final String userProperties) {
 
         if (topic.isEmpty()) {
             throw new IllegalArgumentException("Topic cannot be empty");
         }
         final MqttMessageContextBuilder mcb = mcbFactory.getService();
         try {
+            final Map<String, String> properties = initUserProperties(userProperties);
             final Message message = mcb.channel(topic)
                                        .withQoS(qos)
                                        .withRetain(retain)
                                        .contentType(contentType)
                                        .content(ByteBuffer.wrap(content.getBytes()))
                                        .withMessageExpiryInterval(messageExpiryInterval)
+                                       .withUserProperties(properties)
                                        .buildMessage();
             publisher.publish(message);
         } catch (final Exception e) {
@@ -151,6 +154,15 @@ public final class MessagePubSubGogoCommand {
             mcbFactory.ungetService(mcb);
         }
         return "Published to " + topic;
+    }
+
+    private Map<String, String> initUserProperties(final String userProperties) {
+        final Map<String, String> map = new HashMap<>();
+        for (final String pair : userProperties.split("#")) {
+            final String[] kv = pair.split("=");
+            map.put(kv[0], kv[1]);
+        }
+        return map;
     }
 
 }
