@@ -224,7 +224,7 @@ public final class MessageClientProvider {
               .send();
     }
 
-    public void updateLastWill(final MqttWillPublish lastWillMessage) {
+    public void updateLWT(final MqttWillPublish lastWillMessage) {
         // disconnect but keep the previous session alive for 10 mins before reconnection
         // previous session is stored to not remove any previous subscriptions
         client.disconnectWith()

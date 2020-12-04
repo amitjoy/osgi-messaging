@@ -184,7 +184,7 @@ public final class MessagePublisherProvider implements MessagePublisher {
                                                 correlationId,
                                                 userProperties,
                                                 lastWillDelayInterval);
-                messagingClient.updateLastWill(will);
+                messagingClient.updateLWT(will);
                 logger.info("New publish request to udpate LWT has been sent successfully - '{}'", will);
                 return;
             }
