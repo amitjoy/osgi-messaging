@@ -240,7 +240,7 @@ public final class Mqtt5AckExample {
     @Reference(target = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.feature=acknowledge))")
     private ComponentServiceObjects<AcknowledgeMessageContextBuilder> amcbFactory;
 
-    public void subscribeMessage3() {
+    public void acknowledge() {
         final AcknowledgeMessageContextBuilder ackBuilder = amcbFactory.getService();
         try {
             final MessageContext context = ackBuilder
