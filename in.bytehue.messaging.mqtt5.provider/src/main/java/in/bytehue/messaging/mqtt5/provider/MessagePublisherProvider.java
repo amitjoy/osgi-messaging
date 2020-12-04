@@ -22,6 +22,7 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.LAST
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.MESSAGE_EXPIRY_INTERVAL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adapt;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adaptTo;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getQoS;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.stackTraceToString;
@@ -47,6 +48,7 @@ import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
 import org.osgi.util.converter.Converter;
 import org.osgi.util.converter.Converters;
+import org.osgi.util.converter.TypeReference;
 
 import com.hivemq.client.internal.mqtt.message.publish.MqttWillPublish;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
@@ -135,9 +137,14 @@ public final class MessagePublisherProvider implements MessagePublisher {
                 payloadFormat = UTF_8;
             }
 
+            // @formatter:off
             final Object userProp = extensions.getOrDefault(USER_PROPERTIES, emptyMap());
-            @SuppressWarnings("unchecked")
-            final Map<String, String> userProperties = adaptTo(userProp, Map.class, cnv);
+            final Map<String, String> userProperties =
+                    adapt(
+                            userProp,
+                            new TypeReference<Map<String, String>>() {},
+                            cnv);
+            // @formatter:on
 
             final Mqtt5UserPropertiesBuilder propsBuilder = Mqtt5UserProperties.builder();
             userProperties.forEach(propsBuilder::add);

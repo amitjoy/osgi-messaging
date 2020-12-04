@@ -56,6 +56,7 @@ import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageContextBuilder;
 import org.osgi.service.messaging.acknowledge.AcknowledgeHandler;
 import org.osgi.util.converter.Converter;
+import org.osgi.util.converter.TypeReference;
 
 import com.hivemq.client.internal.mqtt.datatypes.MqttTopicImpl;
 import com.hivemq.client.internal.mqtt.datatypes.MqttUserPropertiesImpl;
@@ -277,7 +278,8 @@ public final class MessageHelper {
         if (isGuaranteedDelivery || isGuranteedOrdering) {
             return EXACTLY_ONCE.getCode();
         }
-        return (int) extensions.getOrDefault(EXTENSION_QOS, DEFAULT_QOS.getCode());
+        final Object dflt = extensions.getOrDefault(EXTENSION_QOS, DEFAULT_QOS.getCode());
+        return adaptTo(dflt, int.class, converter);
     }
 
     // @formatter:off
@@ -342,6 +344,10 @@ public final class MessageHelper {
 
     public static <T> T adaptTo(final Object value, final Class<T> to, final Converter converter) {
         return converter.convert(value).to(to);
+    }
+
+    public static <T> T adapt(final Object value, final TypeReference<T> ref, final Converter converter) {
+        return converter.convert(value).to(ref);
     }
 
     public static String asString(final MqttUtf8String string) {

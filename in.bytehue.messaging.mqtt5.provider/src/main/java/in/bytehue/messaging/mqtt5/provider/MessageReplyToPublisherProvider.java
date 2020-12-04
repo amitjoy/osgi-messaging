@@ -20,7 +20,9 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROT
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.PUBLISHER;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPLY_TO_MANY_PREDICATE;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPLY_TO_MANY_PREDICATE_FILTER;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adaptTo;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getService;
+import static java.util.concurrent.Executors.newFixedThreadPool;
 import static org.osgi.service.messaging.Features.GENERATE_CORRELATION_ID;
 import static org.osgi.service.messaging.Features.GENERATE_REPLY_CHANNEL;
 import static org.osgi.service.messaging.Features.REPLY_TO;
@@ -29,7 +31,6 @@ import static org.osgi.service.messaging.Features.REPLY_TO_MANY_SUBSCRIBE;
 
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Predicate;
 
@@ -49,6 +50,8 @@ import org.osgi.service.messaging.replyto.ReplyToPublisher;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
+import org.osgi.util.converter.Converter;
+import org.osgi.util.converter.Converters;
 import org.osgi.util.promise.Deferred;
 import org.osgi.util.promise.Promise;
 import org.osgi.util.promise.PromiseFactory;
@@ -103,6 +106,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
     @Activate
     private BundleContext bundleContext;
 
+    private final Converter cnv;
     private final PromiseFactory promiseFactory;
 
     @Activate
@@ -114,7 +118,9 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
                         .setThreadNameFormat(config.threadNameSuffix())
                         .setDaemon(config.isDaemon())
                         .build();
-        promiseFactory = new PromiseFactory(Executors.newFixedThreadPool(config.numThreads(), threadFactory));
+
+        cnv = Converters.standardConverter();
+        promiseFactory = new PromiseFactory(newFixedThreadPool(config.numThreads(), threadFactory));
         //@formatter:on
     }
 
@@ -197,10 +203,13 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
                         (
                                 extensions.containsKey(REPLY_TO_MANY_PREDICATE) ||
                                 extensions.containsKey(REPLY_TO_MANY_PREDICATE_FILTER))) {
-                // @formatter:on
+
+                    // @formatter:on
+
                     replyToManyEndPredicate = (Predicate<Message>) extensions.get(REPLY_TO_MANY_PREDICATE);
-                    final String replyToManyEndPredicateFilter = (String) extensions
-                            .get(REPLY_TO_MANY_PREDICATE_FILTER);
+
+                    final Object replyToFilter = extensions.get(REPLY_TO_MANY_PREDICATE_FILTER);
+                    final String replyToManyEndPredicateFilter = adaptTo(replyToFilter, String.class, cnv);
 
                     if (replyToManyEndPredicate == null) {
                         replyToManyEndPredicate = getService(Predicate.class, replyToManyEndPredicateFilter,

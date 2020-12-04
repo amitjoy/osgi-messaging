@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2020 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -15,6 +15,7 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider.command;
 
+import static in.bytehue.messaging.mqtt5.provider.command.MessagePubSubGogoCommand.PID;
 import static org.osgi.framework.namespace.PackageNamespace.PACKAGE_NAMESPACE;
 
 import java.io.IOException;
@@ -67,7 +68,7 @@ public final class GogoCommandActivator {
 
     private void createGogoCommandConfig() {
         try {
-            final Configuration configuration = configAdmin.getConfiguration(MessagePubSubGogoCommand.PID, "?");
+            final Configuration configuration = configAdmin.getConfiguration(PID, "?");
             configuration.update(new Hashtable<>(Collections.emptyMap()));
         } catch (final IOException e) {
             // ignore due to location check as it's never gonna happen
@@ -76,7 +77,7 @@ public final class GogoCommandActivator {
 
     private void deleteGogoCommandConfig() {
         try {
-            final Configuration configuration = configAdmin.getConfiguration(MessagePubSubGogoCommand.PID, "?");
+            final Configuration configuration = configAdmin.getConfiguration(PID, "?");
             configuration.delete();
         } catch (final IOException e) {
             // ignore due to location check as it's never gonna happen
