@@ -18,10 +18,6 @@ package in.bytehue.messaging.mqtt5.provider;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.PUBLISHER;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPLY_TO_MANY_PREDICATE;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPLY_TO_MANY_PREDICATE_FILTER;
-import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adaptTo;
-import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalService;
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static org.osgi.service.messaging.Features.GENERATE_CORRELATION_ID;
 import static org.osgi.service.messaging.Features.GENERATE_REPLY_CHANNEL;
@@ -29,12 +25,9 @@ import static org.osgi.service.messaging.Features.REPLY_TO;
 import static org.osgi.service.messaging.Features.REPLY_TO_MANY_PUBLISH;
 import static org.osgi.service.messaging.Features.REPLY_TO_MANY_SUBSCRIBE;
 
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadFactory;
-import java.util.function.Predicate;
 
-import org.apache.commons.lang3.tuple.MutablePair;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -50,8 +43,6 @@ import org.osgi.service.messaging.replyto.ReplyToPublisher;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
-import org.osgi.util.converter.Converter;
-import org.osgi.util.converter.Converters;
 import org.osgi.util.promise.Deferred;
 import org.osgi.util.promise.Promise;
 import org.osgi.util.promise.PromiseFactory;
@@ -105,7 +96,6 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
     @Activate
     private BundleContext bundleContext;
 
-    private final Converter cnv;
     private final PromiseFactory promiseFactory;
 
     @Activate
@@ -117,8 +107,6 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
                         .setThreadNameFormat(config.threadNameSuffix())
                         .setDaemon(config.isDaemon())
                         .build();
-
-        cnv = Converters.standardConverter();
         promiseFactory = new PromiseFactory(newFixedThreadPool(config.numThreads(), threadFactory));
         //@formatter:on
     }
@@ -133,7 +121,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
         autoGenerateMissingConfigs(requestMessage);
 
         final Deferred<Message> deferred = promiseFactory.deferred();
-        final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext, false);
+        final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
 
         // @formatter:off
         subscriber.subscribe(dto.subChannel)
@@ -153,15 +141,12 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
     @Override
     public PushStream<Message> publishWithReplyMany(final Message requestMessage, final MessageContext replyToContext) {
         autoGenerateMissingConfigs(requestMessage);
-        final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext, true);
+        final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
 
         final PushStream<Message> pushStream = subscriber.subscribe(dto.subChannel);
         // @formatter:off
         return pushStream.map(m -> {
                                  publisher.publish(m, dto.pubChannel);
-                                 if (dto.shouldCloseStream(m)) {
-                                     pushStream.close();
-                                 }
                                  return m;
                               });
         // @formatter:on
@@ -185,58 +170,12 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
         String pubChannel;
         String subChannel;
 
-        MutablePair<String, Predicate<Message>> replyToManyEndPredicate = MutablePair.of(null, null);
-
-        @SuppressWarnings("unchecked")
-        ReplyToDTO(final Message message, MessageContext context, final boolean isReplyToMany) {
+        ReplyToDTO(final Message message, MessageContext context) {
             if (context == null) {
                 context = message.getContext();
             }
             pubChannel = context.getReplyToChannel();
             subChannel = context.getChannel();
-
-            if (isReplyToMany) {
-                final Map<String, Object> extensions = context.getExtensions();
-                // @formatter:off
-                if (
-                        extensions != null &&
-                        (
-                                extensions.containsKey(REPLY_TO_MANY_PREDICATE) ||
-                                extensions.containsKey(REPLY_TO_MANY_PREDICATE_FILTER))) {
-                // @formatter:on
-
-                    final Predicate<Message> predicate = (Predicate<Message>) extensions.get(REPLY_TO_MANY_PREDICATE);
-                    final Object replyToFilter = extensions.get(REPLY_TO_MANY_PREDICATE_FILTER);
-                    final String replyToManyEndPredicateFilter = adaptTo(replyToFilter, String.class, cnv);
-
-                    replyToManyEndPredicate.setRight(predicate);
-                    replyToManyEndPredicate.setLeft(replyToManyEndPredicateFilter);
-                } else {
-                    throw new IllegalStateException("Reply-To Many Predicate is not set for Reply-To Many request");
-                }
-            }
-        }
-
-        @SuppressWarnings("unchecked")
-        boolean shouldCloseStream(final Message message) {
-            final String filter = replyToManyEndPredicate.getLeft();
-            final Predicate<Message> predicate = replyToManyEndPredicate.getRight();
-
-            // @formatter:off
-            if (filter != null) {
-                return getOptionalService(
-                            Predicate.class,
-                            filter,
-                            bundleContext,
-                            logger)
-                       .map(a -> a.test(message))
-                       .orElse(false);
-            // @formatter:off
-            }
-            if (predicate != null) {
-                return predicate.test(message);
-            }
-            return false;
         }
     }
 

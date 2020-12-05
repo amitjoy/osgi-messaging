@@ -17,8 +17,6 @@ package in.bytehue.messaging.mqtt5.provider;
 
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.MESSAGE_EXPIRY_INTERVAL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RECEIVE_LOCAL;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPLY_TO_MANY_PREDICATE;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPLY_TO_MANY_PREDICATE_FILTER;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
 import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForRequestProcessing;
@@ -129,12 +127,10 @@ public final class MessageServiceRuntimeTest {
                 MESSAGE_EXPIRY_INTERVAL,
                 GENERATE_CORRELATION_ID,
                 REPLY_TO_MANY_SUBSCRIBE,
-                REPLY_TO_MANY_PREDICATE,
                 MESSAGE_CONTEXT_BUILDER,
                 EXTENSION_AUTO_ACKNOWLEDGE,
                 EXTENSION_GUARANTEED_ORDERING,
-                EXTENSION_GUARANTEED_DELIVERY,
-                REPLY_TO_MANY_PREDICATE_FILTER);
+                EXTENSION_GUARANTEED_DELIVERY);
         // @formatter:on
     }
 

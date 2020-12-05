@@ -97,22 +97,6 @@ public final class MqttMessageConstants {
          * @since 1.0
          */
         public static final String LAST_WILL_DELAY_INTERVAL = "lastWillDelayInterval";
-
-        /**
-         * The name of the {@code Reply-To Many End Predicate} extension of the messaging specification.
-         * This ensures that when to close the reply-to many response connection.
-         *
-         * @since 1.0
-         */
-        public static final String REPLY_TO_MANY_PREDICATE = "replyToManyEndPredicate";
-
-        /**
-         * The name of the {@code Reply-To Many End Predicate} extension of the messaging specification.
-         * This ensures that when to close the reply-to many response connection.
-         *
-         * @since 1.0
-         */
-        public static final String REPLY_TO_MANY_PREDICATE_FILTER = "replyToManyEndPredicateFilter";
     }
 
     /**

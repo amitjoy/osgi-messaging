@@ -17,18 +17,14 @@ package in.bytehue.messaging.mqtt5.api;
 
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.MESSAGE_EXPIRY_INTERVAL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RECEIVE_LOCAL;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPLY_TO_MANY_PREDICATE;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPLY_TO_MANY_PREDICATE_FILTER;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 import org.osgi.service.messaging.Features;
-import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageContextBuilder;
 
@@ -216,30 +212,6 @@ public interface MqttMessageContextBuilder extends MessageContextBuilder {
      */
     default MqttMessageContextBuilder withReceiveLocal(final boolean receiveLocal) {
         extensionEntry(RECEIVE_LOCAL, receiveLocal);
-        return this;
-    }
-
-    /**
-     * Sets the {@link Predicate} that is used to check when to end the Reply-To-Many request
-     * connection
-     *
-     * @param predicate the {@link Predicate} instance
-     * @return the {@link MqttMessageContextBuilder} instance
-     */
-    default MqttMessageContextBuilder withReplyToManyEndPredicate(final Predicate<Message> predicate) {
-        extensionEntry(REPLY_TO_MANY_PREDICATE, predicate);
-        return this;
-    }
-
-    /**
-     * Sets the target filter of the service implementing {@link Predicate} that is used to check
-     * when to end the Reply-To-Many request connection
-     *
-     * @param predicate the {@link Predicate} instance
-     * @return the {@link MqttMessageContextBuilder} instance
-     */
-    default MqttMessageContextBuilder withReplyToManyEndPredicateFilter(final String filter) {
-        extensionEntry(REPLY_TO_MANY_PREDICATE_FILTER, filter);
         return this;
     }
 
