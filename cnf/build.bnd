@@ -1,6 +1,7 @@
 -includeresource.all                  =         -src/main/resources
 -donotcopy                            =         \.gitignore|\.DS_Store
 
+Bundle-Vendor                         =         Byte Hue
 Bundle-License                        =         https://www.apache.org/licenses/LICENSE-2.0.txt
 Bundle-Version                        =         0.1.0-SNAPSHOT
 Bundle-Copyright                      =         Amit Kumar Mondal (c) 2020
@@ -8,8 +9,8 @@ Bundle-Developers                     =         amit.kumar.mondal; \
                                                    email=admin@amitinside.com; \
                                                    name="Amit Kumar Mondal"; \
                                                    organization="Deutsche Telekom AG"
-Bundle-SCM                            =         url=https://github.com/amitjoy/osgi-messaging.git,\
-                                                connection=scm:git:https://github.com/amitjoy/osgi-messaging.git,\
+Bundle-SCM                            =         url=https://github.com/amitjoy/osgi-messaging.git, \
+                                                connection=scm:git:https://github.com/amitjoy/osgi-messaging.git, \
                                                 developerConnection=scm:git:git@github.com:amitjoy/osgi-messaging.git
 
 javac.source                          =         1.8

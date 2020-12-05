@@ -45,7 +45,7 @@ public final class MqttMessageConstants {
      *
      * @since 1.0
      */
-    public static final String MESSAGING_PROVIDER = "bytehue";
+    public static final String MESSAGING_PROVIDER = "Byte Hue";
 
     /**
      * Defines standard constants for the MQTT messaging extension features

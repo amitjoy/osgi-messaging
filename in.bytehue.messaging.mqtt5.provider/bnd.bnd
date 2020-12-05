@@ -1,4 +1,9 @@
-Bundle-Name                    : OSGi MQTT v5 Implementation 
+Bundle-Name                    : OSGi MQTT v5 Implementation
+Bundle-Description             : This bundle provides the MQTT v5 implementation \
+								 that conforms to OSGi messaging specification. \
+								 Internally this makes use of HiveMQ MQTT client \
+								 since it is MQTT v5 compatible and hence this bundle \
+								 exports the HiveMQ MQTT client APIs too for further extension.
 -buildpath                     :   \
 	osgi.core,\
 	org.apache.felix.log,\
@@ -18,19 +23,21 @@ Bundle-Name                    : OSGi MQTT v5 Implementation
 
 -privatepackage                : \
 	in.bytehue.*,\
-	com.hivemq.*,\
 	io.reactivex.*,\
-	org.apache.commons.lang3.*,\
-	org.reactivestreams.*
+	org.reactivestreams.*,\
+	org.apache.commons.lang3.*
 
 -includepackage                : org.osgi.service.messaging.*
 -includeresource.hivemq.res    : @${repo;com.hivemq:hivemq-mqtt-client-shaded}!/META-INF/*
--fixupmessages.private.package : 'private reference'
-Export-Package                 : com.hivemq.client.mqtt.*
+
+Export-Package                 : \
+	io.reactivex.*,\
+	com.hivemq.client.*,\
+	org.reactivestreams.*
+
 Import-Package: \
 	com.hivemq.client.internal.shaded.io.netty.internal.tcnative;'resolution:'=optional,\
 	org.apache.felix.service.command;'resolution:'=optional,\
-	org.osgi.service.repository;'resolution:'=optional,\
 	com.jcraft.jzlib;'resolution:'=optional,\
 	org.slf4j;'resolution:'=optional,\
 	org.slf4j.helpers;'resolution:'=optional,\
