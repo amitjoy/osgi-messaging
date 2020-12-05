@@ -144,7 +144,7 @@ public final class MessageServiceRuntimeTest {
         final ServiceReference<MessageServiceRuntime> runtimeSref = launchpad
                 .waitForServiceReference(MessageServiceRuntime.class, 3000L).get();
 
-        final ServiceReferenceDTO dto = MessageHelper.serviceReferenceDTO(runtimeSref);
+        final ServiceReferenceDTO dto = MessageHelper.toServiceReferenceDTO(runtimeSref);
 
         assertThat(runtimeDTO.serviceDTO.id).isEqualTo(dto.id);
         assertThat(runtimeDTO.serviceDTO.properties).isEqualTo(dto.properties);

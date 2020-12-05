@@ -24,7 +24,7 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPL
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPLY_TO_MANY_PREDICATE_FILTER;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
-import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getDTOFromClass;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.toServiceReferenceDTO;
 import static org.osgi.framework.Constants.SERVICE_ID;
 import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
 import static org.osgi.service.messaging.Features.EXTENSION_AUTO_ACKNOWLEDGE;
@@ -40,6 +40,7 @@ import static org.osgi.service.messaging.Features.REPLY_TO_MANY_PUBLISH;
 import static org.osgi.service.messaging.Features.REPLY_TO_MANY_SUBSCRIBE;
 
 import org.osgi.framework.BundleContext;
+import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -79,6 +80,9 @@ public final class MessageServiceRuntimeProvider implements MessageServiceRuntim
     @Activate
     private BundleContext bundleContext;
 
+    @Activate
+    private ComponentContext componentContext;
+
     @Reference
     private MessageSubscriptionRegistry subscriptionRegistry;
 
@@ -96,7 +100,7 @@ public final class MessageServiceRuntimeProvider implements MessageServiceRuntim
             final MessagingRuntimeDTO dto = new MessagingRuntimeDTO();
 
             dto.connectionURI = client.client.getConfig().getServerHost();
-            dto.serviceDTO = getDTOFromClass(MessageServiceRuntime.class, bundleContext);
+            dto.serviceDTO = toServiceReferenceDTO(componentContext.getServiceReference());
             // @formatter:off
             dto.features =
                     new String[] {

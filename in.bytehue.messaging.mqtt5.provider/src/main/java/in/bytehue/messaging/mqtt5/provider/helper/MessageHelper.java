@@ -17,7 +17,6 @@ package in.bytehue.messaging.mqtt5.provider.helper;
 
 import static com.hivemq.client.mqtt.datatypes.MqttQos.EXACTLY_ONCE;
 import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish.DEFAULT_QOS;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
 import static java.lang.System.lineSeparator;
@@ -25,13 +24,11 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Comparator.comparingLong;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
-import static org.osgi.framework.Constants.OBJECTCLASS;
 import static org.osgi.framework.Constants.SERVICE_ID;
 import static org.osgi.framework.Constants.SERVICE_RANKING;
 import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_DELIVERY;
 import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_ORDERING;
 import static org.osgi.service.messaging.Features.EXTENSION_QOS;
-import static org.osgi.service.messaging.MessageConstants.MESSAGING_PROTOCOL_PROPERTY;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.ACKNOWLEDGED;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.RECEIVED;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.REJECTED;
@@ -149,7 +146,12 @@ public final class MessageHelper {
         // @formatter:on
     }
 
-    public static ServiceReferenceDTO serviceReferenceDTO(final ServiceReference<?> ref) {
+    public static <T> ServiceReferenceDTO toServiceReferenceDTO(final Class<T> clazz, final BundleContext context) {
+        final ServiceReference<T> ref = context.getServiceReference(clazz);
+        return toServiceReferenceDTO(ref);
+    }
+
+    public static ServiceReferenceDTO toServiceReferenceDTO(final ServiceReference<?> ref) {
         final ServiceReferenceDTO dto = new ServiceReferenceDTO();
 
         dto.bundle = ref.getBundle().getBundleId();
@@ -196,26 +198,6 @@ public final class MessageHelper {
             return converted;
         }
         return String.valueOf(value);
-    }
-
-    public static ServiceReferenceDTO getDTOFromClass(final Class<?> clazz, final BundleContext bundleContext) {
-        boolean isProtocolCompliant = false;
-
-        final ServiceReferenceDTO[] services = bundleContext.getBundle().adapt(ServiceReferenceDTO[].class);
-        for (final ServiceReferenceDTO serviceDTO : services) {
-            final Map<String, Object> properties = serviceDTO.properties;
-            final String[] serviceTypes = (String[]) properties.get(OBJECTCLASS);
-            final Object property = properties.get(MESSAGING_PROTOCOL_PROPERTY);
-            if (property != null && MESSAGING_PROTOCOL.equals(((String[]) property)[0])) {
-                isProtocolCompliant = true;
-            }
-            for (final String type : serviceTypes) {
-                if (clazz.getName().equals(type) && isProtocolCompliant) {
-                    return serviceDTO;
-                }
-            }
-        }
-        return null;
     }
 
     // @formatter:off

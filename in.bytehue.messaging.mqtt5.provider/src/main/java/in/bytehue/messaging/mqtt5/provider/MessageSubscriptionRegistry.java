@@ -17,8 +17,7 @@ package in.bytehue.messaging.mqtt5.provider;
 
 import static com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode.NO_SUBSCRIPTIONS_EXISTED;
 import static com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode.SUCCESS;
-import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getDTOFromClass;
-import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.serviceReferenceDTO;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.toServiceReferenceDTO;
 import static java.util.stream.Collectors.toList;
 
 import java.util.ArrayList;
@@ -39,7 +38,6 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.log.Logger;
 import org.osgi.service.log.LoggerFactory;
 import org.osgi.service.messaging.Message;
-import org.osgi.service.messaging.MessageSubscription;
 import org.osgi.service.messaging.dto.ChannelDTO;
 import org.osgi.service.messaging.dto.ReplyToSubscriptionDTO;
 import org.osgi.service.messaging.dto.SubscriptionDTO;
@@ -223,7 +221,7 @@ public final class MessageSubscriptionRegistry {
     private SubscriptionDTO getSubscriptionDTO(final ChannelDTO channelDTO) {
         final SubscriptionDTO subscriptionDTO = new SubscriptionDTO();
 
-        subscriptionDTO.serviceDTO = getDTOFromClass(MessageSubscription.class, bundleContext);
+        subscriptionDTO.serviceDTO = toServiceReferenceDTO(MessageSubscriptionProvider.class, bundleContext);
         subscriptionDTO.channel = channelDTO;
 
         return subscriptionDTO;
@@ -238,8 +236,8 @@ public final class MessageSubscriptionRegistry {
 
         subscriptionDTO.requestChannel = subDTO;
         subscriptionDTO.responseChannel = pubDTO;
-        subscriptionDTO.handlerService = serviceReferenceDTO(handlerReference);
-        subscriptionDTO.serviceDTO = getDTOFromClass(MessageSubscription.class, bundleContext);
+        subscriptionDTO.handlerService = toServiceReferenceDTO(handlerReference);
+        subscriptionDTO.serviceDTO = toServiceReferenceDTO(MessageSubscriptionProvider.class, bundleContext);
         subscriptionDTO.generateCorrelationId = true;
         subscriptionDTO.generateReplyChannel = true;
 
