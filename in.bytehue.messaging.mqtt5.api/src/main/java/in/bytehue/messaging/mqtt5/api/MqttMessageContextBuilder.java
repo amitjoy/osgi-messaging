@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.osgi.annotation.versioning.ProviderType;
 import org.osgi.service.messaging.Features;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageContextBuilder;
@@ -47,6 +48,7 @@ import org.osgi.service.messaging.MessageContextBuilder;
  *
  * @see MessageContextBuilder
  */
+@ProviderType
 public interface MqttMessageContextBuilder extends MessageContextBuilder {
 
     /**
