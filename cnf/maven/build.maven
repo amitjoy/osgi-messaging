@@ -1,6 +1,7 @@
 # bnd
 
 biz.aQute.bnd:biz.aQute.launchpad:5.2.0
+biz.aQute:biz.aQute.osgi.conditionaltarget:1.2.0
 
 # Apache
 

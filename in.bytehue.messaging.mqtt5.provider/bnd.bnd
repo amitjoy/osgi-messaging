@@ -8,6 +8,7 @@ Bundle-Description             : This bundle provides the MQTT v5 implementation
 	osgi.core,\
 	org.apache.felix.log,\
 	org.osgi.service.messaging,\
+	biz.aQute.osgi.conditionaltarget,\
 	com.hivemq:hivemq-mqtt-client-shaded,\
 	io.reactivex.rxjava2.rxjava,\
 	in.bytehue.messaging.mqtt5.api,\
@@ -25,7 +26,8 @@ Bundle-Description             : This bundle provides the MQTT v5 implementation
 	in.bytehue.*,\
 	io.reactivex.*,\
 	org.reactivestreams.*,\
-	org.apache.commons.lang3.*
+	org.apache.commons.lang3.*,\
+	aQute.*
 
 -includepackage                : org.osgi.service.messaging.*
 -includeresource.hivemq.res    : @${repo;com.hivemq:hivemq-mqtt-client-shaded}!/META-INF/*

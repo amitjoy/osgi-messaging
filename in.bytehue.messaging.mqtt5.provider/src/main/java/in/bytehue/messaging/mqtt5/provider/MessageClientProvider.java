@@ -55,6 +55,8 @@ import com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism;
 import com.hivemq.client.mqtt.mqtt5.message.connect.connack.Mqtt5ConnAck;
 import com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode;
 
+import aQute.osgi.conditionaltarget.api.ConditionalTarget;
+import in.bytehue.messaging.mqtt5.api.TargetCondition;
 import in.bytehue.messaging.mqtt5.provider.MessageClientProvider.Config;
 
 @ProvideMessagingFeature
@@ -172,6 +174,9 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "QoS 2 Outgoing Interceptor Service Filter")
         String qos2OutgoingInterceptorFilter() default "";
 
+        @AttributeDefinition(name = "Filter that needs to be satisfied for the client to be active")
+        String condition_target() default "";
+
         @AttributeDefinition(name = "Reason for the disconnection when the component is stopped")
         String disconnectionReasonDescription() default "OSGi Component Deactivated";
 
@@ -189,11 +194,16 @@ public final class MessageClientProvider {
     private final BundleContext bundleContext;
     private final Mqtt5ClientBuilder clientBuilder;
 
+    @Reference(target = "(satisfy=always)")
+    private ConditionalTarget<TargetCondition> condition;
+
     @Activate
     public MessageClientProvider(
             final Config config,
             final BundleContext bundleContext,
-            @Reference(service = LoggerFactory.class) final Logger logger) {
+
+            @Reference(service = LoggerFactory.class)
+            final Logger logger) {
 
         this.logger = logger;
         this.config = config;
