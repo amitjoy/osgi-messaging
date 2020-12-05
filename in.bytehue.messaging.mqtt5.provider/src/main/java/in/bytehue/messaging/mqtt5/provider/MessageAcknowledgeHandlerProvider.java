@@ -27,7 +27,6 @@ import org.osgi.service.messaging.propertytypes.MessagingFeature;
 @MessagingFeature(name = MESSAGING_ID, protocol = MESSAGING_PROTOCOL, feature = ACKNOWLEDGE)
 public final class MessageAcknowledgeHandlerProvider implements AcknowledgeHandler {
 
-    // TODO think about if we have any message restriction for this handler?
     @Override
     public boolean acknowledge() {
         return true;
