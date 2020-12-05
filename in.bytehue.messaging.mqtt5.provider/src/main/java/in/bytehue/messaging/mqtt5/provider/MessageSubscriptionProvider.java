@@ -164,7 +164,12 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
                                           final MessageContextBuilderProvider mcb = mcbFactory.getService();
                                           try {
                                               final Message message = toMessage(p, ctx, mcb);
-                                              if (acknowledgeMessage(message, ctx, source::publish)) {
+                                              if (acknowledgeMessage(
+                                                      message,
+                                                      ctx,
+                                                      source::publish,
+                                                      bundleContext,
+                                                      logger)) {
                                                   p.acknowledge();
                                               }
                                           } catch (final Exception e) {

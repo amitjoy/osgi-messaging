@@ -21,7 +21,7 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationP
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPLY_TO_MANY_PREDICATE;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.REPLY_TO_MANY_PREDICATE_FILTER;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adaptTo;
-import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getService;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalService;
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static org.osgi.service.messaging.Features.GENERATE_CORRELATION_ID;
 import static org.osgi.service.messaging.Features.GENERATE_REPLY_CHANNEL;
@@ -34,6 +34,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Predicate;
 
+import org.apache.commons.lang3.tuple.MutablePair;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -158,8 +159,8 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
         // @formatter:off
         return pushStream.map(m -> {
                                  publisher.publish(m, dto.pubChannel);
-                                 if (dto.replyToManyEndPredicate.test(m)) {
-                                     pushStream.close(); // close the stream when predicate satisfies
+                                 if (dto.shouldCloseStream(m)) {
+                                     pushStream.close();
                                  }
                                  return m;
                               });
@@ -183,7 +184,8 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
     private class ReplyToDTO {
         String pubChannel;
         String subChannel;
-        Predicate<Message> replyToManyEndPredicate;
+
+        MutablePair<String, Predicate<Message>> replyToManyEndPredicate = MutablePair.of(null, null);
 
         @SuppressWarnings("unchecked")
         ReplyToDTO(final Message message, MessageContext context, final boolean isReplyToMany) {
@@ -201,22 +203,40 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
                         (
                                 extensions.containsKey(REPLY_TO_MANY_PREDICATE) ||
                                 extensions.containsKey(REPLY_TO_MANY_PREDICATE_FILTER))) {
+                // @formatter:on
 
-                    // @formatter:on
-
-                    replyToManyEndPredicate = (Predicate<Message>) extensions.get(REPLY_TO_MANY_PREDICATE);
-
+                    final Predicate<Message> predicate = (Predicate<Message>) extensions.get(REPLY_TO_MANY_PREDICATE);
                     final Object replyToFilter = extensions.get(REPLY_TO_MANY_PREDICATE_FILTER);
                     final String replyToManyEndPredicateFilter = adaptTo(replyToFilter, String.class, cnv);
 
-                    if (replyToManyEndPredicate == null) {
-                        replyToManyEndPredicate = getService(Predicate.class, replyToManyEndPredicateFilter,
-                                bundleContext);
-                    }
+                    replyToManyEndPredicate.setRight(predicate);
+                    replyToManyEndPredicate.setLeft(replyToManyEndPredicateFilter);
                 } else {
                     throw new IllegalStateException("Reply-To Many Predicate is not set for Reply-To Many request");
                 }
             }
+        }
+
+        @SuppressWarnings("unchecked")
+        boolean shouldCloseStream(final Message message) {
+            final String filter = replyToManyEndPredicate.getLeft();
+            final Predicate<Message> predicate = replyToManyEndPredicate.getRight();
+
+            // @formatter:off
+            if (filter != null) {
+                return getOptionalService(
+                            Predicate.class,
+                            filter,
+                            bundleContext,
+                            logger)
+                       .map(a -> a.test(message))
+                       .orElse(false);
+            // @formatter:off
+            }
+            if (predicate != null) {
+                return predicate.test(message);
+            }
+            return false;
         }
     }
 

@@ -7,12 +7,12 @@ Bundle-Name                    : OSGi MQTT v5 Implementation
 	io.reactivex.rxjava2.rxjava,\
 	in.bytehue.messaging.mqtt5.api,\
 	org.reactivestreams.reactive-streams,\
+    org.apache.commons.lang3,\
 	org.apache.felix.gogo.runtime
 
 -testpath                      : \
     biz.aQute.launchpad,\
     assertj-core,\
-    org.apache.commons.lang3,\
     org.awaitility,\
     slf4j.api
 
@@ -20,6 +20,7 @@ Bundle-Name                    : OSGi MQTT v5 Implementation
 	in.bytehue.*,\
 	com.hivemq.*,\
 	io.reactivex.*,\
+	org.apache.commons.lang3.*,\
 	org.reactivestreams.*
 
 -includepackage                : org.osgi.service.messaging.*

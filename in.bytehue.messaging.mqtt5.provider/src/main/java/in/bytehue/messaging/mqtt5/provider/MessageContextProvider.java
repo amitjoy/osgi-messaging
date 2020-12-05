@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2020 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.apache.commons.lang3.tuple.MutablePair;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.acknowledge.AcknowledgeHandler;
@@ -35,12 +36,12 @@ public final class MessageContextProvider implements MessageContext, Acknowledge
     public String replyToChannel;
 
     public AcknowledgeType acknowledgeState;
-    public Consumer<Message> acknowledgeHandler;
-    public Predicate<Message> acknowledgeFilter;
-    public Consumer<Message> acknowledgeConsumer;
+    public Map<String, Object> extensions = new HashMap<>();
     public AcknowledgeHandler protocolSpecificAcknowledgeHandler;
 
-    public Map<String, Object> extensions = new HashMap<>();
+    public final MutablePair<String, Predicate<Message>> acknowledgeFilter = MutablePair.of(null, null);
+    public final MutablePair<String, Consumer<Message>> acknowledgeHandler = MutablePair.of(null, null);
+    public final MutablePair<String, Consumer<Message>> acknowledgeConsumer = MutablePair.of(null, null);
 
     @Override
     public String getChannel() {

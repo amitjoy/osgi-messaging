@@ -27,7 +27,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -41,7 +40,6 @@ import org.osgi.service.messaging.annotations.ProvideMessagingAcknowledgeFeature
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
 
 import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
-import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
 
 // @formatter:off
 @Component(
@@ -64,19 +62,16 @@ public final class MessageContextBuilderProvider
 
     private final Logger logger;
     private final MessageProvider message;
-    private final BundleContext bundleContext;
     private final MessageContextProvider messageContext;
 
     @Activate
     public MessageContextBuilderProvider(
-            final BundleContext bundleContext,
             @Reference(service = LoggerFactory.class)
             final Logger logger,
             @Reference
             final MessageAcknowledgeHandlerProvider acknowledgeHandler) {
 
         this.logger = logger;
-        this.bundleContext = bundleContext;
         message = new MessageProvider();
         messageContext = new MessageContextProvider();
 
@@ -185,67 +180,43 @@ public final class MessageContextBuilderProvider
 
     @Override
     public AcknowledgeMessageContextBuilder handleAcknowledge(final Consumer<Message> acknowledgeHandler) {
-        if (acknowledgeHandler != null) {
-            messageContext.acknowledgeHandler = acknowledgeHandler;
-        }
+        messageContext.acknowledgeHandler.setRight(acknowledgeHandler);
         return this;
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public AcknowledgeMessageContextBuilder handleAcknowledge(final String acknowledgeHandlerTarget) {
-        if (acknowledgeHandlerTarget != null) {
-            messageContext.acknowledgeHandler = getAcknowledgeHandler(Consumer.class, acknowledgeHandlerTarget);
-        }
+        messageContext.acknowledgeHandler.setLeft(acknowledgeHandlerTarget);
         return this;
     }
 
     @Override
     public AcknowledgeMessageContextBuilder filterAcknowledge(final Predicate<Message> acknowledgeFilter) {
-        if (acknowledgeFilter != null) {
-            messageContext.acknowledgeFilter = acknowledgeFilter;
-        }
+        messageContext.acknowledgeFilter.setRight(acknowledgeFilter);
         return this;
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public AcknowledgeMessageContextBuilder filterAcknowledge(final String acknowledgeFilterTarget) {
-        if (acknowledgeFilterTarget != null) {
-            messageContext.acknowledgeFilter = getAcknowledgeHandler(Predicate.class, acknowledgeFilterTarget);
-        }
+        messageContext.acknowledgeFilter.setLeft(acknowledgeFilterTarget);
         return this;
     }
 
     @Override
     public AcknowledgeMessageContextBuilder postAcknowledge(final Consumer<Message> acknowledgeConsumer) {
-        if (acknowledgeConsumer != null) {
-            messageContext.acknowledgeConsumer = acknowledgeConsumer;
-        }
+        messageContext.acknowledgeConsumer.setRight(acknowledgeConsumer);
         return this;
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public AcknowledgeMessageContextBuilder postAcknowledge(final String ackowledgeConsumerTarget) {
-        if (ackowledgeConsumerTarget != null) {
-            messageContext.acknowledgeConsumer = getAcknowledgeHandler(Consumer.class, ackowledgeConsumerTarget);
-        }
+        messageContext.acknowledgeConsumer.setLeft(ackowledgeConsumerTarget);
         return this;
     }
 
     @Override
     public MessageContextBuilder messageContextBuilder() {
         return this;
-    }
-
-    private <T> T getAcknowledgeHandler(final Class<T> clazz, final String filter) {
-        try {
-            return MessageHelper.getService(clazz, filter, bundleContext);
-        } catch (final Exception e) {
-            logger.error("Acknowledge Handler not found in the service registry", e);
-        }
-        return null;
     }
 
 }

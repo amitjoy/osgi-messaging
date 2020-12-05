@@ -40,9 +40,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.tuple.MutablePair;
 import org.osgi.dto.DTO;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -204,7 +206,9 @@ public final class MessageHelper {
     public static boolean acknowledgeMessage(
             final Message message,
             final MessageContextProvider ctx,
-            final Consumer<Message> interimConsumer) {
+            final Consumer<Message> interimConsumer,
+            final BundleContext context,
+            final Logger logger) {
     // @formatter:on
         final AcknowledgeHandler protocolSpecificAcknowledgeHandler = ctx.protocolSpecificAcknowledgeHandler;
 
@@ -213,23 +217,17 @@ public final class MessageHelper {
             // message is received but not yet acknowledged
             ctx.acknowledgeState = RECEIVED;
 
-            // check for the existence of filter
-            if (ctx.acknowledgeFilter != null) {
-                final boolean isAcknowledged = ctx.acknowledgeFilter.test(message);
-                if (isAcknowledged) {
-                    ctx.acknowledgeState = ACKNOWLEDGED;
-                } else {
-                    ctx.acknowledgeState = REJECTED;
-                }
-            } else {
-                // if the filter is not set, automatically acknowledge the message
+            final boolean isAcknowledged = filter(message, ctx, context, logger);
+            if (isAcknowledged) {
                 ctx.acknowledgeState = ACKNOWLEDGED;
+            } else {
+                ctx.acknowledgeState = REJECTED;
             }
             // invoke the pre- and post-handlers if the message is acknowledged
             if (ctx.acknowledgeState == ACKNOWLEDGED) {
-                invokePreHandler(ctx, message);
+                invokePreHandler(message, ctx, context, logger);
                 interimConsumer.accept(message);
-                invokePostHandler(ctx, message);
+                invokePostHandler(message, ctx, context, logger);
             }
         } else {
             ctx.acknowledgeState = REJECTED;
@@ -237,17 +235,81 @@ public final class MessageHelper {
         return ctx.acknowledgeState == ACKNOWLEDGED;
     }
 
-    private static void invokePreHandler(final MessageContextProvider ctx, final Message message) {
-        if (ctx.acknowledgeHandler != null) {
-            ctx.acknowledgeHandler.accept(message);
+    @SuppressWarnings("unchecked")
+    // @formatter:off
+    private static boolean filter(
+                        final Message message,
+                        final MessageContextProvider ctx,
+                        final BundleContext context,
+                        final Logger logger) {
+
+        final MutablePair<String, Predicate<Message>> ackFilter = ctx.acknowledgeFilter;
+        final String targetFilter = ackFilter.getLeft();
+        final Predicate<Message> filter = ackFilter.getRight();
+
+        if (targetFilter != null) {
+            return getOptionalService(
+                        Predicate.class,
+                        targetFilter,
+                        context,
+                        logger)
+                    .map(a -> a.test(message))
+                    .orElse(false);
+        }
+        if (filter != null) {
+            return filter.test(message);
+        }
+        return true;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void invokePreHandler(
+                        final Message message,
+                        final MessageContextProvider ctx,
+                        final BundleContext context,
+                        final Logger logger) {
+
+        final MutablePair<String, Consumer<Message>> ackConsumer = ctx.acknowledgeHandler;
+        final String targetFilter = ackConsumer.getLeft();
+        final Consumer<Message> handler = ackConsumer.getRight();
+
+        if (targetFilter != null) {
+            getOptionalService(
+                    Consumer.class,
+                    targetFilter,
+                    context,
+                    logger)
+                .ifPresent(a -> a.accept(message));
+        }
+        if (handler != null) {
+            handler.accept(message);
         }
     }
 
-    private static void invokePostHandler(final MessageContextProvider ctx, final Message message) {
-        if (ctx.acknowledgeConsumer != null) {
-            ctx.acknowledgeConsumer.accept(message);
+    @SuppressWarnings("unchecked")
+    private static void invokePostHandler(
+            final Message message,
+            final MessageContextProvider ctx,
+            final BundleContext context,
+            final Logger logger) {
+
+        final MutablePair<String, Consumer<Message>> ackHandler = ctx.acknowledgeConsumer;
+        final String targetFilter = ackHandler.getLeft();
+        final Consumer<Message> handler = ackHandler.getRight();
+
+        if (targetFilter != null) {
+            getOptionalService(
+                    Consumer.class,
+                    targetFilter,
+                    context,
+                    logger)
+            .ifPresent(a -> a.accept(message));
+        }
+        if (handler != null) {
+            handler.accept(message);
         }
     }
+    // @formatter:on
 
     public static Message prepareExceptionAsMessage(final Throwable t, final MessageContextBuilder mcb) {
         final Optional<String> message = Optional.ofNullable(t.getMessage());
