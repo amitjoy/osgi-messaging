@@ -1,9 +1,12 @@
+base.version                          =         0.1.0
+
 -includeresource.all                  =         -src/main/resources
 -donotcopy                            =         \.gitignore|\.DS_Store
 
 Bundle-Vendor                         =         Byte Hue
 Bundle-License                        =         https://www.apache.org/licenses/LICENSE-2.0.txt
-Bundle-Version                        =         0.1.0-SNAPSHOT
+Bundle-DocURL                         =         https://bytehue.in
+Bundle-Version                        =         ${base.version}.${tstamp}
 Bundle-Copyright                      =         Amit Kumar Mondal (c) 2020
 Bundle-Developers                     =         amit.kumar.mondal; \
                                                    email=admin@amitinside.com; \
@@ -33,7 +36,18 @@ testsrc                               =         src/test/java
 testbin                               =         ${testbin.directory}
 target-dir                            =         target
 
-repo.url                              =         https://repo.maven.apache.org/maven2/
+mave.central.url                      =         https://repo.maven.apache.org/maven2/
+sonatype.url                          =         https://oss.sonatype.org
+sonatype.url.snapshot                 =         ${sonatype.url}/content/repositories/snapshots/
+sonatype.url.staging                  =         ${sonatype.url}/service/local/staging/deploy/maven2/
+
+password                              =         ${env;REPOSITORY_PASSWORD;}
+username                              =         ${env;REPOSITORY_USERNAME;}
+-connection-settings                  =         ${if;${password};server;-dummy};id=${sonatype.url};username=${username};password=${password}, -bnd
+
+-groupid                              =         in.bytehue
+-pom                                  =         version=${base.version}-SNAPSHOT
+-releaserepo                          =         Release
 
 bin.directory                         =         ${if;${is;${driver};gradle};target/gradle/classes;target/classes}
 testbin.directory                     =         ${if;${is;${driver};gradle};target/gradle/test-classes;target/test-classes}
@@ -53,16 +67,23 @@ bin.testbin.directory                 =         ${if;${is;${driver};gradle};targ
 
 -plugin.1.Build               = \
     aQute.bnd.repository.maven.provider.MavenBndRepository; \
-          snapshotUrl         = "${repo.url}"; \
-          releaseUrl          = "${repo.url}"; \
+          snapshotUrl         = "${sonatype.url.snapshot}"; \
+          releaseUrl          = "${mave.central.url}"; \
           noupdateOnRelease   = false; \
           name                = "Build"; \
           index               = ${.}/maven/build.maven
 
 -plugin.2.Runtime             = \
     aQute.bnd.repository.maven.provider.MavenBndRepository; \
-          snapshotUrl         = "${repo.url}"; \
-          releaseUrl          = "${repo.url}"; \
+          snapshotUrl         = "${sonatype.url.snapshot}"; \
+          releaseUrl          = "${mave.central.url}"; \
           noupdateOnRelease   = false; \
           name                = "Runtime"; \
           index               = ${.}/maven/runtime.maven
+
+-plugin.3.Release             = \
+    aQute.bnd.repository.maven.provider.MavenBndRepository; \
+          snapshotUrl         = "${sonatype.url.snapshot}"; \
+          releaseUrl          = "${sonatype.url.staging}"; \
+          noupdateOnRelease   = false; \
+          name                = "Release"
