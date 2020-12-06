@@ -4,51 +4,97 @@ Bundle-Description             : This bundle provides the MQTT v5 implementation
 								 Internally this makes use of HiveMQ MQTT client \
 								 since it is MQTT v5 compatible and hence this bundle \
 								 exports the HiveMQ MQTT client APIs too for further extension.
+
+-fixupmessages.private.ref     : 'private references' 
+
 -buildpath                     :   \
-	osgi.core,\
+	biz.aQute.osgi.conditionaltarget,\
+	in.bytehue.messaging.mqtt5.api,\
+    org.apache.commons.lang3,\
+	org.apache.felix.gogo.runtime,\
 	org.apache.felix.log,\
 	org.osgi.service.messaging,\
-	biz.aQute.osgi.conditionaltarget,\
-	com.hivemq:hivemq-mqtt-client-shaded,\
+	osgi.core,\
+	\
+	com.google.dagger:dagger,\
+	com.hivemq.client.mqtt;packages=*,\
+	io.netty.buffer,\
+	io.netty.codec,\
+	io.netty.codec-http,\
+	io.netty.codec-socks,\
+	io.netty.common,\
+	io.netty.handler,\
+	io.netty.handler-proxy,\
+	io.netty.resolver,\
+	io.netty.transport,\
+	io.netty.transport-native-epoll,\
+	io.netty.transport-native-unix-common,\
 	io.reactivex.rxjava2.rxjava,\
-	in.bytehue.messaging.mqtt5.api,\
-	org.reactivestreams.reactive-streams,\
-    org.apache.commons.lang3,\
-	org.apache.felix.gogo.runtime
+	org.apache.servicemix.bundles.javax-inject,\
+	org.jctools.core,\
+	org.reactivestreams.reactive-streams
 
 -testpath                      : \
-    biz.aQute.launchpad,\
     assertj-core,\
+    biz.aQute.launchpad,\
     org.awaitility,\
     slf4j.api
 
--privatepackage                : \
-	in.bytehue.*,\
-	io.reactivex.*,\
-	org.reactivestreams.*,\
-	org.apache.commons.lang3.*,\
-	aQute.*
-
 -includepackage                : org.osgi.service.messaging.*
--includeresource.hivemq.res    : @${repo;com.hivemq:hivemq-mqtt-client-shaded}!/META-INF/*
+-includeresource.hivemq.res    : @${repo;com.hivemq.client.mqtt}!/META-INF/*
+-includeresource.nety.http     : @${repo;io.netty.codec-http}!/META-INF/native-image
+
+-privatepackage                : \
+	aQute.*,\
+	com.hivemq.client.*,\
+	dagger.*,\
+	in.bytehue.*,\
+	io.netty.*,\
+	io.reactivex.*,\
+	javax.inject.*,\
+	org.apache.commons.lang3.*,\
+	org.jctools.*,\
+	org.reactivestreams
 
 Export-Package                 : \
-	io.reactivex.*,\
-	com.hivemq.client.*,\
-	org.reactivestreams.*
+	com.hivemq.client.mqtt.datatypes,\
+	com.hivemq.client.mqtt.exceptions,\
+	com.hivemq.client.mqtt.lifecycle,\
+	com.hivemq.client.mqtt.mqtt5.*,\
+	com.hivemq.client.mqtt,\
+	com.hivemq.client.util
 
-Import-Package: \
-	com.hivemq.client.internal.shaded.io.netty.internal.tcnative;'resolution:'=optional,\
-	org.apache.felix.service.command;'resolution:'=optional,\
-	com.jcraft.jzlib;'resolution:'=optional,\
-	org.slf4j;'resolution:'=optional,\
-	org.slf4j.helpers;'resolution:'=optional,\
-	org.slf4j.spi;'resolution:'=optional,\
-	org.apache.log4j;'resolution:'=optional,\
-	org.apache.logging.log4j;'resolution:'=optional,\
-	org.apache.logging.log4j.message;'resolution:'=optional,\
-	org.apache.logging.log4j.spi;'resolution:'=optional,\
-	org.conscrypt;'resolution:'=optional,\
-	org.eclipse.jetty.alpn;'resolution:'=optional,\
-	org.eclipse.jetty.npn;'resolution:'=optional,\
+Import-Package                 : \
+	!com.google.protobuf,\
+	!com.google.protobuf.nano,\
+	!com.jcraft.jzlib,\
+	!com.ning.compress,\
+	!com.ning.compress.lzf,\
+	!com.ning.compress.lzf.util,\
+	!com.oracle.svm.core.annotate,\
+	!io.netty.internal.tcnative,\
+	!lzma.sdk,\
+	!lzma.sdk.lzma,\
+	!net.jpountz.lz4,\
+	!net.jpountz.xxhash,\
+	!org.apache.commons.logging,\
+	!org.apache.felix.service.command,\
+	!org.apache.log4j,\
+	!org.apache.logging.log4j,\
+	!org.apache.logging.log4j.message,\
+	!org.apache.logging.log4j.spi,\
+	!org.bouncycastle.asn1.x500,\
+	!org.bouncycastle.cert,\
+	!org.bouncycastle.cert.jcajce,\
+	!org.bouncycastle.jce.provider,\
+	!org.bouncycastle.operator,\
+	!org.bouncycastle.operator.jcajce,\
+	!org.conscrypt,\
+	!org.eclipse.jetty.alpn,\
+	!org.eclipse.jetty.npn,\
+	!org.jboss.marshalling,\
+	!reactor.blockhound,\
+	!reactor.blockhound.integration,\
+	!sun.security.ssl,\
+	!sun.security.x509,\
 	*

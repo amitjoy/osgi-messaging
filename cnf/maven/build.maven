@@ -19,8 +19,23 @@ org.osgi:osgi.enroute.junit.wrapper:4.12.0
 
 # HiveMQ Dependencies
 
-com.hivemq:hivemq-mqtt-client-shaded:1.2.1
+com.google.dagger:dagger:2.30.1
+com.hivemq:hivemq-mqtt-client:1.2.1
+io.netty:netty-buffer:4.1.54.Final
+io.netty:netty-codec-http:4.1.54.Final
+io.netty:netty-codec-mqtt:4.1.54.Final
+io.netty:netty-codec-socks:4.1.54.Final
+io.netty:netty-codec:4.1.54.Final
+io.netty:netty-common:4.1.54.Final
+io.netty:netty-handler-proxy:4.1.54.Final
+io.netty:netty-handler:4.1.54.Final
+io.netty:netty-resolver:4.1.54.Final
+io.netty:netty-transport-native-epoll:4.1.54.Final
+io.netty:netty-transport-native-unix-common:4.1.54.Final
+io.netty:netty-transport:4.1.54.Final
 io.reactivex.rxjava2:rxjava:2.2.5
+org.apache.servicemix.bundles:org.apache.servicemix.bundles.javax-inject:1_3
+org.jctools:jctools-core:2.1.2
 org.reactivestreams:reactive-streams:1.0.2
 
 # Test Dependencies
