@@ -22,7 +22,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.awaitility.core.ConditionTimeoutException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.service.messaging.Message;
@@ -115,11 +114,8 @@ public final class MessageReplyToManyHandlerTest {
         waitForRequestProcessing(flag2);
     }
 
-    @Test(expected = ConditionTimeoutException.class)
+    @Test
     public void test_reply_to_many_subscription_handler_without_protocol_name_in_target_key() throws Exception {
-        final AtomicBoolean flag1 = new AtomicBoolean();
-        final AtomicBoolean flag2 = new AtomicBoolean();
-
         final String channel = "a/b";
         final String replyToChannel = "c/d";
         final String payload = "abc";
@@ -134,12 +130,12 @@ public final class MessageReplyToManyHandlerTest {
             new Thread(() -> {
                 while (true) {
                     source.publish(message);
-                    flag1.set(true);
                     try {
                         TimeUnit.MILLISECONDS.sleep(800);
                     } catch (final InterruptedException e) {
                         e.printStackTrace();
                     }
+                    throw new AssertionError("Will never be executed");
                 }
             }).start();
             source.endOfStream();
@@ -166,20 +162,15 @@ public final class MessageReplyToManyHandlerTest {
 
         subscriber.subscribe(replyToChannel).forEach(m -> {
             if (responsePyload.equals(new String(m.payload().array(), StandardCharsets.UTF_8))) {
-                flag2.set(true);
+                throw new AssertionError("Will never be executed");
             }
         });
 
         publisher.publish(message);
-        waitForRequestProcessing(flag1);
-        waitForRequestProcessing(flag2);
     }
 
-    @Test(expected = ConditionTimeoutException.class)
+    @Test
     public void test_reply_to_many_subscription_handler_without_messaging_name_in_target_key() throws Exception {
-        final AtomicBoolean flag1 = new AtomicBoolean();
-        final AtomicBoolean flag2 = new AtomicBoolean();
-
         final String channel = "a/b";
         final String replyToChannel = "c/d";
         final String payload = "abc";
@@ -194,12 +185,12 @@ public final class MessageReplyToManyHandlerTest {
             new Thread(() -> {
                 while (true) {
                     source.publish(message);
-                    flag1.set(true);
                     try {
                         TimeUnit.MILLISECONDS.sleep(800);
                     } catch (final InterruptedException e) {
                         e.printStackTrace();
                     }
+                    throw new AssertionError("Will never be executed");
                 }
             }).start();
             source.endOfStream();
@@ -226,20 +217,15 @@ public final class MessageReplyToManyHandlerTest {
 
         subscriber.subscribe(replyToChannel).forEach(m -> {
             if (responsePyload.equals(new String(m.payload().array(), StandardCharsets.UTF_8))) {
-                flag2.set(true);
+                throw new AssertionError("Will never be executed");
             }
         });
 
         publisher.publish(message);
-        waitForRequestProcessing(flag1);
-        waitForRequestProcessing(flag2);
     }
 
-    @Test(expected = ConditionTimeoutException.class)
+    @Test
     public void test_reply_to_many_subscription_handler_without_feature_in_target_key() throws Exception {
-        final AtomicBoolean flag1 = new AtomicBoolean();
-        final AtomicBoolean flag2 = new AtomicBoolean();
-
         final String channel = "a/b";
         final String replyToChannel = "c/d";
         final String payload = "abc";
@@ -254,12 +240,12 @@ public final class MessageReplyToManyHandlerTest {
             new Thread(() -> {
                 while (true) {
                     source.publish(message);
-                    flag1.set(true);
                     try {
                         TimeUnit.MILLISECONDS.sleep(800);
                     } catch (final InterruptedException e) {
                         e.printStackTrace();
                     }
+                    throw new AssertionError("Will never be executed");
                 }
             }).start();
             source.endOfStream();
@@ -286,20 +272,15 @@ public final class MessageReplyToManyHandlerTest {
 
         subscriber.subscribe(replyToChannel).forEach(m -> {
             if (responsePyload.equals(new String(m.payload().array(), StandardCharsets.UTF_8))) {
-                flag2.set(true);
+                throw new AssertionError("Will never be executed");
             }
         });
 
         publisher.publish(message);
-        waitForRequestProcessing(flag1);
-        waitForRequestProcessing(flag2);
     }
 
-    @Test(expected = ConditionTimeoutException.class)
+    @Test
     public void test_reply_to_many_subscription_handler_with_different_feature_in_target_key() throws Exception {
-        final AtomicBoolean flag1 = new AtomicBoolean();
-        final AtomicBoolean flag2 = new AtomicBoolean();
-
         final String channel = "a/b";
         final String replyToChannel = "c/d";
         final String payload = "abc";
@@ -314,12 +295,12 @@ public final class MessageReplyToManyHandlerTest {
             new Thread(() -> {
                 while (true) {
                     source.publish(message);
-                    flag1.set(true);
                     try {
                         TimeUnit.MILLISECONDS.sleep(800);
                     } catch (final InterruptedException e) {
                         e.printStackTrace();
                     }
+                    throw new AssertionError("Will never be executed");
                 }
             }).start();
             source.endOfStream();
@@ -346,20 +327,15 @@ public final class MessageReplyToManyHandlerTest {
 
         subscriber.subscribe(replyToChannel).forEach(m -> {
             if (responsePyload.equals(new String(m.payload().array(), StandardCharsets.UTF_8))) {
-                flag2.set(true);
+                throw new AssertionError("Will never be executed");
             }
         });
 
         publisher.publish(message);
-        waitForRequestProcessing(flag1);
-        waitForRequestProcessing(flag2);
     }
 
-    @Test(expected = ConditionTimeoutException.class)
+    @Test
     public void test_reply_to_many_subscription_handler_with_different_messaging_name_in_target_key() throws Exception {
-        final AtomicBoolean flag1 = new AtomicBoolean();
-        final AtomicBoolean flag2 = new AtomicBoolean();
-
         final String channel = "a/b";
         final String replyToChannel = "c/d";
         final String payload = "abc";
@@ -374,12 +350,12 @@ public final class MessageReplyToManyHandlerTest {
             new Thread(() -> {
                 while (true) {
                     source.publish(message);
-                    flag1.set(true);
                     try {
                         TimeUnit.MILLISECONDS.sleep(800);
                     } catch (final InterruptedException e) {
                         e.printStackTrace();
                     }
+                    throw new AssertionError("Will never be executed");
                 }
             }).start();
             source.endOfStream();
@@ -406,20 +382,15 @@ public final class MessageReplyToManyHandlerTest {
 
         subscriber.subscribe(replyToChannel).forEach(m -> {
             if (responsePyload.equals(new String(m.payload().array(), StandardCharsets.UTF_8))) {
-                flag2.set(true);
+                throw new AssertionError("Will never be executed");
             }
         });
 
         publisher.publish(message);
-        waitForRequestProcessing(flag1);
-        waitForRequestProcessing(flag2);
     }
 
-    @Test(expected = ConditionTimeoutException.class)
+    @Test
     public void test_reply_to_many_subscription_handler_with_different_protocol_in_target_key() throws Exception {
-        final AtomicBoolean flag1 = new AtomicBoolean();
-        final AtomicBoolean flag2 = new AtomicBoolean();
-
         final String channel = "a/b";
         final String replyToChannel = "c/d";
         final String payload = "abc";
@@ -434,12 +405,12 @@ public final class MessageReplyToManyHandlerTest {
             new Thread(() -> {
                 while (true) {
                     source.publish(message);
-                    flag1.set(true);
                     try {
                         TimeUnit.MILLISECONDS.sleep(800);
                     } catch (final InterruptedException e) {
                         e.printStackTrace();
                     }
+                    throw new AssertionError("Will never be executed");
                 }
             }).start();
             source.endOfStream();
@@ -466,20 +437,15 @@ public final class MessageReplyToManyHandlerTest {
 
         subscriber.subscribe(replyToChannel).forEach(m -> {
             if (responsePyload.equals(new String(m.payload().array(), StandardCharsets.UTF_8))) {
-                flag2.set(true);
+                throw new AssertionError("Will never be executed");
             }
         });
 
         publisher.publish(message);
-        waitForRequestProcessing(flag1);
-        waitForRequestProcessing(flag2);
     }
 
-    @Test(expected = ConditionTimeoutException.class)
+    @Test
     public void test_reply_to_many_subscription_handler_without_target_key() throws Exception {
-        final AtomicBoolean flag1 = new AtomicBoolean();
-        final AtomicBoolean flag2 = new AtomicBoolean();
-
         final String channel = "a/b";
         final String replyToChannel = "c/d";
         final String payload = "abc";
@@ -494,12 +460,12 @@ public final class MessageReplyToManyHandlerTest {
             new Thread(() -> {
                 while (true) {
                     source.publish(message);
-                    flag1.set(true);
                     try {
                         TimeUnit.MILLISECONDS.sleep(800);
                     } catch (final InterruptedException e) {
                         e.printStackTrace();
                     }
+                    throw new AssertionError("Will never be executed");
                 }
             }).start();
             source.endOfStream();
@@ -523,20 +489,15 @@ public final class MessageReplyToManyHandlerTest {
 
         subscriber.subscribe(replyToChannel).forEach(m -> {
             if (responsePyload.equals(new String(m.payload().array(), StandardCharsets.UTF_8))) {
-                flag2.set(true);
+                throw new AssertionError("Will never be executed");
             }
         });
 
         publisher.publish(message);
-        waitForRequestProcessing(flag1);
-        waitForRequestProcessing(flag2);
     }
 
-    @Test(expected = ConditionTimeoutException.class)
+    @Test
     public void test_reply_to_many_subscription_handler_without_channel_key() throws Exception {
-        final AtomicBoolean flag1 = new AtomicBoolean();
-        final AtomicBoolean flag2 = new AtomicBoolean();
-
         final String channel = "a/b";
         final String replyToChannel = "c/d";
         final String payload = "abc";
@@ -551,12 +512,12 @@ public final class MessageReplyToManyHandlerTest {
             new Thread(() -> {
                 while (true) {
                     source.publish(message);
-                    flag1.set(true);
                     try {
                         TimeUnit.MILLISECONDS.sleep(800);
                     } catch (final InterruptedException e) {
                         e.printStackTrace();
                     }
+                    throw new AssertionError("Will never be executed");
                 }
             }).start();
             source.endOfStream();
@@ -580,20 +541,15 @@ public final class MessageReplyToManyHandlerTest {
 
         subscriber.subscribe(replyToChannel).forEach(m -> {
             if (responsePyload.equals(new String(m.payload().array(), StandardCharsets.UTF_8))) {
-                flag2.set(true);
+                throw new AssertionError("Will never be executed");
             }
         });
 
         publisher.publish(message);
-        waitForRequestProcessing(flag1);
-        waitForRequestProcessing(flag2);
     }
 
-    @Test(expected = ConditionTimeoutException.class)
+    @Test
     public void test_reply_to_many_subscription_handler_without_reply_to_channel_key() throws Exception {
-        final AtomicBoolean flag1 = new AtomicBoolean();
-        final AtomicBoolean flag2 = new AtomicBoolean();
-
         final String channel = "a/b";
         final String replyToChannel = "c/d";
         final String payload = "abc";
@@ -608,12 +564,12 @@ public final class MessageReplyToManyHandlerTest {
             new Thread(() -> {
                 while (true) {
                     source.publish(message);
-                    flag1.set(true);
                     try {
                         TimeUnit.MILLISECONDS.sleep(800);
                     } catch (final InterruptedException e) {
                         e.printStackTrace();
                     }
+                    throw new AssertionError("Will never be executed");
                 }
             }).start();
             source.endOfStream();
@@ -637,13 +593,11 @@ public final class MessageReplyToManyHandlerTest {
 
         subscriber.subscribe(replyToChannel).forEach(m -> {
             if (responsePyload.equals(new String(m.payload().array(), StandardCharsets.UTF_8))) {
-                flag2.set(true);
+                throw new AssertionError("Will never be executed");
             }
         });
 
         publisher.publish(message);
-        waitForRequestProcessing(flag1);
-        waitForRequestProcessing(flag2);
     }
 
 }
