@@ -370,11 +370,10 @@ public final class MessageSubPubWithAcknowledgeTest {
     }
 
     @Test
-    public void test_handle_acknowledge_order_of_execution() throws Exception {
+    public void test_handle_acknowledge_order_of_execution_1() throws Exception {
         final AtomicBoolean flag1 = new AtomicBoolean();
         final AtomicBoolean flag2 = new AtomicBoolean();
         final AtomicBoolean flag3 = new AtomicBoolean();
-        final AtomicBoolean flag4 = new AtomicBoolean();
 
         final String channel = "a/b";
         final String payload = "abc";
@@ -382,13 +381,11 @@ public final class MessageSubPubWithAcknowledgeTest {
 
         final Predicate<Message> acknowledgeFilter = m -> flag1.compareAndSet(false, true);
         final Consumer<Message> acknowledgeHandler = m -> {
-            if (flag1.get()) {
-                flag2.set(true);
-            }
+            throw new AssertionError("Will not be called since filter is set");
         };
         final Consumer<Message> postAcknowledgeConsumer = m -> {
-            if (flag2.get()) {
-                flag3.set(true);
+            if (flag1.get()) {
+                flag2.set(true);
             }
         };
         // @formatter:off
@@ -404,14 +401,50 @@ public final class MessageSubPubWithAcknowledgeTest {
 
         final MessageContext context = message.getContext();
         subscriber.subscribe(context).forEach(m -> {
-            flag4.set(true);
+            flag3.set(true);
         });
         publisher.publish(message);
 
         waitForRequestProcessing(flag1);
         waitForRequestProcessing(flag2);
         waitForRequestProcessing(flag3);
-        waitForRequestProcessing(flag4);
+    }
+
+    @Test
+    public void test_handle_acknowledge_order_of_execution_2() throws Exception {
+        final AtomicBoolean flag1 = new AtomicBoolean();
+        final AtomicBoolean flag2 = new AtomicBoolean();
+        final AtomicBoolean flag3 = new AtomicBoolean();
+
+        final String channel = "a/b";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        final Consumer<Message> acknowledgeHandler = m -> flag1.compareAndSet(false, true);
+        final Consumer<Message> postAcknowledgeConsumer = m -> {
+            if (flag1.get()) {
+                flag2.set(true);
+            }
+        };
+        // @formatter:off
+        final Message message = amcb.handleAcknowledge(acknowledgeHandler)
+                                    .postAcknowledge(postAcknowledgeConsumer)
+                                    .messageContextBuilder()
+                                    .channel(channel)
+                                    .contentType(contentType)
+                                    .content(ByteBuffer.wrap(payload.getBytes()))
+                                    .buildMessage();
+        // @formatter:on
+
+        final MessageContext context = message.getContext();
+        subscriber.subscribe(context).forEach(m -> {
+            flag3.set(true);
+        });
+        publisher.publish(message);
+
+        waitForRequestProcessing(flag1);
+        waitForRequestProcessing(flag2);
+        waitForRequestProcessing(flag3);
     }
 
 }
