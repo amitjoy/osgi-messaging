@@ -203,7 +203,7 @@ public final class MessageHelper {
     }
 
     // @formatter:off
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings("unchecked")
     public static void acknowledgeMessage(
             final Message message,
             final MessageContextProvider ctx,
@@ -218,33 +218,28 @@ public final class MessageHelper {
         final String targetFilter = ackFilter.getLeft();
         final Predicate<Message> filter = ackFilter.getRight();
 
-        Optional<Predicate> finalFilter = Optional.empty();
+        Predicate<Message> effectiveFilter = filter;
 
         // first check if the target service filter is set
         if (targetFilter != null) {
-            finalFilter = getOptionalService(Predicate.class, targetFilter, context, logger);
+            // if the service is not found, use the concrete filter instance as 'Predicate'
+            effectiveFilter = getOptionalService(Predicate.class, targetFilter, context, logger).orElse(filter);
         }
-        // next check for the existence of filter as Predicate if no service is found that matches
-        // the specified service filter
-        if (!finalFilter.isPresent() && filter != null) {
-            finalFilter = Optional.of(filter);
-        }
+
         // next check if we have the final filter to execute
-        if (finalFilter.isPresent()) {
-            finalFilter.map(f -> f.test(message))
-                       .ifPresent(isAcknowledged -> {
-                           if (isAcknowledged) {
-                               // acknowledge the message if the filter returns true
-                               changeAcknowledgeState(message, ACKNOWLEDGED);
-                               // publish the message to the subscriber if acknowledged
-                               publishMessage(message, interimConsumer);
-                               // execute the post handler (if set) if the message is acknowledged
-                               invokePostAcknowledgeHandler(message, ctx, context, logger);
-                           } else {
-                               // if the filter returns false, reject the message
-                               changeAcknowledgeState(message, REJECTED);
-                           }
-                       });
+        if (effectiveFilter != null) {
+            final boolean isAcknowledged = effectiveFilter.test(message);
+            if (isAcknowledged) {
+                // acknowledge the message if the filter returns true
+                changeAcknowledgeState(message, ACKNOWLEDGED);
+                // publish the message to the downstream subscriber if acknowledged
+                publishMessage(message, interimConsumer);
+                // execute the post handler (if set) if the message is acknowledged
+                invokePostAcknowledgeHandler(message, ctx, context, logger);
+            } else {
+                // if the filter returns false, reject the message
+                changeAcknowledgeState(message, REJECTED);
+            }
         } else {
             // if we don't have any filter at all, execute the acknowledge handler if set
             invokeAcknowledgeHandler(message, ctx, context, logger);
@@ -282,7 +277,7 @@ public final class MessageHelper {
             // similarly here too
             handler.accept(message);
         } else {
-            // if the handler is also not provided, we acknowledge it anyhow
+            // if the handler is also not provided, we acknowledge the message anyway
             final MessageContextProvider ackContext = (MessageContextProvider) message.getContext();
             ackContext.acknowledgeState = ACKNOWLEDGED;
         }

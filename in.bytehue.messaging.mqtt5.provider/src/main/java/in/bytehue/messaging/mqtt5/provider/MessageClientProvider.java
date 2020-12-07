@@ -22,6 +22,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.osgi.service.metatype.annotations.AttributeType.PASSWORD;
 
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.net.ssl.TrustManagerFactory;
@@ -39,6 +40,7 @@ import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 import com.hivemq.client.internal.mqtt.message.publish.MqttWillPublish;
+import com.hivemq.client.mqtt.datatypes.MqttClientIdentifier;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.datatypes.MqttUtf8String;
 import com.hivemq.client.mqtt.lifecycle.MqttClientConnectedListener;
@@ -213,7 +215,7 @@ public final class MessageClientProvider {
 
         // @formatter:off
         clientBuilder = Mqtt5Client.builder()
-                                   .identifier(clientId)
+                                   .identifier(MqttClientIdentifier.of(clientId))
                                    .serverHost(config.server())
                                    .serverPort(config.port());
         client = clientBuilder.buildAsync();
@@ -239,7 +241,7 @@ public final class MessageClientProvider {
         // previous session is stored to not remove any previous subscriptions
         client.disconnectWith()
                   .reasonCode(NORMAL_DISCONNECTION)
-                  .reasonString("Last will updated dynamically using publish request message")
+                  .reasonString("Updated Last will and Testament (LWT) dynamically using publish request message")
                   .sessionExpiryInterval(SESSION_EXPIRY_ON_LAST_WILL_UPDATE_DISCONNECT)
               .send()
               .thenAccept(v -> {
@@ -295,23 +297,24 @@ public final class MessageClientProvider {
         }
         if (!config.connectedListenerFilter().isEmpty()) {
             logger.debug("Applying Connected Listener configuration");
-            clientBuilder.addConnectedListener(
+            final Optional<MqttClientConnectedListener> listener =
                     getOptionalService(
                             MqttClientConnectedListener.class,
                             config.connectedListenerFilter(),
                             bundleContext,
-                            logger).orElse(null));
+                            logger);
+            listener.ifPresent(clientBuilder::addConnectedListener);
         }
         if (!config.disconnectedListenerFilter().isEmpty()) {
             logger.debug("Applying Disconnected Listener configuration");
-            clientBuilder.addDisconnectedListener(
+            final Optional<MqttClientDisconnectedListener> listener =
                     getOptionalService(
                             MqttClientDisconnectedListener.class,
                             config.disconnectedListenerFilter(),
                             bundleContext,
-                            logger).orElse(null));
+                            logger);
+            listener.ifPresent(clientBuilder::addDisconnectedListener);
         }
-
         if (!config.qos1IncomingInterceptorFilter().isEmpty()) {
             logger.debug("Applying Incoming and Outgoing Interceptors' configuration");
             advancedConfig.interceptors()
