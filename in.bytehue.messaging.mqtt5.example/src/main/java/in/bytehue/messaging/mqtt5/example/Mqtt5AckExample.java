@@ -130,4 +130,31 @@ public final class Mqtt5AckExample {
         }
     }
 
+    public void subscribeMessage6() {
+        final AcknowledgeMessageContextBuilder ackBuilder = amcbFactory.getService();
+        try {
+            final MessageContext context = ackBuilder
+                    .handleAcknowledge(m -> {
+                        final AcknowledgeHandler h = ((AcknowledgeMessageContext) m.getContext()).getAcknowledgeHandler();
+                        if (isGoodMessage(m)) {
+                            h.acknowledge();
+                        } else {
+                            h.reject();
+                        }
+                    })
+                    .postAcknowledge("(myConsumer=true)")
+                    .messageContextBuilder()
+                    .channel("sample-topic")
+                    .buildContext();
+            mqttSubscription.subscribe(context);
+        } finally {
+            amcbFactory.ungetService(ackBuilder);
+        }
+    }
+
+    private boolean isGoodMessage(final Message message) {
+        // your own condition
+        return true;
+    }
+
 }
