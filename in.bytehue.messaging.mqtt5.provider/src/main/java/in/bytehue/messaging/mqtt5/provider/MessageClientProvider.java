@@ -78,7 +78,7 @@ public final class MessageClientProvider {
         String server() default "broker.hivemq.com";
 
         @AttributeDefinition(name = "Automatic Reconnection")
-        boolean automticReconnect() default false;
+        boolean automaticReconnect() default false;
 
         @AttributeDefinition(name = "Resume Previously Established Session")
         boolean cleanStart() default false;
@@ -253,7 +253,7 @@ public final class MessageClientProvider {
     private void connect() {
         final Nested<? extends Mqtt5ClientBuilder> advancedConfig = clientBuilder.advancedConfig();
 
-        if (config.automticReconnect()) {
+        if (config.automaticReconnect()) {
             logger.debug("Applying automatic reconnect configuration");
             clientBuilder.automaticReconnect()
                              .initialDelay(config.initialDelay(), SECONDS)

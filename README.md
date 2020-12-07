@@ -81,7 +81,7 @@ The `in.bytehue.messaging.client` can be used to configure the client.
 * `id` - Client Identifier (optional) (default: empty string) - if empty, `in.bytehue.client.id` framework property is checked and if unavailable, a random identifier will be generated.
 * `server` - Server Address (optional) (default: `broker.hivemq.com`)
 * `port` - Server Port (optional) (default: `1883`)
-* `automticReconnect` - Automatic Reconnection (optional) (default: `false`)
+* `automaticReconnect` - Automatic Reconnection (optional) (default: `false`)
 * `cleanStart` - Resume Previously Established Session (optional) (default: `false`)
 * `initialDelay` - Initial Delay if Automatic Reconnection is enabled (optional) (default: `1` second)
 * `maxDelay` - Max Delay if Automatic Reconnection is enabled (optional) (default: `30` seconds)
