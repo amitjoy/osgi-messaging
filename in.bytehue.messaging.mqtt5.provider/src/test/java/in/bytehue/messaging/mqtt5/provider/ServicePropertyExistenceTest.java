@@ -41,11 +41,9 @@ import java.util.Optional;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.framework.ServiceReference;
-import org.osgi.service.messaging.Features;
 import org.osgi.service.messaging.MessageContextBuilder;
 import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.MessageSubscription;
-import org.osgi.service.messaging.acknowledge.AcknowledgeHandler;
 import org.osgi.service.messaging.replyto.ReplyToPublisher;
 import org.osgi.service.messaging.runtime.MessageServiceRuntime;
 
@@ -62,35 +60,6 @@ public final class ServicePropertyExistenceTest {
     private Launchpad launchpad;
 
     static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
-
-    @Test
-    public void test_acknowledge_handler() {
-        final String propertyKey1 = "osgi.messaging.name";
-        final String propertyKey2 = "osgi.messaging.protocol";
-        final String propertyKey3 = "osgi.messaging.feature";
-
-        final String propertyValue1 = MqttMessageConstants.MESSAGING_ID;
-        final String propertyValue2 = MqttMessageConstants.MESSAGING_PROTOCOL;
-        final String propertyValue3 = Features.ACKNOWLEDGE;
-
-        // @formatter:off
-        final Optional<ServiceReference<AcknowledgeHandler>> ref =
-                launchpad.waitForServiceReference(AcknowledgeHandler.class, 10_000L);
-        // @formatter:on
-
-        if (ref.isPresent()) {
-            final Dictionary<String, Object> properties = ref.get().getProperties();
-
-            final Map<String, Object> check = new HashMap<>();
-            check.put(propertyKey1, propertyValue1);
-            check.put(propertyKey2, new String[] { propertyValue2 });
-            check.put(propertyKey3, new String[] { propertyValue3 });
-
-            assertThat(TestHelper.toMap(properties)).containsAllEntriesOf(check);
-            return;
-        }
-        throw new AssertionError("Will never reach");
-    }
 
     @Test
     public void test_message_context_builder() {
