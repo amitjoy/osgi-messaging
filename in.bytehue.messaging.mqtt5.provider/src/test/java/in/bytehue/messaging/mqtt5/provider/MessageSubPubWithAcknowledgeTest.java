@@ -303,7 +303,7 @@ public final class MessageSubPubWithAcknowledgeTest {
             final String topic = m.getContext().getChannel();
             final String ctype = m.getContext().getContentType();
             final String content = new String(m.payload().array(), UTF_8);
-            final AcknowledgeType acknowledgeState = ((AcknowledgeMessageContext) context).getAcknowledgeState();
+            final AcknowledgeType acknowledgeState = ((AcknowledgeMessageContext) m.getContext()).getAcknowledgeState();
 
             assertThat(channel).isEqualTo(topic);
             assertThat(payload).isEqualTo(content);
@@ -336,13 +336,12 @@ public final class MessageSubPubWithAcknowledgeTest {
 
         final MessageContext context = message.getContext();
         subscriber.subscribe(context).forEach(m -> {
-            throw new AssertionError("This will never be called");
+            final AcknowledgeType acknowledgeState = ((AcknowledgeMessageContext) context).getAcknowledgeState();
+            assertThat(acknowledgeState).isEqualTo(REJECTED);
         });
         publisher.publish(message);
 
         waitForRequestProcessing(flag);
-        final AcknowledgeType acknowledgeState = ((AcknowledgeMessageContext) context).getAcknowledgeState();
-        assertThat(acknowledgeState).isEqualTo(REJECTED);
     }
 
     @Test
@@ -400,6 +399,107 @@ public final class MessageSubPubWithAcknowledgeTest {
         });
         publisher.publish(message);
 
+        waitForRequestProcessing(flag);
+    }
+
+    @Test
+    public void test_handle_acknowledge_with_filter_but_handler() throws Exception {
+        final AtomicBoolean flag1 = new AtomicBoolean();
+        final AtomicBoolean flag2 = new AtomicBoolean();
+
+        final String channel = "a/b";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        // @formatter:off
+        final Message message = amcb.filterAcknowledge(m -> flag1.compareAndSet(false, true))
+                .messageContextBuilder()
+                .channel(channel)
+                .contentType(contentType)
+                .content(ByteBuffer.wrap(payload.getBytes()))
+                .buildMessage();
+        // @formatter:on
+
+        final MessageContext context = message.getContext();
+        subscriber.subscribe(context).forEach(m -> {
+            flag2.set(true);
+            final AcknowledgeType acknowledgeState = ((AcknowledgeMessageContext) m.getContext()).getAcknowledgeState();
+            assertThat(acknowledgeState).isEqualTo(ACKNOWLEDGED);
+        });
+        publisher.publish(message);
+
+        waitForRequestProcessing(flag1);
+        waitForRequestProcessing(flag2);
+    }
+
+    @Test
+    public void test_handle_acknowledge_with_filter_and_handler() throws Exception {
+        final AtomicBoolean flag1 = new AtomicBoolean();
+        final AtomicBoolean flag2 = new AtomicBoolean();
+
+        final String channel = "a/b";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        // @formatter:off
+        final Message message = amcb.filterAcknowledge(m -> flag1.compareAndSet(false, true))
+                .handleAcknowledge(m -> {
+                    throw new AssertionError("Will never be executed");
+                })
+                .messageContextBuilder()
+                .channel(channel)
+                .contentType(contentType)
+                .content(ByteBuffer.wrap(payload.getBytes()))
+                .buildMessage();
+        // @formatter:on
+
+        final MessageContext context = message.getContext();
+        subscriber.subscribe(context).forEach(m -> {
+            flag2.set(true);
+            final AcknowledgeType acknowledgeState = ((AcknowledgeMessageContext) m.getContext()).getAcknowledgeState();
+            assertThat(acknowledgeState).isEqualTo(ACKNOWLEDGED);
+        });
+        publisher.publish(message);
+
+        waitForRequestProcessing(flag1);
+        waitForRequestProcessing(flag2);
+    }
+
+    @Test
+    public void test_handle_acknowledge_when_user_tried_to_acknowledge_message_when_already_rejected()
+            throws Exception {
+        final AtomicBoolean flag = new AtomicBoolean();
+
+        final String channel = "a/b";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        // @formatter:off
+        final Message message = amcb
+                .handleAcknowledge(m -> {
+                    final AcknowledgeHandler h = ((AcknowledgeMessageContext) m.getContext()).getAcknowledgeHandler();
+                    assertThat(h.reject()).isTrue();
+                    flag.compareAndSet(false, true);
+                })
+                .postAcknowledge(m -> {
+                    final AcknowledgeHandler h = ((AcknowledgeMessageContext) m.getContext()).getAcknowledgeHandler();
+                    assertThat(h.acknowledge()).isFalse();
+                })
+                .messageContextBuilder()
+                .channel(channel)
+                .contentType(contentType)
+                .content(ByteBuffer.wrap(payload.getBytes()))
+                .buildMessage();
+        // @formatter:on
+
+        final MessageContext context = message.getContext();
+        subscriber.subscribe(context).forEach(m -> {
+            final AcknowledgeMessageContext ctx = (AcknowledgeMessageContext) m.getContext();
+            assertThat(ctx.getAcknowledgeState()).isEqualTo(REJECTED);
+        });
+        publisher.publish(message);
+
+        waitForRequestProcessing(flag);
         waitForRequestProcessing(flag);
     }
 

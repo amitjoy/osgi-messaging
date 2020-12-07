@@ -54,6 +54,7 @@ import org.osgi.service.log.Logger;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageContextBuilder;
+import org.osgi.service.messaging.acknowledge.AcknowledgeType;
 import org.osgi.util.converter.Converter;
 import org.osgi.util.converter.TypeReference;
 
@@ -234,13 +235,13 @@ public final class MessageHelper {
                        .ifPresent(isAcknowledged -> {
                            if (isAcknowledged) {
                                // acknowledge the message if the filter returns true
-                               ctx.acknowledgeState = ACKNOWLEDGED;
+                               changeAcknowledgeState(message, ACKNOWLEDGED);
                                interimConsumer.accept(message);
                                // execute the post handler (if set) if the message is acknowledged
                                invokePostAcknowledgeHandler(message, ctx, context, logger);
                            } else {
                                // if the filter returns false, reject the message
-                               ctx.acknowledgeState = REJECTED;
+                               changeAcknowledgeState(message, REJECTED);
                            }
                        });
         } else {
@@ -250,6 +251,11 @@ public final class MessageHelper {
             // then execute the post acknowledge handler if set
             invokePostAcknowledgeHandler(message, ctx, context, logger);
         }
+    }
+
+    private static void changeAcknowledgeState(final Message message, final AcknowledgeType type) {
+        final MessageContextProvider context = (MessageContextProvider) message.getContext();
+        context.acknowledgeState = type;
     }
 
     @SuppressWarnings("unchecked")
