@@ -236,7 +236,8 @@ public final class MessageHelper {
                            if (isAcknowledged) {
                                // acknowledge the message if the filter returns true
                                changeAcknowledgeState(message, ACKNOWLEDGED);
-                               interimConsumer.accept(message);
+                               // publish the message to the subscriber if acknowledged
+                               publishMessage(message, interimConsumer);
                                // execute the post handler (if set) if the message is acknowledged
                                invokePostAcknowledgeHandler(message, ctx, context, logger);
                            } else {
@@ -247,10 +248,15 @@ public final class MessageHelper {
         } else {
             // if we don't have any filter at all, execute the acknowledge handler if set
             invokeAcknowledgeHandler(message, ctx, context, logger);
-            interimConsumer.accept(message);
+            // publish the message to the subscriber irrespective of the acknowledgement state
+            publishMessage(message, interimConsumer);
             // then execute the post acknowledge handler if set
             invokePostAcknowledgeHandler(message, ctx, context, logger);
         }
+    }
+
+    private static void publishMessage(final Message message, final Consumer<Message> interimConsumer) {
+        interimConsumer.accept(message);
     }
 
     private static void changeAcknowledgeState(final Message message, final AcknowledgeType type) {
