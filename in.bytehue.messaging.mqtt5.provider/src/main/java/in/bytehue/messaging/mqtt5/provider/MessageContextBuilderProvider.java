@@ -65,18 +65,12 @@ public final class MessageContextBuilderProvider
     private final MessageContextProvider messageContext;
 
     @Activate
-    public MessageContextBuilderProvider(
-            @Reference(service = LoggerFactory.class)
-            final Logger logger,
-            @Reference
-            final MessageAcknowledgeHandlerProvider acknowledgeHandler) {
-
+    public MessageContextBuilderProvider(@Reference(service = LoggerFactory.class) final Logger logger) {
         this.logger = logger;
         message = new MessageProvider();
         messageContext = new MessageContextProvider();
 
         message.messageContext = messageContext;
-        messageContext.protocolSpecificAcknowledgeHandler = acknowledgeHandler;
     }
     //@formatter:on
 

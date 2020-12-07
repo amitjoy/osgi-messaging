@@ -54,7 +54,6 @@ import org.osgi.service.log.Logger;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageContextBuilder;
-import org.osgi.service.messaging.acknowledge.AcknowledgeHandler;
 import org.osgi.util.converter.Converter;
 import org.osgi.util.converter.TypeReference;
 
@@ -204,61 +203,53 @@ public final class MessageHelper {
 
     // @formatter:off
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public static boolean acknowledgeMessage(
+    public static void acknowledgeMessage(
             final Message message,
             final MessageContextProvider ctx,
             final Consumer<Message> interimConsumer,
             final BundleContext context,
             final Logger logger) {
 
-        final AcknowledgeHandler protocolSpecificAcknowledgeHandler = ctx.protocolSpecificAcknowledgeHandler;
+        // message is received but not yet acknowledged
+        ctx.acknowledgeState = RECEIVED;
 
-        // first verify if the protocol specific handler is okay with the received message
-        if (protocolSpecificAcknowledgeHandler.acknowledge() || !protocolSpecificAcknowledgeHandler.reject()) {
-            // message is received but not yet acknowledged
-            ctx.acknowledgeState = RECEIVED;
+        final MutablePair<String, Predicate<Message>> ackFilter = ctx.acknowledgeFilter;
+        final String targetFilter = ackFilter.getLeft();
+        final Predicate<Message> filter = ackFilter.getRight();
 
-            final MutablePair<String, Predicate<Message>> ackFilter = ctx.acknowledgeFilter;
-            final String targetFilter = ackFilter.getLeft();
-            final Predicate<Message> filter = ackFilter.getRight();
+        Optional<Predicate> finalFilter = Optional.empty();
 
-            Optional<Predicate> finalFilter = Optional.empty();
-
-            // first check if the target service filter is set
-            if (targetFilter != null) {
-                finalFilter = getOptionalService(Predicate.class, targetFilter, context, logger);
-            }
-            // next check for the existence of filter as Predicate if no service is found that matches
-            // the specified service filter
-            if (!finalFilter.isPresent() && filter != null) {
-                finalFilter = Optional.of(filter);
-            }
-            // next check if we have the final filter to execute
-            if (finalFilter.isPresent()) {
-                finalFilter.map(f -> f.test(message))
-                           .ifPresent(isAcknowledged -> {
-                               if (isAcknowledged) {
-                                   // acknowledge the message if the filter returns true
-                                   ctx.acknowledgeState = ACKNOWLEDGED;
-                                   interimConsumer.accept(message);
-                                   // execute the post handler (if set) if the message is acknowledged
-                                   invokePostAcknowledgeHandler(message, ctx, context, logger);
-                               } else {
-                                   // if the filter returns false, reject the message
-                                   ctx.acknowledgeState = REJECTED;
-                               }
-                           });
-            } else {
-                // we don't have anything to do as filter is not set. Therefore, acknowledge the message.
-                ctx.acknowledgeState = ACKNOWLEDGED;
-                // if we don't have any filter at all, execute the acknowledge handler if set
-                invokeAcknowledgeHandler(message, ctx, context, logger);
-                interimConsumer.accept(message);
-                // then execute the post acknowledge handler if set
-                invokePostAcknowledgeHandler(message, ctx, context, logger);
-            }
+        // first check if the target service filter is set
+        if (targetFilter != null) {
+            finalFilter = getOptionalService(Predicate.class, targetFilter, context, logger);
         }
-        return ctx.acknowledgeState == ACKNOWLEDGED;
+        // next check for the existence of filter as Predicate if no service is found that matches
+        // the specified service filter
+        if (!finalFilter.isPresent() && filter != null) {
+            finalFilter = Optional.of(filter);
+        }
+        // next check if we have the final filter to execute
+        if (finalFilter.isPresent()) {
+            finalFilter.map(f -> f.test(message))
+                       .ifPresent(isAcknowledged -> {
+                           if (isAcknowledged) {
+                               // acknowledge the message if the filter returns true
+                               ctx.acknowledgeState = ACKNOWLEDGED;
+                               interimConsumer.accept(message);
+                               // execute the post handler (if set) if the message is acknowledged
+                               invokePostAcknowledgeHandler(message, ctx, context, logger);
+                           } else {
+                               // if the filter returns false, reject the message
+                               ctx.acknowledgeState = REJECTED;
+                           }
+                       });
+        } else {
+            // if we don't have any filter at all, execute the acknowledge handler if set
+            invokeAcknowledgeHandler(message, ctx, context, logger);
+            interimConsumer.accept(message);
+            // then execute the post acknowledge handler if set
+            invokePostAcknowledgeHandler(message, ctx, context, logger);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -273,10 +264,15 @@ public final class MessageHelper {
         final Consumer<Message> handler = ackConsumer.getRight();
 
         if (targetFilter != null) {
+            // simply execute the handler since the acknowledge state should be handled by the user
             getOptionalService(Consumer.class, targetFilter, context, logger).ifPresent(a -> a.accept(message));
-        }
-        if (handler != null) {
+        } else if (handler != null) {
+            // similarly here too
             handler.accept(message);
+        } else {
+            // if the handler is also not provided, we acknowledge it anyhow
+            final MessageContextProvider ackContext = (MessageContextProvider) message.getContext();
+            ackContext.acknowledgeState = ACKNOWLEDGED;
         }
     }
 

@@ -30,6 +30,7 @@ import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.toMessage
 import static java.util.Objects.requireNonNull;
 import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
 import static org.osgi.service.messaging.Features.EXTENSION_QOS;
+import static org.osgi.service.messaging.acknowledge.AcknowledgeType.ACKNOWLEDGED;
 
 import java.util.Arrays;
 import java.util.List;
@@ -47,6 +48,7 @@ import org.osgi.service.log.LoggerFactory;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageSubscription;
+import org.osgi.service.messaging.acknowledge.AcknowledgeMessageContext;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
 import org.osgi.util.converter.Converter;
 import org.osgi.util.converter.Converters;
@@ -164,12 +166,14 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
                                           final MessageContextBuilderProvider mcb = mcbFactory.getService();
                                           try {
                                               final Message message = toMessage(p, ctx, mcb);
-                                              if (acknowledgeMessage(
+                                              acknowledgeMessage(
                                                       message,
                                                       ctx,
                                                       source::publish,
                                                       bundleContext,
-                                                      logger)) {
+                                                      logger);
+                                              final AcknowledgeMessageContext ackCtx = (AcknowledgeMessageContext) message.getContext();
+                                              if (ackCtx.getAcknowledgeState() == ACKNOWLEDGED) {
                                                   p.acknowledge();
                                               }
                                           } catch (final Exception e) {

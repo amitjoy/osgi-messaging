@@ -15,6 +15,9 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
+import static org.osgi.service.messaging.acknowledge.AcknowledgeType.ACKNOWLEDGED;
+import static org.osgi.service.messaging.acknowledge.AcknowledgeType.REJECTED;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -37,7 +40,6 @@ public final class MessageContextProvider implements MessageContext, Acknowledge
 
     public AcknowledgeType acknowledgeState;
     public Map<String, Object> extensions = new HashMap<>();
-    public AcknowledgeHandler protocolSpecificAcknowledgeHandler;
 
     public final MutablePair<String, Predicate<Message>> acknowledgeFilter = MutablePair.of(null, null);
     public final MutablePair<String, Consumer<Message>> acknowledgeHandler = MutablePair.of(null, null);
@@ -80,7 +82,26 @@ public final class MessageContextProvider implements MessageContext, Acknowledge
 
     @Override
     public AcknowledgeHandler getAcknowledgeHandler() {
-        return protocolSpecificAcknowledgeHandler;
+        return new AcknowledgeHandler() {
+
+            @Override
+            public boolean reject() {
+                if (acknowledgeState == ACKNOWLEDGED) {
+                    return false;
+                }
+                acknowledgeState = REJECTED;
+                return true;
+            }
+
+            @Override
+            public boolean acknowledge() {
+                if (acknowledgeState == REJECTED) {
+                    return false;
+                }
+                acknowledgeState = ACKNOWLEDGED;
+                return true;
+            }
+        };
     }
 
     @Override

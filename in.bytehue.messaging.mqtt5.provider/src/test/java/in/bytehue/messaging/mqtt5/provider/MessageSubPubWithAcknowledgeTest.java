@@ -32,6 +32,7 @@ import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.MessageSubscription;
+import org.osgi.service.messaging.acknowledge.AcknowledgeHandler;
 import org.osgi.service.messaging.acknowledge.AcknowledgeMessageContext;
 import org.osgi.service.messaging.acknowledge.AcknowledgeMessageContextBuilder;
 import org.osgi.service.messaging.acknowledge.AcknowledgeType;
@@ -345,7 +346,7 @@ public final class MessageSubPubWithAcknowledgeTest {
     }
 
     @Test
-    public void test_handle_acknowledge_without_filter() throws Exception {
+    public void test_handle_acknowledge_without_filter_and_handler() throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 
         final String channel = "a/b";
@@ -361,12 +362,45 @@ public final class MessageSubPubWithAcknowledgeTest {
         // @formatter:on
 
         final MessageContext context = message.getContext();
-        subscriber.subscribe(context).forEach(m -> flag.set(true));
+        subscriber.subscribe(context).forEach(m -> {
+            flag.set(true);
+            final AcknowledgeType acknowledgeState = ((AcknowledgeMessageContext) m.getContext()).getAcknowledgeState();
+            assertThat(acknowledgeState).isEqualTo(ACKNOWLEDGED);
+        });
         publisher.publish(message);
 
         waitForRequestProcessing(flag);
-        final AcknowledgeType acknowledgeState = ((AcknowledgeMessageContext) context).getAcknowledgeState();
-        assertThat(acknowledgeState).isEqualTo(ACKNOWLEDGED);
+    }
+
+    @Test
+    public void test_handle_acknowledge_without_filter_but_handler() throws Exception {
+        final AtomicBoolean flag = new AtomicBoolean();
+
+        final String channel = "a/b";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        // @formatter:off
+        final Message message = amcb.handleAcknowledge(m -> {
+                                        final AcknowledgeHandler h = ((AcknowledgeMessageContext) m.getContext()).getAcknowledgeHandler();
+                                        h.acknowledge();
+                                    })
+                                    .messageContextBuilder()
+                                    .channel(channel)
+                                    .contentType(contentType)
+                                    .content(ByteBuffer.wrap(payload.getBytes()))
+                                    .buildMessage();
+        // @formatter:on
+
+        final MessageContext context = message.getContext();
+        subscriber.subscribe(context).forEach(m -> {
+            flag.set(true);
+            final AcknowledgeType acknowledgeState = ((AcknowledgeMessageContext) m.getContext()).getAcknowledgeState();
+            assertThat(acknowledgeState).isEqualTo(ACKNOWLEDGED);
+        });
+        publisher.publish(message);
+
+        waitForRequestProcessing(flag);
     }
 
     @Test
