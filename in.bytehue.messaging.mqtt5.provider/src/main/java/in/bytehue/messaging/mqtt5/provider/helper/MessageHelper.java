@@ -212,7 +212,7 @@ public final class MessageHelper {
             final Logger logger) {
 
         // message is received but not yet acknowledged
-        ctx.acknowledgeState = RECEIVED;
+        changeAcknowledgeState(message, RECEIVED);
 
         final MutablePair<String, Predicate<Message>> ackFilter = ctx.acknowledgeFilter;
         final String targetFilter = ackFilter.getLeft();

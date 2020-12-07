@@ -504,6 +504,43 @@ public final class MessageSubPubWithAcknowledgeTest {
     }
 
     @Test
+    public void test_handle_acknowledge_when_user_tried_to_reject_message_when_already_acknowledged() throws Exception {
+        final AtomicBoolean flag = new AtomicBoolean();
+
+        final String channel = "a/b";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        // @formatter:off
+        final Message message = amcb
+                .handleAcknowledge(m -> {
+                    final AcknowledgeHandler h = ((AcknowledgeMessageContext) m.getContext()).getAcknowledgeHandler();
+                    assertThat(h.acknowledge()).isTrue();
+                    flag.compareAndSet(false, true);
+                })
+                .postAcknowledge(m -> {
+                    final AcknowledgeHandler h = ((AcknowledgeMessageContext) m.getContext()).getAcknowledgeHandler();
+                    assertThat(h.reject()).isFalse();
+                })
+                .messageContextBuilder()
+                .channel(channel)
+                .contentType(contentType)
+                .content(ByteBuffer.wrap(payload.getBytes()))
+                .buildMessage();
+        // @formatter:on
+
+        final MessageContext context = message.getContext();
+        subscriber.subscribe(context).forEach(m -> {
+            final AcknowledgeMessageContext ctx = (AcknowledgeMessageContext) m.getContext();
+            assertThat(ctx.getAcknowledgeState()).isEqualTo(ACKNOWLEDGED);
+        });
+        publisher.publish(message);
+
+        waitForRequestProcessing(flag);
+        waitForRequestProcessing(flag);
+    }
+
+    @Test
     public void test_handle_acknowledge_order_of_execution_1() throws Exception {
         final AtomicBoolean flag1 = new AtomicBoolean();
         final AtomicBoolean flag2 = new AtomicBoolean();
