@@ -122,14 +122,13 @@ The `in.bytehue.messaging.client` PID can be used to configure the client. The c
 * `disconnectionReasonDescription` - Reason for the disconnection when the component is stopped (optional) (default: `OSGi Component Deactivated`)
 * `disconnectionReasonCode` - Code for the disconnection when the component is stopped (optional) (default: `NORMAL_DISCONNECTION`) (Refer to `com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode`)
 
-#### Primary APIs
+#### Primary Messaging APIs
 
 * `org.osgi.service.messaging.MessagePublisher` - service to publish to specific topic
 * `org.osgi.service.messaging.MessageSubscription` - service to subscribe to specific topic
 * `org.osgi.service.messaging.Message` - a message that is exchanged between subscriber and publisher
 * `org.osgi.service.messaging.MessageContext` - configuration for a specific message
 * `org.osgi.service.messaging.MessageContextBuilder` - service to prepare a specific message
-* `in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder` - extended service to prepare a specific MQTT message
 * `org.osgi.service.messaging.acknowledge.AcknowledgeMessageContext` - configuration denoting if a message has been acknowledged (this requires the implementation to support `acknowledge` feature)
 * `org.osgi.service.messaging.acknowledge.AcknowledgeMessageContextBuilder` - service to prepare a messaging configuration for acknowledgement
 * `org.osgi.service.messaging.replyto.ReplyToPublisher` - service to send a request for receiving a response
@@ -141,6 +140,13 @@ The `in.bytehue.messaging.client` PID can be used to configure the client. The c
 The included APIs also provide several helpful annotations for implementors as well as consumers. Refer to `org.osgi.service.messaging.propertytypes` and `org.osgi.service.messaging.annotations` packages.
 
 The OSGi messaging specification is catered to provide a unified solution to accomodate the trending messaging solutions such as AMQP, MQTT etc. That's why no generic API exists for MQTT. To fill in this gap, an implementation specific API exists in `in.bytehue.messaging.mqtt5.api`.
+
+#### Secondary Messaging APIs
+
+* `in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder` - an extended service of `org.osgi.service.messaging.MessageContextBuilder` that could be used to prepare MQTT v5 specific message context.
+* `in.bytehue.messaging.mqtt5.api.TargetCondition` - marker service interface which consumers can implement to provide services with properties that can be used as conditional target to the MQTT client. That means, consumer can provide filters that should be satisfied before MQTT client is up and running.
+
+#### Examples in Action
 
 
 * Simple Pub/Sub Example:
@@ -276,3 +282,33 @@ public final class Mqtt5AckExample {
 * Refer to the examples above.
 * Also note that, the `in.bytehue.messaging.mqtt5.provider` bundle packages the APIs and implementation together. This bundle also packages and exports the HiveMQ Java client APIs to perform enhanced configuration to the client.
 * For more details, have a look at the [example](https://github.com/amitjoy/osgi-messaging/tree/main/in.bytehue.messaging.mqtt5.example) project
+
+#### Target Condition Satisfiability for MQTT client
+
+In certain circumstances the MQTT client requires few services to be up and running before the client is connected to the broker. For example, you could provide the following services for the client to use before it connects to the server:
+
+* `javax.net.ssl.TrustManagerFactory`
+* `com.hivemq.client.mqtt.lifecycle.MqttClientConnectedListener`
+* `com.hivemq.client.mqtt.lifecycle.MqttClientDisconnectedListener`
+* `com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism`
+* `com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos1.Mqtt5IncomingQos1Interceptor`
+* `com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos2.Mqtt5IncomingQos2Interceptor`
+* `com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos1.Mqtt5OutgoingQos1Interceptor`
+* `com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos2.Mqtt5OutgoingQos2Interceptor`
+
+In such scenario, consumers can implement `in.bytehue.messaging.mqtt5.api.TargetCondition` marker API to provide services with properties that can be used as conditional target to the MQTT client (refer to `condition.target` property in `in.bytehue.messaging.client` configuration. That means, consumer can provide filters that should be satisfied before MQTT client is up and running.
+
+Assume we have a service R that represents a link to a remote service. For performance and reliability reasons, we require at least 3 of those services to be present before we can start the MQTT client. Additionally, these services must come from at least 2 different regions. For this reason, we define a property region that can take the values south, east, north, and west.
+
+You can, therefore, use this filter: `(&(#>=3)([unq]region>=2))`
+
+You can make use of the following extended calculated values:
+
+* `#key` - Calculates the number of key properties
+* `[avg]key` - Calculates the average of all key properties
+* `[min]key` - Calculates the minimum of all key properties
+* `[max]key` - Calculates the maximum of all key properties
+* `[sum]key` - Calculates the sum of all key properties
+* `[unq]key` - Calculates the number of unique key properties
+
+This will ensure that your services will be up and running before the client gets activated. This also guarantees that the start order of the bundles is not at all required in this scenario.
