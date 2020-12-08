@@ -166,7 +166,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
         }
     }
 
-    private class ReplyToDTO {
+    private static class ReplyToDTO {
         String pubChannel;
         String subChannel;
 

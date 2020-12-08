@@ -402,6 +402,9 @@ public final class MessageHelper {
     }
 
     public static String asString(final ByteBuffer buffer) {
+        if (buffer == null) {
+            return null;
+        }
         return new String(buffer.array(), UTF_8);
     }
 

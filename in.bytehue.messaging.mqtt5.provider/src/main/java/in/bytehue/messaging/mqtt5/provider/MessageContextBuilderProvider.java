@@ -23,6 +23,7 @@ import static org.osgi.service.messaging.Features.MESSAGE_CONTEXT_BUILDER;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -67,9 +68,9 @@ public final class MessageContextBuilderProvider
     @Activate
     public MessageContextBuilderProvider(@Reference(service = LoggerFactory.class) final Logger logger) {
         this.logger = logger;
+
         message = new MessageProvider();
         messageContext = new MessageContextProvider();
-
         message.messageContext = messageContext;
     }
     //@formatter:on
@@ -94,49 +95,37 @@ public final class MessageContextBuilderProvider
 
     @Override
     public MqttMessageContextBuilder content(final ByteBuffer byteBuffer) {
-        if (byteBuffer != null) {
-            message.byteBuffer = byteBuffer;
-        }
+        message.byteBuffer = byteBuffer;
         return this;
     }
 
     @Override
     public <T> MqttMessageContextBuilder content(final T object, final Function<T, ByteBuffer> contentMapper) {
-        if (object != null && contentMapper != null) {
-            message.byteBuffer = contentMapper.apply(object);
-        }
+        message.byteBuffer = Optional.ofNullable(contentMapper).map(c -> c.apply(object)).orElse(null);
         return this;
     }
 
     @Override
     public MqttMessageContextBuilder replyTo(final String replyToAddress) {
-        if (replyToAddress != null) {
-            messageContext.replyToChannel = replyToAddress;
-        }
+        messageContext.replyToChannel = replyToAddress;
         return this;
     }
 
     @Override
     public MqttMessageContextBuilder correlationId(final String correlationId) {
-        if (correlationId != null) {
-            messageContext.correlationId = correlationId;
-        }
+        messageContext.correlationId = correlationId;
         return this;
     }
 
     @Override
     public MqttMessageContextBuilder contentEncoding(final String contentEncoding) {
-        if (contentEncoding != null) {
-            messageContext.contentEncoding = contentEncoding;
-        }
+        messageContext.contentEncoding = contentEncoding;
         return this;
     }
 
     @Override
     public MqttMessageContextBuilder contentType(final String contentType) {
-        if (contentType != null) {
-            messageContext.contentType = contentType;
-        }
+        messageContext.contentType = contentType;
         return this;
     }
 
@@ -150,9 +139,7 @@ public final class MessageContextBuilderProvider
 
     @Override
     public MqttMessageContextBuilder channel(final String channelName) {
-        if (channelName != null) {
-            messageContext.channel = channelName;
-        }
+        messageContext.channel = channelName;
         return this;
     }
 
@@ -165,9 +152,9 @@ public final class MessageContextBuilderProvider
     }
 
     @Override
-    public MqttMessageContextBuilder extensions(final Map<String, Object> extension) {
-        if (extension != null) {
-            messageContext.extensions.putAll(extension);
+    public MqttMessageContextBuilder extensions(final Map<String, Object> extensions) {
+        if (extensions != null) {
+            messageContext.extensions.putAll(extensions);
         }
         return this;
     }
