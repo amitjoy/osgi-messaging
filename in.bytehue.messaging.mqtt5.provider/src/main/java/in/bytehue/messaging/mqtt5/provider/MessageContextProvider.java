@@ -38,7 +38,7 @@ public final class MessageContextProvider implements MessageContext, Acknowledge
     public String correlationId;
     public String replyToChannel;
 
-    public AcknowledgeType acknowledgeState;
+    public volatile AcknowledgeType acknowledgeState;
     public Map<String, Object> extensions = new HashMap<>();
 
     public final MutablePair<String, Predicate<Message>> acknowledgeFilter = MutablePair.of(null, null);

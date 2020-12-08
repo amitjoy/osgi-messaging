@@ -40,8 +40,12 @@ public final class GogoCommandActivator {
     private final BundleContext bundleContext;
     private final ConfigurationAdmin configAdmin;
 
+    // @formatter:off
     @Activate
-    public GogoCommandActivator(final BundleContext bundleContext, @Reference final ConfigurationAdmin configAdmin) {
+    public GogoCommandActivator(
+            final BundleContext bundleContext,
+            @Reference final ConfigurationAdmin configAdmin) {
+
         this.configAdmin = configAdmin;
         this.bundleContext = bundleContext;
 
@@ -49,11 +53,7 @@ public final class GogoCommandActivator {
             createGogoCommandConfig();
         }
     }
-
-    @Deactivate
-    void stop() {
-        deleteGogoCommandConfig();
-    }
+    // @formatter:on
 
     private boolean isGogoPackageImported() {
         final BundleWiring wiring = bundleContext.getBundle().adapt(BundleWiring.class);
@@ -75,6 +75,7 @@ public final class GogoCommandActivator {
         }
     }
 
+    @Deactivate
     private void deleteGogoCommandConfig() {
         try {
             final Configuration configuration = configAdmin.getConfiguration(PID, "?");

@@ -40,10 +40,10 @@ import in.bytehue.messaging.mqtt5.provider.helper.GogoCommand;
 @GogoCommand(scope = "mqtt", function = { "pub", "sub" })
 @Descriptor("Gogo commands to publish/subscribe to topics")
 @Component(
-        service = MessagePubSubGogoCommand.class,
         immediate = true,
         configurationPid = PID,
-        configurationPolicy = REQUIRE)
+        configurationPolicy = REQUIRE,
+        service = MessagePubSubGogoCommand.class)
 public final class MessagePubSubGogoCommand {
 
     public static final String PID = "in.bytehue.messaging.mqtt.command";

@@ -388,7 +388,7 @@ public final class MessageClientProvider {
         }
 
         if (!topic.isEmpty()) {
-            logger.debug("Applying Last Will Configuration");
+            logger.debug("Applying Last Will and Testament Configuration");
             clientBuilder.willPublish()
                              .topic(topic)
                              .qos(qos)
