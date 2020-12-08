@@ -76,7 +76,7 @@ This project is licensed under Apache License Version 2.0 [![License](http://img
 
 #### Client Configuration
 
-The `in.bytehue.messaging.client` can be used to configure the client.
+The `in.bytehue.messaging.client` PID can be used to configure the client. The configurable properties are listed below:
 
 * `id` - Client Identifier (optional) (default: empty string) - if empty, `in.bytehue.client.id` framework property is checked and if unavailable, a random identifier will be generated.
 * `server` - Server Address (optional) (default: `broker.hivemq.com`)
@@ -91,7 +91,7 @@ The `in.bytehue.messaging.client` can be used to configure the client.
 * `password` - Simple Authentication Password (optional) (default: empty string)
 * `useSSL` - SSL Configuration (optional) (default: `false`)
 * `cipherSuites` - SSL Configuration Cipher Suites (optional) (default: empty array)
-* `handshakeTimeout` - SSL Configuration Handshake Timeout (optional) (default: `1` second)
+* `sslHandshakeTimeout` - SSL Configuration Handshake Timeout (optional) (default: `1` second)
 * `trustManagerFactoryTargetFilter` - SSL Configuration Trust Manager Factory Service Target Filter (optional) (default: empty string) (Refer to `javax.net.ssl.TrustManagerFactory`)
 * `lastWillTopic` - Last Will Topic (optional) (default: empty string)
 * `lastWillQoS` - Last Will QoS (optional) (default: `2`)
@@ -104,6 +104,11 @@ The `in.bytehue.messaging.client` can be used to configure the client.
 * `maximumPacketSize` - Maximum Packet Size for receiving (optional) (default: `10240` - 10 KB)
 * `sendMaximumPacketSize` - Maximum Packet Size for sending (optional) (default: `10240` - 10 KB)
 * `topicAliasMaximum` - Maximum Topic Aliases (optional) (default: `0`)
+* `useWebSocket` - MQTT over Web Socket (optional) (default: `false`)
+* `queryString` - Web Socket Query String (optional) (default: empty string)
+* `serverPath` - Web Socket Server Path (optional) (default: empty string)
+* `subProtocol` - Web Socket Sub Protocol (optional) (default: `mqtt`)
+* `webSocketHandshakeTimeout` - Web Socket Handshake Timeout (optional) (default: `10` seconds)
 * `useEnhancedAuthentication` - Enhanced Authentication (optional) (default: `false`)
 * `enhancedAuthTargetFilter` - Enhanced Authentication Service Filter (optional) (default: empty string) (Refer to `com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism`)
 * `useServerReauth` - Server Reauthentication (optional) (default: `false`)

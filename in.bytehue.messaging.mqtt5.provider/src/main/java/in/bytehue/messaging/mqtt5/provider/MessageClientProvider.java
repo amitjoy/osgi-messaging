@@ -111,7 +111,7 @@ public final class MessageClientProvider {
         String[] cipherSuites() default {};
 
         @AttributeDefinition(name = "SSL Configuration Handshake Timeout")
-        long handshakeTimeout() default 1L;
+        long sslHandshakeTimeout() default 1L;
 
         @AttributeDefinition(name = "SSL Configuration Trust Manager Factory Service Target Filter")
         String trustManagerFactoryTargetFilter() default "";
@@ -148,6 +148,21 @@ public final class MessageClientProvider {
 
         @AttributeDefinition(name = "Maximum Topic Aliases")
         int topicAliasMaximum() default 0;
+
+        @AttributeDefinition(name = "MQTT over Web Socket")
+        boolean useWebSocket() default false;
+
+        @AttributeDefinition(name = "Web Socket Query String")
+        String queryString() default "";
+
+        @AttributeDefinition(name = "Web Socket Server Path")
+        String serverPath() default "";
+
+        @AttributeDefinition(name = "Web Socket Sub Protocol")
+        String subProtocol() default "mqtt";
+
+        @AttributeDefinition(name = "Web Socket Handshake Timeout")
+        long webSocketHandshakeTimeout() default 10L;
 
         @AttributeDefinition(name = "Enhanced Authentication")
         boolean useEnhancedAuthentication() default false;
@@ -203,7 +218,6 @@ public final class MessageClientProvider {
     public MessageClientProvider(
             final Config config,
             final BundleContext bundleContext,
-
             @Reference(service = LoggerFactory.class)
             final Logger logger) {
 
@@ -269,11 +283,20 @@ public final class MessageClientProvider {
                              .password(config.password().getBytes())
                          .applySimpleAuth();
         }
+        if (config.useWebSocket()) {
+            logger.debug("Applying Web Socket configuration");
+            clientBuilder.webSocketConfig()
+                             .serverPath(config.serverPath())
+                             .subprotocol(config.subProtocol())
+                             .queryString(config.queryString())
+                             .handshakeTimeout(config.webSocketHandshakeTimeout(), SECONDS)
+                         .applyWebSocketConfig();
+        }
         if (config.useSSL()) {
             logger.debug("Applying SSL configuration");
             clientBuilder.sslConfig()
                              .cipherSuites(Arrays.asList(config.cipherSuites()))
-                             .handshakeTimeout(config.handshakeTimeout(), SECONDS)
+                             .handshakeTimeout(config.sslHandshakeTimeout(), SECONDS)
                              .trustManagerFactory(
                                      getOptionalService(
                                              TrustManagerFactory.class,
