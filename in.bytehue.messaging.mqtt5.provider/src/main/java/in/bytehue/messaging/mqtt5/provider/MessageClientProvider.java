@@ -192,7 +192,7 @@ public final class MessageClientProvider {
         String qos2OutgoingInterceptorFilter() default "";
 
         @AttributeDefinition(name = "Filter that needs to be satisfied for the client to be active")
-        String condition_target() default "";
+        String condition_target() default "(satisfy=always)";
 
         @AttributeDefinition(name = "Reason for the disconnection when the component is stopped")
         String disconnectionReasonDescription() default "OSGi Component Deactivated";
@@ -211,7 +211,7 @@ public final class MessageClientProvider {
     private final BundleContext bundleContext;
     private final Mqtt5ClientBuilder clientBuilder;
 
-    @Reference(target = "(satisfy=always)")
+    @Reference
     private ConditionalTarget<TargetCondition> condition;
 
     @Activate
