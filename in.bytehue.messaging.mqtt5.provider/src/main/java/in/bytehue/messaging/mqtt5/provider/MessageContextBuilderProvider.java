@@ -59,7 +59,10 @@ import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
                 ACKNOWLEDGE })
 @ProvideMessagingAcknowledgeFeature
 public final class MessageContextBuilderProvider
-        implements MqttMessageContextBuilder, MessageContextBuilder, AcknowledgeMessageContextBuilder {
+        implements
+            MqttMessageContextBuilder,
+            MessageContextBuilder,
+            AcknowledgeMessageContextBuilder {
 
     private final Logger logger;
     private final MessageProvider message;

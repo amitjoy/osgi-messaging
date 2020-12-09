@@ -85,7 +85,7 @@ public final class MessageContextProvider implements MessageContext, Acknowledge
         return new AcknowledgeHandler() {
 
             @Override
-            public boolean reject() {
+            public synchronized boolean reject() {
                 if (acknowledgeState == ACKNOWLEDGED) {
                     return false;
                 }
@@ -94,7 +94,7 @@ public final class MessageContextProvider implements MessageContext, Acknowledge
             }
 
             @Override
-            public boolean acknowledge() {
+            public synchronized boolean acknowledge() {
                 if (acknowledgeState == REJECTED) {
                     return false;
                 }
