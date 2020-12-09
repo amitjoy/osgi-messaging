@@ -48,6 +48,14 @@ public final class MqttMessageConstants {
     public static final String MESSAGING_PROVIDER = "Byte Hue";
 
     /**
+     * The name of framework property to be queried for client identifier if there exists no
+     * specified configuration in {@link ConfigurationPid#CLIENT}.
+     *
+     * @since 1.0
+     */
+    public static final String CLIENT_ID_FRAMEWORK_PROPERTY = "in.bytehue.client.id";
+
+    /**
      * Defines standard constants for the MQTT messaging extension features
      */
     public static final class Extension {

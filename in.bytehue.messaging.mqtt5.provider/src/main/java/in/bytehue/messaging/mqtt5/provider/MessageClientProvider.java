@@ -16,6 +16,7 @@
 package in.bytehue.messaging.mqtt5.provider;
 
 import static com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode.NORMAL_DISCONNECTION;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.CLIENT_ID_FRAMEWORK_PROPERTY;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.CLIENT;
 import static in.bytehue.messaging.mqtt5.api.TargetCondition.DEFAULT_SATISFIABLE_FILTER;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalService;
@@ -203,7 +204,6 @@ public final class MessageClientProvider {
     }
 
     private static final long SESSION_EXPIRY_ON_LAST_WILL_UPDATE_DISCONNECT = 600L;
-    private static final String CLIENT_ID_FRAMEWORK_PROPERTY = "in.bytehue.client.id";
 
     public final Mqtt5AsyncClient client;
 
