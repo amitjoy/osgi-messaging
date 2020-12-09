@@ -122,6 +122,15 @@ The `in.bytehue.messaging.client` PID can be used to configure the client. The c
 * `disconnectionReasonDescription` - Reason for the disconnection when the component is stopped (optional) (default: `OSGi Component Deactivated`)
 * `disconnectionReasonCode` - Code for the disconnection when the component is stopped (optional) (default: `NORMAL_DISCONNECTION`) (Refer to `com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode`)
 
+#### Reply-To Publisher Internal Executor Configuration
+
+The `in.bytehue.messaging.publisher` PID can be used to configure the internal thread pool
+
+* `numThreads` - Number of Threads for the internal thread pool (optional) (default: `20`)
+* `threadNamePrefix` - Prefix of the thread name (optional) (default: `mqtt-replyto-publisher`)
+* `threadNameSuffix` - Suffix of the thread name (supports only `%d` format specifier) (optional) (default: `-%d`)
+* `isDaemon` - Flag to set if the threads will be daemon threads (optional) (default: `false`)
+
 #### Primary Messaging APIs
 
 * `org.osgi.service.messaging.MessagePublisher` - service to publish to specific topic
