@@ -79,4 +79,10 @@ package in.bytehue.messaging.mqtt5.api;
  */
 public interface TargetCondition {
 
+    /**
+     * The default target filter is registered by the framework during framework initialization and
+     * therefore can always be relied upon and therefore satisfiable.
+     */
+    String DEFAULT_SATISFIABLE_FILTER = "(satisfy=always)";
+
 }

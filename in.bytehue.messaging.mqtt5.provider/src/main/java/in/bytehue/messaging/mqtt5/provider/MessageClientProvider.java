@@ -17,6 +17,7 @@ package in.bytehue.messaging.mqtt5.provider;
 
 import static com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode.NORMAL_DISCONNECTION;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.CLIENT;
+import static in.bytehue.messaging.mqtt5.api.TargetCondition.DEFAULT_SATISFIABLE_FILTER;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalService;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.osgi.service.metatype.annotations.AttributeType.PASSWORD;
@@ -192,7 +193,7 @@ public final class MessageClientProvider {
         String qos2OutgoingInterceptorFilter() default "";
 
         @AttributeDefinition(name = "Filter that needs to be satisfied for the client to be active")
-        String condition_target() default "(satisfy=always)";
+        String condition_target() default DEFAULT_SATISFIABLE_FILTER;
 
         @AttributeDefinition(name = "Reason for the disconnection when the component is stopped")
         String disconnectionReasonDescription() default "OSGi Component Deactivated";
