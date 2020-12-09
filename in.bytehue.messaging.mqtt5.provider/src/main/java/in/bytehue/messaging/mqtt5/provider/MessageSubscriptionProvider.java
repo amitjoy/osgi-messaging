@@ -49,7 +49,6 @@ import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageSubscription;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
 import org.osgi.util.converter.Converter;
-import org.osgi.util.converter.Converters;
 import org.osgi.util.pushstream.PushStream;
 import org.osgi.util.pushstream.PushStreamProvider;
 import org.osgi.util.pushstream.SimplePushEventSource;
@@ -70,10 +69,11 @@ import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCo
 @Component(service = { MessageSubscription.class, MessageSubscriptionProvider.class })
 public final class MessageSubscriptionProvider implements MessageSubscription {
 
-    private final Converter cnv;
-
     @Activate
     private BundleContext bundleContext;
+
+    @Reference(target = "(provider=bytehue)")
+    private Converter converter;
 
     @Reference(service = LoggerFactory.class)
     private Logger logger;
@@ -86,11 +86,6 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 
     @Reference
     private ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
-
-    @Activate
-    public MessageSubscriptionProvider() {
-        cnv = Converters.standardConverter();
-    }
 
     @Deactivate
     void stop() {
@@ -141,13 +136,13 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
             final Map<String, Object> extensions = context.getExtensions();
 
             if (extensions != null) {
-                qos = getQoS(extensions, cnv);
+                qos = getQoS(extensions, converter);
 
                 final Object receiveLcl = extensions.getOrDefault(RECEIVE_LOCAL, false);
-                receiveLocal = adaptTo(receiveLcl, boolean.class, cnv);
+                receiveLocal = adaptTo(receiveLcl, boolean.class, converter);
 
                 final Object isRetainAsPublished = extensions.getOrDefault(RETAIN, false);
-                retainAsPublished = adaptTo(isRetainAsPublished, boolean.class, cnv);
+                retainAsPublished = adaptTo(isRetainAsPublished, boolean.class, converter);
             } else {
                 qos = DEFAULT_QOS.getCode();
                 receiveLocal = true;

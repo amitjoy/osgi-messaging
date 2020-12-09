@@ -53,7 +53,6 @@ import org.osgi.service.messaging.replyto.ReplyToManySubscriptionHandler;
 import org.osgi.service.messaging.replyto.ReplyToSingleSubscriptionHandler;
 import org.osgi.service.messaging.replyto.ReplyToSubscriptionHandler;
 import org.osgi.util.converter.Converter;
-import org.osgi.util.converter.Converters;
 import org.osgi.util.pushstream.PushStream;
 
 import in.bytehue.messaging.mqtt5.provider.helper.FilterParser;
@@ -64,7 +63,7 @@ import in.bytehue.messaging.mqtt5.provider.helper.FilterParser.Expression;
 // @formatter:off
 public final class MessageReplyToWhiteboardProvider {
 
-    private final Converter cnv;
+    private final Converter converter;
     private final MessagePublisherProvider publisher;
     private final MessageSubscriptionProvider subscriber;
     private final Map<ServiceReference<?>, List<PushStream<?>>> streams;
@@ -72,6 +71,8 @@ public final class MessageReplyToWhiteboardProvider {
 
     @Activate
     public MessageReplyToWhiteboardProvider(
+            @Reference(target = "(provider=bytehue)")
+            final Converter converter,
             @Reference
             final MessagePublisherProvider publisher,
             @Reference
@@ -79,12 +80,12 @@ public final class MessageReplyToWhiteboardProvider {
             @Reference
             final ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory) {
 
+        this.converter = converter;
         this.publisher = publisher;
         this.subscriber = subscriber;
         this.mcbFactory = mcbFactory;
 
         streams = new ConcurrentHashMap<>();
-        cnv = Converters.standardConverter();
     }
 
     @Deactivate
@@ -193,8 +194,8 @@ public final class MessageReplyToWhiteboardProvider {
             final Object replyToSubResponse = properties.get(REPLY_TO_SUBSCRIPTION_RESPONSE_CHANNEL_PROPERTY);
             final Object replyToSubRequest = properties.get(REPLY_TO_SUBSCRIPTION_REQUEST_CHANNEL_PROPERTY);
 
-            pubChannel = adaptTo(replyToSubResponse, String.class, cnv);
-            subChannels = adaptTo(replyToSubRequest, String[].class, cnv);
+            pubChannel = adaptTo(replyToSubResponse, String.class, converter);
+            subChannels = adaptTo(replyToSubRequest, String[].class, converter);
 
             if (subChannels == null) {
                 throw new IllegalStateException("The '" + reference
@@ -206,7 +207,7 @@ public final class MessageReplyToWhiteboardProvider {
             }
 
             final Object replyToSubTgt = properties.get(REPLY_TO_SUBSCRIPTION_TARGET_PROPERTY);
-            final String replyToSubTarget = adaptTo(replyToSubTgt, String.class, cnv);
+            final String replyToSubTarget = adaptTo(replyToSubTgt, String.class, converter);
 
             final FilterParser fp = new FilterParser();
             final Expression exp = fp.parse(replyToSubTarget);

@@ -36,7 +36,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.log.Logger;
@@ -46,7 +45,6 @@ import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
 import org.osgi.util.converter.Converter;
-import org.osgi.util.converter.Converters;
 import org.osgi.util.converter.TypeReference;
 
 import com.hivemq.client.internal.mqtt.message.publish.MqttWillPublish;
@@ -64,12 +62,12 @@ import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
         name = MESSAGING_ID,
         protocol = MESSAGING_PROTOCOL,
         feature = {
-                EXTENSION_QOS,
                 RETAIN,
+                EXTENSION_QOS,
                 USER_PROPERTIES,
+                MESSAGE_EXPIRY_INTERVAL,
                 EXTENSION_GUARANTEED_DELIVERY,
-                EXTENSION_GUARANTEED_ORDERING,
-                MESSAGE_EXPIRY_INTERVAL })
+                EXTENSION_GUARANTEED_ORDERING })
 //@formatter:on
 @Component(service = { MessagePublisher.class, MessagePublisherProvider.class })
 public final class MessagePublisherProvider implements MessagePublisher {
@@ -77,15 +75,11 @@ public final class MessagePublisherProvider implements MessagePublisher {
     @Reference(service = LoggerFactory.class)
     private Logger logger;
 
-    private final Converter cnv;
+    @Reference(target = "(provider=bytehue)")
+    private Converter converter;
 
     @Reference
     private MessageClientProvider messagingClient;
-
-    @Activate
-    public MessagePublisherProvider() {
-        cnv = Converters.standardConverter();
-    }
 
     @Override
     public void publish(final Message message) {
@@ -120,17 +114,17 @@ public final class MessagePublisherProvider implements MessagePublisher {
             final ByteBuffer content = message.payload();
 
             final Object messageExpiry = extensions.getOrDefault(MESSAGE_EXPIRY_INTERVAL, null);
-            final Long messageExpiryInterval = adaptTo(messageExpiry, Long.class, cnv);
+            final Long messageExpiryInterval = adaptTo(messageExpiry, Long.class, converter);
 
-            final int qos = getQoS(extensions, cnv);
+            final int qos = getQoS(extensions, converter);
 
             final Object isRetain = extensions.getOrDefault(RETAIN, false);
-            final boolean retain = adaptTo(isRetain, boolean.class, cnv);
+            final boolean retain = adaptTo(isRetain, boolean.class, converter);
 
             final String contentEncoding = context.getContentEncoding();
 
             final Object lastWillDelay = extensions.getOrDefault(LAST_WILL_DELAY_INTERVAL, 0L);
-            final long lastWillDelayInterval = adaptTo(lastWillDelay, long.class, cnv);
+            final long lastWillDelayInterval = adaptTo(lastWillDelay, long.class, converter);
 
             Mqtt5PayloadFormatIndicator payloadFormat = null;
             if ("UTF-8".equalsIgnoreCase(contentEncoding)) {
@@ -143,7 +137,7 @@ public final class MessagePublisherProvider implements MessagePublisher {
                     adapt(
                             userProp,
                             new TypeReference<Map<String, String>>() {},
-                            cnv);
+                            converter);
 
             final Mqtt5UserPropertiesBuilder propsBuilder = Mqtt5UserProperties.builder();
             userProperties.forEach(propsBuilder::add);

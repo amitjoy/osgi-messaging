@@ -100,12 +100,12 @@ public final class ServicePropertyExistenceTest {
         final String[] propertyValue2 = new String[] { MqttMessageConstants.MESSAGING_PROTOCOL };
         // @formatter:off
         final String[] propertyValue3 = new String[] {
-                EXTENSION_QOS,
                 RETAIN,
+                EXTENSION_QOS,
                 USER_PROPERTIES,
+                MESSAGE_EXPIRY_INTERVAL,
                 EXTENSION_GUARANTEED_DELIVERY,
-                EXTENSION_GUARANTEED_ORDERING,
-                MESSAGE_EXPIRY_INTERVAL };
+                EXTENSION_GUARANTEED_ORDERING };
 
         final Optional<ServiceReference<MessagePublisher>> ref =
                 launchpad.waitForServiceReference(MessagePublisher.class, 10_000L);
