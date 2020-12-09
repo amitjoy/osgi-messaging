@@ -93,8 +93,8 @@ public final class MessageReplyToWhiteboardProvider {
     }
 
     @Reference(policy = DYNAMIC, cardinality = MULTIPLE)
-    synchronized void bindReplyToSingleSubscriptionHandler( //
-            final ReplyToSingleSubscriptionHandler handler, //
+    synchronized void bindReplyToSingleSubscriptionHandler(
+            final ReplyToSingleSubscriptionHandler handler,
             final ServiceReference<?> reference) {
 
         final ReplyToDTO replyToDTO = new ReplyToDTO(reference);

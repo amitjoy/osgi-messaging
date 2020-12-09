@@ -16,10 +16,10 @@
 package in.bytehue.messaging.mqtt5.provider.command;
 
 import static in.bytehue.messaging.mqtt5.provider.command.MessagePubSubGogoCommand.PID;
+import static java.util.Collections.emptyMap;
 import static org.osgi.framework.namespace.PackageNamespace.PACKAGE_NAMESPACE;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Hashtable;
 
 import org.osgi.framework.BundleContext;
@@ -44,7 +44,8 @@ public final class GogoCommandActivator {
     @Activate
     public GogoCommandActivator(
             final BundleContext bundleContext,
-            @Reference final ConfigurationAdmin configAdmin) {
+            @Reference
+            final ConfigurationAdmin configAdmin) {
 
         this.configAdmin = configAdmin;
         this.bundleContext = bundleContext;
@@ -69,7 +70,7 @@ public final class GogoCommandActivator {
     private void createGogoCommandConfig() {
         try {
             final Configuration configuration = configAdmin.getConfiguration(PID, "?");
-            configuration.update(new Hashtable<>(Collections.emptyMap()));
+            configuration.updateIfDifferent(new Hashtable<>(emptyMap()));
         } catch (final IOException e) {
             // ignore due to location check as it's never gonna happen
         }

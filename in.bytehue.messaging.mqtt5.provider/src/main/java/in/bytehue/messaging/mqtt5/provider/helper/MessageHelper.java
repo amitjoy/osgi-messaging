@@ -330,7 +330,7 @@ public final class MessageHelper {
     }
 
     // @formatter:off
-    public static MqttWillPublish toLastWill(
+    public static MqttWillPublish toLWT(
             final String channel,
             final ByteBuffer payload,
             final int qos,

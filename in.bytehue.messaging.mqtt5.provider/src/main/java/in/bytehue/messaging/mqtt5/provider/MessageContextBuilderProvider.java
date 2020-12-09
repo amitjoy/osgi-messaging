@@ -69,7 +69,10 @@ public final class MessageContextBuilderProvider
     private final MessageContextProvider messageContext;
 
     @Activate
-    public MessageContextBuilderProvider(@Reference(service = LoggerFactory.class) final Logger logger) {
+    public MessageContextBuilderProvider(
+            @Reference(service = LoggerFactory.class)
+            final Logger logger) {
+
         this.logger = logger;
 
         message = new MessageProvider();

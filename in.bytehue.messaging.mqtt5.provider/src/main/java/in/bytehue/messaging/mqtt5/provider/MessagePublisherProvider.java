@@ -166,27 +166,26 @@ public final class MessagePublisherProvider implements MessagePublisher {
                 publishRequest.messageExpiryInterval(messageExpiryInterval);
             }
 
-            // check if it is a LWT publish
-            final boolean isLastWillPublishReq = extensions.containsKey(EXTENSION_LAST_WILL);
-            if (isLastWillPublishReq) {
+            // check if it is a LWT publish request
+            final boolean isLwtPublishReq = extensions.containsKey(EXTENSION_LAST_WILL);
+            if (isLwtPublishReq) {
                 final MqttWillPublish will =
-                        MessageHelper.toLastWill(
-                                                channel,
-                                                content,
-                                                qos,
-                                                retain,
-                                                messageExpiryInterval,
-                                                contentEncoding,
-                                                contentType,
-                                                replyToChannel,
-                                                correlationId,
-                                                userProperties,
-                                                lastWillDelayInterval);
+                        MessageHelper.toLWT(
+                                            channel,
+                                            content,
+                                            qos,
+                                            retain,
+                                            messageExpiryInterval,
+                                            contentEncoding,
+                                            contentType,
+                                            replyToChannel,
+                                            correlationId,
+                                            userProperties,
+                                            lastWillDelayInterval);
                 messagingClient.updateLWT(will);
                 logger.info("New publish request to udpate LWT has been sent successfully - '{}'", will);
                 return;
             }
-
             publishRequest.send()
                           .thenAccept(result -> {
                               if (isPublishSuccessful(result)) {
