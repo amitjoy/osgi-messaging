@@ -144,12 +144,10 @@ public final class MessagePublisherProvider implements MessagePublisher {
                             userProp,
                             new TypeReference<Map<String, String>>() {},
                             cnv);
-            // @formatter:on
 
             final Mqtt5UserPropertiesBuilder propsBuilder = Mqtt5UserProperties.builder();
             userProperties.forEach(propsBuilder::add);
 
-            // @formatter:off
             final Complete<CompletableFuture<Mqtt5PublishResult>> publishRequest =
                     messagingClient.client.publishWith()
                                               .topic(channel)
