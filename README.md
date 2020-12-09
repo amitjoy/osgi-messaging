@@ -285,6 +285,37 @@ public final class Mqtt5AckExample {
 }
 ```
 
+* Updating LWT dynamically by sending publish request:
+
+```java
+@Component
+public final class Mqtt5LwtPublish {
+
+    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
+    private MessagePublisher publisher;
+
+    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
+    private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
+
+    public void lastWillPublish() {
+        final MessageContextBuilder mcb = mcbFactory.getService();
+        try {
+            publisher.publish(
+                    mcb.content(ByteBuffer.wrap("CLOSED_CONNECTION".getBytes()))
+                       .channel("last/will/topc/example")
+                       .extensionEntry(EXTENSION_QOS, 2)
+                       .extensionEntry(EXTENSION_LAST_WILL, true)
+                       .extensionEntry(LAST_WILL_DELAY_INTERVAL, 30)
+                       .extensionEntry(MESSAGE_EXPIRY_INTERVAL, 30)
+                       .buildMessage());
+        } finally {
+            mcbFactory.ungetService(mcb);
+        }
+    }
+
+}
+```
+
 #### Useful Notes
 
 * Since more than one implementations can coexist in the OSGi runtime, we can search for the MQTT services by means of the provided service properties.
