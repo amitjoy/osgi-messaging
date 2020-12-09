@@ -70,7 +70,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
             name = "MQTT Messaging Reply-To Publisher Executor Configuration",
             description = "This configuration is used to configure the internal thread pool")
     @interface Config {
-        @AttributeDefinition(name = "Number of Threads for the internal thread pool")
+        @AttributeDefinition(name = "Number of threads for the internal thread pool")
         int numThreads() default 20;
 
         @AttributeDefinition(name = "Prefix of the thread name")
@@ -118,18 +118,16 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 
     @Override
     public Promise<Message> publishWithReply(final Message requestMessage, final MessageContext replyToContext) {
-        autoGenerateMissingConfigs(requestMessage);
-
         final Deferred<Message> deferred = promiseFactory.deferred();
         final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
 
         // @formatter:off
         subscriber.subscribe(dto.subChannel)
                   .forEach(m -> {
-                              publisher.publish(m, dto.pubChannel);
-                              deferred.resolve(m); // resolve the promise on first response
-                          });
-        // @formatter:off
+                      publisher.publish(m, dto.pubChannel);
+                      deferred.resolve(m); // resolve the promise on first response
+                  });
+        // @formatter:on
         return deferred.getPromise();
     }
 
@@ -140,42 +138,50 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 
     @Override
     public PushStream<Message> publishWithReplyMany(final Message requestMessage, final MessageContext replyToContext) {
-        autoGenerateMissingConfigs(requestMessage);
         final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
 
-        final PushStream<Message> pushStream = subscriber.subscribe(dto.subChannel);
         // @formatter:off
-        return pushStream.map(m -> {
-                                 publisher.publish(m, dto.pubChannel);
-                                 return m;
-                              });
+        return subscriber.subscribe(dto.subChannel)
+                         .map(m -> {
+                             publisher.publish(m, dto.pubChannel);
+                             return m;
+                         });
         // @formatter:on
     }
 
-    private void autoGenerateMissingConfigs(final Message message) {
-        final MessageContextProvider context = (MessageContextProvider) message.getContext();
-
-        if (context.getCorrelationId() == null) {
-            context.correlationId = UUID.randomUUID().toString();
-            logger.info("Auto-generated correlation ID '{}' as it is missing in the request", context.correlationId);
-        }
-
-        if (context.getReplyToChannel() == null) {
-            context.replyToChannel = UUID.randomUUID().toString();
-            logger.info("Auto-generated reply-to channel '{}' as it is missing in the request", context.replyToChannel);
-        }
-    }
-
-    private static class ReplyToDTO {
+    private class ReplyToDTO {
         String pubChannel;
         String subChannel;
 
         ReplyToDTO(final Message message, MessageContext context) {
+            autoGenerateCorrelationIdIfAbsent(message);
+            autoGenerateReplyToChannelIfAbsent(message);
+
             if (context == null) {
                 context = message.getContext();
             }
             pubChannel = context.getReplyToChannel();
             subChannel = context.getChannel();
+        }
+
+        private void autoGenerateCorrelationIdIfAbsent(final Message message) {
+            final MessageContextProvider context = (MessageContextProvider) message.getContext();
+
+            if (context.getCorrelationId() == null) {
+                context.correlationId = UUID.randomUUID().toString();
+                logger.info("Auto-generated correlation ID '{}' as it is missing in the request",
+                        context.correlationId);
+            }
+        }
+
+        private void autoGenerateReplyToChannelIfAbsent(final Message message) {
+            final MessageContextProvider context = (MessageContextProvider) message.getContext();
+
+            if (context.getReplyToChannel() == null) {
+                context.replyToChannel = UUID.randomUUID().toString();
+                logger.info("Auto-generated reply-to channel '{}' as it is missing in the request",
+                        context.replyToChannel);
+            }
         }
     }
 
