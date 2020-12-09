@@ -269,7 +269,7 @@ public final class MessageClientProvider {
         final Nested<? extends Mqtt5ClientBuilder> advancedConfig = clientBuilder.advancedConfig();
 
         if (config.automaticReconnect()) {
-            logger.debug("Applying automatic reconnect configuration");
+            logger.debug("Applying Automatic Reconnect Configuration");
             clientBuilder.automaticReconnect()
                              .initialDelay(config.initialDelay(), SECONDS)
                              .maxDelay(config.maxDelay(), SECONDS)
@@ -278,14 +278,14 @@ public final class MessageClientProvider {
             clientBuilder.automaticReconnectWithDefaultConfig();
         }
         if (config.simpleAuth()) {
-            logger.debug("Applying Simple authentiation configuration");
+            logger.debug("Applying Simple Authentiation Configuration");
             clientBuilder.simpleAuth()
                              .username(config.username())
                              .password(config.password().getBytes())
                          .applySimpleAuth();
         }
         if (config.useWebSocket()) {
-            logger.debug("Applying Web Socket configuration");
+            logger.debug("Applying Web Socket Configuration");
             clientBuilder.webSocketConfig()
                              .serverPath(config.serverPath())
                              .subprotocol(config.subProtocol())
@@ -294,7 +294,7 @@ public final class MessageClientProvider {
                          .applyWebSocketConfig();
         }
         if (config.useSSL()) {
-            logger.debug("Applying SSL configuration");
+            logger.debug("Applying SSL Configuration");
             clientBuilder.sslConfig()
                              .cipherSuites(Arrays.asList(config.cipherSuites()))
                              .handshakeTimeout(config.sslHandshakeTimeout(), SECONDS)
@@ -303,24 +303,26 @@ public final class MessageClientProvider {
                                              TrustManagerFactory.class,
                                              config.trustManagerFactoryTargetFilter(),
                                              bundleContext,
-                                             logger).orElse(null))
+                                             logger)
+                                     .orElse(null))
                              .applySslConfig();
         }
         if (config.useEnhancedAuthentication()) {
-            logger.debug("Applying Enhanced Authentication configuration");
+            logger.debug("Applying Enhanced Authentication Configuration");
             clientBuilder.enhancedAuth(
                     getOptionalService(
                            Mqtt5EnhancedAuthMechanism.class,
                            config.enhancedAuthTargetFilter(),
                            bundleContext,
-                           logger).orElse(null));
+                           logger)
+                    .orElse(null));
         }
         if (config.useServerReauth()) {
-            logger.debug("Applying Server Reauthentication configuration");
+            logger.debug("Applying Server Reauthentication Configuration");
             advancedConfig.allowServerReAuth(config.useServerReauth());
         }
         if (!config.connectedListenerFilter().isEmpty()) {
-            logger.debug("Applying Connected Listener configuration");
+            logger.debug("Applying Connected Listener Configuration");
             final Optional<MqttClientConnectedListener> listener =
                     getOptionalService(
                             MqttClientConnectedListener.class,
@@ -330,7 +332,7 @@ public final class MessageClientProvider {
             listener.ifPresent(clientBuilder::addConnectedListener);
         }
         if (!config.disconnectedListenerFilter().isEmpty()) {
-            logger.debug("Applying Disconnected Listener configuration");
+            logger.debug("Applying Disconnected Listener Configuration");
             final Optional<MqttClientDisconnectedListener> listener =
                     getOptionalService(
                             MqttClientDisconnectedListener.class,
@@ -340,32 +342,36 @@ public final class MessageClientProvider {
             listener.ifPresent(clientBuilder::addDisconnectedListener);
         }
         if (!config.qos1IncomingInterceptorFilter().isEmpty()) {
-            logger.debug("Applying Incoming and Outgoing Interceptors' configuration");
+            logger.debug("Applying Incoming and Outgoing Interceptor Configuration");
             advancedConfig.interceptors()
                               .incomingQos1Interceptor(
                                       getOptionalService(
                                               Mqtt5IncomingQos1Interceptor.class,
                                               config.qos1IncomingInterceptorFilter(),
                                               bundleContext,
-                                              logger).orElse(null))
+                                              logger)
+                                      .orElse(null))
                               .incomingQos2Interceptor(
                                       getOptionalService(
                                               Mqtt5IncomingQos2Interceptor.class,
                                               config.qos1IncomingInterceptorFilter(),
                                               bundleContext,
-                                              logger).orElse(null))
+                                              logger)
+                                      .orElse(null))
                               .outgoingQos1Interceptor(
                                       getOptionalService(
                                               Mqtt5OutgoingQos1Interceptor.class,
                                               config.qos1IncomingInterceptorFilter(),
                                               bundleContext,
-                                              logger).orElse(null))
+                                              logger)
+                                      .orElse(null))
                               .outgoingQos2Interceptor(
                                       getOptionalService(
                                               Mqtt5OutgoingQos2Interceptor.class,
                                               config.qos1IncomingInterceptorFilter(),
                                               bundleContext,
-                                              logger).orElse(null))
+                                              logger)
+                                      .orElse(null))
                           .applyInterceptors();
         }
         advancedConfig.applyAdvancedConfig();
