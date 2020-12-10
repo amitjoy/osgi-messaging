@@ -1,11 +1,11 @@
-Bundle-Name                    : OSGi MQTT v5 Implementation
-Bundle-Description             : This bundle provides the MQTT v5 implementation \
+Bundle-Name                    : MQTT 5.0 Messaging Adapter
+Bundle-Description             : This bundle provides the MQTT 5.0 implementation \
 								 that conforms to OSGi messaging specification. \
 								 Internally this makes use of HiveMQ MQTT client \
-								 since it is MQTT v5 compatible and hence this bundle \
+								 since it is MQTT 5.0 compatible and hence this bundle \
 								 exports the HiveMQ MQTT client APIs too for further extension.
 
--fixupmessages.private.ref     : 'private references' 
+-fixupmessages.private.ref     : 'private references'
 
 -buildpath                     :   \
 	biz.aQute.osgi.conditionaltarget,\

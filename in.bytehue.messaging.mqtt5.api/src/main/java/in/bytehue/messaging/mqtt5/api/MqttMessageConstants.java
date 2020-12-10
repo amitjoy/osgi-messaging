@@ -65,7 +65,7 @@ public final class MqttMessageConstants {
         }
 
         /**
-         * The name of the {@code Message Expiry Interval} extension of the MQTT v5 specification.
+         * The name of the {@code Message Expiry Interval} extension of the MQTT 5.0 specification.
          * An integer value indicates the expiry interval of the messages.
          *
          * @since 1.0
@@ -73,7 +73,7 @@ public final class MqttMessageConstants {
         public static final String MESSAGE_EXPIRY_INTERVAL = "messageExpiryInterval";
 
         /**
-         * The name of the {@code Message Retain} extension of the MQTT v5 specification.
+         * The name of the {@code Message Retain} extension of the MQTT 5.0 specification.
          * This indicates the message will be retained. A value of {code true} ensures
          * successful retention of messages.
          *
@@ -82,7 +82,7 @@ public final class MqttMessageConstants {
         public static final String RETAIN = "retain";
 
         /**
-         * The name of the {@code User Properties} extension of the MQTT v5 specification.
+         * The name of the {@code User Properties} extension of the MQTT 5.0 specification.
          * A {@code Map&lt;String,String&gt; can be provided}.
          *
          * @since 1.0
@@ -90,7 +90,7 @@ public final class MqttMessageConstants {
         public static final String USER_PROPERTIES = "userProperties";
 
         /**
-         * The name of the {@code Local} extension of the MQTT v5 specification. This ensures
+         * The name of the {@code Local} extension of the MQTT 5.0 specification. This ensures
          * if we want to receive our own messages. A value of {code true} ascertains the receipt
          * of own messages.
          *
@@ -99,7 +99,7 @@ public final class MqttMessageConstants {
         public static final String RECEIVE_LOCAL = "receiveLocal";
 
         /**
-         * The name of the {@code last will delay interval} extension of the MQTT v5 specification.
+         * The name of the {@code last will delay interval} extension of the MQTT 5.0 specification.
          * A value of {code Long} can be provided.
          *
          * @since 1.0

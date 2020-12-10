@@ -70,7 +70,7 @@ public final class MessageClientProvider {
 
     //@formatter:off
     @ObjectClassDefinition(
-            name = "MQTT v5 Messaging Client Configuration",
+            name = "MQTT 5.0 Messaging Client Configuration",
             description = "This configuration is used to configure the messaging connection")
     @interface Config {
         @AttributeDefinition(name = "Client Identifier")
