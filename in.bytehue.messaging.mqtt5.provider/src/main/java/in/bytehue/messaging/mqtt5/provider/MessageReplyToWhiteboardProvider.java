@@ -71,8 +71,8 @@ public final class MessageReplyToWhiteboardProvider {
 
     @Activate
     public MessageReplyToWhiteboardProvider(
-            @Reference(target = "(provider=bytehue)")
-            final Converter converter,
+            @Reference
+            final ConverterAdapter converter,
             @Reference
             final MessagePublisherProvider publisher,
             @Reference

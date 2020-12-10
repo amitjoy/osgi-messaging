@@ -48,7 +48,6 @@ import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageSubscription;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
-import org.osgi.util.converter.Converter;
 import org.osgi.util.pushstream.PushStream;
 import org.osgi.util.pushstream.PushStreamProvider;
 import org.osgi.util.pushstream.SimplePushEventSource;
@@ -72,8 +71,8 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
     @Activate
     private BundleContext bundleContext;
 
-    @Reference(target = "(provider=bytehue)")
-    private Converter converter;
+    @Reference
+    private ConverterAdapter converter;
 
     @Reference(service = LoggerFactory.class)
     private Logger logger;

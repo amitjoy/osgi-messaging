@@ -44,7 +44,6 @@ import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
-import org.osgi.util.converter.Converter;
 import org.osgi.util.converter.TypeReference;
 
 import com.hivemq.client.internal.mqtt.message.publish.MqttWillPublish;
@@ -75,8 +74,8 @@ public final class MessagePublisherProvider implements MessagePublisher {
     @Reference(service = LoggerFactory.class)
     private Logger logger;
 
-    @Reference(target = "(provider=bytehue)")
-    private Converter converter;
+    @Reference
+    private ConverterAdapter converter;
 
     @Reference
     private MessageClientProvider messagingClient;
