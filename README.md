@@ -1,4 +1,6 @@
-<img width="558" alt="logo" src="https://user-images.githubusercontent.com/13380182/99921124-a2e83200-2d28-11eb-92d3-b96295b841a9.png">
+<p align="center">
+  <img width="563" alt="logo" src="https://user-images.githubusercontent.com/13380182/101778008-90754300-3af3-11eb-95da-91c54608f277.png" />
+</p>
 
 ## OSGi Messaging Specification and compliant MQTT 5.0 Implementation
 
