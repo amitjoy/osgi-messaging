@@ -28,7 +28,7 @@ javac.encoding                        =         UTF-8
 -nodefaultversion                     =         true
 -noimportjava                         =         true
 -remoteworkspace                      =         true
--removeheaders                        =         Created-By, Private-Package
+-removeheaders                        =         Created-By, Private-Package, Tool
 
 src                                   =         src/main/java, src/main/resources
 bin                                   =         ${bin.directory}
