@@ -15,7 +15,10 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider.helper;
 
-import java.util.Objects;
+import static java.lang.Thread.MAX_PRIORITY;
+import static java.lang.Thread.MIN_PRIORITY;
+import static java.util.Objects.requireNonNull;
+
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -60,7 +63,7 @@ public final class ThreadFactoryBuilder {
     }
 
     public ThreadFactoryBuilder setThreadFactoryName(final String threadFactoryName) {
-        this.threadFactoryName = Objects.requireNonNull(threadFactoryName);
+        this.threadFactoryName = requireNonNull(threadFactoryName);
 
         return this;
     }
@@ -91,25 +94,22 @@ public final class ThreadFactoryBuilder {
     }
 
     public ThreadFactoryBuilder setThreadGroup(final ThreadGroup threadGroup) {
-        this.threadGroup = Objects.requireNonNull(threadGroup, "'threadGroup' must not be null");
-
+        this.threadGroup = requireNonNull(threadGroup, "'threadGroup' must not be null");
         return this;
     }
 
     public ThreadFactoryBuilder setPriority(final int priority) {
-        if (priority < Thread.MIN_PRIORITY) {
+        if (priority < MIN_PRIORITY) {
             final String msg = String.format("Thread priority (%d) must not be smaller than MIN_PRIORITY (%d)",
-                    priority, Thread.MIN_PRIORITY);
+                    priority, MIN_PRIORITY);
             throw new IllegalArgumentException(msg);
         }
-        if (Thread.MAX_PRIORITY < priority) {
+        if (MAX_PRIORITY < priority) {
             final String msg = String.format("Thread priority (%d) must not be larger than than MAX_PRIORITY (%d)",
-                    priority, Thread.MAX_PRIORITY);
+                    priority, MAX_PRIORITY);
             throw new IllegalArgumentException(msg);
         }
-
         this.priority = priority;
-
         return this;
     }
 
@@ -139,18 +139,16 @@ public final class ThreadFactoryBuilder {
     }
 
     private static String createDistinctiveThreadFactoryName() {
-        return "QIVICON-pool" + INSTANCE_NUMBER.incrementAndGet() + "-";
+        return "mqtt-messaging-pool" + INSTANCE_NUMBER.incrementAndGet() + "-";
     }
 
     private static class CustomizedThreadFactory implements ThreadFactory {
         private final AtomicLong createdThreadsCount = new AtomicLong(-1);
 
-        private final String threadFactoryName;
-
-        private final String threadNameFormat;
-
-        private final ThreadGroup threadGroup;
         private final boolean daemon;
+        private final String threadFactoryName;
+        private final String threadNameFormat;
+        private final ThreadGroup threadGroup;
         private final Integer threadPriority;
 
         public CustomizedThreadFactory(final ThreadFactoryBuilder builder) {
@@ -164,17 +162,13 @@ public final class ThreadFactoryBuilder {
 
         @Override
         public Thread newThread(final Runnable runnable) {
-            Objects.requireNonNull(runnable, "'runnable' must not be null");
+            requireNonNull(runnable, "'runnable' must not be null");
 
             final String threadName = threadFactoryName
                     + String.format(threadNameFormat, createdThreadsCount.incrementAndGet());
-            final Thread thread = new Thread( //
-                    threadGroup, //
-                    runnable, //
-                    threadName);
+            final Thread thread = new Thread(threadGroup, runnable, threadName);
 
             adjustThreadPriority(thread);
-
             thread.setDaemon(daemon);
 
             return thread;
@@ -188,11 +182,12 @@ public final class ThreadFactoryBuilder {
 
         @Override
         public String toString() {
-            return getClass().getSimpleName() + //
-                    "(name:" + threadFactoryName + //
+            // @formatter:off
+            return getClass().getSimpleName() +
+                    "(name:" + threadFactoryName +
                     ",created threads:" + (createdThreadsCount.get() + 1) + ")";
+            // @formatter:on
         }
-
     }
 
 }
