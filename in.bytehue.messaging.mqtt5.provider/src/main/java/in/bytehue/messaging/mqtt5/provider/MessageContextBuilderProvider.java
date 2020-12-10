@@ -167,37 +167,37 @@ public final class MessageContextBuilderProvider
 
     @Override
     public AcknowledgeMessageContextBuilder handleAcknowledge(final Consumer<Message> acknowledgeHandler) {
-        messageContext.acknowledgeHandler.setRight(acknowledgeHandler);
+        messageContext.acknowledgeHandler.setSecond(acknowledgeHandler);
         return this;
     }
 
     @Override
     public AcknowledgeMessageContextBuilder handleAcknowledge(final String acknowledgeHandlerTarget) {
-        messageContext.acknowledgeHandler.setLeft(acknowledgeHandlerTarget);
+        messageContext.acknowledgeHandler.setFirst(acknowledgeHandlerTarget);
         return this;
     }
 
     @Override
     public AcknowledgeMessageContextBuilder filterAcknowledge(final Predicate<Message> acknowledgeFilter) {
-        messageContext.acknowledgeFilter.setRight(acknowledgeFilter);
+        messageContext.acknowledgeFilter.setSecond(acknowledgeFilter);
         return this;
     }
 
     @Override
     public AcknowledgeMessageContextBuilder filterAcknowledge(final String acknowledgeFilterTarget) {
-        messageContext.acknowledgeFilter.setLeft(acknowledgeFilterTarget);
+        messageContext.acknowledgeFilter.setFirst(acknowledgeFilterTarget);
         return this;
     }
 
     @Override
     public AcknowledgeMessageContextBuilder postAcknowledge(final Consumer<Message> acknowledgeConsumer) {
-        messageContext.acknowledgeConsumer.setRight(acknowledgeConsumer);
+        messageContext.acknowledgeConsumer.setSecond(acknowledgeConsumer);
         return this;
     }
 
     @Override
     public AcknowledgeMessageContextBuilder postAcknowledge(final String ackowledgeConsumerTarget) {
-        messageContext.acknowledgeConsumer.setLeft(ackowledgeConsumerTarget);
+        messageContext.acknowledgeConsumer.setFirst(ackowledgeConsumerTarget);
         return this;
     }
 

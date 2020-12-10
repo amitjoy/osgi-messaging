@@ -23,12 +23,13 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import org.apache.commons.lang3.tuple.MutablePair;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.acknowledge.AcknowledgeHandler;
 import org.osgi.service.messaging.acknowledge.AcknowledgeMessageContext;
 import org.osgi.service.messaging.acknowledge.AcknowledgeType;
+
+import in.bytehue.messaging.mqtt5.provider.helper.Pair;
 
 public final class MessageContextProvider implements MessageContext, AcknowledgeMessageContext {
 
@@ -41,9 +42,9 @@ public final class MessageContextProvider implements MessageContext, Acknowledge
     public volatile AcknowledgeType acknowledgeState;
     public Map<String, Object> extensions = new HashMap<>();
 
-    public final MutablePair<String, Predicate<Message>> acknowledgeFilter = MutablePair.of(null, null);
-    public final MutablePair<String, Consumer<Message>> acknowledgeHandler = MutablePair.of(null, null);
-    public final MutablePair<String, Consumer<Message>> acknowledgeConsumer = MutablePair.of(null, null);
+    public final Pair<String, Predicate<Message>> acknowledgeFilter = Pair.emptyOf(Predicate.class);
+    public final Pair<String, Consumer<Message>> acknowledgeHandler = Pair.emptyOf(Consumer.class);
+    public final Pair<String, Consumer<Message>> acknowledgeConsumer = Pair.emptyOf(Consumer.class);
 
     @Override
     public String getChannel() {

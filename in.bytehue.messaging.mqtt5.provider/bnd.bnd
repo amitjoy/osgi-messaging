@@ -10,7 +10,6 @@ Bundle-Description             : This bundle provides the MQTT 5.0 implementatio
 -buildpath                     :   \
 	biz.aQute.osgi.conditionaltarget,\
 	in.bytehue.messaging.mqtt5.api,\
-    org.apache.commons.lang3,\
 	org.apache.felix.gogo.runtime,\
 	org.apache.felix.log,\
 	org.osgi.service.messaging,\
@@ -52,7 +51,6 @@ Bundle-Description             : This bundle provides the MQTT 5.0 implementatio
 	io.netty.*,\
 	io.reactivex.*,\
 	javax.inject.*,\
-	org.apache.commons.lang3.*,\
 	org.jctools.*,\
 	org.reactivestreams
 

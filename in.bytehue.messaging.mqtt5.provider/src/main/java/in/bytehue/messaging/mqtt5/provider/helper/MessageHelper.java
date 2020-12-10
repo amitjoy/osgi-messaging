@@ -44,7 +44,6 @@ import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
 import java.util.stream.Stream;
 
-import org.apache.commons.lang3.tuple.MutablePair;
 import org.osgi.dto.DTO;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -203,7 +202,6 @@ public final class MessageHelper {
     }
 
     // @formatter:off
-    @SuppressWarnings("unchecked")
     public static void acknowledgeMessage(
             final Message message,
             final MessageContextProvider ctx,
@@ -214,21 +212,11 @@ public final class MessageHelper {
         // message is received but not yet acknowledged
         changeAcknowledgeState(message, RECEIVED);
 
-        final MutablePair<String, Predicate<Message>> ackFilter = ctx.acknowledgeFilter;
-        final String targetFilter = ackFilter.getLeft();
-        final Predicate<Message> filter = ackFilter.getRight();
+        // check for the existence of effective filter
+        final Predicate<Message> filter = ctx.acknowledgeFilter.findEffective(context, logger);
 
-        Predicate<Message> effectiveFilter = filter;
-
-        // first check if the target service filter is set
-        if (targetFilter != null) {
-            // if the service is not found, use the concrete filter instance as 'Predicate'
-            effectiveFilter = getOptionalService(Predicate.class, targetFilter, context, logger).orElse(filter);
-        }
-
-        // next check if we have the final filter to execute
-        if (effectiveFilter != null) {
-            final boolean isAcknowledged = effectiveFilter.test(message);
+        if (filter != null) {
+            final boolean isAcknowledged = filter.test(message);
             if (isAcknowledged) {
                 // acknowledge the message if the filter returns true
                 changeAcknowledgeState(message, ACKNOWLEDGED);
@@ -259,22 +247,14 @@ public final class MessageHelper {
         context.acknowledgeState = type;
     }
 
-    @SuppressWarnings("unchecked")
     private static void invokeAcknowledgeHandler(
             final Message message,
             final MessageContextProvider ctx,
             final BundleContext context,
             final Logger logger) {
 
-        final MutablePair<String, Consumer<Message>> ackConsumer = ctx.acknowledgeHandler;
-        final String targetFilter = ackConsumer.getLeft();
-        final Consumer<Message> handler = ackConsumer.getRight();
-
-        if (targetFilter != null) {
-            // simply execute the handler since the acknowledge state should be handled by the user
-            getOptionalService(Consumer.class, targetFilter, context, logger).ifPresent(a -> a.accept(message));
-        } else if (handler != null) {
-            // similarly here too
+        final Consumer<Message> handler = ctx.acknowledgeHandler.findEffective(context, logger);
+        if (handler != null) {
             handler.accept(message);
         } else {
             // if the handler is also not provided, we acknowledge the message anyway
@@ -283,22 +263,15 @@ public final class MessageHelper {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private static void invokePostAcknowledgeHandler(
             final Message message,
             final MessageContextProvider ctx,
             final BundleContext context,
             final Logger logger) {
 
-        final MutablePair<String, Consumer<Message>> ackHandler = ctx.acknowledgeConsumer;
-        final String targetFilter = ackHandler.getLeft();
-        final Consumer<Message> handler = ackHandler.getRight();
-
-        if (targetFilter != null) {
-            getOptionalService(Consumer.class, targetFilter, context, logger).ifPresent(a -> a.accept(message));
-        }
-        if (handler != null) {
-            handler.accept(message);
+        final Consumer<Message> consumer = ctx.acknowledgeConsumer.findEffective(context, logger);
+        if (consumer != null) {
+            consumer.accept(message);
         }
     }
     // @formatter:on
