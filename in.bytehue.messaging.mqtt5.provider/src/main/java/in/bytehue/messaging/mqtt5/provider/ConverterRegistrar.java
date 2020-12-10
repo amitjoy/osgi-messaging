@@ -15,9 +15,12 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
+import static org.osgi.namespace.service.ServiceNamespace.SERVICE_NAMESPACE;
+
 import java.util.Dictionary;
 import java.util.Hashtable;
 
+import org.osgi.annotation.bundle.Capability;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.annotations.Activate;
@@ -27,6 +30,7 @@ import org.osgi.util.converter.Converter;
 import org.osgi.util.converter.Converters;
 
 @Component
+@Capability(namespace = SERVICE_NAMESPACE, attribute = "objectClass:List<String>=org.osgi.util.converter.Converter")
 public final class ConverterRegistrar {
 
     private final ServiceRegistration<Converter> registration;
