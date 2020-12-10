@@ -29,7 +29,7 @@ import org.osgi.service.messaging.acknowledge.AcknowledgeHandler;
 import org.osgi.service.messaging.acknowledge.AcknowledgeMessageContext;
 import org.osgi.service.messaging.acknowledge.AcknowledgeType;
 
-import in.bytehue.messaging.mqtt5.provider.helper.Pair;
+import in.bytehue.messaging.mqtt5.provider.helper.AcknowledgePair;
 
 public final class MessageContextProvider implements MessageContext, AcknowledgeMessageContext {
 
@@ -42,9 +42,9 @@ public final class MessageContextProvider implements MessageContext, Acknowledge
     public volatile AcknowledgeType acknowledgeState;
     public Map<String, Object> extensions = new HashMap<>();
 
-    public final Pair<String, Predicate<Message>> acknowledgeFilter = Pair.emptyOf(Predicate.class);
-    public final Pair<String, Consumer<Message>> acknowledgeHandler = Pair.emptyOf(Consumer.class);
-    public final Pair<String, Consumer<Message>> acknowledgeConsumer = Pair.emptyOf(Consumer.class);
+    public final AcknowledgePair<Predicate<Message>> acknowledgeFilter = AcknowledgePair.emptyOf(Predicate.class);
+    public final AcknowledgePair<Consumer<Message>> acknowledgeHandler = AcknowledgePair.emptyOf(Consumer.class);
+    public final AcknowledgePair<Consumer<Message>> acknowledgeConsumer = AcknowledgePair.emptyOf(Consumer.class);
 
     @Override
     public String getChannel() {
