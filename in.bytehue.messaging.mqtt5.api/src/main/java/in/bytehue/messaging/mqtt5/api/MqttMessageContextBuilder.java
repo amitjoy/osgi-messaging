@@ -19,23 +19,23 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.MESS
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RECEIVE_LOCAL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
+import static org.osgi.service.messaging.Features.EXTENSION_QOS;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.function.Function;
 
 import org.osgi.annotation.versioning.ProviderType;
-import org.osgi.service.messaging.Features;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageContextBuilder;
 
 /**
- * The {@link MqttMessageContextBuilder} service is the application access point to the
+ * The {@link MqttMessageContextBuilder} service is the application access point to
  * build a MQTT 5.0 message.
  *
  * <p>
- * <b>Note that<b>, access to this service requires the
- * {@code ServicePermission[Mqtt5MessageContextBuilder, GET]} permission. It is intended
+ * <b>Note that</b>, access to this service requires the
+ * {@code ServicePermission[MqttMessageContextBuilder, GET]} permission. It is intended
  * that only administrative bundles should be granted this permission to limit
  * access to the potentially intrusive methods provided by this service.
  * </p>
@@ -169,7 +169,7 @@ public interface MqttMessageContextBuilder extends MessageContextBuilder {
      * @return the {@link MqttMessageContextBuilder} instance
      */
     default MqttMessageContextBuilder withQoS(final int qos) {
-        extensionEntry(Features.EXTENSION_QOS, qos);
+        extensionEntry(EXTENSION_QOS, qos);
         return this;
     }
 
