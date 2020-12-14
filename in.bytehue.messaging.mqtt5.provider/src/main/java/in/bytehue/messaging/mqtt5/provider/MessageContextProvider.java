@@ -105,11 +105,25 @@ public final class MessageContextProvider implements MessageContext, Acknowledge
         };
     }
 
+    // @formatter:off
     @Override
     public String toString() {
-        return "MessageContext [channel=" + channel + ", contentType=" + contentType + ", contentEncoding="
-                + contentEncoding + ", correlationId=" + correlationId + ", replyToChannel=" + replyToChannel
-                + ", extensions=" + extensions + "]";
+        return new StringBuilder().append("MessageContextProvider [channel=")
+                                  .append(channel)
+                                  .append(", contentType=")
+                                  .append(contentType)
+                                  .append(", contentEncoding=")
+                                  .append(contentEncoding)
+                                  .append(", correlationId=")
+                                  .append(correlationId)
+                                  .append(", replyToChannel=")
+                                  .append(replyToChannel)
+                                  .append(", acknowledgeState=")
+                                  .append(acknowledgeState)
+                                  .append(", extensions=")
+                                  .append(extensions)
+                                  .append("]")
+                                  .toString();
     }
 
 }

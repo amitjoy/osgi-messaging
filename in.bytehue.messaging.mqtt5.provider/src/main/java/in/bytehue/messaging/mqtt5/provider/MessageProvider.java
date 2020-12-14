@@ -37,9 +37,15 @@ public final class MessageProvider implements Message {
         return messageContext;
     }
 
+    // @formatter:off
     @Override
     public String toString() {
-        return "Message [payload=" + asString(byteBuffer) + ", messageContext=" + messageContext + "]";
+        return new StringBuilder().append("MessageProvider [payload=")
+                                  .append(asString(byteBuffer))
+                                  .append(", messageContext=")
+                                  .append(messageContext)
+                                  .append("]")
+                                  .toString();
     }
 
 }
