@@ -16,6 +16,7 @@
 package in.bytehue.messaging.mqtt5.provider.command;
 
 import static in.bytehue.messaging.mqtt5.provider.command.MessagePubSubGogoCommand.PID;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.stackTraceToString;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.osgi.service.component.annotations.ConfigurationPolicy.REQUIRE;
 
@@ -59,8 +60,9 @@ public final class MessagePubSubGogoCommand {
 
     @Descriptor("Subscribes to specific topic/filter with the input context")
     public String sub(
+
             @Descriptor("Topic/Filter")
-            @Parameter(names = { "-t", "-topic" }, absentValue = "")
+            @Parameter(names = { "-t", "-topic" }, absentValue = "", presentValue = "UNSPECIFIED")
             final String topic,
 
             @Descriptor("Quality of Service")
@@ -75,9 +77,6 @@ public final class MessagePubSubGogoCommand {
             @Parameter(names = { "-r", "-retain" }, absentValue = "false")
             final boolean retainAsPublished) {
 
-        if (topic.isEmpty()) {
-            throw new IllegalArgumentException("Topic cannot be empty");
-        }
         final MqttMessageContextBuilder mcb = mcbFactory.getService();
         try {
             final MessageContext context = mcb.channel(topic)
@@ -100,8 +99,9 @@ public final class MessagePubSubGogoCommand {
 
     @Descriptor("Publishes to specific topic/filter with the input context")
     public String pub(
+
             @Descriptor("Topic/Filter")
-            @Parameter(names = { "-t", "-topic" }, absentValue = "")
+            @Parameter(names = { "-t", "-topic" }, absentValue = "", presentValue = "UNSPECIFIED")
             final String topic,
 
             @Descriptor("Quality of Service")
@@ -128,14 +128,10 @@ public final class MessagePubSubGogoCommand {
             @Parameter(names = { "-e", "-expiry" }, absentValue = "0")
             final long messageExpiryInterval,
 
-
             @Descriptor("User Properties, such as 'A=B#C=D#E=F'")
             @Parameter(names = { "-u", "-userProperties" }, absentValue = "")
             final String userProperties) {
 
-        if (topic.isEmpty()) {
-            throw new IllegalArgumentException("Topic cannot be empty");
-        }
         final MqttMessageContextBuilder mcb = mcbFactory.getService();
         try {
             final Map<String, String> properties = initUserProperties(userProperties);
@@ -149,7 +145,7 @@ public final class MessagePubSubGogoCommand {
                                        .buildMessage();
             publisher.publish(message);
         } catch (final Exception e) {
-            e.printStackTrace();
+            return stackTraceToString(e);
         } finally {
             mcbFactory.ungetService(mcb);
         }
