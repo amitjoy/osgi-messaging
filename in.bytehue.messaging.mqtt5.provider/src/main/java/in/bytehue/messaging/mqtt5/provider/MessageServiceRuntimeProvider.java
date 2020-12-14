@@ -37,7 +37,6 @@ import static org.osgi.service.messaging.Features.REPLY_TO;
 import static org.osgi.service.messaging.Features.REPLY_TO_MANY_PUBLISH;
 import static org.osgi.service.messaging.Features.REPLY_TO_MANY_SUBSCRIBE;
 
-import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
@@ -74,9 +73,6 @@ import in.bytehue.messaging.mqtt5.provider.helper.GogoCommand;
 @GogoCommand(scope = "mqtt", function = "runtime")
 //@formatter:on
 public final class MessageServiceRuntimeProvider implements MessageServiceRuntime {
-
-    @Activate
-    private BundleContext bundleContext;
 
     @Activate
     private ComponentContext componentContext;
