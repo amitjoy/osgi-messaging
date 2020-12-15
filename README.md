@@ -131,7 +131,7 @@ The `in.bytehue.messaging.publisher` PID can be used to configure the internal t
 * `numThreads` - Number of Threads for the internal thread pool (optional) (default: `20`)
 * `threadNamePrefix` - Prefix of the thread name (optional) (default: `mqtt-replyto-publisher`)
 * `threadNameSuffix` - Suffix of the thread name (supports only `%d` format specifier) (optional) (default: `-%d`)
-* `isDaemon` - Flag to set if the threads will be daemon threads (optional) (default: `false`)
+* `isDaemon` - Flag to set if the threads will be daemon threads (optional) (default: `true`)
 
 #### Primary Messaging APIs
 

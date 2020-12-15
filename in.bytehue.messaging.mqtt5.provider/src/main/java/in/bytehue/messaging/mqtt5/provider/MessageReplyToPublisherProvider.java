@@ -80,7 +80,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
         String threadNameSuffix() default "-%d";
 
         @AttributeDefinition(name = "Flag to set if the threads will be daemon threads")
-        boolean isDaemon() default false;
+        boolean isDaemon() default true;
     }
     //@formatter:on
 
