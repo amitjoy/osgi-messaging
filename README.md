@@ -37,7 +37,7 @@ This project comprises three projects -
 
 ### Installation
 
-To use it in OSGi environment, you only need to install `in.bytehue.messaging.mqtt5.provider`.
+To use it in the OSGi environment, you only need to install `in.bytehue.messaging.mqtt5.provider`.
 
 --------------------------------------------------------------------------------------------------------------
 
