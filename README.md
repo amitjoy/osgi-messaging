@@ -29,7 +29,7 @@ This repository comprises the rudimentary API extracted from the [OSGi RFC 246](
 This project comprises three projects - 
 
 1. `org.osgi.service.messaging` - The core OSGi messaging specification API
-2. `in.bytehue.messaging.mqtt5.api` - The extended API
+2. `in.bytehue.messaging.mqtt5.api` - The extended MQTT 5 API
 2. `in.bytehue.messaging.mqtt5.provider` - The core implementation
 3. `in.bytehue.messaging.mqtt5.example` - Example project showing how to use in codebase
 
