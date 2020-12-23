@@ -22,7 +22,7 @@ This repository comprises the rudimentary API extracted from the [OSGi RFC 246](
 1. Java 8
 2. OSGi R7
 
---------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------
 
 ### Dependencies
 
@@ -33,7 +33,7 @@ This project comprises three projects -
 2. `in.bytehue.messaging.mqtt5.provider` - The core implementation
 3. `in.bytehue.messaging.mqtt5.example` - Example project showing how to use in codebase
 
---------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------
 
 ### Installation
 
