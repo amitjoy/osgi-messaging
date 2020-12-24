@@ -124,7 +124,7 @@ The `in.bytehue.messaging.client` PID can be used to configure the client. The c
 * `disconnectionReasonDescription` - Reason for the disconnection when the component is stopped (optional) (default: `OSGi Component Deactivated`)
 * `disconnectionReasonCode` - Code for the disconnection when the component is stopped (optional) (default: `NORMAL_DISCONNECTION`) (Refer to `com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode`)
 
-#### Reply-To Publisher Internal Executor Configuration
+#### Reply To Publisher Internal Executor Configuration
 
 The `in.bytehue.messaging.publisher` PID can be used to configure the internal thread pool
 
