@@ -15,7 +15,7 @@ This repository comprises the rudimentary API extracted from the [OSGi RFC 246](
 [![Build - Passing](https://img.shields.io/badge/Build-Passing-brightgreen)](https://github.com/amitjoy/osgi-messaging/runs/1485969918)
 [![GitHub release](https://img.shields.io/github/release/amitjoy/osgi-messaging?include_prereleases&sort=semver)](https://github.com/amitjoy/osgi-messaging/releases/)
 
---------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------
 
 ### Minimum Requirements
 
