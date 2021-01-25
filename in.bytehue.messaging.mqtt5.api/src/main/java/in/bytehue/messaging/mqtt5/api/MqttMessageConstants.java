@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2021 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -58,11 +58,7 @@ public final class MqttMessageConstants {
     /**
      * Defines standard constants for the MQTT messaging extension features
      */
-    public static final class Extension {
-
-        private Extension() {
-            throw new IllegalAccessError(NON_INSTANTIABLE);
-        }
+    public abstract static class Extension {
 
         /**
          * The name of the {@code Message Expiry Interval} extension of the MQTT 5.0 specification.
@@ -110,11 +106,7 @@ public final class MqttMessageConstants {
     /**
      * Defines standard constants for the MQTT messaging configuration PIDs
      */
-    public static final class ConfigurationPid {
-
-        private ConfigurationPid() {
-            throw new IllegalAccessError(NON_INSTANTIABLE);
-        }
+    public abstract static class ConfigurationPid {
 
         /**
          * The configuration PID to configure the internal executor in Reply-To publisher
