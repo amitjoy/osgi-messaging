@@ -22,7 +22,7 @@ javac.compliance                      =         ${javac.source}
 javac.debug                           =         on
 javac.encoding                        =         UTF-8
 
--sources                              =         false
+-sources                              =         true
 -resolve.effective                    =         resolve, active
 -x-overwritestrategy                  =         gc
 -nodefaultversion                     =         true
