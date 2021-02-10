@@ -228,7 +228,6 @@ public final class MessageClientProvider {
 
         final String clientId = clientID(bundleContext);
 
-        // @formatter:off
         clientBuilder = Mqtt5Client.builder()
                                    .identifier(MqttClientIdentifier.of(clientId))
                                    .serverHost(config.server())
@@ -252,7 +251,7 @@ public final class MessageClientProvider {
     }
 
     public void updateLWT(final MqttWillPublish lastWillMessage) {
-        // disconnect but keep the previous session alive for 10 mins before reconnection
+        // disconnect but keep the previous session alive for 10 minutes before reconnection
         // previous session is stored to not remove any previous subscriptions
         client.disconnectWith()
                   .reasonCode(NORMAL_DISCONNECTION)
