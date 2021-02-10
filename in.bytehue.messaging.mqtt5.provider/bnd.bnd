@@ -76,7 +76,7 @@ Import-Package                 : \
 	!net.jpountz.lz4,\
 	!net.jpountz.xxhash,\
 	!org.apache.commons.logging,\
-	!org.apache.felix.service.command,\
+	org.apache.felix.service.command;resolution:=optional,\
 	!org.apache.log4j,\
 	!org.apache.logging.log4j,\
 	!org.apache.logging.log4j.message,\

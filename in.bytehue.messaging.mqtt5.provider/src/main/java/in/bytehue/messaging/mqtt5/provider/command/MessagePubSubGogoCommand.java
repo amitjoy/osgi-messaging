@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2021 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -36,6 +36,7 @@ import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
 import in.bytehue.messaging.mqtt5.provider.MessagePublisherProvider;
 import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionProvider;
 import in.bytehue.messaging.mqtt5.provider.helper.GogoCommand;
+import in.bytehue.messaging.mqtt5.provider.helper.Table;
 
 // @formatter:off
 @GogoCommand(scope = "mqtt", function = { "pub", "sub" })
@@ -62,23 +63,33 @@ public final class MessagePubSubGogoCommand {
     public String sub(
 
             @Descriptor("Topic/Filter")
-            @Parameter(names = { "-t", "-topic" }, absentValue = "", presentValue = "UNSPECIFIED")
+            @Parameter(names = { "-t", "--topic" }, absentValue = "foo/bar")
             final String topic,
 
             @Descriptor("Quality of Service")
-            @Parameter(names = { "-q", "-qos" }, absentValue = "0")
+            @Parameter(names = { "-q", "--qos" }, absentValue = "0")
             final int qos,
 
             @Descriptor("Receive Local")
-            @Parameter(names = { "-l", "-local" }, absentValue = "false")
+            @Parameter(names = { "-l", "--local" }, absentValue = "false")
             final boolean receiveLocal,
 
-            @Descriptor("Retain as published")
-            @Parameter(names = { "-r", "-retain" }, absentValue = "false")
+            @Descriptor("Retain as Published")
+            @Parameter(names = { "-r", "--retain" }, absentValue = "false")
             final boolean retainAsPublished) {
 
         final MqttMessageContextBuilder mcb = mcbFactory.getService();
         try {
+            // display the configuration
+            final Table st = new Table();
+            st.setShowVerticalLines(true);
+            st.setHeaders("Configuration", "Value");
+            st.addRow("Channel", topic);
+            st.addRow("QoS", String.valueOf(qos));
+            st.addRow("Receive Local", String.valueOf(receiveLocal));
+            st.addRow("Retain as Published", String.valueOf(retainAsPublished));
+            st.print();
+
             final MessageContext context = mcb.channel(topic)
                                               .withQoS(qos)
                                               .withReceiveLocal(receiveLocal)
@@ -101,40 +112,54 @@ public final class MessagePubSubGogoCommand {
     public String pub(
 
             @Descriptor("Topic/Filter")
-            @Parameter(names = { "-t", "-topic" }, absentValue = "", presentValue = "UNSPECIFIED")
+            @Parameter(names = { "-t", "--topic" }, absentValue = "foo/bar")
             final String topic,
 
             @Descriptor("Quality of Service")
-            @Parameter(names = { "-q", "-qos" }, absentValue = "0")
+            @Parameter(names = { "-q", "--qos" }, absentValue = "0")
             final int qos,
 
             @Descriptor("Receive Local")
-            @Parameter(names = { "-l", "-local" }, absentValue = "false")
+            @Parameter(names = { "-l", "--local" }, absentValue = "false")
             final boolean receiveLocal,
 
             @Descriptor("Retain")
-            @Parameter(names = { "-r", "-retain" }, absentValue = "false")
+            @Parameter(names = { "-r", "--retain" }, absentValue = "false")
             final boolean retain,
 
             @Descriptor("Content Type")
-            @Parameter(names = { "-ct", "-contentType" }, absentValue = "text/plain")
+            @Parameter(names = { "-ct", "--contentType" }, absentValue = "text/plain")
             final String contentType,
 
             @Descriptor("Content")
-            @Parameter(names = { "-c", "-content" }, absentValue = "")
+            @Parameter(names = { "-c", "--content" }, absentValue = "foobar")
             final String content,
 
             @Descriptor("Message Expiry Interval")
-            @Parameter(names = { "-e", "-expiry" }, absentValue = "0")
+            @Parameter(names = { "-e", "--expiry" }, absentValue = "0")
             final long messageExpiryInterval,
 
             @Descriptor("User Properties, such as 'A=B#C=D#E=F'")
-            @Parameter(names = { "-u", "-userProperties" }, absentValue = "")
+            @Parameter(names = { "-u", "--userProperties" }, absentValue = "")
             final String userProperties) {
 
         final MqttMessageContextBuilder mcb = mcbFactory.getService();
         try {
             final Map<String, String> properties = initUserProperties(userProperties);
+
+            // display the configuration
+            final Table st = new Table();
+            st.setShowVerticalLines(true);
+            st.setHeaders("Configuration", "Value");
+            st.addRow("Channel", topic);
+            st.addRow("QoS", String.valueOf(qos));
+            st.addRow("Retain", String.valueOf(retain));
+            st.addRow("Content Type", contentType);
+            st.addRow("Content", content);
+            st.addRow("Message Expiry Interval", String.valueOf(messageExpiryInterval));
+            st.addRow("User Properties", String.valueOf(properties));
+            st.print();
+
             final Message message = mcb.channel(topic)
                                        .withQoS(qos)
                                        .withRetain(retain)
@@ -154,6 +179,9 @@ public final class MessagePubSubGogoCommand {
 
     private Map<String, String> initUserProperties(final String userProperties) {
         final Map<String, String> map = new HashMap<>();
+        if (userProperties.indexOf('#') == -1) {
+            return map;
+        }
         for (final String pair : userProperties.split("#")) {
             final String[] kv = pair.split("=");
             map.put(kv[0], kv[1]);
