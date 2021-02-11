@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2021 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -24,6 +24,7 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETA
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adapt;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adaptTo;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getCorrelationId;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getQoS;
 import static java.util.Collections.emptyMap;
 import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_DELIVERY;
@@ -33,9 +34,10 @@ import static org.osgi.service.messaging.Features.EXTENSION_QOS;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.log.Logger;
@@ -80,6 +82,9 @@ public final class MessagePublisherProvider implements MessagePublisher {
     @Reference
     private MessageClientProvider messagingClient;
 
+    @Activate
+    private BundleContext bundleContext;
+
     @Override
     public void publish(final Message message) {
         publish(message, null, null);
@@ -108,8 +113,7 @@ public final class MessagePublisherProvider implements MessagePublisher {
 
             final String contentType = context.getContentType();
             final String replyToChannel = context.getReplyToChannel();
-            final String ctxCorrelationId = context.getCorrelationId();
-            final String correlationId = ctxCorrelationId != null ? ctxCorrelationId : UUID.randomUUID().toString();
+            final String correlationId = getCorrelationId((MessageContextProvider) context, bundleContext, logger);
             final ByteBuffer content = message.payload();
 
             final Object messageExpiry = extensions.getOrDefault(MESSAGE_EXPIRY_INTERVAL, null);

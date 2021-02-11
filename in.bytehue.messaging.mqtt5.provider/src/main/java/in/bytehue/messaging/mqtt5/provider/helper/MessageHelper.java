@@ -39,6 +39,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
@@ -69,6 +70,7 @@ import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserPropertiesBuilder;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatIndicator;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
 
+import in.bytehue.messaging.mqtt5.api.MqttMessageCorrelationIdGenerator;
 import in.bytehue.messaging.mqtt5.provider.MessageContextProvider;
 
 public final class MessageHelper {
@@ -382,5 +384,33 @@ public final class MessageHelper {
         }
         return new String(buffer.array(), UTF_8);
     }
+
+    // @formatter:off
+    public static String getCorrelationId(
+            final MessageContextProvider messageContext,
+            final BundleContext bundleContext,
+            final Logger logger) {
+
+        final String predefinedCorrelationId = messageContext.getCorrelationId();
+        if (predefinedCorrelationId != null) {
+            return predefinedCorrelationId;
+        }
+        final String correlationIdGenerator = messageContext.correlationIdGenerator;
+        if (correlationIdGenerator == null) {
+            return UUID.randomUUID().toString();
+        }
+        final Optional<MqttMessageCorrelationIdGenerator> service =
+                getOptionalService(MqttMessageCorrelationIdGenerator.class,
+                                   correlationIdGenerator,
+                                   bundleContext,
+                                   logger);
+        if (service.isPresent()) {
+            final String generatedId = service.get().generate();
+            requireNonNull(generatedId, "'MqttMessageCorrelationIdGenerator' (filter: " + correlationIdGenerator  + " returned 'null' value");
+            return generatedId;
+        }
+        return UUID.randomUUID().toString();
+    }
+    // @formatter:on
 
 }

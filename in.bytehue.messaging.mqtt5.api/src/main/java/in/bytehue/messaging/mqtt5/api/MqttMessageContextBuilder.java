@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2021 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -97,14 +97,24 @@ public interface MqttMessageContextBuilder extends MessageContextBuilder {
      *
      * The correlation id is an identifier to assign a response to its corresponding request.
      *
-     * This options can be used when the underlying system doesn't provide the generation of these
+     * This option can be used when the underlying system doesn't provide the generation of these
      * correlation ids
      *
-     * @param correlationId the correlationId
+     * @param correlationId the correlation id
      * @return the {@link MqttMessageContextBuilder} instance
      */
     @Override
     MqttMessageContextBuilder correlationId(String correlationId);
+
+    /**
+     * Defines a service filter used to generate correlation id.
+     *
+     * The correlation id is an identifier to assign a response to its corresponding request.
+     *
+     * @param filter the correlation id generator filter
+     * @return the {@link MqttMessageContextBuilder} instance
+     */
+    MqttMessageContextBuilder correlationIdGenerator(String filter);
 
     /**
      * Defines a content encoding

@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2021 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -64,6 +64,7 @@ package in.bytehue.messaging.mqtt5.api;
  * <p>
  * <ul>
  * <li>{@code javax.net.ssl.TrustManagerFactory}</li>
+ * <li>{@code in.bytehue.messaging.mqtt5.api.MqttMessageCorrelationIdGenerator}</li>
  * <li>{@code com.hivemq.client.mqtt.lifecycle.MqttClientConnectedListener}</li>
  * <li>{@code com.hivemq.client.mqtt.lifecycle.MqttClientDisconnectedListener}</li>
  * <li>{@code com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism}</li>
