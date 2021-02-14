@@ -78,7 +78,7 @@ This project is licensed under Apache License Version 2.0 [![License](http://img
 
 #### Client Configuration
 
-The `in.bytehue.messaging.client` PID can be used to configure the client. The configurable properties are listed below:
+The `in.bytehue.messaging.client` PID can be used to configure the client. The configurable properties are as follows:
 
 * `id` - Client Identifier (optional) (default: empty string) - if empty, `in.bytehue.client.id` framework property is checked and if unavailable, a random identifier will be generated.
 * `server` - Server Address (optional) (default: `broker.hivemq.com`)
