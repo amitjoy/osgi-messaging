@@ -331,6 +331,7 @@ public final class Mqtt5LwtPublish {
 In certain circumstances the MQTT client requires few services to be up and running before the client is connected to the broker. For example, you could provide the following services for the client to use before it connects to the server:
 
 * `javax.net.ssl.TrustManagerFactory`
+*.`in.bytehue.messaging.mqtt5.api.MqttMessageCorrelationIdGenerator`
 * `com.hivemq.client.mqtt.lifecycle.MqttClientConnectedListener`
 * `com.hivemq.client.mqtt.lifecycle.MqttClientDisconnectedListener`
 * `com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism`
