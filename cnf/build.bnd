@@ -53,7 +53,6 @@ bin.directory                         =         ${if;${is;${driver};gradle};targ
 testbin.directory                     =         ${if;${is;${driver};gradle};target/gradle/test-classes;target/test-classes}
 bin.testbin.directory                 =         ${if;${is;${driver};gradle};target/gradle/classes,target/gradle/test-classes;target/classes,target/test-classes}
 
--diffignore                           =         Git-Commit, Git-Branch
 -builderignore                        =         ${bin.testbin.directory}
 
 -buildpath.all = \
