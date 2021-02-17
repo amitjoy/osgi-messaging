@@ -15,6 +15,8 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.api;
 
+import org.osgi.annotation.versioning.ConsumerType;
+
 /**
  * This is a marker interface which consumers can implement to provide services with properties
  * that can be used as conditional target to the MQTT client. That means, consumer can provide
@@ -78,6 +80,7 @@ package in.bytehue.messaging.mqtt5.api;
  * This will ensure that your services will be up and running before the client gets activated. This also
  * guarantees that the start order of the bundles is not at all required in this scenario.
  */
+@ConsumerType
 public interface TargetCondition {
 
     /**
