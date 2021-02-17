@@ -1,7 +1,6 @@
 Bundle-Name                    : MQTT 5.0 Messaging Adapter
-Bundle-Description             : This bundle provides the MQTT 5.0 implementation \
-								 that conforms to OSGi messaging specification. \
-								 Internally this makes use of HiveMQ MQTT client \
+Bundle-Description             : MQTT 5.0 implementation conforming to OSGi messaging specification. \
+								 Internally making use of HiveMQ MQTT client \
 								 since it is MQTT 5.0 compatible and hence this bundle \
 								 exports the HiveMQ MQTT client APIs too for further extension.
 
