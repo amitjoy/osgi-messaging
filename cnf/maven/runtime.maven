@@ -19,7 +19,7 @@ org.apache.felix:org.apache.felix.configurator:1.0.12
 org.apache.felix:org.apache.felix.converter:1.0.14
 org.apache.felix:org.apache.felix.coordinator:1.0.2
 org.apache.felix:org.apache.felix.eventadmin:1.6.2
-org.apache.felix:org.apache.felix.framework:7.0.0
+org.apache.felix:org.apache.felix.framework:6.0.4
 org.apache.felix:org.apache.felix.gogo.command:1.1.2
 org.apache.felix:org.apache.felix.gogo.runtime:1.1.4
 org.apache.felix:org.apache.felix.gogo.shell:1.1.4
