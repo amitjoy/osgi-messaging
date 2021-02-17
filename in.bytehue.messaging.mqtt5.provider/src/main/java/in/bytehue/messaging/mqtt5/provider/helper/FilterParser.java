@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2021 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -33,6 +33,15 @@ import org.osgi.resource.Requirement;
 import org.osgi.resource.Resource;
 
 public final class FilterParser {
+
+    private static final String NAMESPACE_CONTRACT = "osgi.contract";
+    private static final String NAMESPACE_SERVICE = "osgi.service";
+    private static final String NAMESPACE_EXTENDER = "osgi.extender";
+    private static final String NAMESPACE_CONTENT = "osgi.content";
+    private static final String NAMESPACE_IDENTITY = "osgi.identity";
+    private static final String NAMESPACE_WIRING_PACKAGE = "osgi.wiring.package";
+    private static final String NAMESPACE_WIRING_BUNDLE = "osgi.wiring.bundle";
+    private static final String NAMESPACE_WIRING_HOST = "osgi.wiring.host";
 
     final Map<String, Expression> cache = new HashMap<>();
 
@@ -78,7 +87,7 @@ public final class FilterParser {
     }
 
     public abstract static class Expression {
-        static Expression TRUE = new Expression() {
+        static Expression trueExpression = new Expression() {
 
             @Override
             public boolean eval(final Map<String, ?> map) {
@@ -87,7 +96,7 @@ public final class FilterParser {
 
             @Override
             Expression not() {
-                return FALSE;
+                return falseExpression;
             }
 
             @Override
@@ -100,7 +109,7 @@ public final class FilterParser {
                 sb.append("true");
             }
         };
-        static Expression FALSE = new Expression() {
+        static Expression falseExpression = new Expression() {
 
             @Override
             public boolean eval(final Map<String, ?> map) {
@@ -114,7 +123,7 @@ public final class FilterParser {
 
             @Override
             Expression not() {
-                return TRUE;
+                return trueExpression;
             }
 
             @Override
@@ -312,13 +321,13 @@ public final class FilterParser {
 
         static Expression make(final String key, final Op op, final String value) {
             if (op == Op.EQUAL) {
-                if ("osgi.wiring.bundle".equals(key)) {
+                if (NAMESPACE_WIRING_BUNDLE.equals(key)) {
                     return new BundleExpression(value);
-                } else if ("osgi.wiring.host".equals(key)) {
+                } else if (NAMESPACE_WIRING_HOST.equals(key)) {
                     return new HostExpression(value);
-                } else if ("osgi.wiring.package".equals(key)) {
+                } else if (NAMESPACE_WIRING_PACKAGE.equals(key)) {
                     return new PackageExpression(value);
-                } else if ("osgi.identity".equals(key)) {
+                } else if (NAMESPACE_IDENTITY.equals(key)) {
                     return new IdentityExpression(value);
                 }
             }
@@ -395,7 +404,7 @@ public final class FilterParser {
 
         @Override
         public boolean eval(final Map<String, ?> map) {
-            final String p = (String) map.get("osgi.wiring.package");
+            final String p = (String) map.get(NAMESPACE_WIRING_PACKAGE);
             if (p == null) {
                 return false;
             }
@@ -438,7 +447,7 @@ public final class FilterParser {
 
         @Override
         public boolean eval(final Map<String, ?> map) {
-            final String p = (String) map.get("osgi.wiring.host");
+            final String p = (String) map.get(NAMESPACE_WIRING_HOST);
             if (p == null) {
                 return false;
             }
@@ -481,7 +490,7 @@ public final class FilterParser {
 
         @Override
         public boolean eval(final Map<String, ?> map) {
-            final String p = (String) map.get("osgi.wiring.bundle");
+            final String p = (String) map.get(NAMESPACE_WIRING_BUNDLE);
             if (p == null) {
                 return false;
             }
@@ -521,7 +530,7 @@ public final class FilterParser {
 
         @Override
         public boolean eval(final Map<String, ?> map) {
-            final String p = (String) map.get("osgi.identity");
+            final String p = (String) map.get(NAMESPACE_IDENTITY);
             if (p == null) {
                 return false;
             }
@@ -595,6 +604,10 @@ public final class FilterParser {
     }
 
     public static class And extends SubExpression {
+
+        private static final String VERSION = "version";
+        private static final String BUNDLE_VERSION = "bundle-version";
+
         private And(final List<Expression> exprs) {
             expressions = exprs.toArray(new Expression[0]);
         }
@@ -621,17 +634,16 @@ public final class FilterParser {
 
             for (final Iterator<Expression> i = exprs.iterator(); i.hasNext();) {
                 final Expression e = i.next();
-                if (e == FALSE) {
-                    return FALSE;
+                if (e == falseExpression) {
+                    return falseExpression;
                 }
-                if (e == TRUE) {
+                if (e == trueExpression) {
                     i.remove();
                 }
             }
             if (exprs.isEmpty()) {
-                return TRUE;
+                return trueExpression;
             }
-
             SimpleExpression lower = null;
             SimpleExpression higher = null;
             WithRangeExpression wre = null;
@@ -642,7 +654,7 @@ public final class FilterParser {
                 } else if (e instanceof SimpleExpression) {
                     final SimpleExpression se = (SimpleExpression) e;
 
-                    if (se.key.equals("version") || se.key.equals("bundle-version")) {
+                    if (se.key.equals(VERSION) || se.key.equals(BUNDLE_VERSION)) {
                         if (se.op == Op.GREATER || se.op == Op.GREATER_OR_EQUAL) {
                             lower = se;
                         } else if (se.op == Op.LESS || se.op == Op.LESS_OR_EQUAL) {
@@ -651,19 +663,17 @@ public final class FilterParser {
                     }
                 }
             }
-
             RangeExpression range = null;
             if (lower != null || higher != null) {
                 if (lower != null && higher != null) {
                     exprs.remove(lower);
                     exprs.remove(higher);
-                    range = new RangeExpression("version", lower, higher);
+                    range = new RangeExpression(VERSION, lower, higher);
                 } else if (lower != null && lower.op == Op.GREATER_OR_EQUAL && higher == null) {
                     exprs.remove(lower);
-                    range = new RangeExpression("version", lower, null);
+                    range = new RangeExpression(VERSION, lower, null);
                 }
             }
-
             if (range != null) {
                 if (wre != null) {
                     wre.range = range;
@@ -671,26 +681,21 @@ public final class FilterParser {
                     exprs.add(range);
                 }
             }
-
             if (exprs.size() == 1) {
                 return exprs.get(0);
             }
-
             return new And(exprs);
         }
 
         @Override
         public void toString(final StringBuilder sb) {
-            if (expressions != null && expressions.length > 0) {
-                if (expressions[0] instanceof WithRangeExpression) {
-                    sb.append(expressions[0]);
-
-                    for (int i = 1; i < expressions.length; i++) {
-                        sb.append("; ");
-                        expressions[i].toString(sb);
-                    }
-                    return;
+            if (expressions != null && expressions.length > 0 && expressions[0] instanceof WithRangeExpression) {
+                sb.append(expressions[0]);
+                for (int i = 1; i < expressions.length; i++) {
+                    sb.append("; ");
+                    expressions[i].toString(sb);
                 }
+                return;
             }
             sb.append("&");
             super.toString(sb);
@@ -722,15 +727,15 @@ public final class FilterParser {
 
             for (final Iterator<Expression> i = exprs.iterator(); i.hasNext();) {
                 final Expression e = i.next();
-                if (e == TRUE) {
-                    return TRUE;
+                if (e == trueExpression) {
+                    return trueExpression;
                 }
-                if (e == FALSE) {
+                if (e == falseExpression) {
                     i.remove();
                 }
             }
             if (exprs.isEmpty()) {
-                return FALSE;
+                return falseExpression;
             }
 
             if (exprs.size() == 1) {
@@ -765,11 +770,11 @@ public final class FilterParser {
         }
 
         public static Expression make(final Expression expr) {
-            if (expr == TRUE) {
-                return FALSE;
+            if (expr == trueExpression) {
+                return falseExpression;
             }
-            if (expr == FALSE) {
-                return TRUE;
+            if (expr == falseExpression) {
+                return trueExpression;
             }
 
             final Expression notexpr = expr.not();
@@ -842,7 +847,7 @@ public final class FilterParser {
     public abstract static class ExpressionVisitor<T> {
         private final T defaultValue;
 
-        public ExpressionVisitor(final T defaultValue) {
+        ExpressionVisitor(final T defaultValue) {
             this.defaultValue = defaultValue;
         }
 
@@ -941,6 +946,9 @@ public final class FilterParser {
                         if (level == 0) {
                             return s.substring(n, nn);
                         }
+                        break;
+                    default:
+                        break;
                 }
             }
             // bad expression
@@ -963,22 +971,22 @@ public final class FilterParser {
         }
 
         String getKey() {
-            final int n = this.n;
+            final int localN = n;
             while (!isOpChar(current())) {
                 next();
             }
-            return s.substring(n, this.n).trim();
+            return s.substring(localN, n).trim();
         }
 
         String getValue() {
-            final int n = this.n;
+            final int localN = n;
             while (current() != ')') {
                 final char c = next();
                 if (c == '\\') {
-                    this.n++;
+                    n++;
                 }
             }
-            return s.substring(n, this.n);
+            return s.substring(localN, n);
         }
     }
 
@@ -992,7 +1000,7 @@ public final class FilterParser {
     public Expression parse(final Requirement req) {
         final String f = req.getDirectives().get("filter");
         if (f == null) {
-            return Expression.FALSE;
+            return Expression.falseExpression;
         }
         return parse(f);
     }
@@ -1085,21 +1093,21 @@ public final class FilterParser {
     public static String namespaceToCategory(final String namespace) {
         String result;
 
-        if ("osgi.wiring.package".equals(namespace)) {
+        if (NAMESPACE_WIRING_PACKAGE.equals(namespace)) {
             result = "Import-Package";
-        } else if ("osgi.wiring.bundle".equals(namespace)) {
+        } else if (NAMESPACE_WIRING_BUNDLE.equals(namespace)) {
             result = "Require-Bundle";
-        } else if ("osgi.wiring.host".equals(namespace)) {
+        } else if (NAMESPACE_WIRING_HOST.equals(namespace)) {
             result = "Fragment-Host";
-        } else if ("osgi.identity".equals(namespace)) {
+        } else if (NAMESPACE_IDENTITY.equals(namespace)) {
             result = "ID";
-        } else if ("osgi.content".equals(namespace)) {
+        } else if (NAMESPACE_CONTENT.equals(namespace)) {
             result = "Content";
-        } else if ("osgi.extender".equals(namespace)) {
+        } else if (NAMESPACE_EXTENDER.equals(namespace)) {
             result = "Extender";
-        } else if ("osgi.service".equals(namespace)) {
+        } else if (NAMESPACE_SERVICE.equals(namespace)) {
             result = "Service";
-        } else if ("osgi.contract".equals(namespace)) {
+        } else if (NAMESPACE_CONTRACT.equals(namespace)) {
             return "Contract";
         } else {
             result = namespace;
@@ -1135,13 +1143,13 @@ public final class FilterParser {
             return "<>";
         }
 
-        final List<Capability> capabilities = resource.getCapabilities("osgi.identity");
+        final List<Capability> capabilities = resource.getCapabilities(NAMESPACE_IDENTITY);
         if (capabilities.isEmpty()) {
             return resource.toString();
         }
 
         final Capability c = capabilities.get(0);
-        final String bsn = (String) c.getAttributes().get("osgi.identity");
+        final String bsn = (String) c.getAttributes().get(NAMESPACE_IDENTITY);
         final Object version = c.getAttributes().get("version");
         if (version == null) {
             return bsn;
