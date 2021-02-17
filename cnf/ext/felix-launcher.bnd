@@ -1,4 +1,4 @@
--runblacklist                   =         org.osgi.service.messaging 
+-runblacklist                   =         bnd.identity;id='org.osgi.service.messaging'
 -runrepos                       =         Runtime, Workspace
 -runfw                          =         org.apache.felix.framework
 -runtrace                       =         true 
