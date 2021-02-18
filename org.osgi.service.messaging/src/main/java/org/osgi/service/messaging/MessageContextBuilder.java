@@ -42,7 +42,7 @@ public interface MessageContextBuilder extends MessageContextProvider {
 
     /**
      * Defines a reply to address when submitting a reply-to request. So the receiver will
-     * knows, where to send the reply.
+     * know, where to send the reply.
      *
      * @param replyToAddress the reply address
      * @return the {@link MessageContextBuilder} instance
