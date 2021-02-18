@@ -122,13 +122,9 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
         final Deferred<Message> deferred = promiseFactory.deferred();
         final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
 
-        // @formatter:off
-        subscriber.subscribe(dto.subChannel)
-                  .forEach(m -> {
-                      publisher.publish(m, dto.pubChannel);
-                      deferred.resolve(m); // resolve the promise on first response
-                  });
-        // @formatter:on
+        publisher.publish(requestMessage, dto.pubChannel);
+        // resolve the promise on first response
+        subscriber.subscribe(dto.subChannel).forEach(deferred::resolve);
         return deferred.getPromise();
     }
 
@@ -141,13 +137,8 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
     public PushStream<Message> publishWithReplyMany(final Message requestMessage, final MessageContext replyToContext) {
         final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
 
-        // @formatter:off
-        return subscriber.subscribe(dto.subChannel)
-                         .map(m -> {
-                             publisher.publish(m, dto.pubChannel);
-                             return m;
-                         });
-        // @formatter:on
+        publisher.publish(requestMessage, dto.pubChannel);
+        return subscriber.subscribe(dto.subChannel);
     }
 
     private class ReplyToDTO {

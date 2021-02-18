@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2021 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -26,6 +26,7 @@ import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContextBuilder;
 import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.MessageSubscription;
+import org.osgi.service.messaging.replyto.ReplyToPublisher;
 import org.osgi.service.messaging.replyto.ReplyToSingleSubscriptionHandler;
 
 import aQute.launchpad.Launchpad;
@@ -46,12 +47,15 @@ public final class MessageReplyToSingleHandlerTest {
     private MessagePublisher publisher;
 
     @Service
+    private ReplyToPublisher replyToPublisher;
+
+    @Service
     private MessageSubscription subscriber;
 
     static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
 
     @Test
-    public void test_reply_to_single_subscription_handler() throws Exception {
+    public void test_reply_to_single_subscription_handler_1() throws Exception {
         final AtomicBoolean flag1 = new AtomicBoolean();
         final AtomicBoolean flag2 = new AtomicBoolean();
 
@@ -91,6 +95,51 @@ public final class MessageReplyToSingleHandlerTest {
         subscriber.subscribe(replyToChannel).forEach(m -> flag2.set(true));
 
         publisher.publish(message);
+        waitForRequestProcessing(flag1);
+        waitForRequestProcessing(flag2);
+    }
+
+    @Test
+    public void test_reply_to_single_subscription_handler_2() throws Exception {
+        final AtomicBoolean flag1 = new AtomicBoolean();
+        final AtomicBoolean flag2 = new AtomicBoolean();
+
+        final String channel = "a/b";
+        final String replyToChannel = "c/d";
+        final String payload = "abc";
+        final String contentType = "text/plain";
+
+        final ReplyToSingleSubscriptionHandler handler = (m, mcb) -> {
+            // @formatter:off
+            final Message message = mcb.contentType(contentType)
+                                       .content(ByteBuffer.wrap(payload.getBytes()))
+                                       .buildMessage();
+            // @formatter:on
+            flag1.set(true);
+            return message;
+        };
+        final String targetKey = "osgi.messaging.replyToSubscription.target";
+        final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
+
+        final String channelKey = "osgi.messaging.replyToSubscription.channel";
+        final String[] channelValue = new String[] { replyToChannel };
+
+        final String replyToChannelKey = "osgi.messaging.replyToSubscription.replyChannel";
+        final String[] replyToChannelValue = new String[] { channel };
+
+        launchpad.register(ReplyToSingleSubscriptionHandler.class, handler, targetKey, targetValue, channelKey,
+                channelValue, replyToChannelKey, replyToChannelValue);
+
+        // @formatter:off
+        final Message message = mcb.channel(channel)
+                                   .replyTo(replyToChannel)
+                                   .contentType(contentType)
+                                   .content(ByteBuffer.wrap(payload.getBytes()))
+                                   .buildMessage();
+        // @formatter:on
+
+        replyToPublisher.publishWithReply(message).onSuccess(m -> flag2.set(true));
+
         waitForRequestProcessing(flag1);
         waitForRequestProcessing(flag2);
     }
