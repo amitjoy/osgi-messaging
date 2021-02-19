@@ -61,8 +61,8 @@ bin.testbin.directory                 =         ${if;${is;${driver};gradle};targ
     osgi.core
 
 -testpath.all  = \
-	osgi.enroute.junit.wrapper, \
-	osgi.enroute.hamcrest.wrapper
+    osgi.enroute.junit.wrapper, \
+    osgi.enroute.hamcrest.wrapper
 
 -plugin.1.Build               = \
     aQute.bnd.repository.maven.provider.MavenBndRepository; \
