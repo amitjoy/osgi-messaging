@@ -184,11 +184,16 @@ public final class MessagePublisherProvider implements MessagePublisher {
                 return;
             }
             publishRequest.send()
-                          .thenAccept(result -> {
-                              if (isPublishSuccessful(result)) {
-                                  logger.debug("New publish request for '{}' has been processed successfully", ch);
+                          .whenComplete((result, throwable) -> {
+                              if (throwable != null) {
+                                  throwable.printStackTrace();
+                                  logger.error("Error occurred while publishing message", throwable);
                               } else {
-                                  logger.error("New publish request for '{}' failed - {}", ch, result.getError().get());
+                                  if (isPublishSuccessful(result)) {
+                                      logger.debug("New publish request for '{}' has been processed successfully", ch);
+                                  } else {
+                                      logger.error("New publish request for '{}' failed - {}", ch, result.getError().get());
+                                  }
                               }
                           });
             // @formatter:on
