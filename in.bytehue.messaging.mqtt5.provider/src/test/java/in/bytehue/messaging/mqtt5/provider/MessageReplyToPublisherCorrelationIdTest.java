@@ -62,8 +62,8 @@ public final class MessageReplyToPublisherCorrelationIdTest {
         final String payload = "abc";
 
         // @formatter:off
-        final Message message = mcb.channel(reqChannel)
-                                   .replyTo(resChannel)
+        final Message message = mcb.channel(resChannel)
+                                   .replyTo(reqChannel)
                                    .content(ByteBuffer.wrap(payload.getBytes()))
                                    .buildMessage();
 
@@ -98,12 +98,12 @@ public final class MessageReplyToPublisherCorrelationIdTest {
         final String payload = "abc";
 
         // @formatter:off
-        final Message message = mcb.channel(reqChannel)
+        final Message message = mcb.channel(resChannel)
                                    .content(ByteBuffer.wrap(payload.getBytes()))
                                    .buildMessage();
 
-        final MessageContext context = mcb.channel(reqChannel)
-                                          .replyTo(resChannel)
+        final MessageContext context = mcb.channel(resChannel)
+                                          .replyTo(reqChannel)
                                           .correlationIdGenerator("(custom_generator=abc)")
                                           .buildContext();
 

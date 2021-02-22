@@ -152,8 +152,8 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
             if (context == null) {
                 context = message.getContext();
             }
-            pubChannel = context.getReplyToChannel();
-            subChannel = context.getChannel();
+            pubChannel = context.getChannel();
+            subChannel = context.getReplyToChannel();
         }
 
         private void autoGenerateCorrelationIdIfAbsent(final Message message) {

@@ -122,17 +122,17 @@ public final class MessageReplyToSingleHandlerTest {
         final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
 
         final String channelKey = "osgi.messaging.replyToSubscription.channel";
-        final String[] channelValue = new String[] { replyToChannel };
+        final String[] channelValue = new String[] { channel }; // subscribe
 
         final String replyToChannelKey = "osgi.messaging.replyToSubscription.replyChannel";
-        final String[] replyToChannelValue = new String[] { channel };
+        final String[] replyToChannelValue = new String[] { replyToChannel }; // publish
 
         launchpad.register(ReplyToSingleSubscriptionHandler.class, handler, targetKey, targetValue, channelKey,
                 channelValue, replyToChannelKey, replyToChannelValue);
 
         // @formatter:off
-        final Message message = mcb.channel(channel)
-                                   .replyTo(replyToChannel)
+        final Message message = mcb.channel(channel) // publish
+                                   .replyTo(replyToChannel) // subscribe
                                    .contentType(contentType)
                                    .content(ByteBuffer.wrap(payload.getBytes()))
                                    .buildMessage();
