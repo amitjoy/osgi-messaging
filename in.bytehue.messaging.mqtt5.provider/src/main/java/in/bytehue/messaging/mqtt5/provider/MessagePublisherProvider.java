@@ -186,7 +186,6 @@ public final class MessagePublisherProvider implements MessagePublisher {
             publishRequest.send()
                           .whenComplete((result, throwable) -> {
                               if (throwable != null) {
-                                  throwable.printStackTrace();
                                   logger.error("Error occurred while publishing message", throwable);
                               } else {
                                   if (isPublishSuccessful(result)) {
