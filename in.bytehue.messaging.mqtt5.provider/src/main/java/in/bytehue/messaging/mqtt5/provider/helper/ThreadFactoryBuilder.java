@@ -46,6 +46,9 @@ public final class ThreadFactoryBuilder {
      */
     private String threadFactoryName;
 
+    /**
+     * Default thread name format
+     */
     private String threadNameFormat = "thread-%d";
 
     /**
