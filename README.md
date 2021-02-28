@@ -32,12 +32,14 @@ This project comprises three projects -
 2. `in.bytehue.messaging.mqtt5.api` - The extended MQTT 5 API
 2. `in.bytehue.messaging.mqtt5.provider` - The core implementation
 3. `in.bytehue.messaging.mqtt5.example` - Example project for usages
+4. `in.bytehue.messaging.mqtt5.remote.adapter` - Remote Device Management over MQTT
 
 ---------------------------------------------------------------------------------------------------------------
 
 ### Installation
 
-To use it in the OSGi environment, you only need to install `in.bytehue.messaging.mqtt5.provider`.
+To use it in the OSGi environment, you only need to install `in.bytehue.messaging.mqtt5.provider`. If you
+want to make use of the remote device management, you also need to install `in.bytehue.messaging.mqtt5.remote.adapter`.
 
 --------------------------------------------------------------------------------------------------------------
 
@@ -331,7 +333,7 @@ public final class Mqtt5LwtPublish {
 In certain circumstances the MQTT client requires few services to be up and running before the client is connected to the broker. For example, you could provide the following services for the client to use before it connects to the server:
 
 * `javax.net.ssl.TrustManagerFactory`
-*.`in.bytehue.messaging.mqtt5.api.MqttMessageCorrelationIdGenerator`
+* `in.bytehue.messaging.mqtt5.api.MqttMessageCorrelationIdGenerator`
 * `com.hivemq.client.mqtt.lifecycle.MqttClientConnectedListener`
 * `com.hivemq.client.mqtt.lifecycle.MqttClientDisconnectedListener`
 * `com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism`
@@ -356,3 +358,158 @@ You can make use of the following extended calculated values:
 * `[unq]key` - Calculates the number of unique key properties
 
 This will ensure that your services will be up and running before the client gets activated. This also guarantees that the start order of the bundles is not at all required in this scenario.
+
+--------------------------------------------------------------------------------------------------------------
+
+### Remote Resource Management
+
+This comprises the guidelines to structure your MQTT topic namespace for managing the remote resources or edge devices using MQTT. 
+
+The remote resources can receive two different types of requests:
+
+* Command to perform something (or popularly known as )Request/Response pattern)
+* Unsolicited events when the remote resource or device reports somethings periodically
+
+#### MQTT Request Response Communication
+
+In MQTT 5.0, adding a response topic enables the subscriber to reply to a specific topic. But there is no such standard or practice that has been advised by the MQTT specification. It is left to the user to introduce their own convention to follow.
+
+In this section, we will propose an efficient way of performing request-response communication using MQTT 5.0.
+
+A publisher or popularly known as the requester can send a payload to the topic having the following pattern:
+
+`control-topic-prefix/control-topic/client-id/application-id/method/resource-id`
+
+for example,
+
+* `CTRL/com/company/ABCD-1234/CONF-V1/GET/configurations`
+* `CTRL/com/company/ABCD-1234/CONF-V1/PUT/configurations/a.b.c.d`
+* `CTRL/com/company/ABCD-1234/APP-V1/GET/sensors/temperature`
+
+Let's discuss the pattern mentioned above first to understand the workflow better:
+
+* `control-topic-prefix` - The topic prefix to be used in the beginning of a topic for remote resource management. By default, it is configured to `CTRL`. It can also be configured to something else. Refer to `in.bytehue.messaging.mqtt5.remote` configuration. The recommended practice would be to use a single word with all in upper case.
+* `control-topic`- This is the topic which would be appended to the `control-topic-prefix`. As an example, this can be `com/company/project`. It is also configurable in the same configuration as mentioned above. By default, it is set to `in/bytehue`.
+* `client-id` - This is the MQTT client identifier.
+* `application-id` - This is the application running in the remote device that we want to access remotely. To support multiple versions of the application, it is recommended that a version number be assigned with the application-id (e.g., `CONF-V1`, `CONF-V2`, etc.).
+* `method` - This represents a specific operation we want to perform on the remote application. An application in the remote device supports different types of methods, such as, `GET`, `POST`, `PUT`, `DELETE` and `EXEC`
+* `resource-id` - This is the remainder of the total topic, for example, in `CTRL/com/company/ABCD-1234/CONF-V1/PUT/configurations/a.b.c.d` topic, `configurations/a.b.c.d` is the `resource-id`.
+
+
+##### Read Resources
+
+A requester can read resources from the remote device by sending a request to the following topic pattern:
+
+`control-topic-prefix/control-topic/client-id/application-id/GET/resource-id`
+
+for example,
+
+* `CTRL/com/company/ABCD-1234/CONF-V1/GET/configurations`
+* `CTRL/com/company/ABCD-1234/CONF-V1/GET/bundles`
+* `CTRL/com/company/ABCD-1234/APP-V1/GET/sensors/temperature`
+
+##### Create Resources
+
+Creating resources can be done by sending a request to the following topic pattern:
+
+`control-topic-prefix/control-topic/client-id/application-id/PUT/resource-id`
+
+for example,
+
+* `CTRL/com/company/ABCD-1234/CONF-V1/PUT/configurations/c.d.e.f`
+
+##### Update Resources
+
+Updating resources can be done by sending a request to the following topic pattern:
+
+`control-topic-prefix/control-topic/client-id/application-id/POST/resource-id`
+
+for example,
+
+* `CTRL/com/company/ABCD-1234/CONF-V1/POST/configurations/c.d.e.f`
+
+##### Delete Resources
+
+Similarly, any requester can delete resources on the remote device by sending a request to the following topic pattern:
+
+`control-topic-prefix/control-topic/client-id/application-id/DELETE/resource-id`
+
+for example,
+
+* `CTRL/com/company/ABCD-1234/CONF-V1/DELETE/configurations/c.d.e.f`
+* `CTRL/com/company/ABCD-1234/CONF-V1/DELETE/bundles/com.company.bundle`
+
+##### Executing Resources
+
+You can also execute resources by sending a request to the following topic pattern:
+
+`control-topic-prefix/control-topic/client-id/application-id/EXEC/resource-id`
+
+for example,
+
+* `CTRL/com/company/ABCD-1234/COMMAND-V1/EXEC/ifconfig`
+* `CTRL/com/company/ABCD-1234/CONF-V1/EXEC/bundles/com.company.bundle/start`
+
+##### Things to remember
+
+The receiving application would always reply to the `reply to` address with any content that both the parties (publisher and subscriber) understand. It can be serialized using Protobuf or JSON or XML, or any other serializer.
+
+The response contains the content if available, and there also exist some other user properties that denote the status of the request:
+
+The following properties will be available in the user properties payload:
+
+* `response.code` - The available response codes are: 
+    - `200` (`RESPONSE_CODE_OK`)
+    - `400` (`RESPONSE_CODE_BAD_REQUEST`)
+    - `404` (`RESPONSE_CODE_NOT_FOUND`)
+    - `500` (`RESPONSE_CODE_ERROR`)
+* `response.exception.message` - optional exception message or the string version of the exception itself if there is no message available
+
+#### MQTT Application on Remote Device
+
+Any remote device can introduce any application that would allow the application to participate in the aforementioned remote resource management.
+
+You just need to implement `in.bytehue.messaging.mqtt5.remote.api.MqttApplication`.
+
+##### Example
+
+```java
+@Component
+@MqttApplicationId("APP-V1")
+public final class MyMqttApplicationExample implements MqttApplication {
+
+    @Override
+    public Message doGet(
+            final String resource,
+            final Message requestMessage, 
+            final MessageContextBuilder messageBuilder) throws Exception {
+        return messageBuilder.content(ByteBuffer.wrap("RESPONSE".getBytes())).buildMessage();
+    }
+
+    @Override
+    public Message doPUT(
+            final String resource,
+            final Message requestMessage, 
+            final MessageContextBuilder messageBuilder) throws Exception {
+        final String[] res = resource.split("/");
+        if (res[0].equalsIgnoreCase("my-apps")) {
+            String resourceId = res[1];
+            String status = udpateResource();
+            return messageBuilder.content(ByteBuffer.wrap(status.getBytes())).buildMessage();
+        }
+        throw new IllegalStateException("Specified resource cannot be updated");
+    }
+    
+    private String updateResource(String resource) {
+        .....
+    }
+
+}
+```
+
+#### Remote Resource Management Configuration
+
+The `in.bytehue.messaging.mqtt5.remote` PID is used to configure the necessary configurations for remote resource management.
+
+* `controlTopicPrefix` - The control topic prefix for the remote resource management (default: `CTRL`)
+* `controlTopic` - The control topic for the remote resource management (default: `in/bytehue`)
