@@ -1,0 +1,5 @@
+Bundle-Name                    : MQTT 5.0 Remote Resource Management
+Bundle-Description             : This is used to provide necessary implementation for remote resource management
+
+-buildpath                     : in.bytehue.messaging.mqtt5.api, org.osgi.service.messaging
+-privatepackage                : in.bytehue.messaging.mqtt5.remote.*

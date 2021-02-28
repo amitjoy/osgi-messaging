@@ -46,7 +46,8 @@ Bundle-Description             : MQTT 5.0 implementation conforming to OSGi mess
 	aQute.*,\
 	com.hivemq.client.*,\
 	dagger.*,\
-	in.bytehue.*,\
+	in.bytehue.messaging.mqtt5.api,\
+	in.bytehue.messaging.mqtt5.provider.*,\
 	io.netty.*,\
 	io.reactivex.*,\
 	javax.inject.*,\
