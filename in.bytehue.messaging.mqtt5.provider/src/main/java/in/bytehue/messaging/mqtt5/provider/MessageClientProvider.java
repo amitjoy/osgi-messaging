@@ -435,7 +435,13 @@ public final class MessageClientProvider {
             // check for framework property if available
             final String id = bundleContext.getProperty(CLIENT_ID_FRAMEWORK_PROPERTY);
             // generate client ID if framework property is absent
-            return id == null ? UUID.randomUUID().toString() : id;
+            if (id == null) {
+                final String generatedClientId = UUID.randomUUID().toString();
+                System.setProperty(CLIENT_ID_FRAMEWORK_PROPERTY, generatedClientId);
+                return generatedClientId;
+            } else {
+                return id;
+            }
         } else {
             return config.id();
         }
