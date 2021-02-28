@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2021 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -15,6 +15,7 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.remote.adapter;
 
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.CLIENT_ID_FRAMEWORK_PROPERTY;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.CLIENT;
@@ -23,8 +24,10 @@ import static in.bytehue.messaging.mqtt5.remote.api.MqttApplication.APPLICATION_
 import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.REMOTE_RESOURCE_MANAGEMENT_PID;
 import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.RESPONSE_CODE_BAD_REQUEST;
 import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.RESPONSE_CODE_ERROR;
+import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.RESPONSE_CODE_OK;
 import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.RESPONSE_CODE_PROPERTY;
 import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.RESPONSE_EXCEPTION_MESSAGE_PROPERTY;
+import static java.util.stream.Collectors.joining;
 import static org.osgi.service.component.annotations.ReferenceCardinality.MULTIPLE;
 import static org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC;
 import static org.osgi.service.messaging.MessageConstants.MESSAGING_NAME_PROPERTY;
@@ -38,8 +41,11 @@ import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.osgi.dto.DTO;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -50,12 +56,12 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.log.Logger;
 import org.osgi.service.log.LoggerFactory;
 import org.osgi.service.messaging.Message;
-import org.osgi.service.messaging.MessageContextBuilder;
 import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.MessageSubscription;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
+import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
 import in.bytehue.messaging.mqtt5.remote.api.MqttApplication;
 
 @Component(configurationPid = REMOTE_RESOURCE_MANAGEMENT_PID)
@@ -71,8 +77,11 @@ public final class RemoteResourceManagement {
             name = "MQTT Remote Resource Management",
             description = "This configuration is used to configure the remote resource management")
     @interface Config {
-        @AttributeDefinition(name = "The control topic used as prefix for the remote resource management")
-        String controlTopic() default "in/bytehue/";
+        @AttributeDefinition(name = "The control topic prefix for the remote resource management")
+        String controlTopicPrefix() default "CTRL";
+
+        @AttributeDefinition(name = "The control topic for the remote resource management")
+        String controlTopic() default "in/bytehue";
     }
     //@formatter:on
 
@@ -84,11 +93,24 @@ public final class RemoteResourceManagement {
         EXEC
     }
 
-    private class RequestDTO {
+    private static class RequestDTO extends DTO {
         String applicationId;
         String resource;
         MethodType method;
         Message requestMessage;
+    }
+
+    private static class MqttException extends RuntimeException {
+
+        private static final long serialVersionUID = 4877572873981748364L;
+
+        private final int code;
+
+        public MqttException(final int code, final String message) {
+            super(message);
+            this.code = code;
+        }
+
     }
 
     @Reference(service = LoggerFactory.class)
@@ -104,12 +126,15 @@ public final class RemoteResourceManagement {
     private ConfigurationAdmin configurationAdmin;
 
     @Reference(target = FILTER)
-    private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
+    private ComponentServiceObjects<MqttMessageContextBuilder> mcbFactory;
 
     private final Map<String, MqttApplication> applications = new ConcurrentHashMap<>();
 
     @Activate
     private Config config;
+
+    @Activate
+    private BundleContext bundleContext;
 
     @Activate
     void init() {
@@ -139,25 +164,27 @@ public final class RemoteResourceManagement {
     /**
      * The topic to be subscribed for remote resource management
      * <p>
-     * {@code control-topic/account-name/client-id/REMOTE/application-id/method/resource-id}
+     * {@code control-topic/client-id/REMOTE/application-id/method/resource-id}
      * <p>
      * For example:
      * <ul>
-     * <li>{@code com/company/project/guest/ABCD-1234/REMOTE/CONF-V1/GET/configurations}</li>
-     * <li>{@code com/company/project/guest/ABCD-1234/REMOTE/CONF-V1/GET/configurations/a.b.c}</li>
-     * <li>{@code com/company/project/guest/ABCD-1234/REMOTE/CONF-V1/GET/bundles}</li>
-     * <li>{@code com/company/project/guest/ABCD-1234/REMOTE/APP-V1/EXEC/command}</li>
+     * <li>{@code CTRL/com/company/project/DEVICE-ID-1234/CONF-V1/GET/configurations}</li>
+     * <li>{@code CTRL/com/company/project/DEVICE-ID-1234/CONF-V2/GET/configurations/a.b.c}</li>
+     * <li>{@code CTRL/com/company/project/DEVICE-ID-1234/CONF-V3/GET/bundles}</li>
+     * <li>{@code CTRL/com/company/project/DEVICE-ID-1234/APP-V1/EXEC/command}</li>
      * </ul>
      *
      * In the aforementioned examples,
      * <ul>
+     * <li>{@code CTRL}</li> - Control Topic Prefix
      * <li>{@code com/company/project}</li> - Control Topic
-     * <li>{@code guest}</li> - Account Name
-     * <li>{@code ABCD-1234}</li> - Client ID
-     * <li>{@code ABCD-1234}</li> - Client ID
+     * <li>{@code DEVICE-ID-1234}</li> - Client ID
+     * <li>{@code DEVICE-ID-1234}</li> - Client ID
      * <li>{@code CONF-V1}</li> - Application ID
+     * <li>{@code CONF-V2}</li> - Application ID
+     * <li>{@code CONF-V3}</li> - Application ID
      * <li>{@code GET}</li> - Method. Refer to {@link MethodType}
-     * <li>{@code EXEC}</li> - Method. {@link MethodType}
+     * <li>{@code EXEC}</li> - Method. Refer to {@link MethodType}
      * <li>{@code configurations}</li> - Resource
      * <li>{@code configurations/a.b.c}</li> - Resource
      * <li>{@code bundles}</li> - Resource
@@ -166,15 +193,23 @@ public final class RemoteResourceManagement {
      * @return the topic to be subscribed
      */
     private String prepareSubscriptionTopic() {
-        final String clientID = getClientID();
-        return config.controlTopic() + "+/" + clientID + "/REMOTE/+";
+        return config.controlTopicPrefix() + "/" + config.controlTopic() + "/" + clientID() + "/#";
     }
 
-    private String getClientID() {
+    private String clientID() {
         try {
             final Configuration configuration = configurationAdmin.getConfiguration(CLIENT, "?");
             final Dictionary<String, Object> properties = configuration.getProperties();
-            return String.valueOf(properties.get("id"));
+            final Object clientId = properties.get("id");
+            // check for the existence of configuration
+            if (clientId == null) {
+                // check for framework property if available
+                final String id = bundleContext.getProperty(CLIENT_ID_FRAMEWORK_PROPERTY);
+                // generate client ID if framework property is absent
+                return id == null ? UUID.randomUUID().toString() : id;
+            } else {
+                return clientId.toString();
+            }
         } catch (final IOException e) {
             // not gonna happen at all
         }
@@ -188,7 +223,7 @@ public final class RemoteResourceManagement {
                 final RequestDTO request = prepareReqeust(reqMessage);
                 response = execMqttApplication(request);
             } catch (final MqttException e) {
-                final int code = e.code();
+                final int code = e.code;
                 response = prepareErrorMessage(e, code);
             } catch (final Exception e) {
                 response = prepareErrorMessage(e, RESPONSE_CODE_ERROR);
@@ -208,26 +243,28 @@ public final class RemoteResourceManagement {
     }
 
     private RequestDTO initRequest(final String topic, final Message requestMessage) {
-        final String clientID = getClientID();
+        final String clientID = clientID();
         final String subString = topic.substring(topic.indexOf(clientID) + clientID.length() + 1);
         final List<String> requestTokens = Arrays.asList(subString.split("/"));
 
-        if (requestTokens.size() != 5) {
+        // the token should have at least following 3 elements:
+        // APPLICATION-ID, METHOD and RESOURCE
+        if (requestTokens.size() < 3) {
             throw new MqttException(RESPONSE_CODE_BAD_REQUEST,
-                    "The request doesn't contain the following elements in order: REMOTE/CLIENT-ID/APP-ID/METHOD/RESOURCE");
+                    "The request doesn't contain the following elements in order: APPLICATION-ID/METHOD/RESOURCE");
         }
         final RequestDTO dto = new RequestDTO();
 
-        dto.applicationId = requestTokens.get(1);
-        dto.method = MethodType.valueOf(requestTokens.get(2));
-        dto.resource = requestTokens.get(3);
+        dto.applicationId = requestTokens.get(0);
+        dto.method = MethodType.valueOf(requestTokens.get(1));
+        dto.resource = requestTokens.subList(2, requestTokens.size()).stream().collect(joining("/"));
         dto.requestMessage = requestMessage;
 
         return dto;
     }
 
     private Message prepareErrorMessage(final Exception exception, final int code) {
-        final MessageContextBuilder mcb = mcbFactory.getService();
+        final MqttMessageContextBuilder mcb = mcbFactory.getService();
         try {
             final Map<String, Object> properties = new HashMap<>();
             properties.put(RESPONSE_CODE_PROPERTY, code);
@@ -245,35 +282,46 @@ public final class RemoteResourceManagement {
                     "MQTT Application " + request.applicationId + " doesn't exist");
         }
         Message message;
-        switch (request.method) {
-            case GET:
-                message = application.doGet(request.requestMessage, request.resource);
-                addErrorCode(message);
-                return message;
-            case POST:
-                message = application.doPost(request.requestMessage, request.resource);
-                addErrorCode(message);
-                return message;
-            case PUT:
-                message = application.doPut(request.requestMessage, request.resource);
-                addErrorCode(message);
-                return message;
-            case DELETE:
-                message = application.doDelete(request.requestMessage, request.resource);
-                addErrorCode(message);
-                return message;
-            case EXEC:
-                message = application.doExec(request.requestMessage, request.resource);
-                addErrorCode(message);
-                return message;
-            default:
-                throw new MqttException(RESPONSE_CODE_BAD_REQUEST, "Unable to execute the specified method");
+        final MqttMessageContextBuilder mcb = mcbFactory.getService();
+        try {
+            switch (request.method) {
+                case GET:
+                    message = application.doGet(request.resource, request.requestMessage, mcb);
+                    addErrorCode(message);
+                    return message;
+                case POST:
+                    message = application.doPost(request.resource, request.requestMessage, mcb);
+                    addErrorCode(message);
+                    return message;
+                case PUT:
+                    message = application.doPut(request.resource, request.requestMessage, mcb);
+                    addErrorCode(message);
+                    return message;
+                case DELETE:
+                    message = application.doDelete(request.resource, request.requestMessage, mcb);
+                    addErrorCode(message);
+                    return message;
+                case EXEC:
+                    message = application.doExec(request.resource, request.requestMessage, mcb);
+                    addErrorCode(message);
+                    return message;
+                default:
+                    throw new MqttException(RESPONSE_CODE_BAD_REQUEST, "Unable to execute the specified method");
+            }
+        } finally {
+            mcbFactory.ungetService(mcb);
         }
     }
 
     private void addErrorCode(final Message message) {
         final Map<String, Object> extensions = message.getContext().getExtensions();
-        extensions.computeIfAbsent(USER_PROPERTIES, e -> new HashMap<>().put(RESPONSE_CODE_PROPERTY, 200));
+        final Object userProperties = extensions.computeIfAbsent(USER_PROPERTIES, e -> new HashMap<>());
+        if (!(userProperties instanceof Map<?, ?>)) {
+            throw new MqttException(RESPONSE_CODE_ERROR, "User Properties should be an instance of map");
+        }
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> properties = (Map<String, Object>) userProperties;
+        properties.put(RESPONSE_CODE_PROPERTY, RESPONSE_CODE_OK);
     }
 
     private String toString(final Exception exception) {

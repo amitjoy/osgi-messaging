@@ -18,6 +18,8 @@ package in.bytehue.messaging.mqtt5.remote.api;
 import org.osgi.annotation.versioning.ConsumerType;
 import org.osgi.service.messaging.Message;
 
+import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
+
 /**
  * This interface {@link MqttApplication} should be implemented by consumers to leverage remote resource management
  *
@@ -31,7 +33,7 @@ import org.osgi.service.messaging.Message;
  * {@link Message)}</li>
  * <li>{@link MqttApplication#doPut} is used to implement a CREATE or UPDATE request for a resource identified in the
  * supplied {@link Message}</li>
- * <li>{@link MqttApplication#doDel} is used to implement a DELETE request for a resource identified in the supplied
+ * <li>{@link MqttApplication#doDelete} is used to implement a DELETE request for a resource identified in the supplied
  * {@link Message}</li>
  * <li>{@link MqttApplication#doPost} is used to implement other operations on a resource identified in the supplied
  * {@link Message}</li>
@@ -54,12 +56,17 @@ public interface MqttApplication {
      *
      * @param resource the resource identifier
      * @param requestMessage the received message
+     * @param messageBuilder the builder to build the response message
+     *
      * @return the response to be provided back as {@link Message}
      * @throws Exception
      *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
      *             request parameters or exceptions during processing
      */
-    default Message doGet(final Message requestMessage, final String resource) throws Exception {
+    default Message doGet( //
+            final String resource, //
+            final Message requestMessage, //
+            final MqttMessageContextBuilder messageBuilder) throws Exception {
         throw new UnsupportedOperationException();
     }
 
@@ -68,12 +75,17 @@ public interface MqttApplication {
      *
      * @param resource the resource identifier
      * @param requestMessage the received message
+     * @param messageBuilder the builder to build the response message
+     *
      * @return the response to be provided back as {@link Message}
      * @throws Exception
      *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
      *             request parameters or exceptions during processing
      */
-    default Message doPut(final Message requestMessage, final String resource) throws Exception {
+    default Message doPut( //
+            final String resource, //
+            final Message requestMessage, //
+            final MqttMessageContextBuilder messageBuilder) throws Exception {
         throw new UnsupportedOperationException();
     }
 
@@ -82,12 +94,17 @@ public interface MqttApplication {
      *
      * @param resource the resource identifier
      * @param requestMessage the received message
+     * @param messageBuilder the builder to build the response message
+     *
      * @return the response to be provided back as {@link Message}
      * @throws Exception
      *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
      *             request parameters or exceptions during processing
      */
-    default Message doPost(final Message requestMessage, final String resource) throws Exception {
+    default Message doPost( //
+            final String resource, //
+            final Message requestMessage, //
+            final MqttMessageContextBuilder messageBuilder) throws Exception {
         throw new UnsupportedOperationException();
     }
 
@@ -96,12 +113,17 @@ public interface MqttApplication {
      *
      * @param resource the resource identifier
      * @param requestMessage the received message
+     * @param messageBuilder the builder to build the response message
+     *
      * @return the response to be provided back as {@link Message}
      * @throws Exception
      *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
      *             request parameters or exceptions during processing
      */
-    default Message doDelete(final Message requestMessage, final String resource) throws Exception {
+    default Message doDelete( //
+            final String resource, //
+            final Message requestMessage, //
+            final MqttMessageContextBuilder messageBuilder) throws Exception {
         throw new UnsupportedOperationException();
     }
 
@@ -110,12 +132,17 @@ public interface MqttApplication {
      *
      * @param resource the resource identifier
      * @param requestMessage the received message
+     * @param messageBuilder the builder to build the response message
+     *
      * @return the response to be provided back as {@link Message}
      * @throws Exception
      *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
      *             request parameters or exceptions during processing
      */
-    default Message doExec(final Message requestMessage, final String resource) throws Exception {
+    default Message doExec( //
+            final String resource, //
+            final Message requestMessage, //
+            final MqttMessageContextBuilder messageBuilder) throws Exception {
         throw new UnsupportedOperationException();
     }
 
