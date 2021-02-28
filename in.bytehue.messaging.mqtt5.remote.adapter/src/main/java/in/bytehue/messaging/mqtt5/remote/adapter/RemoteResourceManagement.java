@@ -24,6 +24,7 @@ import static in.bytehue.messaging.mqtt5.remote.api.MqttApplication.APPLICATION_
 import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.REMOTE_RESOURCE_MANAGEMENT_PID;
 import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.RESPONSE_CODE_BAD_REQUEST;
 import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.RESPONSE_CODE_ERROR;
+import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.RESPONSE_CODE_NOT_FOUND;
 import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.RESPONSE_CODE_OK;
 import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.RESPONSE_CODE_PROPERTY;
 import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.RESPONSE_EXCEPTION_MESSAGE_PROPERTY;
@@ -266,9 +267,12 @@ public final class RemoteResourceManagement {
     private Message prepareErrorMessage(final Exception exception, final int code) {
         final MqttMessageContextBuilder mcb = mcbFactory.getService();
         try {
+            final String exMessage = exception.getMessage();
+            final String ex = exMessage == null ? toString(exception) : exMessage;
+
             final Map<String, Object> properties = new HashMap<>();
             properties.put(RESPONSE_CODE_PROPERTY, code);
-            properties.put(RESPONSE_EXCEPTION_MESSAGE_PROPERTY, toString(exception));
+            properties.put(RESPONSE_EXCEPTION_MESSAGE_PROPERTY, ex);
             return mcb.extensionEntry(USER_PROPERTIES, properties).buildMessage();
         } finally {
             mcbFactory.ungetService(mcb);
@@ -278,7 +282,7 @@ public final class RemoteResourceManagement {
     private Message execMqttApplication(final RequestDTO request) throws Exception {
         final MqttApplication application = applications.get(request.applicationId);
         if (application == null) {
-            throw new MqttException(RESPONSE_CODE_BAD_REQUEST,
+            throw new MqttException(RESPONSE_CODE_NOT_FOUND,
                     "MQTT Application " + request.applicationId + " doesn't exist");
         }
         Message message;
