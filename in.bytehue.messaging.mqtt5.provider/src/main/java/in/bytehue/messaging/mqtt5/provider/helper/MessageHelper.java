@@ -64,6 +64,7 @@ import com.hivemq.client.internal.mqtt.datatypes.MqttUtf8StringImpl;
 import com.hivemq.client.internal.mqtt.message.publish.MqttPublish;
 import com.hivemq.client.internal.mqtt.message.publish.MqttWillPublish;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
+import com.hivemq.client.mqtt.datatypes.MqttTopic;
 import com.hivemq.client.mqtt.datatypes.MqttUtf8String;
 import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserProperties;
 import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserPropertiesBuilder;
@@ -122,6 +123,7 @@ public final class MessageHelper {
 
         final String contentType = publish.getContentType().map(MessageHelper::asString).orElse(null);
         final String channel = publish.getTopic().toString();
+        final String replyToChannel = publish.getResponseTopic().map(MqttTopic::toString).orElse(null);
         final String correlationId = asString(pub.getRawCorrelationData());
         final int qos = publish.getQos().getCode();
         final boolean retain = publish.isRetain();
@@ -144,6 +146,7 @@ public final class MessageHelper {
                                                         ? payload
                                                         : ByteBuffer.wrap("".getBytes()))
                                     .contentType(contentType)
+                                    .replyTo(replyToChannel)
                                     .contentEncoding(contentEncoding)
                                     .correlationId(correlationId)
                                     .extensions(extensions)
