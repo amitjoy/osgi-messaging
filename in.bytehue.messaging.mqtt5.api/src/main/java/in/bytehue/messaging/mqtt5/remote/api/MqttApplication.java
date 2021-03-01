@@ -63,7 +63,7 @@ public interface MqttApplication {
      *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
      *             request parameters or exceptions during processing
      */
-    default Message doGet( //
+    default Message doGET( //
             final String resource, //
             final Message requestMessage, //
             final MqttMessageContextBuilder messageBuilder) throws Exception {
@@ -82,7 +82,7 @@ public interface MqttApplication {
      *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
      *             request parameters or exceptions during processing
      */
-    default Message doPut( //
+    default Message doPUT( //
             final String resource, //
             final Message requestMessage, //
             final MqttMessageContextBuilder messageBuilder) throws Exception {
@@ -101,7 +101,7 @@ public interface MqttApplication {
      *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
      *             request parameters or exceptions during processing
      */
-    default Message doPost( //
+    default Message doPOST( //
             final String resource, //
             final Message requestMessage, //
             final MqttMessageContextBuilder messageBuilder) throws Exception {
@@ -120,7 +120,7 @@ public interface MqttApplication {
      *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
      *             request parameters or exceptions during processing
      */
-    default Message doDelete( //
+    default Message doDELETE( //
             final String resource, //
             final Message requestMessage, //
             final MqttMessageContextBuilder messageBuilder) throws Exception {
@@ -139,7 +139,7 @@ public interface MqttApplication {
      *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
      *             request parameters or exceptions during processing
      */
-    default Message doExec( //
+    default Message doEXEC( //
             final String resource, //
             final Message requestMessage, //
             final MqttMessageContextBuilder messageBuilder) throws Exception {

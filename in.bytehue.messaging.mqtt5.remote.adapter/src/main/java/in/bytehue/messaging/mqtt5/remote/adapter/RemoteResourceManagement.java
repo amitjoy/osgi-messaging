@@ -60,8 +60,10 @@ import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
 import in.bytehue.messaging.mqtt5.remote.adapter.RemoteResourceHelper.MethodType;
 import in.bytehue.messaging.mqtt5.remote.adapter.RemoteResourceHelper.MqttException;
 import in.bytehue.messaging.mqtt5.remote.adapter.RemoteResourceHelper.RequestDTO;
+import in.bytehue.messaging.mqtt5.remote.annotations.ProvideMQTTRemoteResourceManagement;
 import in.bytehue.messaging.mqtt5.remote.api.MqttApplication;
 
+@ProvideMQTTRemoteResourceManagement
 @Component(configurationPid = REMOTE_RESOURCE_MANAGEMENT_PID)
 public final class RemoteResourceManagement {
 
@@ -257,31 +259,31 @@ public final class RemoteResourceManagement {
 
             switch (request.method) {
                 case GET:
-                    message = application.doGet(resource, requestMessage, mcb);
+                    message = application.doGET(resource, requestMessage, mcb);
                     message = addResponseCode(message);
                     message = addCorrelationId(message, correlationId);
 
                     return message;
                 case POST:
-                    message = application.doPost(resource, requestMessage, mcb);
+                    message = application.doPOST(resource, requestMessage, mcb);
                     message = addResponseCode(message);
                     message = addCorrelationId(message, correlationId);
 
                     return message;
                 case PUT:
-                    message = application.doPut(resource, requestMessage, mcb);
+                    message = application.doPUT(resource, requestMessage, mcb);
                     message = addResponseCode(message);
                     message = addCorrelationId(message, correlationId);
 
                     return message;
                 case DELETE:
-                    message = application.doDelete(resource, requestMessage, mcb);
+                    message = application.doDELETE(resource, requestMessage, mcb);
                     message = addResponseCode(message);
                     message = addCorrelationId(message, correlationId);
 
                     return message;
                 case EXEC:
-                    message = application.doExec(resource, requestMessage, mcb);
+                    message = application.doEXEC(resource, requestMessage, mcb);
                     message = addResponseCode(message);
                     message = addCorrelationId(message, correlationId);
 
