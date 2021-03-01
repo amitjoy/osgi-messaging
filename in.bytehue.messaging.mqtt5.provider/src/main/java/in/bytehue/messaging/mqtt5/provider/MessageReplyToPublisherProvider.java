@@ -114,7 +114,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 
     @Override
     public Promise<Message> publishWithReply(final Message requestMessage) {
-        return publishWithReply(requestMessage, null);
+        return publishWithReply(requestMessage, requestMessage.getContext());
     }
 
     @Override
@@ -130,7 +130,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 
     @Override
     public PushStream<Message> publishWithReplyMany(final Message requestMessage) {
-        return publishWithReplyMany(requestMessage, null);
+        return publishWithReplyMany(requestMessage, requestMessage.getContext());
     }
 
     @Override
@@ -145,13 +145,10 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
         String pubChannel;
         String subChannel;
 
-        ReplyToDTO(final Message message, MessageContext context) {
+        ReplyToDTO(final Message message, final MessageContext context) {
             autoGenerateCorrelationIdIfAbsent(message);
             autoGenerateReplyToChannelIfAbsent(message);
 
-            if (context == null) {
-                context = message.getContext();
-            }
             pubChannel = context.getChannel();
             subChannel = context.getReplyToChannel();
         }
