@@ -38,15 +38,15 @@ Bundle-Description             : MQTT 5.0 implementation conforming to OSGi mess
     org.awaitility,\
     slf4j.api
 
--includepackage                : org.osgi.service.messaging.*
+-includepackage                : org.osgi.service.messaging.*, in.bytehue.messaging.mqtt5.api
 -includeresource.hivemq.res    : @${repo;com.hivemq.client.mqtt}!/META-INF/*
 -includeresource.nety.http     : @${repo;io.netty.codec-http}!/META-INF/native-image
+
 
 -privatepackage                : \
 	aQute.*,\
 	com.hivemq.client.*,\
 	dagger.*,\
-	in.bytehue.messaging.mqtt5.api,\
 	in.bytehue.messaging.mqtt5.provider.*,\
 	io.netty.*,\
 	io.reactivex.*,\

@@ -1,4 +1,5 @@
--runblacklist                   =         bnd.identity;id='org.osgi.service.messaging'
+-runblacklist                   =         bnd.identity;id='org.osgi.service.messaging', \
+                                          bnd.identity;id='in.bytehue.messaging.mqtt5.api'
 -runrepos                       =         Runtime, Workspace
 -runfw                          =         org.apache.felix.framework
 -runtrace                       =         true 
