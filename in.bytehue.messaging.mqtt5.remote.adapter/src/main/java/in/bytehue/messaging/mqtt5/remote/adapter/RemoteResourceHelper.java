@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright 2021 Amit Kumar Mondal
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ ******************************************************************************/
 package in.bytehue.messaging.mqtt5.remote.adapter;
 
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.CLIENT_ID_FRAMEWORK_PROPERTY;
@@ -53,15 +68,13 @@ public final class RemoteResourceHelper {
         try {
             final Configuration configuration = configurationAdmin.getConfiguration(CLIENT, "?");
             final Dictionary<String, Object> properties = configuration.getProperties();
-            final Object clientId = properties.get("id");
-            // check for the existence of configuration
-            if (clientId == null) {
+            if (properties == null || properties.get("id") == null) {
                 // check for framework property if available
                 final String id = bundleContext.getProperty(CLIENT_ID_FRAMEWORK_PROPERTY);
                 // generate client ID if framework property is absent
                 return id == null ? UUID.randomUUID().toString() : id;
             } else {
-                return clientId.toString();
+                return String.valueOf(properties.get("id"));
             }
         } catch (final IOException e) {
             // not gonna happen at all
