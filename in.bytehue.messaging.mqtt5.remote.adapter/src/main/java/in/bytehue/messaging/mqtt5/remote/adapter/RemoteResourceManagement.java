@@ -15,11 +15,11 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.remote.adapter;
 
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.CLIENT_ID_FRAMEWORK_PROPERTY;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.CLIENT;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
+import static in.bytehue.messaging.mqtt5.remote.adapter.RemoteResourceHelper.clientID;
+import static in.bytehue.messaging.mqtt5.remote.adapter.RemoteResourceHelper.exceptionToString;
 import static in.bytehue.messaging.mqtt5.remote.api.MqttApplication.APPLICATION_ID_PROPERTY;
 import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.REMOTE_RESOURCE_MANAGEMENT_PID;
 import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.RESPONSE_CODE_BAD_REQUEST;
@@ -34,21 +34,14 @@ import static org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC;
 import static org.osgi.service.messaging.MessageConstants.MESSAGING_NAME_PROPERTY;
 import static org.osgi.service.messaging.MessageConstants.MESSAGING_PROTOCOL_PROPERTY;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Arrays;
-import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.osgi.dto.DTO;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
-import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
@@ -57,12 +50,16 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.log.Logger;
 import org.osgi.service.log.LoggerFactory;
 import org.osgi.service.messaging.Message;
+import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.MessageSubscription;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
+import in.bytehue.messaging.mqtt5.remote.adapter.RemoteResourceHelper.MethodType;
+import in.bytehue.messaging.mqtt5.remote.adapter.RemoteResourceHelper.MqttException;
+import in.bytehue.messaging.mqtt5.remote.adapter.RemoteResourceHelper.RequestDTO;
 import in.bytehue.messaging.mqtt5.remote.api.MqttApplication;
 
 @Component(configurationPid = REMOTE_RESOURCE_MANAGEMENT_PID)
@@ -85,34 +82,6 @@ public final class RemoteResourceManagement {
         String controlTopic() default "in/bytehue";
     }
     //@formatter:on
-
-    private enum MethodType {
-        GET,
-        POST,
-        PUT,
-        DELETE,
-        EXEC
-    }
-
-    private static class RequestDTO extends DTO {
-        String applicationId;
-        String resource;
-        MethodType method;
-        Message requestMessage;
-    }
-
-    private static class MqttException extends RuntimeException {
-
-        private static final long serialVersionUID = 4877572873981748364L;
-
-        private final int code;
-
-        public MqttException(final int code, final String message) {
-            super(message);
-            this.code = code;
-        }
-
-    }
 
     @Reference(service = LoggerFactory.class)
     private Logger logger;
@@ -170,9 +139,10 @@ public final class RemoteResourceManagement {
      * For example:
      * <ul>
      * <li>{@code CTRL/com/company/project/DEVICE-ID-1234/CONF-V1/GET/configurations}</li>
-     * <li>{@code CTRL/com/company/project/DEVICE-ID-1234/CONF-V2/GET/configurations/a.b.c}</li>
-     * <li>{@code CTRL/com/company/project/DEVICE-ID-1234/CONF-V3/GET/bundles}</li>
-     * <li>{@code CTRL/com/company/project/DEVICE-ID-1234/APP-V1/EXEC/command}</li>
+     * <li>{@code CTRL/com/company/project/DEVICE-ID-1234/CONF-V1/GET/configurations/a.b.c}</li>
+     * <li>{@code CTRL/com/company/project/DEVICE-ID-1234/DEPLOY-V2/EXEC/start/bundleA}</li>
+     * <li>{@code CTRL/com/company/project/DEVICE-ID-4567/CONF-V3/GET/bundles}</li>
+     * <li>{@code CTRL/com/company/project/DEVICE-ID-4567/APP-V1/EXEC/command}</li>
      * </ul>
      *
      * In the aforementioned examples,
@@ -180,42 +150,34 @@ public final class RemoteResourceManagement {
      * <li>{@code CTRL}</li> - Control Topic Prefix
      * <li>{@code com/company/project}</li> - Control Topic
      * <li>{@code DEVICE-ID-1234}</li> - Client ID
-     * <li>{@code DEVICE-ID-1234}</li> - Client ID
+     * <li>{@code DEVICE-ID-4567}</li> - Client ID
      * <li>{@code CONF-V1}</li> - Application ID
-     * <li>{@code CONF-V2}</li> - Application ID
+     * <li>{@code DEPLOY-V2}</li> - Application ID
      * <li>{@code CONF-V3}</li> - Application ID
+     * <li>{@code APP-V1}</li> - Application ID
      * <li>{@code GET}</li> - Method. Refer to {@link MethodType}
      * <li>{@code EXEC}</li> - Method. Refer to {@link MethodType}
      * <li>{@code configurations}</li> - Resource
      * <li>{@code configurations/a.b.c}</li> - Resource
+     * <li>{@code start/bundleA}</li> - Resource
      * <li>{@code bundles}</li> - Resource
      * <li>{@code command}</li> - Resource
+     * </ul>
      *
-     * @return the topic to be subscribed
+     * Therefore, we subscribe to {@code CTRL/com/company/project/DEVICE-ID-1234/#}
+     * <p>
+     * The subscription pattern: {@code control-topic-prefix/control-topic/client-id/#}
+     *
+     * @return the topic pattern to be subscribed
      */
+    // @formatter:off
     private String prepareSubscriptionTopic() {
-        return config.controlTopicPrefix() + "/" + config.controlTopic() + "/" + clientID() + "/#";
+        return config.controlTopicPrefix()                  + "/" +
+               config.controlTopic()                        + "/" +
+               clientID(configurationAdmin, bundleContext)  +
+               "/#";
     }
-
-    private String clientID() {
-        try {
-            final Configuration configuration = configurationAdmin.getConfiguration(CLIENT, "?");
-            final Dictionary<String, Object> properties = configuration.getProperties();
-            final Object clientId = properties.get("id");
-            // check for the existence of configuration
-            if (clientId == null) {
-                // check for framework property if available
-                final String id = bundleContext.getProperty(CLIENT_ID_FRAMEWORK_PROPERTY);
-                // generate client ID if framework property is absent
-                return id == null ? UUID.randomUUID().toString() : id;
-            } else {
-                return clientId.toString();
-            }
-        } catch (final IOException e) {
-            // not gonna happen at all
-        }
-        return "+";
-    }
+    // @formatter:on
 
     private void subscribe(final String topic) {
         subscriber.subscribe(topic).forEach(reqMessage -> {
@@ -244,7 +206,7 @@ public final class RemoteResourceManagement {
     }
 
     private RequestDTO initRequest(final String topic, final Message requestMessage) {
-        final String clientID = clientID();
+        final String clientID = clientID(configurationAdmin, bundleContext);
         final String subString = topic.substring(topic.indexOf(clientID) + clientID.length() + 1);
         final List<String> requestTokens = Arrays.asList(subString.split("/"));
 
@@ -268,9 +230,10 @@ public final class RemoteResourceManagement {
         final MqttMessageContextBuilder mcb = mcbFactory.getService();
         try {
             final String exMessage = exception.getMessage();
-            final String ex = exMessage == null ? toString(exception) : exMessage;
+            final String ex = exMessage == null ? exceptionToString(exception) : exMessage;
 
             final Map<String, Object> properties = new HashMap<>();
+
             properties.put(RESPONSE_CODE_PROPERTY, code);
             properties.put(RESPONSE_EXCEPTION_MESSAGE_PROPERTY, ex);
             return mcb.extensionEntry(USER_PROPERTIES, properties).buildMessage();
@@ -288,26 +251,40 @@ public final class RemoteResourceManagement {
         Message message;
         final MqttMessageContextBuilder mcb = mcbFactory.getService();
         try {
+            final Message requestMessage = request.requestMessage;
+            final String resource = request.resource;
+            final String correlationId = requestMessage.getContext().getCorrelationId();
+
             switch (request.method) {
                 case GET:
-                    message = application.doGet(request.resource, request.requestMessage, mcb);
-                    addErrorCode(message);
+                    message = application.doGet(resource, requestMessage, mcb);
+                    message = addResponseCode(message);
+                    message = addCorrelationId(message, correlationId);
+
                     return message;
                 case POST:
-                    message = application.doPost(request.resource, request.requestMessage, mcb);
-                    addErrorCode(message);
+                    message = application.doPost(resource, requestMessage, mcb);
+                    message = addResponseCode(message);
+                    message = addCorrelationId(message, correlationId);
+
                     return message;
                 case PUT:
-                    message = application.doPut(request.resource, request.requestMessage, mcb);
-                    addErrorCode(message);
+                    message = application.doPut(resource, requestMessage, mcb);
+                    message = addResponseCode(message);
+                    message = addCorrelationId(message, correlationId);
+
                     return message;
                 case DELETE:
-                    message = application.doDelete(request.resource, request.requestMessage, mcb);
-                    addErrorCode(message);
+                    message = application.doDelete(resource, requestMessage, mcb);
+                    message = addResponseCode(message);
+                    message = addCorrelationId(message, correlationId);
+
                     return message;
                 case EXEC:
-                    message = application.doExec(request.resource, request.requestMessage, mcb);
-                    addErrorCode(message);
+                    message = application.doExec(resource, requestMessage, mcb);
+                    message = addResponseCode(message);
+                    message = addCorrelationId(message, correlationId);
+
                     return message;
                 default:
                     throw new MqttException(RESPONSE_CODE_BAD_REQUEST, "Unable to execute the specified method");
@@ -317,7 +294,7 @@ public final class RemoteResourceManagement {
         }
     }
 
-    private void addErrorCode(final Message message) {
+    private Message addResponseCode(final Message message) {
         final Map<String, Object> extensions = message.getContext().getExtensions();
         final Object userProperties = extensions.computeIfAbsent(USER_PROPERTIES, e -> new HashMap<>());
         if (!(userProperties instanceof Map<?, ?>)) {
@@ -326,12 +303,26 @@ public final class RemoteResourceManagement {
         @SuppressWarnings("unchecked")
         final Map<String, Object> properties = (Map<String, Object>) userProperties;
         properties.put(RESPONSE_CODE_PROPERTY, RESPONSE_CODE_OK);
+
+        return message;
     }
 
-    private String toString(final Exception exception) {
-        final StringWriter sw = new StringWriter();
-        exception.printStackTrace(new PrintWriter(sw));
-        return sw.toString();
+    private Message addCorrelationId(final Message message, final String correlationId) {
+        final MqttMessageContextBuilder mcb = mcbFactory.getService();
+        try {
+            final MessageContext context = message.getContext();
+            // @formatter:off
+            return mcb.channel(context.getChannel())
+                      .content(message.payload())
+                      .contentEncoding(context.getContentEncoding())
+                      .contentType(context.getContentType())
+                      .correlationId(correlationId)
+                      .extensions(context.getExtensions())
+                      .buildMessage();
+            // @formatter:on
+        } finally {
+            mcbFactory.ungetService(mcb);
+        }
     }
 
 }

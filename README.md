@@ -367,7 +367,7 @@ This comprises the guidelines to structure your MQTT topic namespace for managin
 
 The remote resources can receive two different types of requests:
 
-* Command to perform something (or popularly known as )Request/Response pattern)
+* Command to perform something (or popularly known as Request/Response pattern)
 * Unsolicited events when the remote resource or device reports somethings periodically
 
 #### MQTT Request Response Communication
@@ -396,7 +396,7 @@ Let's discuss the pattern mentioned above first to understand the workflow bette
 * `resource-id` - This is the remainder of the total topic, for example, in `CTRL/com/company/ABCD-1234/CONF-V1/PUT/configurations/a.b.c.d` topic, `configurations/a.b.c.d` is the `resource-id`.
 
 
-##### Read Resources
+#### Read Resources
 
 A requester can read resources from the remote device by sending a request to the following topic pattern:
 
@@ -408,7 +408,7 @@ for example,
 * `CTRL/com/company/ABCD-1234/CONF-V1/GET/bundles`
 * `CTRL/com/company/ABCD-1234/APP-V1/GET/sensors/temperature`
 
-##### Create Resources
+#### Create Resources
 
 Creating resources can be done by sending a request to the following topic pattern:
 
@@ -418,7 +418,7 @@ for example,
 
 * `CTRL/com/company/ABCD-1234/CONF-V1/PUT/configurations/c.d.e.f`
 
-##### Update Resources
+#### Update Resources
 
 Updating resources can be done by sending a request to the following topic pattern:
 
@@ -428,7 +428,7 @@ for example,
 
 * `CTRL/com/company/ABCD-1234/CONF-V1/POST/configurations/c.d.e.f`
 
-##### Delete Resources
+#### Delete Resources
 
 Similarly, any requester can delete resources on the remote device by sending a request to the following topic pattern:
 
@@ -436,10 +436,9 @@ Similarly, any requester can delete resources on the remote device by sending a 
 
 for example,
 
-* `CTRL/com/company/ABCD-1234/CONF-V1/DELETE/configurations/c.d.e.f`
-* `CTRL/com/company/ABCD-1234/CONF-V1/DELETE/bundles/com.company.bundle`
+* `CTRL/com/company/ABCD-1234/CONF-V2/DELETE/configurations/c.d.e.f`
 
-##### Executing Resources
+#### Execute Resources
 
 You can also execute resources by sending a request to the following topic pattern:
 
@@ -448,11 +447,11 @@ You can also execute resources by sending a request to the following topic patte
 for example,
 
 * `CTRL/com/company/ABCD-1234/COMMAND-V1/EXEC/ifconfig`
-* `CTRL/com/company/ABCD-1234/CONF-V1/EXEC/bundles/com.company.bundle/start`
+* `CTRL/com/company/ABCD-1234/DEPLOY-V2/EXEC/start/com.company.bundle`
 
-##### Things to remember
+#### Things to Remember
 
-The receiving application would always reply to the `reply to` address with any content that both the parties (publisher and subscriber) understand. It can be serialized using Protobuf or JSON or XML, or any other serializer.
+1. The receiving application would always reply to the `reply to` address with any content that both the parties (publisher and subscriber) understand. It can be serialized using Protobuf or JSON or XML, or any other serializer.
 
 The response contains the content if available, and there also exist some other user properties that denote the status of the request:
 
@@ -465,13 +464,20 @@ The following properties will be available in the user properties payload:
     - `500` (`RESPONSE_CODE_ERROR`)
 * `response.exception.message` - optional exception message or the string version of the exception itself if there is no message available
 
+2. The requester should always set a correlation ID in the request message
+3. The remote resource or the responder doesn't care about the correlation ID at all since the correlation ID will be mapped automatically when replying to the requester
+4. The remote resource or the responder remains always data agnostic and just cares about the resource that needs to accessed by the requester and the request message payload (Refer to the example below)
+5. The response codes and messages must never be added by the remote resource. It will automatically be done internally while replying to the requester
+6. It is recommended that the requester sets a timeout to the requested message to control the amount of time that it waits for a response from the remote resource or device. If a responderonse is not received within the timeout interval, the server can expect that either the device or the resource is offline.
+7. It is recommended to *never* use the control topic for unsolicited events where the remote resource periodically sends updates
+
 #### MQTT Application on Remote Device
 
 Any remote device can introduce any application that would allow the application to participate in the aforementioned remote resource management.
 
 You just need to implement `in.bytehue.messaging.mqtt5.remote.api.MqttApplication`.
 
-##### Example
+#### Example
 
 ```java
 @Component
@@ -499,8 +505,26 @@ public final class MyMqttApplicationExample implements MqttApplication {
         }
         throw new IllegalStateException("Specified resource cannot be updated");
     }
+
+    @Override
+    public Message doExec(
+            final String resource,
+            final Message requestMessage, 
+            final MessageContextBuilder messageBuilder) throws Exception {
+        final String[] res = resource.split("/");
+        if (res[0].equalsIgnoreCase("my-commands")) {
+            String command = res[1];
+            String response = executeCommand(command);
+            return messageBuilder.content(ByteBuffer.wrap(response.getBytes())).buildMessage();
+        }
+        throw new IllegalStateException("Specified command cannot be executed");
+    }
     
     private String updateResource(String resource) {
+        .....
+    }
+
+    private String executeCommand(String resource) {
         .....
     }
 
