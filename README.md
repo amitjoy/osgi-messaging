@@ -6,6 +6,8 @@
 
 This repository comprises the rudimentary API extracted from the [OSGi RFC 246](https://github.com/osgi/design/blob/main/rfcs/rfc0246/rfc-0246-Messaging.pdf) specification and the MQTT 5.0 implementation of it. This spec is not at all the official version as it is based on the preliminary API from the current version of the spec. This is just an experimental repository for OSGi Messaging specification since the official version is not yet released. The official version is expected to be released with the release of OSGi Enterprise R8 specification in the second quarter of 2021 (as mentioned during the [EclipseCON talk](https://www.eclipsecon.org/2020/sessions/asychronous-communication-distributed-environments-new-osgi-messaging-rfc))
 
+Further to the above, there is an utility bundle comprising an easy-to-use functionality to manage remote resources or edge devices using MQTT 5.0.  For more details, have a look at the [Remote Resource (Edge Device) Management](#remote-resource-edge-device-management) section.
+
 ----------------------------------------------------------------------------------------------------------
 
 [![amitjoy - osgi-messaging](https://img.shields.io/static/v1?label=amitjoy&message=osgi-messaging&color=blue&logo=github)](https://github.com/amitjoy/osgi-messaging)
@@ -360,12 +362,14 @@ You can, therefore, use this filter: `(&(#>=3)([unq]region>=2))`
 
 You can make use of the following extended calculated values:
 
-* `#key` - Calculates the number of key properties
-* `[avg]key` - Calculates the average of all key properties
-* `[min]key` - Calculates the minimum of all key properties
-* `[max]key` - Calculates the maximum of all key properties
-* `[sum]key` - Calculates the sum of all key properties
-* `[unq]key` - Calculates the number of unique key properties
+| Value      | Description                                    |
+|------------|------------------------------------------------|
+| `#key`     | Calculates the number of key properties        |
+| `[min]key` | Calculates the minimum of all key properties   |
+| `[max]key` | Calculates the maximum of all key properties   |
+| `[sum]key` | Calculates the sum of all key properties       |
+| `[avg]key` | Calculates the average of all key properties   |
+| `[unq]key` | Calculates the number of unique key properties |
 
 This will ensure that your services will be up and running before the client gets activated. This also guarantees that the start order of the bundles is not at all required in this scenario.
 
@@ -463,7 +467,7 @@ for example,
 * `CTRL/com/company/ABCD-1234/COMMAND-V1/EXEC/ifconfig`
 * `CTRL/com/company/ABCD-1234/DEPLOY-V2/EXEC/com.company.bundle/start`
 
-#### Things to Remember
+#### Important Things to Remember
 
 1. The receiving application would always reply to the `reply to` address with any kind of content (or popularly known as `payload`) that both the parties (publisher and subscriber) understand. It can be (de)/serialized using Protobuf or JSON or XML, or any other serializer.
 
@@ -472,10 +476,14 @@ The response contains the content if available. In addition, there also exist so
 The following properties will be available in the user properties payload:
 
 * `response.code` - The available response codes are: 
-    - `200` (`RESPONSE_CODE_OK`)
-    - `400` (`RESPONSE_CODE_BAD_REQUEST`)
-    - `404` (`RESPONSE_CODE_NOT_FOUND`)
-    - `500` (`RESPONSE_CODE_ERROR`)
+
+| Response Code | Response String             |
+|---------------|-----------------------------|
+| `200`         | `RESPONSE_CODE_OK`          |
+| `400`         | `RESPONSE_CODE_BAD_REQUEST` |
+| `404`         | `RESPONSE_CODE_NOT_FOUND`   |
+| `500`         | `RESPONSE_CODE_ERROR`       |
+
 * `response.exception.message` - Optional exception message or the string version of the exception itself if there is no message available
 
 2. The requester should always provide a `correlation ID` in the request message
@@ -548,11 +556,10 @@ public final class MyMqttApplicationExample implements MqttApplication {
 The following is the API of `in.bytehue.messaging.mqtt5.remote.api.MqttApplication`:
 
 ```java
-@ConsumerType
 public interface MqttApplication {
 
     /**
-     * The service property to be set
+     * The service property denoting the application identifier
      */
     String APPLICATION_ID_PROPERTY = "mqtt.application.id";
 
@@ -568,15 +575,15 @@ public interface MqttApplication {
      *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
      *             request parameters or exceptions during processing
      */
-    default Message doGET( //
-            final String resource, //
-            final Message requestMessage, //
+    default Message doGET(
+            final String resource,
+            final Message requestMessage,
             final MqttMessageContextBuilder messageBuilder) throws Exception {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * Used to implement a CREATE or UPDATE request for a resource
+     * Used to implement a CREATE request for a resource
      *
      * @param resource the resource identifier
      * @param requestMessage the received message
@@ -587,15 +594,15 @@ public interface MqttApplication {
      *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
      *             request parameters or exceptions during processing
      */
-    default Message doPUT( //
-            final String resource, //
-            final Message requestMessage, //
+    default Message doPUT(
+            final String resource,
+            final Message requestMessage,
             final MqttMessageContextBuilder messageBuilder) throws Exception {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * Used to implement other operations for a resource
+     * Used to implement an UPDATE request for a resource
      *
      * @param resource the resource identifier
      * @param requestMessage the received message
@@ -606,9 +613,9 @@ public interface MqttApplication {
      *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
      *             request parameters or exceptions during processing
      */
-    default Message doPOST( //
-            final String resource, //
-            final Message requestMessage, //
+    default Message doPOST(
+            final String resource,
+            final Message requestMessage,
             final MqttMessageContextBuilder messageBuilder) throws Exception {
         throw new UnsupportedOperationException();
     }
@@ -625,9 +632,9 @@ public interface MqttApplication {
      *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
      *             request parameters or exceptions during processing
      */
-    default Message doDELETE( //
-            final String resource, //
-            final Message requestMessage, //
+    default Message doDELETE(
+            final String resource,
+            final Message requestMessage,
             final MqttMessageContextBuilder messageBuilder) throws Exception {
         throw new UnsupportedOperationException();
     }
@@ -644,9 +651,9 @@ public interface MqttApplication {
      *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
      *             request parameters or exceptions during processing
      */
-    default Message doEXEC( //
-            final String resource, //
-            final Message requestMessage, //
+    default Message doEXEC(
+            final String resource,
+            final Message requestMessage,
             final MqttMessageContextBuilder messageBuilder) throws Exception {
         throw new UnsupportedOperationException();
     }
@@ -654,7 +661,7 @@ public interface MqttApplication {
 }
 ```
 
-It is consumer's sole discretion which type of functionality to proide. If an application is only required to retrieve resources, it should only implement `doGET(..)` and if an application decides to create resources and execute commands on the resources, it should implement `doPUT(..)` and `doEXEC(..)` and so on. I believe you got the idea 😉
+It is consumer's sole responsibility which type of functionality to provide. If an application is only required to retrieve resources, it should only implement `doGET(..)` and if an application decides to create resources and execute commands on the resources, it should implement `doPUT(..)` and `doEXEC(..)` and so on. I believe you got the idea 😉
 
 #### Remote Resource Management Configuration
 
