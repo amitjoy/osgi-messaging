@@ -289,7 +289,8 @@ public final class RemoteResourceManagement {
 
                     return message;
                 default:
-                    throw new MqttException(RESPONSE_CODE_BAD_REQUEST, "Unable to execute the specified method");
+                    throw new MqttException(RESPONSE_CODE_BAD_REQUEST,
+                            "Unable to execute the specified method - " + request.method);
             }
         } finally {
             mcbFactory.ungetService(mcb);
