@@ -29,25 +29,30 @@ import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
  * <b>mqtt.application.id</b> - that will be used to identify this application
  *
  * <ul>
- * <li>{@link MqttApplication#doGet} is used to implement a READ request for a resource identified in the supplied
- * {@link Message)}</li>
- * <li>{@link MqttApplication#doPut} is used to implement a CREATE or UPDATE request for a resource identified in the
+ * <li>{@link MqttApplication#doPUT(String, Message, MqttMessageContextBuilder)} is used to implement a CREATE request
+ * for a resource identified in the
  * supplied {@link Message}</li>
- * <li>{@link MqttApplication#doDelete} is used to implement a DELETE request for a resource identified in the supplied
+ * <li>{@link MqttApplication#doGET(String, Message, MqttMessageContextBuilder)} is used to implement a READ request for
+ * a resource identified in the supplied
+ * {@link Message)}</li>
+ * <li>{@link MqttApplication#doPOST(String, Message, MqttMessageContextBuilder)} is used to implement an UPDATE request
+ * for a resource identified in the supplied
  * {@link Message}</li>
- * <li>{@link MqttApplication#doPost} is used to implement other operations on a resource identified in the supplied
+ * <li>{@link MqttApplication#doDELETE(String, Message, MqttMessageContextBuilder)} is used to implement a DELETE
+ * request for a resource identified in the supplied
  * {@link Message}</li>
- * <li>{@link MqttApplication#doExec} is used to perform application operation not necessary tied to a given
- * resource.</li>
+ * <li>{@link MqttApplication#doEXEC(String, Message, MqttMessageContextBuilder)} is used to perform application
+ * operation not necessary tied to a given resource.</li>
  * </ul>
  *
  * @since 1.0
  */
 @ConsumerType
+// @formatter:off
 public interface MqttApplication {
 
     /**
-     * The service property to be set
+     * The service property denoting the application identifier
      */
     String APPLICATION_ID_PROPERTY = "mqtt.application.id";
 
@@ -63,15 +68,15 @@ public interface MqttApplication {
      *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
      *             request parameters or exceptions during processing
      */
-    default Message doGET( //
-            final String resource, //
-            final Message requestMessage, //
+    default Message doGET(
+            final String resource,
+            final Message requestMessage,
             final MqttMessageContextBuilder messageBuilder) throws Exception {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * Used to implement a CREATE or UPDATE request for a resource
+     * Used to implement a CREATE request for a resource
      *
      * @param resource the resource identifier
      * @param requestMessage the received message
@@ -82,15 +87,15 @@ public interface MqttApplication {
      *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
      *             request parameters or exceptions during processing
      */
-    default Message doPUT( //
-            final String resource, //
-            final Message requestMessage, //
+    default Message doPUT(
+            final String resource,
+            final Message requestMessage,
             final MqttMessageContextBuilder messageBuilder) throws Exception {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * Used to implement other operations for a resource
+     * Used to implement an UPDATE request for a resource
      *
      * @param resource the resource identifier
      * @param requestMessage the received message
@@ -101,9 +106,9 @@ public interface MqttApplication {
      *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
      *             request parameters or exceptions during processing
      */
-    default Message doPOST( //
-            final String resource, //
-            final Message requestMessage, //
+    default Message doPOST(
+            final String resource,
+            final Message requestMessage,
             final MqttMessageContextBuilder messageBuilder) throws Exception {
         throw new UnsupportedOperationException();
     }
@@ -120,9 +125,9 @@ public interface MqttApplication {
      *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
      *             request parameters or exceptions during processing
      */
-    default Message doDELETE( //
-            final String resource, //
-            final Message requestMessage, //
+    default Message doDELETE(
+            final String resource,
+            final Message requestMessage,
             final MqttMessageContextBuilder messageBuilder) throws Exception {
         throw new UnsupportedOperationException();
     }
@@ -139,9 +144,9 @@ public interface MqttApplication {
      *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
      *             request parameters or exceptions during processing
      */
-    default Message doEXEC( //
-            final String resource, //
-            final Message requestMessage, //
+    default Message doEXEC(
+            final String resource,
+            final Message requestMessage,
             final MqttMessageContextBuilder messageBuilder) throws Exception {
         throw new UnsupportedOperationException();
     }
