@@ -361,22 +361,22 @@ This will ensure that your services will be up and running before the client get
 
 --------------------------------------------------------------------------------------------------------------
 
-### Remote Resource Management
+### Remote Resource (Edge Device) Management
 
 This comprises the guidelines to structure your MQTT topic namespace for managing the remote resources or edge devices using MQTT. 
 
 The remote resources can receive two different types of requests:
 
-* Command to perform something (or popularly known as Request/Response pattern)
-* Unsolicited events when the remote resource or device reports somethings periodically
+* Command to perform an action (or popularly known as `Request/Response` pattern)
+* Unsolicited events when the remote resource or device reports something periodically
 
 #### MQTT Request Response Communication
 
-In MQTT 5.0, adding a response topic enables the subscriber to reply to a specific topic. But there is no such standard or practice that has been advised by the MQTT specification. It is left to the user to introduce their own convention to follow.
+In MQTT 5.0, adding a response topic to the MQTT publish request enables the subscriber to reply to that specific topic. But there is no such standard or practice that has been advised by the MQTT specification. It is, therefore, left to the user to introduce their own convention to follow.
 
-In this section, we will propose an efficient way of performing request-response communication using MQTT 5.0.
+In this section, I will propose an efficient way of performing request-response communication using MQTT 5.0.
 
-A publisher or popularly known as the requester can send a payload to the topic having the following pattern:
+A publisher or popularly known as the requester can send a payload to the topic conforming to the following pattern:
 
 `control-topic-prefix/control-topic/client-id/application-id/method/resource-id`
 
@@ -385,20 +385,21 @@ for example,
 * `CTRL/com/company/ABCD-1234/CONF-V1/GET/configurations`
 * `CTRL/com/company/ABCD-1234/CONF-V1/PUT/configurations/a.b.c.d`
 * `CTRL/com/company/ABCD-1234/APP-V1/GET/sensors/temperature`
+* `CTRL/com/company/ABCD-1234/COMMAND-V1/EXEC/watchdog/monitor`
 
 Let's discuss the pattern mentioned above first to understand the workflow better:
 
-* `control-topic-prefix` - The topic prefix to be used in the beginning of a topic for remote resource management. By default, it is configured to `CTRL`. It can also be configured to something else. Refer to `in.bytehue.messaging.mqtt5.remote` configuration. The recommended practice would be to use a single word with all in upper case.
+* `control-topic-prefix` - The topic prefix to be used in the beginning of a topic (as a prefix) for remote resource management. By default, it is configured to `CTRL`. It can also be configured to something else. Refer to `in.bytehue.messaging.mqtt5.remote` configuration. The recommended practice would be to use a single word with all in upper case.
 * `control-topic`- This is the topic which would be appended to the `control-topic-prefix`. As an example, this can be `com/company/project`. It is also configurable in the same configuration as mentioned above. By default, it is set to `in/bytehue`.
 * `client-id` - This is the MQTT client identifier.
-* `application-id` - This is the application running in the remote device that we want to access remotely. To support multiple versions of the application, it is recommended that a version number be assigned with the application-id (e.g., `CONF-V1`, `CONF-V2`, etc.).
+* `application-id` - This is the MQTT application running on the edge device that we want to access remotely. To support multiple versions of the application, it is recommended that a version number be assigned with the application-id (e.g., `CONF-V1`, `CONF-V2`, etc.).
 * `method` - This represents a specific operation we want to perform on the remote application. An application in the remote device supports different types of methods, such as, `GET`, `POST`, `PUT`, `DELETE` and `EXEC`
 * `resource-id` - This is the remainder of the total topic, for example, in `CTRL/com/company/ABCD-1234/CONF-V1/PUT/configurations/a.b.c.d` topic, `configurations/a.b.c.d` is the `resource-id`.
 
 
 #### Read Resources
 
-A requester can read resources from the remote device by sending a request to the following topic pattern:
+A requester can read resources from the remote device by sending a `GET` MQTT request to the following topic pattern:
 
 `control-topic-prefix/control-topic/client-id/application-id/GET/resource-id`
 
@@ -406,11 +407,11 @@ for example,
 
 * `CTRL/com/company/ABCD-1234/CONF-V1/GET/configurations`
 * `CTRL/com/company/ABCD-1234/CONF-V1/GET/bundles`
-* `CTRL/com/company/ABCD-1234/APP-V1/GET/sensors/temperature`
+* `CTRL/com/company/ABCD-1234/APP-V1/GET/sensors/my-sensor/temperature`
 
 #### Create Resources
 
-Creating resources can be done by sending a request to the following topic pattern:
+Creating resources can be done by sending a `PUT` request to the following topic pattern:
 
 `control-topic-prefix/control-topic/client-id/application-id/PUT/resource-id`
 
@@ -420,17 +421,18 @@ for example,
 
 #### Update Resources
 
-Updating resources can be done by sending a request to the following topic pattern:
+Updating resources can be achieved by sending a `POST` request to the following topic pattern:
 
 `control-topic-prefix/control-topic/client-id/application-id/POST/resource-id`
 
 for example,
 
 * `CTRL/com/company/ABCD-1234/CONF-V1/POST/configurations/c.d.e.f`
+* `CTRL/com/company/ABCD-1234/APP-V1/POST/sensors/my-sensor`
 
 #### Delete Resources
 
-Similarly, any requester can delete resources on the remote device by sending a request to the following topic pattern:
+Similarly, any requester can delete resources on the remote edge device by sending a `DELETE` request to the following topic pattern:
 
 `control-topic-prefix/control-topic/client-id/application-id/DELETE/resource-id`
 
@@ -440,20 +442,20 @@ for example,
 
 #### Execute Resources
 
-You can also execute resources by sending a request to the following topic pattern:
+You can also execute resources by sending a `EXEC` request to the following topic pattern:
 
 `control-topic-prefix/control-topic/client-id/application-id/EXEC/resource-id`
 
 for example,
 
 * `CTRL/com/company/ABCD-1234/COMMAND-V1/EXEC/ifconfig`
-* `CTRL/com/company/ABCD-1234/DEPLOY-V2/EXEC/start/com.company.bundle`
+* `CTRL/com/company/ABCD-1234/DEPLOY-V2/EXEC/com.company.bundle/start`
 
 #### Things to Remember
 
-1. The receiving application would always reply to the `reply to` address with any content that both the parties (publisher and subscriber) understand. It can be serialized using Protobuf or JSON or XML, or any other serializer.
+1. The receiving application would always reply to the `reply to` address with any kind of content (or popularly known as `payload`) that both the parties (publisher and subscriber) understand. It can be (de)/serialized using Protobuf or JSON or XML, or any other serializer.
 
-The response contains the content if available, and there also exist some other user properties that denote the status of the request:
+The response contains the content if available. In addition, there also exist some other user properties that denote the status of the response:
 
 The following properties will be available in the user properties payload:
 
@@ -462,18 +464,18 @@ The following properties will be available in the user properties payload:
     - `400` (`RESPONSE_CODE_BAD_REQUEST`)
     - `404` (`RESPONSE_CODE_NOT_FOUND`)
     - `500` (`RESPONSE_CODE_ERROR`)
-* `response.exception.message` - optional exception message or the string version of the exception itself if there is no message available
+* `response.exception.message` - Optional exception message or the string version of the exception itself if there is no message available
 
-2. The requester should always set a correlation ID in the request message
-3. The remote resource or the responder doesn't care about the correlation ID at all since the correlation ID will be mapped automatically when replying to the requester
-4. The remote resource or the responder remains always data agnostic and just cares about the resource that needs to accessed by the requester and the request message payload (Refer to the example below)
-5. The response codes and messages must never be added by the remote resource. It will automatically be done internally while replying to the requester
-6. It is recommended that the requester sets a timeout to the requested message to control the amount of time that it waits for a response from the remote resource or device. If a responderonse is not received within the timeout interval, the server can expect that either the device or the resource is offline.
-7. It is recommended to *never* use the control topic for unsolicited events where the remote resource periodically sends updates
+2. The requester should always provide a `correlation ID` in the request message
+3. The remote resource or the responder (subscriber) doesn't care about the `correlation ID` at all since the correlation ID will be mapped automatically when replying back to the requester
+4. The remote resource or the responder (subscriber) remains always data agnostic and just cares about the resource that needs to accessed by the requester and the request message payload (Refer to the example below)
+5. The response codes and messages must never be added by the remote resource. It will automatically be done internally while replying to the requester.
+6. It is recommended that the requester sets a timeout to the requested message to control the amount of time that it waits for a response from the remote resource or edge device. If a response is not received within the timeout interval, the server can expect that either the edge device or the resource is offline.
+7. It is recommended to *never* use the control topic for unsolicited events where the remote resource or edge device periodically sends updates
 
 #### MQTT Application on Remote Device
 
-Any remote device can introduce any application that would allow the application to participate in the aforementioned remote resource management.
+Any remote device can introduce MQTT application to leverage this remote resource management functionality.
 
 You just need to implement `in.bytehue.messaging.mqtt5.remote.api.MqttApplication`.
 
@@ -485,7 +487,7 @@ You just need to implement `in.bytehue.messaging.mqtt5.remote.api.MqttApplicatio
 public final class MyMqttApplicationExample implements MqttApplication {
 
     @Override
-    public Message doGet(
+    public Message doGET(
             final String resource,
             final Message requestMessage, 
             final MessageContextBuilder messageBuilder) throws Exception {
@@ -507,7 +509,7 @@ public final class MyMqttApplicationExample implements MqttApplication {
     }
 
     @Override
-    public Message doExec(
+    public Message doEXEC(
             final String resource,
             final Message requestMessage, 
             final MessageContextBuilder messageBuilder) throws Exception {
@@ -531,9 +533,120 @@ public final class MyMqttApplicationExample implements MqttApplication {
 }
 ```
 
+The following is the API of `in.bytehue.messaging.mqtt5.remote.api.MqttApplication`:
+
+```java
+@ConsumerType
+public interface MqttApplication {
+
+    /**
+     * The service property to be set
+     */
+    String APPLICATION_ID_PROPERTY = "mqtt.application.id";
+
+    /**
+     * Used to implement a READ request for a resource
+     *
+     * @param resource the resource identifier
+     * @param requestMessage the received message
+     * @param messageBuilder the builder to build the response message
+     *
+     * @return the response to be provided back as {@link Message}
+     * @throws Exception
+     *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
+     *             request parameters or exceptions during processing
+     */
+    default Message doGET( //
+            final String resource, //
+            final Message requestMessage, //
+            final MqttMessageContextBuilder messageBuilder) throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Used to implement a CREATE or UPDATE request for a resource
+     *
+     * @param resource the resource identifier
+     * @param requestMessage the received message
+     * @param messageBuilder the builder to build the response message
+     *
+     * @return the response to be provided back as {@link Message}
+     * @throws Exception
+     *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
+     *             request parameters or exceptions during processing
+     */
+    default Message doPUT( //
+            final String resource, //
+            final Message requestMessage, //
+            final MqttMessageContextBuilder messageBuilder) throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Used to implement other operations for a resource
+     *
+     * @param resource the resource identifier
+     * @param requestMessage the received message
+     * @param messageBuilder the builder to build the response message
+     *
+     * @return the response to be provided back as {@link Message}
+     * @throws Exception
+     *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
+     *             request parameters or exceptions during processing
+     */
+    default Message doPOST( //
+            final String resource, //
+            final Message requestMessage, //
+            final MqttMessageContextBuilder messageBuilder) throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Used to implement a DELETE request for a resource
+     *
+     * @param resource the resource identifier
+     * @param requestMessage the received message
+     * @param messageBuilder the builder to build the response message
+     *
+     * @return the response to be provided back as {@link Message}
+     * @throws Exception
+     *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
+     *             request parameters or exceptions during processing
+     */
+    default Message doDELETE( //
+            final String resource, //
+            final Message requestMessage, //
+            final MqttMessageContextBuilder messageBuilder) throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Used to perform application operation not necessary tied to a given resource
+     *
+     * @param resource the resource identifier
+     * @param requestMessage the received message
+     * @param messageBuilder the builder to build the response message
+     *
+     * @return the response to be provided back as {@link Message}
+     * @throws Exception
+     *             An exception is thrown in every condition where the request cannot be full fitted due to wrong
+     *             request parameters or exceptions during processing
+     */
+    default Message doEXEC( //
+            final String resource, //
+            final Message requestMessage, //
+            final MqttMessageContextBuilder messageBuilder) throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+}
+```
+
+It is consumer's sole discretion which type of functionality to proide. If an application is only required to retrieve resources, it should only implement `doGET(..)` and if an application decides to create resources and execute commands on the resources, it should implement `doPUT(..)` and `doEXEC(..)` and so on. I believe you got the idea 😉
+
 #### Remote Resource Management Configuration
 
-The `in.bytehue.messaging.mqtt5.remote` PID is used to configure the necessary configurations for remote resource management.
+The `in.bytehue.messaging.mqtt5.remote` PID is used to provide the necessary configurations for remote resource management.
 
 * `controlTopicPrefix` - The control topic prefix for the remote resource management (default: `CTRL`)
 * `controlTopic` - The control topic for the remote resource management (default: `in/bytehue`)
