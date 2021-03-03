@@ -437,6 +437,7 @@ public final class MessageClientProvider {
             // generate client ID if framework property is absent
             if (id == null) {
                 final String generatedClientId = UUID.randomUUID().toString();
+                // update the generated framework property for others to use
                 System.setProperty(CLIENT_ID_FRAMEWORK_PROPERTY, generatedClientId);
                 return generatedClientId;
             } else {
