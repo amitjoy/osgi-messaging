@@ -28,11 +28,13 @@ This repository comprises the rudimentary API extracted from the [OSGi RFC 246](
 
 This project comprises three projects - 
 
-1. `org.osgi.service.messaging` - The core OSGi messaging specification API
-2. `in.bytehue.messaging.mqtt5.api` - The extended MQTT 5 API
-2. `in.bytehue.messaging.mqtt5.provider` - The core implementation
-3. `in.bytehue.messaging.mqtt5.example` - Example project for usages
-4. `in.bytehue.messaging.mqtt5.remote.adapter` - Remote Device Management over MQTT
+|                  Bundle                     |                 Description                        |
+|---------------------------------------------|----------------------------------------------------|
+| `org.osgi.service.messaging`                | The Core OSGi Messaging Specification API          |
+| `in.bytehue.messaging.mqtt5.api`            | The Extended MQTT 5 API                            |
+| `in.bytehue.messaging.mqtt5.provider`       | The Core Specification Implementation              |
+| `in.bytehue.messaging.mqtt5.remote.adapter` | Remote Resource (Edge Device) Management over MQTT |
+| `in.bytehue.messaging.mqtt5.example`        | Example Project                                    |
 
 ---------------------------------------------------------------------------------------------------------------
 
@@ -82,73 +84,79 @@ This project is licensed under Apache License Version 2.0 [![License](http://img
 
 The `in.bytehue.messaging.client` PID can be used to configure the client. The configurable properties are as follows:
 
-* `id` - Client Identifier (optional) (default: empty string) - if empty, `in.bytehue.client.id` framework property is checked and if unavailable, a random identifier will be generated.
-* `server` - Server Address (optional) (default: `broker.hivemq.com`)
-* `port` - Server Port (optional) (default: `1883`)
-* `automaticReconnect` - Automatic Reconnection (optional) (default: `false`)
-* `cleanStart` - Resume Previously Established Session (optional) (default: `false`)
-* `initialDelay` - Initial Delay if Automatic Reconnection is enabled (optional) (default: `1` second)
-* `maxDelay` - Max Delay if Automatic Reconnection is enabled (optional) (default: `30` seconds)
-* `sessionExpiryInterval` - Keep Session State (optional) (default: `30` seconds)
-* `simpleAuth` - Simple Authentication (optional) (default: `false`)
-* `username` - Simple Authentication Username (optional) (default: empty string)
-* `password` - Simple Authentication Password (optional) (default: empty string)
-* `useSSL` - SSL Configuration (optional) (default: `false`)
-* `cipherSuites` - SSL Configuration Cipher Suites (optional) (default: empty array)
-* `sslHandshakeTimeout` - SSL Configuration Handshake Timeout (optional) (default: `1` second)
-* `trustManagerFactoryTargetFilter` - SSL Configuration Trust Manager Factory Service Target Filter (optional) (default: empty string) (Refer to `javax.net.ssl.TrustManagerFactory`)
-* `lastWillTopic` - Last Will Topic (optional) (default: empty string)
-* `lastWillQoS` - Last Will QoS (optional) (default: `2`)
-* `lastWillPayLoad` - Last Will Payload (optional) (default: empty string)
-* `lastWillContentType` - Last Will Content Type (optional) (default: empty string)
-* `lastWillMessageExpiryInterval` - Last Will Message Expiry Interval" (optional) (default: `120` seconds)
-* `lastWillDelayInterval` - Last Will Delay Interval (optional) (default: `30` seconds)
-* `receiveMaximum` - Maximum concurrent messages to be received (optional) (default: `10`)
-* `sendMaximum` - Maximum concurrent messages to be sent (optional) (default: `10`)
-* `maximumPacketSize` - Maximum Packet Size for receiving (optional) (default: `10240` - 10 KB)
-* `sendMaximumPacketSize` - Maximum Packet Size for sending (optional) (default: `10240` - 10 KB)
-* `topicAliasMaximum` - Maximum Topic Aliases (optional) (default: `0`)
-* `useWebSocket` - MQTT over Web Socket (optional) (default: `false`)
-* `queryString` - Web Socket Query String (optional) (default: empty string)
-* `serverPath` - Web Socket Server Path (optional) (default: empty string)
-* `subProtocol` - Web Socket Sub Protocol (optional) (default: `mqtt`)
-* `webSocketHandshakeTimeout` - Web Socket Handshake Timeout (optional) (default: `10` seconds)
-* `useEnhancedAuthentication` - Enhanced Authentication (optional) (default: `false`)
-* `enhancedAuthTargetFilter` - Enhanced Authentication Service Filter (optional) (default: empty string) (Refer to `com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism`)
-* `useServerReauth` - Server Reauthentication (optional) (default: `false`)
-* `connectedListenerFilter` - Connected Listener Service Filter (optional) (default: empty string) (Refer to `com.hivemq.client.mqtt.lifecycle.MqttClientConnectedListener`)
-* `disconnectedListenerFilter` - Disconnected Listener Service Filter (optional) (default: empty string) (Refer to `com.hivemq.client.mqtt.lifecycle.MqttClientDisconnectedListener`)
-* `qos1IncomingInterceptorFilter` - QoS 1 Incoming Interceptor Service Filter (optional) (default: empty string) (Refer to `com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos1.Mqtt5IncomingQos1Interceptor`)
-* `qos2IncomingInterceptorFilter` - QoS 2 Incoming Interceptor Service Filter (optional) (default: empty string) (Refer to `com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos1.Mqtt5IncomingQos2Interceptor`)
-* `qos1OutgoingInterceptorFilter` - QoS 1 Outgoing Interceptor Service Filter (optional) (default: empty string) (Refer to `com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos1.Mqtt5OutgoingQos1Interceptor`)
-* `qos2OutgoingInterceptorFilter` - QoS 2 Outgoing Interceptor Service Filter (optional) (default: empty string) (Refer to `com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos1.Mqtt5OutgoingQos2Interceptor`)
-* `condition.target` - LDAP filter that needs to be satisfied for the client to be active (default: `(satisfy=always)`) (Refer to `in.bytehue.messaging.mqtt5.api.TargetCondition`)
-* `disconnectionReasonDescription` - Reason for the disconnection when the component is stopped (optional) (default: `OSGi Component Deactivated`)
-* `disconnectionReasonCode` - Code for the disconnection when the component is stopped (optional) (default: `NORMAL_DISCONNECTION`) (Refer to `com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode`)
+| Configuration                     | Description                                                                                                                                   | Type     | Default Value                |
+|-----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|----------|------------------------------|
+| `id`                              | Client Identifier. If empty, `in.bytehue.client.id` framework property  is checked and if unavailable, a random identifier will be generated. | String   |                              |
+| `server`                          | Server Host Address                                                                                                                           | String   | `broker.emqx.io`             |
+| `port`                            | Server Port                                                                                                                                   | Long     | `1883`                       |
+| `automaticReconnect`              | Automatic Reconnection                                                                                                                        | Boolean  | `false`                      |
+| `cleanStart`                      | Resume Previously Established Session                                                                                                         | Boolean  | `false`                      |
+| `initialDelay`                    | Initial Delay if Automatic Reconnection is enabled (In seconds)                                                                               | Long     | `1`                          |
+| `maxDelay`                        | Max Delay if Automatic Reconnection is enabled (In seconds)                                                                                   | Long     | `30`                         |
+| `sessionExpiryInterval`           | Keep Session State (In seconds)                                                                                                               | Long     | `30`                         |
+| `simpleAuth`                      | Simple Authentication                                                                                                                         | Boolean  | `false`                      |
+| `username`                        | Simple Authentication Username                                                                                                                | String   |                              |
+| `password`                        | Simple Authentication Password                                                                                                                | String   |                              |
+| `useSSL`                          | SSL Configuration                                                                                                                             | Boolean  | `false`                      |
+| `cipherSuites`                    | SSL Configuration Cipher Suites                                                                                                               | String[] |                              |
+| `sslHandshakeTimeout`             | SSL Configuration Handshake Timeout (In seconds)                                                                                              | Long     | `1`                          |
+| `trustManagerFactoryTargetFilter` | SSL Configuration Trust Manager Factory Service Target Filter Refer to `javax.net.ssl.TrustManagerFactory`                                    | String   |                              |
+| `lastWillTopic`                   | Last Will Topic                                                                                                                               | String   |                              |
+| `lastWillQoS`                     | Last Will QoS                                                                                                                                 | Integer  | `2`                          |
+| `lastWillPayLoad`                 | Last Will Payload                                                                                                                             | String   |                              |
+| `lastWillContentType`             | Last Will Content Type                                                                                                                        | String   |                              |
+| `lastWillMessageExpiryInterval`   | Last Will Message Expiry Interval (In seconds)                                                                                                | Long     | `120`                        |
+| `lastWillDelayInterval`           | Last Will Delay Interval (In seconds)                                                                                                         | Long     | `30`                         |
+| `receiveMaximum`                  | Maximum concurrent messages to be received                                                                                                    | Integer  | `10`                         |
+| `sendMaximum`                     | Maximum concurrent messages to be sent                                                                                                        | Integer  | `10`                         |
+| `maximumPacketSize`               | Maximum Packet Size for receiving (In bytes)                                                                                                  | Integer  | `10240`                      |
+| `sendMaximumPacketSize`           | Maximum Packet Size for sending (In bytes)                                                                                                    | Integer  | `10240`                      |
+| `topicAliasMaximum`               | Maximum Topic Aliases                                                                                                                         | Integer  | `0`                          |
+| `useWebSocket`                    | MQTT over Web Socket                                                                                                                          | Boolean  | `false`                      |
+| `queryString`                     | Web Socket Query String                                                                                                                       | String   |                              |
+| `serverPath`                      | Web Socket Server Path                                                                                                                        | String   |                              |
+| `subProtocol`                     | Web Socket Sub Protocol                                                                                                                       | String   | `mqtt`                       |
+| `webSocketHandshakeTimeout`       | Web Socket Handshake Timeout (In seconds)                                                                                                     | Long     | `10`                         |
+| `useEnhancedAuthentication`       | Enhanced Authentication                                                                                                                       | Boolean  | `false`                      |
+| `enhancedAuthTargetFilter`        | Enhanced Authentication Service Filter Refer to `com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism`                                | String   |                              |
+| `useServerReauth`                 | Server Reauthentication                                                                                                                       | Boolean  | `false`                      |
+| `connectedListenerFilter`         | Connected Listener Service Filter Refer to `com.hivemq.client.mqtt.lifecycle.MqttClientConnectedListener`                                     | String   |                              |
+| `disconnectedListenerFilter`      | Disconnected Listener Service Filter Refer to `com.hivemq.client.mqtt.lifecycle.MqttClientDisconnectedListener`                               | String   |                              |
+| `qos1IncomingInterceptorFilter`   | QoS 1 Incoming Interceptor Service Filter Refer to `com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos1.Mqtt5IncomingQos1Interceptor`      | String   |                              |
+| `qos2IncomingInterceptorFilter`   | QoS 2 Incoming Interceptor Service Filter Refer to `com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos1.Mqtt5IncomingQos2Interceptor`      | String   |                              |
+| `qos1OutgoingInterceptorFilter`   | QoS 1 Outgoing Interceptor Service Filter Refer to `com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos1.Mqtt5OutgoingQos1Interceptor`      | String   |                              |
+| `qos2OutgoingInterceptorFilter`   | QoS 2 Outgoing Interceptor Service Filter Refer to `com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos1.Mqtt5OutgoingQos2Interceptor`      | String   |                              |
+| `condition.target`                | LDAP filter that needs to be satisfied for the client to be active Refer to `in.bytehue.messaging.mqtt5.api.TargetCondition`                  | String   | `(satisfy=always)`           |
+| `disconnectionReasonDescription`  | Reason for the disconnection when the component is stopped                                                                                    | String   | `OSGi Component Deactivated` |
+| `disconnectionReasonCode`         | Code for the disconnection when the component is stopped Refer to `com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode` | String   | `NORMAL_DISCONNECTION`       |
 
 #### Reply To Publisher Internal Executor Configuration
 
 The `in.bytehue.messaging.publisher` PID can be used to configure the internal thread pool
 
-* `numThreads` - Number of Threads for the internal thread pool (optional) (default: `20`)
-* `threadNamePrefix` - Prefix of the thread name (optional) (default: `mqtt-replyto-publisher`)
-* `threadNameSuffix` - Suffix of the thread name (supports only `%d` format specifier) (optional) (default: `-%d`)
-* `isDaemon` - Flag to set if the threads will be daemon threads (optional) (default: `true`)
+| Configuration      | Description                                                      | Type    | Default Value            |
+|--------------------|------------------------------------------------------------------|---------|--------------------------|
+| `numThreads`       | Number of Threads for the internal thread pool                   | Integer | `20`                     |
+| `threadNamePrefix` | Prefix of the thread name                                        | String  | `mqtt-replyto-publisher` |
+| `threadNameSuffix` | Suffix of the thread name  (supports only `%d` format specifier) | String  | `-%d`                    |
+| `isDaemon`         | Flag to set if the threads will be daemon threads                | Boolean | `true`                   |
 
 #### Primary Messaging APIs
 
-* `org.osgi.service.messaging.MessagePublisher` - service to publish to specific topic
-* `org.osgi.service.messaging.MessageSubscription` - service to subscribe to specific topic
-* `org.osgi.service.messaging.Message` - a message that is exchanged between subscriber and publisher
-* `org.osgi.service.messaging.MessageContext` - configuration for a specific message
-* `org.osgi.service.messaging.MessageContextBuilder` - service to prepare a specific message
-* `org.osgi.service.messaging.acknowledge.AcknowledgeMessageContext` - configuration denoting if a message has been acknowledged (this requires the implementation to support `acknowledge` feature)
-* `org.osgi.service.messaging.acknowledge.AcknowledgeMessageContextBuilder` - service to prepare a messaging configuration for acknowledgement
-* `org.osgi.service.messaging.replyto.ReplyToPublisher` - service to send a request for receiving a response
-* `org.osgi.service.messaging.replyto.ReplyToSingleSubscriptionHandler` - consumer API to handle response for a request and pusblish the response
-* `org.osgi.service.messaging.replyto.ReplyToSubscriptionHandler` - consumer API to handle only responses without publishing
-* `org.osgi.service.messaging.replyto.ReplyToManySubscriptionHandler` - consumer API to handle to handle stream of requests and publish stream of responses
-* `org.osgi.service.messaging.runtime.MessageServiceRuntime` - service to respresent the runtime information of a Message Service instance of an implementation.
+| API                                                                       | Description                                                                                                                    |
+|---------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| `org.osgi.service.messaging.MessagePublisher`                             | service to publish to specific topic                                                                                           |
+| `org.osgi.service.messaging.MessageSubscription`                          | service to subscribe to specific topic                                                                                         |
+| `org.osgi.service.messaging.Message`                                      | a message that is exchanged between subscriber and publisher                                                                   |
+| `org.osgi.service.messaging.MessageContext`                               | configuration for a specific message                                                                                           |
+| `org.osgi.service.messaging.MessageContextBuilder`                        | service to prepare a specific message                                                                                          |
+| `org.osgi.service.messaging.acknowledge.AcknowledgeMessageContext`        | configuration denoting if a message has been acknowledged  (this requires the implementation to support `acknowledge` feature) |
+| `org.osgi.service.messaging.acknowledge.AcknowledgeMessageContextBuilder` | service to prepare a messaging configuration for acknowledgement                                                               |
+| `org.osgi.service.messaging.replyto.ReplyToPublisher`                     | service to send a request for receiving a response                                                                             |
+| `org.osgi.service.messaging.replyto.ReplyToSingleSubscriptionHandler`     | consumer API to handle response for a request and pusblish the response                                                        |
+| `org.osgi.service.messaging.replyto.ReplyToSubscriptionHandler`           | consumer API to handle only responses without publishing                                                                       |
+| `org.osgi.service.messaging.replyto.ReplyToManySubscriptionHandler`       | consumer API to handle to handle stream of requests and publish stream  of responses                                           |
+| `org.osgi.service.messaging.runtime.MessageServiceRuntime`                | service to respresent the runtime information of a Message Service  instance of an implementation                              |
 
 The included APIs also provide several helpful annotations for implementors as well as consumers. Refer to `org.osgi.service.messaging.propertytypes` and `org.osgi.service.messaging.annotations` packages.
 
@@ -156,9 +164,11 @@ The OSGi messaging specification is catered to provide a unified solution to acc
 
 #### Secondary Messaging APIs
 
-* `in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder` - an extended service of `org.osgi.service.messaging.MessageContextBuilder` that could be used to prepare MQTT 5.0 specific message context.
-* `in.bytehue.messaging.mqtt5.api.TargetCondition` - marker service interface which consumers can implement to provide services with properties that can be used as conditional target to the MQTT client. That means, consumer can provide filters that should be satisfied before MQTT client is up and running.
-* `in.bytehue.messaging.mqtt5.api.MqttMessageCorrelationIdGenerator` - service interface to be implemented by consumers to provide the functionality for generating correlation identifiers required for reply-to channels
+| API                                                                | Description                                                                                                                                                                                                                                                      |
+|--------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder`         | an extended service of `org.osgi.service.messaging.MessageContextBuilder`  that could be used to prepare MQTT 5.0 specific message context                                                                                                                       |
+| `in.bytehue.messaging.mqtt5.api.TargetCondition`                   | marker service interface which consumers can implement to provide services  with properties that can be used as conditional target to the MQTT client.  That means, consumer can provide filters that should be satisfied before MQTT  client is up and running. |
+| `in.bytehue.messaging.mqtt5.api.MqttMessageCorrelationIdGenerator` | service interface to be implemented by consumers to provide the functionality  for generating correlation identifiers required for reply-to channels                                                                                                             |
 
 #### Examples in Action
 
@@ -389,12 +399,14 @@ for example,
 
 Let's discuss the pattern mentioned above first to understand the workflow better:
 
-* `control-topic-prefix` - The topic prefix to be used in the beginning of a topic (as a prefix) for remote resource management. By default, it is configured to `CTRL`. It can also be configured to something else. Refer to `in.bytehue.messaging.mqtt5.remote` configuration. The recommended practice would be to use a single word with all in upper case.
-* `control-topic`- This is the topic which would be appended to the `control-topic-prefix`. As an example, this can be `com/company/project`. It is also configurable in the same configuration as mentioned above. By default, it is set to `in/bytehue`.
-* `client-id` - This is the MQTT client identifier.
-* `application-id` - This is the MQTT application running on the edge device that we want to access remotely. To support multiple versions of the application, it is recommended that a version number be assigned with the application-id (e.g., `CONF-V1`, `CONF-V2`, etc.).
-* `method` - This represents a specific operation we want to perform on the remote application. An application in the remote device supports different types of methods, such as, `GET`, `POST`, `PUT`, `DELETE` and `EXEC`
-* `resource-id` - This is the remainder of the total topic, for example, in `CTRL/com/company/ABCD-1234/CONF-V1/PUT/configurations/a.b.c.d` topic, `configurations/a.b.c.d` is the `resource-id`.
+| Pattern                | Description                                                                                                                                                                                                                                                                                                                          |
+|------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `control-topic-prefix` | Topic prefix to be used in the beginning of a topic (as a prefix) for remote  resource management. By default, it is configured to `CTRL`. It can also be configured  to something else. Refer to `in.bytehue.messaging.mqtt5.remote` configuration.  The recommended practice would be to use a single word with all in upper case. |
+| `control-topic`        | Topic which would be appended to the `control-topic-prefix`. As an example,  this can be `com/company/project`. It is also configurable in the same configuration as  mentioned above. By default, it is set to `in/bytehue`.                                                                                                        |
+| `client-id`            | MQTT client identifier                                                                                                                                                                                                                                                                                                               |
+| `application-id`       | MQTT application running on the edge device that we want to access remotely.  To support multiple versions of the application, it is recommended that a version number  be assigned with the application-id (e.g., `CONF-V1`, `CONF-V2`, etc.).                                                                                      |
+| `method`               | A specific operation we want to perform on the remote application. An application in  the remote device supports different types of methods, such as, `GET`, `POST`, `PUT`, `DELETE`  and `EXEC`                                                                                                                                     |
+| `resource-id`          | The remainder of the total topic, for example, in `CTRL/com/company/ABCD-1234/CONF-V1/PUT/configurations/a.b.c.d`  topic, `configurations/a.b.c.d` is the `resource-id`.                                                                                                                                                             |
 
 
 #### Read Resources
@@ -648,5 +660,7 @@ It is consumer's sole discretion which type of functionality to proide. If an ap
 
 The `in.bytehue.messaging.mqtt5.remote` PID is used to provide the necessary configurations for remote resource management.
 
-* `controlTopicPrefix` - The control topic prefix for the remote resource management (default: `CTRL`)
-* `controlTopic` - The control topic for the remote resource management (default: `in/bytehue`)
+| Configuration        | Description                                                 | Type   | Default Value |
+|----------------------|-------------------------------------------------------------|--------|---------------|
+| `controlTopicPrefix` | The control topic prefix for the remote resource management | String | `CTRL`        |
+| `controlTopic`       | The control topic for the remote resource management        | String | `in/bytehue`  |
