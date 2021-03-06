@@ -260,34 +260,19 @@ public final class RemoteResourceManagement {
             switch (request.method) {
                 case GET:
                     message = application.doGET(resource, requestMessage, mcb);
-                    message = addResponseCode(message);
-                    message = addCorrelationId(message, correlationId);
-
-                    return message;
+                    return addResponseCodeAndCorrelationId(message, correlationId);
                 case POST:
                     message = application.doPOST(resource, requestMessage, mcb);
-                    message = addResponseCode(message);
-                    message = addCorrelationId(message, correlationId);
-
-                    return message;
+                    return addResponseCodeAndCorrelationId(message, correlationId);
                 case PUT:
                     message = application.doPUT(resource, requestMessage, mcb);
-                    message = addResponseCode(message);
-                    message = addCorrelationId(message, correlationId);
-
-                    return message;
+                    return addResponseCodeAndCorrelationId(message, correlationId);
                 case DELETE:
                     message = application.doDELETE(resource, requestMessage, mcb);
-                    message = addResponseCode(message);
-                    message = addCorrelationId(message, correlationId);
-
-                    return message;
+                    return addResponseCodeAndCorrelationId(message, correlationId);
                 case EXEC:
                     message = application.doEXEC(resource, requestMessage, mcb);
-                    message = addResponseCode(message);
-                    message = addCorrelationId(message, correlationId);
-
-                    return message;
+                    return addResponseCodeAndCorrelationId(message, correlationId);
                 default:
                     throw new MqttException(RESPONSE_CODE_BAD_REQUEST,
                             "Unable to execute the specified method - " + request.method);
@@ -295,6 +280,11 @@ public final class RemoteResourceManagement {
         } finally {
             mcbFactory.ungetService(mcb);
         }
+    }
+
+    private Message addResponseCodeAndCorrelationId(final Message message, final String correlationId) {
+        final Message updatedMessage = addResponseCode(message);
+        return addCorrelationId(updatedMessage, correlationId);
     }
 
     private Message addResponseCode(final Message message) {
