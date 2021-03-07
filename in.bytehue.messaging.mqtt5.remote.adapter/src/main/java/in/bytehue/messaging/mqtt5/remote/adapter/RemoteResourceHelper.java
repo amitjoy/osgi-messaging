@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2021 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Dictionary;
-import java.util.UUID;
 
 import org.osgi.dto.DTO;
 import org.osgi.framework.BundleContext;
@@ -71,8 +70,10 @@ public final class RemoteResourceHelper {
             if (properties == null || properties.get("id") == null) {
                 // check for framework property if available
                 final String id = bundleContext.getProperty(CLIENT_ID_FRAMEWORK_PROPERTY);
-                // generate client ID if framework property is absent
-                return id == null ? UUID.randomUUID().toString() : id;
+                if (id == null) {
+                    throw new RuntimeException("No MQTT Client ID has been assigned");
+                }
+                return id;
             } else {
                 return String.valueOf(properties.get("id"));
             }
