@@ -42,7 +42,7 @@ This project comprises three projects -
 
 ### Installation
 
-To use it in the OSGi environment, you only need to install `in.bytehue.messaging.mqtt5.provider`. If you
+To use it in the OSGi environment, you need to install `in.bytehue.messaging.mqtt5.provider`. If you
 want to make use of the remote device management, you also need to install `in.bytehue.messaging.mqtt5.remote.adapter`.
 
 --------------------------------------------------------------------------------------------------------------
