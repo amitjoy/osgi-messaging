@@ -127,10 +127,9 @@ public final class RemoteResourceManagement {
     void unbindMqttApplication(final MqttApplication application, final ServiceReference<MqttApplication> reference) {
         final Object applicationId = reference.getProperty(APPLICATION_ID_PROPERTY);
         if (applicationId == null) {
-            logger.warn("MQTT Application {} doesn't specify the application ID property", application);
             return;
         }
-        applications.remove(applicationId, application);
+        applications.remove(applicationId);
     }
 
     /**
