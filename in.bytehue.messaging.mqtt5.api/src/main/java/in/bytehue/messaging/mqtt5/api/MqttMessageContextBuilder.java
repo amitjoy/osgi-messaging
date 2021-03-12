@@ -31,7 +31,7 @@ import org.osgi.service.messaging.MessageContextBuilder;
 
 /**
  * The {@link MqttMessageContextBuilder} service is the application access point to
- * build a MQTT 5.0 message.
+ * build a {@code MQTT 5.0} message.
  *
  * <p>
  * <b>Note that</b>, access to this service requires the

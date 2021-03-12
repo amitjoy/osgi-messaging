@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2021 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -16,7 +16,7 @@
 package in.bytehue.messaging.mqtt5.api;
 
 /**
- * Defines standard constants for the MQTT messaging
+ * Standard constants for the {@code MQTT Messaging}
  */
 public final class MqttMessageConstants {
 
@@ -27,7 +27,7 @@ public final class MqttMessageConstants {
     }
 
     /**
-     * The name of the MQTT {@code Protocol} that conforms to the Messaging specification
+     * The name of the MQTT {@code Protocol} that conforms to the {@code Messaging} specification
      *
      * @since 1.0
      */
@@ -41,7 +41,7 @@ public final class MqttMessageConstants {
     public static final String MESSAGING_ID = "mqtt5-hivemq-adapter";
 
     /**
-     * The name of the provider of the {@code Messaging} implementation
+     * The name of the provider of the {@code MQTT Messaging} implementation
      *
      * @since 1.0
      */
@@ -56,7 +56,7 @@ public final class MqttMessageConstants {
     public static final String CLIENT_ID_FRAMEWORK_PROPERTY = "in.bytehue.client.id";
 
     /**
-     * Defines standard constants for the MQTT messaging extension features
+     * Standard constants for the {@code MQTT Messaging} extension features
      */
     public static final class Extension {
 
@@ -65,7 +65,7 @@ public final class MqttMessageConstants {
         }
 
         /**
-         * The name of the {@code Message Expiry Interval} extension of the MQTT 5.0 specification.
+         * The name of the {@code Message Expiry Interval} extension of the {@code MQTT 5.0 specification}.
          * An integer value indicates the expiry interval of the messages.
          *
          * @since 1.0
@@ -73,7 +73,7 @@ public final class MqttMessageConstants {
         public static final String MESSAGE_EXPIRY_INTERVAL = "messageExpiryInterval";
 
         /**
-         * The name of the {@code Message Retain} extension of the MQTT 5.0 specification.
+         * The name of the {@code Message Retain} extension of the {@code MQTT 5.0 specification}.
          * This indicates the message will be retained. A value of {code true} ensures
          * successful retention of messages.
          *
@@ -82,15 +82,15 @@ public final class MqttMessageConstants {
         public static final String RETAIN = "retain";
 
         /**
-         * The name of the {@code User Properties} extension of the MQTT 5.0 specification.
-         * A {@code Map&lt;String,String&gt; can be provided}.
+         * The name of the {@code User Properties} extension of the {@code MQTT 5.0 specification}.
+         * A {@code Map<String, String>} can be provided.
          *
          * @since 1.0
          */
         public static final String USER_PROPERTIES = "userProperties";
 
         /**
-         * The name of the {@code Local} extension of the MQTT 5.0 specification. This ensures
+         * The name of the {@code Local} extension of the {@code MQTT 5.0 specification}. This ensures
          * if we want to receive our own messages. A value of {code true} ascertains the receipt
          * of own messages.
          *
@@ -99,7 +99,7 @@ public final class MqttMessageConstants {
         public static final String RECEIVE_LOCAL = "receiveLocal";
 
         /**
-         * The name of the {@code last will delay interval} extension of the MQTT 5.0 specification.
+         * The name of the {@code last will delay interval} extension of the {@code MQTT 5.0 specification}.
          * A value of {code Long} can be provided.
          *
          * @since 1.0
