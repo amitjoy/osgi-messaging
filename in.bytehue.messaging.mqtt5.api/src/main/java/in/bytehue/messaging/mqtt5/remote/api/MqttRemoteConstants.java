@@ -16,7 +16,7 @@
 package in.bytehue.messaging.mqtt5.remote.api;
 
 /**
- * Defines standard constants for the MQTT Remote Resource Management
+ * Standard constants for the MQTT Remote Resource Management
  */
 public final class MqttRemoteConstants {
 
@@ -75,7 +75,14 @@ public final class MqttRemoteConstants {
      */
     public static final int RESPONSE_CODE_ERROR = 500;
 
+    /**
+     * The name of the Remote Resource Management Implementation
+     */
     public static final String REMOTE_RESOURCE_MANAGEMENT_IMPLEMENTATION = "mqtt.remote";
+
+    /**
+     * The version of the Remote Resource Management Implementation
+     */
     public static final String REMOTE_RESOURCE_MANAGEMENT_VERSION = "1.0.0";
 
 }
