@@ -29,19 +29,17 @@ import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.RESPONSE
 import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.RESPONSE_CODE_PROPERTY;
 import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.RESPONSE_EXCEPTION_MESSAGE_PROPERTY;
 import static java.util.stream.Collectors.joining;
-import static org.osgi.service.component.annotations.ReferenceCardinality.MULTIPLE;
-import static org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC;
 import static org.osgi.service.messaging.MessageConstants.MESSAGING_NAME_PROPERTY;
 import static org.osgi.service.messaging.MessageConstants.MESSAGING_PROTOCOL_PROPERTY;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map.Entry;
 
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
@@ -100,7 +98,8 @@ public final class RemoteResourceManagement {
     @Reference(target = FILTER)
     private ComponentServiceObjects<MqttMessageContextBuilder> mcbFactory;
 
-    private final Map<String, MqttApplication> applications = new ConcurrentHashMap<>();
+    @Reference
+    private volatile Collection<Entry<Map<String, Object>, MqttApplication>> applications; // NOSONAR
 
     @Activate
     private Config config;
@@ -112,24 +111,6 @@ public final class RemoteResourceManagement {
     void init() {
         final String topic = prepareSubscriptionTopic();
         subscribe(topic);
-    }
-
-    @Reference(cardinality = MULTIPLE, policy = DYNAMIC)
-    void bindMqttApplication(final MqttApplication application, final ServiceReference<MqttApplication> reference) {
-        final Object applicationId = reference.getProperty(APPLICATION_ID_PROPERTY);
-        if (applicationId == null) {
-            logger.warn("MQTT Application {} doesn't specify the application ID property", application);
-            return;
-        }
-        applications.put(String.valueOf(applicationId), application);
-    }
-
-    void unbindMqttApplication(final MqttApplication application, final ServiceReference<MqttApplication> reference) {
-        final Object applicationId = reference.getProperty(APPLICATION_ID_PROPERTY);
-        if (applicationId == null) {
-            return;
-        }
-        applications.remove(applicationId);
     }
 
     /**
@@ -244,7 +225,7 @@ public final class RemoteResourceManagement {
     }
 
     private Message execMqttApplication(final RequestDTO request) throws Exception {
-        final MqttApplication application = applications.get(request.applicationId);
+        final MqttApplication application = findApp(request.applicationId);
         if (application == null) {
             throw new MqttException(RESPONSE_CODE_NOT_FOUND,
                     "MQTT Application " + request.applicationId + " doesn't exist");
@@ -315,6 +296,18 @@ public final class RemoteResourceManagement {
         } finally {
             mcbFactory.ungetService(mcb);
         }
+    }
+
+    private MqttApplication findApp(final String applicationId) {
+        for (final Entry<Map<String, Object>, MqttApplication> tuple : applications) {
+            final Map<String, Object> serviceProps = tuple.getKey();
+            final MqttApplication app = tuple.getValue();
+            final Object appId = serviceProps.get(APPLICATION_ID_PROPERTY);
+            if (appId.equals(applicationId)) {
+                return app;
+            }
+        }
+        return null;
     }
 
 }
