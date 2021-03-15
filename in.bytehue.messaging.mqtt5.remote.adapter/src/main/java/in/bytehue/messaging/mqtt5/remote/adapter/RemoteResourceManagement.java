@@ -300,11 +300,9 @@ public final class RemoteResourceManagement {
 
     private MqttApplication findApp(final String applicationId) {
         for (final Entry<Map<String, Object>, MqttApplication> tuple : applications) {
-            final Map<String, Object> serviceProps = tuple.getKey();
-            final MqttApplication app = tuple.getValue();
-            final Object appId = serviceProps.get(APPLICATION_ID_PROPERTY);
+            final Object appId = tuple.getKey().get(APPLICATION_ID_PROPERTY);
             if (appId.equals(applicationId)) {
-                return app;
+                return tuple.getValue();
             }
         }
         return null;
