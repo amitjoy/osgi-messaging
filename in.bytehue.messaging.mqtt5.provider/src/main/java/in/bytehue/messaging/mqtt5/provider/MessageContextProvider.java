@@ -109,7 +109,7 @@ public final class MessageContextProvider implements MessageContext, Acknowledge
     // @formatter:off
     @Override
     public String toString() {
-        return new StringBuilder().append("MessageContextProvider [channel=")
+        return new StringBuilder().append("MessageContext [channel=")
                                   .append(channel)
                                   .append(", contentType=")
                                   .append(contentType)
