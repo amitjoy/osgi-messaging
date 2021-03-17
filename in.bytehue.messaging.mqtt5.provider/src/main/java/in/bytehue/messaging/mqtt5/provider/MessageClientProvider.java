@@ -26,6 +26,7 @@ import static org.osgi.service.metatype.annotations.AttributeType.PASSWORD;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import javax.net.ssl.TrustManagerFactory;
 
@@ -79,16 +80,16 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "Server Host Address")
         String server() default "broker.emqx.io";
 
-        @AttributeDefinition(name = "Automatic Reconnection")
-        boolean automaticReconnect() default false;
+        @AttributeDefinition(name = "Custom Automatic Reconnection")
+        boolean automaticReconnect() default true;
 
         @AttributeDefinition(name = "Resume Previously Established Session")
         boolean cleanStart() default false;
 
-        @AttributeDefinition(name = "Initial Delay if Automatic Reconnection is enabled")
-        long initialDelay() default 1L;
+        @AttributeDefinition(name = "Initial Delay if Custom Automatic Reconnection is enabled")
+        long initialDelay() default 10L;
 
-        @AttributeDefinition(name = "Max Delay if Automatic Reconnection is enabled")
+        @AttributeDefinition(name = "Max Delay if Custom Automatic Reconnection is enabled")
         long maxDelay() default 30L;
 
         @AttributeDefinition(name = "Keep Session State")
@@ -205,7 +206,7 @@ public final class MessageClientProvider {
 
     private static final long SESSION_EXPIRY_ON_LAST_WILL_UPDATE_DISCONNECT = 600L;
 
-    public final Mqtt5AsyncClient client;
+    public volatile Mqtt5AsyncClient client;
 
     private final Logger logger;
     private final Config config;
@@ -232,14 +233,17 @@ public final class MessageClientProvider {
                                    .identifier(MqttClientIdentifier.of(clientId))
                                    .serverHost(config.server())
                                    .serverPort(config.port());
-        client = clientBuilder.buildAsync();
 
         // last will can be configured in two different ways =>
         // 1. using initial configuration
         // 2. client can send a special publish request which will be used as will message
         // In case of the second scenario, a reconnection happens
         initLastWill(null);
-        connect();
+        try {
+            connect();
+        } catch (Exception e) {
+            logger.error("Error occurred while connecting to server", e);
+        }
     }
 
     @Deactivate
@@ -374,21 +378,29 @@ public final class MessageClientProvider {
                           .applyInterceptors();
         }
         advancedConfig.applyAdvancedConfig();
+        client = clientBuilder.buildAsync();
 
-        final Mqtt5ConnAck connAck = client.toBlocking()
-                                           .connectWith()
-                                               .cleanStart(config.cleanStart())
-                                               .sessionExpiryInterval(config.sessionExpiryInterval())
-                                           .restrictions()
-                                               .receiveMaximum(config.receiveMaximum())
-                                               .sendMaximum(config.sendMaximum())
-                                               .maximumPacketSize(config.maximumPacketSize())
-                                               .sendMaximumPacketSize(config.sendMaximumPacketSize())
-                                               .sendTopicAliasMaximum(config.topicAliasMaximum())
-                                           .applyRestrictions()
-                                           .send();
+        final CompletableFuture<Mqtt5ConnAck> ack = 
+                client.toAsync()
+                      .connectWith()
+                           .cleanStart(config.cleanStart())
+                           .sessionExpiryInterval(config.sessionExpiryInterval())
+                       .restrictions()
+                           .receiveMaximum(config.receiveMaximum())
+                           .sendMaximum(config.sendMaximum())
+                           .maximumPacketSize(config.maximumPacketSize())
+                           .sendMaximumPacketSize(config.sendMaximumPacketSize())
+                           .sendTopicAliasMaximum(config.topicAliasMaximum())
+                       .applyRestrictions()
+                       .send();
 
-        logger.debug("Connection successfully established - {}", connAck);
+        ack.whenComplete((connAck, throwable) -> {
+            if (throwable != null) {
+                logger.error("Error occurred while connecting to server", throwable);
+            } else {
+                logger.debug("Connection successfully established - {}", connAck);
+            }
+        });
     }
 
     private void initLastWill(final MqttWillPublish publish) {

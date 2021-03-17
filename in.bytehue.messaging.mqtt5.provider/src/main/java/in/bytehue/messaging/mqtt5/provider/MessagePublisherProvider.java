@@ -15,6 +15,8 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
+import static com.hivemq.client.mqtt.MqttClientState.DISCONNECTED;
+import static com.hivemq.client.mqtt.MqttClientState.DISCONNECTED_RECONNECT;
 import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatIndicator.UTF_8;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
@@ -49,6 +51,7 @@ import org.osgi.service.messaging.propertytypes.MessagingFeature;
 import org.osgi.util.converter.TypeReference;
 
 import com.hivemq.client.internal.mqtt.message.publish.MqttWillPublish;
+import com.hivemq.client.mqtt.MqttClientState;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserProperties;
 import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserPropertiesBuilder;
@@ -107,6 +110,11 @@ public final class MessagePublisherProvider implements MessagePublisher {
             }
             if (channel == null) {
                 channel = context.getChannel();
+            }
+            final MqttClientState clientState = messagingClient.client.getState();
+            if ((clientState == DISCONNECTED) || (clientState == DISCONNECTED_RECONNECT)) {
+                logger.error("Cannot publish the message '{}' to '{}' since the client is disconnected", message, channel);
+                return;
             }
             final String ch = channel; // needed for lambda as it needs to be effectively final :(
             final Map<String, Object> extensions = context.getExtensions();
