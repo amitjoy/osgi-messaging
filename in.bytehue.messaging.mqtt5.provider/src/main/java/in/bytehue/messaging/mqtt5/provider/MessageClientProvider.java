@@ -17,6 +17,7 @@ package in.bytehue.messaging.mqtt5.provider;
 
 import static com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode.NORMAL_DISCONNECTION;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.CLIENT_ID_FRAMEWORK_PROPERTY;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_READY_SERVICE_PROPERTY;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.CLIENT;
 import static in.bytehue.messaging.mqtt5.api.TargetCondition.DEFAULT_SATISFIABLE_FILTER;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalService;
@@ -24,6 +25,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.osgi.service.metatype.annotations.AttributeType.PASSWORD;
 
 import java.util.Arrays;
+import java.util.Dictionary;
+import java.util.Hashtable;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -31,6 +34,7 @@ import java.util.concurrent.CompletableFuture;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -46,7 +50,9 @@ import com.hivemq.client.internal.mqtt.message.publish.MqttWillPublish;
 import com.hivemq.client.mqtt.datatypes.MqttClientIdentifier;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.datatypes.MqttUtf8String;
+import com.hivemq.client.mqtt.lifecycle.MqttClientConnectedContext;
 import com.hivemq.client.mqtt.lifecycle.MqttClientConnectedListener;
+import com.hivemq.client.mqtt.lifecycle.MqttClientDisconnectedContext;
 import com.hivemq.client.mqtt.lifecycle.MqttClientDisconnectedListener;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
@@ -213,6 +219,8 @@ public final class MessageClientProvider {
     private final BundleContext bundleContext;
     private final Mqtt5ClientBuilder clientBuilder;
 
+    private ServiceRegistration<TargetCondition> readyServiceReg;
+
     @Reference
     private ConditionalTarget<TargetCondition> condition;
 
@@ -241,7 +249,7 @@ public final class MessageClientProvider {
         initLastWill(null);
         try {
             connect();
-        } catch (Exception e) {
+        } catch (final Exception e) {
             logger.error("Error occurred while connecting to server", e);
         }
     }
@@ -377,10 +385,13 @@ public final class MessageClientProvider {
                                       .orElse(null))
                           .applyInterceptors();
         }
+        clientBuilder.addConnectedListener(this::registerReadyService);
+        clientBuilder.addDisconnectedListener(this::unregisterReadyService);
+
         advancedConfig.applyAdvancedConfig();
         client = clientBuilder.buildAsync();
 
-        final CompletableFuture<Mqtt5ConnAck> ack = 
+        final CompletableFuture<Mqtt5ConnAck> ack =
                 client.toAsync()
                       .connectWith()
                            .cleanStart(config.cleanStart())
@@ -458,6 +469,17 @@ public final class MessageClientProvider {
         } else {
             return config.id();
         }
+    }
+
+    private void registerReadyService(final MqttClientConnectedContext context) {
+        final Dictionary<String, Object> properties = new Hashtable<>();
+        properties.put(MQTT_READY_SERVICE_PROPERTY, "true");
+
+        readyServiceReg = bundleContext.registerService(TargetCondition.class, new TargetCondition() {}, properties);
+    }
+
+    private void unregisterReadyService(final MqttClientDisconnectedContext context) {
+        readyServiceReg.unregister();
     }
 
 }

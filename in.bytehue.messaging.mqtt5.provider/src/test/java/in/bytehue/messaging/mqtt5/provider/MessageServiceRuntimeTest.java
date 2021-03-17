@@ -19,6 +19,7 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.MESS
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RECEIVE_LOCAL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
+import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForMqttConnectionReady;
 import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForRequestProcessing;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,6 +41,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.framework.Constants;
@@ -83,6 +85,11 @@ public final class MessageServiceRuntimeTest {
     private MessageServiceRuntime runtime;
 
     static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
+
+    @Before
+    public void setup() throws InterruptedException {
+        waitForMqttConnectionReady(launchpad);
+    }
 
     @Test
     public void test_connection_uri() throws Exception {

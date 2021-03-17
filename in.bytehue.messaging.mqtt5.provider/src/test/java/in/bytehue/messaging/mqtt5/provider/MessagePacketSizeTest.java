@@ -15,6 +15,7 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
+import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForMqttConnectionReady;
 import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForRequestProcessing;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.awaitility.core.ConditionTimeoutException;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.service.messaging.Message;
@@ -52,6 +54,11 @@ public final class MessagePacketSizeTest {
     private MessageContextBuilder mcb;
 
     static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
+
+    @Before
+    public void setup() throws InterruptedException {
+        waitForMqttConnectionReady(launchpad);
+    }
 
     @Test(expected = ConditionTimeoutException.class)
     public void test_packet_configuration_size_exceeds() throws IOException, InterruptedException {

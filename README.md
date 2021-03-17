@@ -335,6 +335,7 @@ public final class Mqtt5LwtPublish {
 
 #### Useful Notes
 
+* Note that, the connection to the MQTT broker can be terminated anytime due to network issues. In such a case, you can track the availability of a connection to the broker using an OSGi service which gets registered if the connection to the broker is maintained. The service will disappear if the connection gets broken. This service contains `mqtt.connection.ready` property that is set to `true`. Also note that, the service is exported under `TargetCondition` marker interface (Refer to `Target Condition Satisfiability for MQTT client` below)
 * Since more than one implementations can coexist in the OSGi runtime, we can search for the MQTT services by means of the provided service properties.
 * Refer to the examples above.
 * Also note that, the `in.bytehue.messaging.mqtt5.provider` bundle packages the APIs and implementation together. This bundle also packages and exports the HiveMQ Java client APIs to perform enhanced configuration to the client.

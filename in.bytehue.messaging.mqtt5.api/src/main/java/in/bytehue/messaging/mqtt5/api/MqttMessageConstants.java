@@ -56,6 +56,14 @@ public final class MqttMessageConstants {
     public static final String CLIENT_ID_FRAMEWORK_PROPERTY = "in.bytehue.client.id";
 
     /**
+     * The name of property which is available to the service that gets registered
+     * when there exists a valid connection to the MQTT broker.
+     *
+     * @since 1.0
+     */
+    public static final String MQTT_READY_SERVICE_PROPERTY = "mqtt.connection.ready";
+
+    /**
      * Standard constants for the {@code MQTT Messaging} extension features
      */
     public static final class Extension {

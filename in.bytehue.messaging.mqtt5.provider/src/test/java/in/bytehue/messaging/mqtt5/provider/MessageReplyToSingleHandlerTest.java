@@ -15,11 +15,13 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
+import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForMqttConnectionReady;
 import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForRequestProcessing;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.service.messaging.Message;
@@ -53,6 +55,11 @@ public final class MessageReplyToSingleHandlerTest {
     private MessageSubscription subscriber;
 
     static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
+
+    @Before
+    public void setup() throws InterruptedException {
+        waitForMqttConnectionReady(launchpad);
+    }
 
     @Test
     public void test_reply_to_single_subscription_handler_1() throws Exception {

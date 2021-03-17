@@ -15,6 +15,7 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
+import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForMqttConnectionReady;
 import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForRequestProcessing;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.service.messaging.Message;
@@ -52,6 +54,11 @@ public final class MessageReplyToPublisherCorrelationIdTest {
     private MqttMessageContextBuilder mcb;
 
     static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
+
+    @Before
+    public void setup() throws InterruptedException {
+        waitForMqttConnectionReady(launchpad);
+    }
 
     @Test
     public void test_auto_generated_correlation_id_is_UUID() throws Exception {
