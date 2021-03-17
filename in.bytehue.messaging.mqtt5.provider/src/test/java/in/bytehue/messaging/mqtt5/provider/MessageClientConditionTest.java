@@ -62,7 +62,7 @@ public final class MessageClientConditionTest {
         final Configuration config = configAdmin.getConfiguration(CLIENT, "?");
 
         final Dictionary<String, Object> properties = new Hashtable<>();
-        properties.put("condition.put", "(a=b)");
+        properties.put("condition.target", "(a=b)");
 
         config.update(properties);
 
@@ -74,18 +74,18 @@ public final class MessageClientConditionTest {
         final Configuration config = configAdmin.getConfiguration(CLIENT, "?");
 
         final Dictionary<String, Object> properties = new Hashtable<>();
-        properties.put("condition.put", "(a=b)");
+        properties.put("condition.target", "(a=b)");
 
         config.update(properties);
 
-        await().atMost(3, SECONDS).until(() -> !launchpad.getService(MessageClientProvider.class).isPresent());
+        await().atMost(13, SECONDS).until(() -> !launchpad.getService(MessageClientProvider.class).isPresent());
 
         final TargetCondition condition = new TargetCondition() {
         };
 
         launchpad.register(TargetCondition.class, condition, "a", "b");
 
-        await().atMost(3, SECONDS).until(() -> launchpad.getService(MessageClientProvider.class).isPresent());
+        await().atMost(13, SECONDS).until(() -> launchpad.getService(MessageClientProvider.class).isPresent());
     }
 
 }
