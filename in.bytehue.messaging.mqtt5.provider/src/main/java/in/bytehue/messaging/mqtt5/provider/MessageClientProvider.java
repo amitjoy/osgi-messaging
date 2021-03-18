@@ -280,7 +280,7 @@ public final class MessageClientProvider {
         final Nested<? extends Mqtt5ClientBuilder> advancedConfig = clientBuilder.advancedConfig();
 
         if (config.automaticReconnect()) {
-            logger.debug("Applying Automatic Reconnect Configuration");
+            logger.debug("Applying Custom Automatic Reconnect Configuration");
             clientBuilder.automaticReconnect()
                              .initialDelay(config.initialDelay(), SECONDS)
                              .maxDelay(config.maxDelay(), SECONDS)
@@ -479,7 +479,9 @@ public final class MessageClientProvider {
     }
 
     private void unregisterReadyService(final MqttClientDisconnectedContext context) {
-        readyServiceReg.unregister();
+        if (readyServiceReg != null) {
+            readyServiceReg.unregister();
+        }
     }
 
 }
