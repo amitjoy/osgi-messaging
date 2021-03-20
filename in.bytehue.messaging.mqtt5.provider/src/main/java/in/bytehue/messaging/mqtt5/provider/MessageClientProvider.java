@@ -250,7 +250,7 @@ public final class MessageClientProvider {
         try {
             connect();
         } catch (final Exception e) {
-            logger.error("Error occurred while connecting to server", e);
+            logger.error("Error occurred while establishing connection to the broker '{}'", config.server(), e);
         }
     }
 
@@ -407,9 +407,10 @@ public final class MessageClientProvider {
 
         ack.whenComplete((connAck, throwable) -> {
             if (throwable != null) {
-                logger.error("Error occurred while connecting to server", throwable);
+                logger.error(
+                        "Error occurred while establishing connection to the broker '{}'", config.server(), throwable);
             } else {
-                logger.debug("Connection successfully established - {}", connAck);
+                logger.debug("Connection successfully established with the broker - '{}'", connAck);
             }
         });
     }
