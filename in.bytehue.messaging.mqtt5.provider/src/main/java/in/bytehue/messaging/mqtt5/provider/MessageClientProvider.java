@@ -279,6 +279,11 @@ public final class MessageClientProvider {
     private void connect() {
         final Nested<? extends Mqtt5ClientBuilder> advancedConfig = clientBuilder.advancedConfig();
 
+        logger.debug(
+                "Adding highest priority connection listeners for (de)/registering MQTT connection ready OSGi service");
+        clientBuilder.addConnectedListener(this::registerReadyService);
+        clientBuilder.addDisconnectedListener(this::unregisterReadyService);
+
         if (config.automaticReconnect()) {
             logger.debug("Applying Custom Automatic Reconnect Configuration");
             clientBuilder.automaticReconnect()
@@ -385,8 +390,6 @@ public final class MessageClientProvider {
                                       .orElse(null))
                           .applyInterceptors();
         }
-        clientBuilder.addConnectedListener(this::registerReadyService);
-        clientBuilder.addDisconnectedListener(this::unregisterReadyService);
 
         advancedConfig.applyAdvancedConfig();
         client = clientBuilder.buildAsync();
