@@ -17,7 +17,7 @@ package in.bytehue.messaging.mqtt5.provider;
 
 import static com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode.NORMAL_DISCONNECTION;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.CLIENT_ID_FRAMEWORK_PROPERTY;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_READY_SERVICE_PROPERTY;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CONNECTION_READY_SERVICE_PROPERTY;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.CLIENT;
 import static in.bytehue.messaging.mqtt5.api.TargetCondition.DEFAULT_SATISFIABLE_FILTER;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalService;
@@ -477,7 +477,7 @@ public final class MessageClientProvider {
 
     private void registerReadyService(final MqttClientConnectedContext context) {
         final Dictionary<String, Object> properties = new Hashtable<>();
-        properties.put(MQTT_READY_SERVICE_PROPERTY, "true");
+        properties.put(MQTT_CONNECTION_READY_SERVICE_PROPERTY, "true");
 
         readyServiceReg = bundleContext.registerService(TargetCondition.class, new TargetCondition() {}, properties);
     }

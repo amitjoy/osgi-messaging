@@ -61,7 +61,16 @@ public final class MqttMessageConstants {
      *
      * @since 1.0
      */
-    public static final String MQTT_READY_SERVICE_PROPERTY = "mqtt.connection.ready";
+    public static final String MQTT_CONNECTION_READY_SERVICE_PROPERTY = "mqtt.connection.ready";
+
+    /**
+     * The service filter to track the OSGi service which gets registered
+     * when there exists a valid connection to the MQTT broker.
+     *
+     * @since 1.0
+     */
+    public static final String MQTT_CONNECTION_READY_SERVICE_PROPERTY_FILTER = "("
+            + MQTT_CONNECTION_READY_SERVICE_PROPERTY + "=true)";
 
     /**
      * Standard constants for the {@code MQTT Messaging} extension features
