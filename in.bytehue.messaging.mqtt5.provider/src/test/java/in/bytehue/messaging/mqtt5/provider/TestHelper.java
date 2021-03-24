@@ -37,7 +37,7 @@ public final class TestHelper {
     }
 
     public static void waitForRequestProcessing(final AtomicBoolean flag) throws InterruptedException {
-        await().atMost(10, TimeUnit.SECONDS).untilTrue(flag);
+        await().atMost(20, TimeUnit.SECONDS).untilTrue(flag);
     }
 
     public static Map<String, Object> toMap(final Dictionary<String, Object> dictionary) {
@@ -46,7 +46,7 @@ public final class TestHelper {
     }
 
     public static void waitForMqttConnectionReady(final Launchpad launchpad) {
-        await().atMost(10, TimeUnit.SECONDS) //
+        await().atMost(20, TimeUnit.SECONDS) //
                 .until((Callable<Boolean>) () -> launchpad
                         .getService(TargetCondition.class, "(mqtt.connection.ready=true)").isPresent());
     }
