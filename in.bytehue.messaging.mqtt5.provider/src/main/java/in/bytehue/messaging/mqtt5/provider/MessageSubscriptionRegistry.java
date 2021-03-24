@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2021 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -75,15 +75,13 @@ public final class MessageSubscriptionRegistry {
                                                             pushStream,
                                                             handlerReference);
 
-        // there can be multiple subscriptions under the same wild card filter
+        // there can be multiple subscriptions under the same wildcard filter
         if (subscriptions.containsKey(topicFilter)) {
             final List<ExtendedSubscriptionDTO> dtos = subscriptions.get(topicFilter);
-            for (final ExtendedSubscriptionDTO dto : dtos) {
-                if (dto.handlerReference == handlerReference) {
-                    // there can be multiple connected streams for the same handler
-                    dto.connectedStreams.add(pushStream);
-                }
-            }
+            // there can be multiple connected streams for the same handler
+            dtos.stream()
+                .filter(dto -> dto.handlerReference == handlerReference)
+                .forEach(dto -> dto.connectedStreams.add(pushStream));
             dtos.add(subDTO);
         } else {
             final List<ExtendedSubscriptionDTO> dtos = new ArrayList<>();
