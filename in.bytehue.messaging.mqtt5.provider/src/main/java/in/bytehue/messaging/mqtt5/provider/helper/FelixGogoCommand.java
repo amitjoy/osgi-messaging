@@ -26,7 +26,7 @@ import org.osgi.service.component.annotations.ComponentPropertyType;
 @Target(TYPE)
 @Retention(CLASS)
 @ComponentPropertyType
-public @interface GogoCommand {
+public @interface FelixGogoCommand {
 
     String PREFIX_ = "osgi.command.";
 

@@ -35,12 +35,12 @@ import org.osgi.service.messaging.MessageContext;
 import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
 import in.bytehue.messaging.mqtt5.provider.MessagePublisherProvider;
 import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionProvider;
-import in.bytehue.messaging.mqtt5.provider.helper.GogoCommand;
+import in.bytehue.messaging.mqtt5.provider.helper.FelixGogoCommand;
 import in.bytehue.messaging.mqtt5.provider.helper.Table;
 
 // @formatter:off
-@GogoCommand(scope = "mqtt", function = { "pub", "sub" })
 @Descriptor("Gogo commands to publish/subscribe to topics")
+@FelixGogoCommand(scope = "mqtt", function = { "pub", "sub" })
 @Component(
         immediate = true,
         configurationPid = PID,

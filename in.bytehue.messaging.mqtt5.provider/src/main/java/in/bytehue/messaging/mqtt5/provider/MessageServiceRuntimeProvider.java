@@ -46,7 +46,7 @@ import org.osgi.service.messaging.dto.MessagingRuntimeDTO;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
 import org.osgi.service.messaging.runtime.MessageServiceRuntime;
 
-import in.bytehue.messaging.mqtt5.provider.helper.GogoCommand;
+import in.bytehue.messaging.mqtt5.provider.helper.FelixGogoCommand;
 
 // @formatter:off
 @Component
@@ -70,7 +70,7 @@ import in.bytehue.messaging.mqtt5.provider.helper.GogoCommand;
                 EXTENSION_AUTO_ACKNOWLEDGE,
                 EXTENSION_GUARANTEED_DELIVERY,
                 EXTENSION_GUARANTEED_ORDERING })
-@GogoCommand(scope = "mqtt", function = "runtime")
+@FelixGogoCommand(scope = "mqtt", function = "runtime")
 //@formatter:on
 public final class MessageServiceRuntimeProvider implements MessageServiceRuntime {
 
