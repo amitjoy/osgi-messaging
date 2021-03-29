@@ -112,8 +112,9 @@ public final class MessagePublisherProvider implements MessagePublisher {
                 channel = context.getChannel();
             }
             final MqttClientState clientState = messagingClient.client.getState();
-            if ((clientState == DISCONNECTED) || (clientState == DISCONNECTED_RECONNECT)) {
-                logger.error("Cannot publish the message '{}' to '{}' since the client is disconnected", message, channel);
+            if (clientState == DISCONNECTED || clientState == DISCONNECTED_RECONNECT) {
+                logger.warn("Cannot publish the message '{}' to '{}' since the client is disconnected", message,
+                        channel);
                 return;
             }
             final String ch = channel; // needed for lambda as it needs to be effectively final :(
