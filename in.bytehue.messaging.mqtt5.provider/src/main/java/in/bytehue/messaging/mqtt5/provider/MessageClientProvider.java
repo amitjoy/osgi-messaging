@@ -84,7 +84,7 @@ public final class MessageClientProvider {
         String id() default "";
 
         @AttributeDefinition(name = "Server Host Address")
-        String server() default "broker.emqx.io";
+        String server() default "broker.hivemq.com";
 
         @AttributeDefinition(name = "Custom Automatic Reconnection")
         boolean automaticReconnect() default true;

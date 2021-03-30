@@ -1,9 +1,12 @@
 -runbundles: \
 	assertj-core,\
+	org.apache.felix.cm.json,\
 	org.apache.felix.configadmin,\
+	org.apache.felix.configurator,\
 	org.apache.felix.converter,\
 	org.apache.felix.log,\
 	org.apache.felix.scr,\
+	org.apache.sling.commons.johnzon,\
 	org.awaitility,\
 	org.osgi.util.function,\
 	org.osgi.util.promise,\
@@ -11,3 +14,9 @@
 	osgi.enroute.hamcrest.wrapper,\
 	slf4j.api,\
 	slf4j.simple
+
+-runproperties: configurator.initial='{\
+                      ":configurator:version":"1.0",\
+                      ":configurator:symbolic-name":"in.bytehue.messaging.mqtt5.provider",\
+                      "in.bytehue.messaging.client":{"server":"broker.emqx.io"}\
+                      }'
