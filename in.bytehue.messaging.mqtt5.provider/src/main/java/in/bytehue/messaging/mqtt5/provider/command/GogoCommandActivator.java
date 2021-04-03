@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2021 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Hashtable;
 
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -54,17 +53,16 @@ public final class GogoCommandActivator {
             createGogoCommandConfig();
         }
     }
-    // @formatter:on
 
     private boolean isGogoPackageImported() {
         final BundleWiring wiring = bundleContext.getBundle().adapt(BundleWiring.class);
-        for (final BundleWire wire : wiring.getRequiredWires(PACKAGE_NAMESPACE)) {
-            final String pkg = (String) wire.getCapability().getAttributes().get(PACKAGE_NAMESPACE);
-            if (pkg.equals(GOGO_PACKAGE)) {
-                return true;
-            }
-        }
-        return false;
+        return wiring.getRequiredWires(PACKAGE_NAMESPACE)
+                     .stream()
+                     .map(wire -> (String) wire.getCapability()
+                                               .getAttributes()
+                                               .get(PACKAGE_NAMESPACE))
+                     .anyMatch(pkg -> pkg.equals(GOGO_PACKAGE));
+        // @formatter:on
     }
 
     private void createGogoCommandConfig() {
