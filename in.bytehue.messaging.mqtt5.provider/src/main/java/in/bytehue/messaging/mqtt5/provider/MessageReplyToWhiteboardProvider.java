@@ -228,12 +228,7 @@ public final class MessageReplyToWhiteboardProvider {
 
         private boolean isReplyToSubscriptionHandler(final ServiceReference<?> ref) {
             final String[] serviceTypes = (String[]) ref.getProperty(OBJECTCLASS);
-            for(final String serviceType : serviceTypes) {
-                if (ReplyToSubscriptionHandler.class.getName().equals(serviceType)) {
-                    return true;
-                }
-            }
-            return false;
+            return Stream.of(serviceTypes).anyMatch(ReplyToSubscriptionHandler.class.getName()::equals);
         }
     }
 
