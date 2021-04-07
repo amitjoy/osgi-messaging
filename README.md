@@ -26,7 +26,7 @@ Further to the above, there is a utility bundle comprising an easy-to-use functi
 
 -----------------------------------------------------------------------------------------------------------
 
-### Dependencies
+### Modules
 
 This project comprises three projects - 
 
