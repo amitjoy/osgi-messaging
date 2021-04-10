@@ -62,24 +62,6 @@ Run `./gradlew clean build` in the project root directory
 
 --------------------------------------------------------------------------------------------------------------
 
-### Developer
-
-Amit Kumar Mondal (admin@amitinside.com)
-
---------------------------------------------------------------------------------------------------------------
-
-### Contribution [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/amitjoy/osgi-messaging/issues)
-
-Want to contribute? Great! Check out [Contribution Guide](https://github.com/amitjoy/osgi-messaging/blob/master/CONTRIBUTING.md)
-
---------------------------------------------------------------------------------------------------------------
-
-### License
-
-This project is licensed under Apache License Version 2.0 [![License](http://img.shields.io/badge/license-Apache-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-
---------------------------------------------------------------------------------------------------------------
-
 ### Usage
 
 #### Client Configuration
@@ -665,6 +647,8 @@ public interface MqttApplication {
 
 It is consumer's sole responsibility which type of functionality to provide. If an application is only required to retrieve resources, it should only implement `doGET(..)` and if an application decides to create resources and execute commands on the resources, it should implement `doPUT(..)` and `doEXEC(..)` and so on. I believe you got the idea 😉
 
+--------------------------------------------------------------------------------------------------------------
+
 #### Remote Resource Management Configuration
 
 The `in.bytehue.messaging.mqtt5.remote` PID is used to provide the necessary configurations for remote resource management.
@@ -673,3 +657,21 @@ The `in.bytehue.messaging.mqtt5.remote` PID is used to provide the necessary con
 |----------------------|-------------------------------------------------------------|--------|---------------|
 | `controlTopicPrefix` | The control topic prefix for the remote resource management | String | `CTRL`        |
 | `controlTopic`       | The control topic for the remote resource management        | String | `in/bytehue`  |
+
+--------------------------------------------------------------------------------------------------------------
+
+### Developer
+
+Amit Kumar Mondal (admin@amitinside.com)
+
+--------------------------------------------------------------------------------------------------------------
+
+### Contribution [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/amitjoy/osgi-messaging/issues)
+
+Want to contribute? Great! Check out [Contribution Guide](https://github.com/amitjoy/osgi-messaging/blob/master/CONTRIBUTING.md)
+
+--------------------------------------------------------------------------------------------------------------
+
+### License
+
+This project is licensed under Apache License Version 2.0 [![License](http://img.shields.io/badge/license-Apache-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
