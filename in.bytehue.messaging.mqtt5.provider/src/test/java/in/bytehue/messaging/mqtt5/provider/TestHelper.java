@@ -49,6 +49,12 @@ public final class TestHelper {
         await().atMost(20, TimeUnit.SECONDS).untilTrue(flag);
     }
 
+    /**
+     * Converts dictionary to map
+     *
+     * @param dictionary the dictionary to convert
+     * @return the converted map
+     */
     public static Map<String, Object> toMap(final Dictionary<String, Object> dictionary) {
         final List<String> keys = Collections.list(dictionary.keys());
         return keys.stream().collect(Collectors.toMap(Function.identity(), dictionary::get));
