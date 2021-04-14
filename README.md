@@ -8,7 +8,7 @@ This repository comprises the rudimentary API extracted from the [OSGi RFC 246](
 
 Further to the above, there is a utility bundle comprising an easy-to-use functionality to manage remote resources or edge devices using MQTT 5.0.  For more details, have a look at the [Remote Resource (Edge Device) Management](#remote-resource-edge-device-management) section.
 
-----------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------
 
 [![amitjoy - osgi-messaging](https://img.shields.io/static/v1?label=amitjoy&message=osgi-messaging&color=blue&logo=github)](https://github.com/amitjoy/osgi-messaging)
 [![stars - osgi-messaging](https://img.shields.io/github/stars/amitjoy/osgi-messaging?style=social)](https://github.com/amitjoy/osgi-messaging)
@@ -17,14 +17,14 @@ Further to the above, there is a utility bundle comprising an easy-to-use functi
 [![Build - Passing](https://img.shields.io/badge/Build-Passing-brightgreen)](https://github.com/amitjoy/osgi-messaging/runs/1485969918)
 [![GitHub release](https://img.shields.io/github/release/amitjoy/osgi-messaging?include_prereleases&sort=semver)](https://github.com/amitjoy/osgi-messaging/releases/)
 
------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------
 
 ### Minimum Requirements
 
 1. Java 8
 2. OSGi R7
 
------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------
 
 ### Modules
 
