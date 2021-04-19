@@ -22,6 +22,9 @@ public final class MqttMessageConstants {
 
     private static final String NON_INSTANTIABLE = "Non-Instantiable";
 
+    /**
+     * Non-instantiable
+     */
     private MqttMessageConstants() {
         throw new IllegalAccessError(NON_INSTANTIABLE);
     }
@@ -77,6 +80,9 @@ public final class MqttMessageConstants {
      */
     public static final class Extension {
 
+        /**
+         * Non-instantiable
+         */
         private Extension() {
             throw new IllegalAccessError(NON_INSTANTIABLE);
         }
@@ -129,6 +135,9 @@ public final class MqttMessageConstants {
      */
     public static final class ConfigurationPid {
 
+        /**
+         * Non-instantiable
+         */
         private ConfigurationPid() {
             throw new IllegalAccessError(NON_INSTANTIABLE);
         }
