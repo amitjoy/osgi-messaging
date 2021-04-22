@@ -20,10 +20,11 @@ package in.bytehue.messaging.mqtt5.remote.api;
  */
 public final class MqttRemoteConstants {
 
-    private static final String NON_INSTANTIABLE = "Non-Instantiable";
-
+    /**
+     * Non-instantiable
+     */
     private MqttRemoteConstants() {
-        throw new IllegalAccessError(NON_INSTANTIABLE);
+        throw new IllegalAccessError("Non-Instantiable");
     }
 
     /**
