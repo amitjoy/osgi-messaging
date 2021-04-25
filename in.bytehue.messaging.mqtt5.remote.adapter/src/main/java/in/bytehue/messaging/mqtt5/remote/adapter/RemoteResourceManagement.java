@@ -99,7 +99,7 @@ public final class RemoteResourceManagement {
     private ComponentServiceObjects<MqttMessageContextBuilder> mcbFactory;
 
     @Reference
-    private volatile Collection<Entry<Map<String, Object>, MqttApplication>> applications; // NOSONAR
+    private volatile Collection<Entry<Map<String, Object>, MqttApplication>> applications; // ascending order of ranking
 
     @Activate
     private Config config;
