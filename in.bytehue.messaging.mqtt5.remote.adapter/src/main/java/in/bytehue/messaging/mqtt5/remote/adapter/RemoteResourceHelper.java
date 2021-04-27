@@ -17,6 +17,7 @@ package in.bytehue.messaging.mqtt5.remote.adapter;
 
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.CLIENT_ID_FRAMEWORK_PROPERTY;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.CLIENT;
+import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -70,9 +71,7 @@ public final class RemoteResourceHelper {
             if (properties == null || properties.get("id") == null) {
                 // check for framework property if available
                 final String id = bundleContext.getProperty(CLIENT_ID_FRAMEWORK_PROPERTY);
-                if (id == null) {
-                    throw new RuntimeException("No MQTT Client ID has been assigned");
-                }
+                requireNonNull(id, "No MQTT Client ID has been assigned");
                 return id;
             } else {
                 return String.valueOf(properties.get("id"));
