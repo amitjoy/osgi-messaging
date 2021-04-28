@@ -123,7 +123,7 @@ public final class MqttMessageConstants {
 
         /**
          * The name of the {@code last will delay interval} extension of the {@code MQTT 5.0 specification}.
-         * A value of {code Long} can be provided.
+         * A value of {@code Long} can be provided.
          *
          * @since 1.0
          */
