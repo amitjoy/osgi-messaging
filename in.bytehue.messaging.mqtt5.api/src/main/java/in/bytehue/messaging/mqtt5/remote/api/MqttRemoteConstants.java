@@ -77,12 +77,12 @@ public final class MqttRemoteConstants {
     public static final int RESPONSE_CODE_ERROR = 500;
 
     /**
-     * The name of the Remote Resource Management Implementation
+     * The name of the Remote Resource Management implementation
      */
-    public static final String REMOTE_RESOURCE_MANAGEMENT_IMPLEMENTATION = "mqtt.remote";
+    public static final String REMOTE_RESOURCE_MANAGEMENT_implementation = "mqtt.remote";
 
     /**
-     * The version of the Remote Resource Management Implementation
+     * The version of the Remote Resource Management implementation
      */
     public static final String REMOTE_RESOURCE_MANAGEMENT_VERSION = "1.0.0";
 
