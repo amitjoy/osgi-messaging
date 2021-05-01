@@ -79,7 +79,7 @@ public final class MqttRemoteConstants {
     /**
      * The name of the Remote Resource Management implementation
      */
-    public static final String REMOTE_RESOURCE_MANAGEMENT_implementation = "mqtt.remote";
+    public static final String REMOTE_RESOURCE_MANAGEMENT_IMPLEMENTATION = "mqtt.remote";
 
     /**
      * The version of the Remote Resource Management implementation
