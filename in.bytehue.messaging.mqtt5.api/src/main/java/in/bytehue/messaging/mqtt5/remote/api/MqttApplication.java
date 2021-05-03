@@ -57,7 +57,7 @@ public interface MqttApplication {
     String APPLICATION_ID_PROPERTY = "mqtt.application.id";
 
     /**
-     * Used to implement a READ request for a resource
+     * Callback for a READ request for a resource
      *
      * @param resource the resource identifier
      * @param requestMessage the received message
@@ -76,7 +76,7 @@ public interface MqttApplication {
     }
 
     /**
-     * Used to implement a CREATE request for a resource
+     * Callback for a CREATE request for a resource
      *
      * @param resource the resource identifier
      * @param requestMessage the received message
@@ -95,7 +95,7 @@ public interface MqttApplication {
     }
 
     /**
-     * Used to implement an UPDATE request for a resource
+     * Callback for an UPDATE request for a resource
      *
      * @param resource the resource identifier
      * @param requestMessage the received message
@@ -114,7 +114,7 @@ public interface MqttApplication {
     }
 
     /**
-     * Used to implement a DELETE request for a resource
+     * Callback for a DELETE request for a resource
      *
      * @param resource the resource identifier
      * @param requestMessage the received message
@@ -133,7 +133,7 @@ public interface MqttApplication {
     }
 
     /**
-     * Used to perform application operation not necessary tied to a given resource
+     * Callback to perform application operation not necessary tied to a given resource
      *
      * @param resource the resource identifier
      * @param requestMessage the received message
