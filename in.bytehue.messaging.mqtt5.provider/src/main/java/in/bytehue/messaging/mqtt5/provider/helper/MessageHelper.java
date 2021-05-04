@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
 import java.util.stream.Stream;
@@ -329,25 +330,10 @@ public final class MessageHelper {
         final MqttTopicImpl topic = MqttTopicImpl.of(channel);
         final MqttQos qosInstance = MqttQos.fromCode(qos);
 
-        Mqtt5PayloadFormatIndicator encoding = null;
-        if (contentEncoding != null) {
-            encoding = Mqtt5PayloadFormatIndicator.valueOf(contentEncoding);
-        }
-
-        MqttUtf8StringImpl cType = null;
-        if (contentType != null) {
-            cType = MqttUtf8StringImpl.of(contentType);
-        }
-
-        MqttTopicImpl replyTopic = null;
-        if (responseChannel != null) {
-            replyTopic = MqttTopicImpl.of(responseChannel);
-        }
-
-        ByteBuffer correlationData = null;
-        if (correlationId != null) {
-            correlationData = ByteBuffer.wrap(correlationId.getBytes());
-        }
+        final Mqtt5PayloadFormatIndicator encoding = setIfNotNull(contentEncoding, Mqtt5PayloadFormatIndicator::valueOf);
+        final MqttUtf8StringImpl cType = setIfNotNull(contentType, MqttUtf8StringImpl::of);
+        final MqttTopicImpl replyTopic = setIfNotNull(responseChannel, MqttTopicImpl::of);
+        final ByteBuffer correlationData = setIfNotNull(correlationId, e -> ByteBuffer.wrap(correlationId.getBytes()));
 
         final Mqtt5UserPropertiesBuilder propsBuilder = Mqtt5UserProperties.builder();
         userProperties.forEach(propsBuilder::add);
@@ -368,6 +354,10 @@ public final class MessageHelper {
                 delayInterval);
     }
     // @formatter:on
+
+    public static <A, B> B setIfNotNull(final A a, final Function<A, B> function) {
+        return a == null ? null : function.apply(a);
+    }
 
     public static <T> T adaptTo(final Object value, final Class<T> to, final Converter converter) {
         return converter.convert(value).to(to);
