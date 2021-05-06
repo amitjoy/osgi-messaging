@@ -28,20 +28,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.osgi.resource.Capability;
 import org.osgi.resource.Requirement;
-import org.osgi.resource.Resource;
 
 public final class FilterParser {
-
-    private static final String NAMESPACE_CONTRACT = "osgi.contract";
-    private static final String NAMESPACE_SERVICE = "osgi.service";
-    private static final String NAMESPACE_EXTENDER = "osgi.extender";
-    private static final String NAMESPACE_CONTENT = "osgi.content";
-    private static final String NAMESPACE_IDENTITY = "osgi.identity";
-    private static final String NAMESPACE_WIRING_PACKAGE = "osgi.wiring.package";
-    private static final String NAMESPACE_WIRING_BUNDLE = "osgi.wiring.bundle";
-    private static final String NAMESPACE_WIRING_HOST = "osgi.wiring.host";
 
     final Map<String, Expression> cache = new HashMap<>();
 
@@ -320,17 +309,6 @@ public final class FilterParser {
         }
 
         static Expression make(final String key, final Op op, final String value) {
-            if (op == Op.EQUAL) {
-                if (NAMESPACE_WIRING_BUNDLE.equals(key)) {
-                    return new BundleExpression(value);
-                } else if (NAMESPACE_WIRING_HOST.equals(key)) {
-                    return new HostExpression(value);
-                } else if (NAMESPACE_WIRING_PACKAGE.equals(key)) {
-                    return new PackageExpression(value);
-                } else if (NAMESPACE_IDENTITY.equals(key)) {
-                    return new IdentityExpression(value);
-                }
-            }
             return new SimpleExpression(key, op, value);
 
         }
@@ -393,175 +371,6 @@ public final class FilterParser {
 
         public abstract String printExcludingRange();
 
-    }
-
-    public static class PackageExpression extends WithRangeExpression {
-        final String packageName;
-
-        public PackageExpression(final String value) {
-            packageName = value;
-        }
-
-        @Override
-        public boolean eval(final Map<String, ?> map) {
-            final String p = (String) map.get(NAMESPACE_WIRING_PACKAGE);
-            if (p == null) {
-                return false;
-            }
-
-            return packageName.equals(p) && super.eval(map);
-        }
-
-        @Override
-        public <T> T visit(final ExpressionVisitor<T> visitor) {
-            return visitor.visit(this);
-        }
-
-        @Override
-        void toString(final StringBuilder sb) {
-            sb.append(packageName);
-            super.toString(sb);
-        }
-
-        public String getPackageName() {
-            return packageName;
-        }
-
-        @Override
-        public String query() {
-            return "p:" + packageName;
-        }
-
-        @Override
-        public String printExcludingRange() {
-            return packageName;
-        }
-    }
-
-    public static class HostExpression extends WithRangeExpression {
-        final String hostName;
-
-        public HostExpression(final String value) {
-            hostName = value;
-        }
-
-        @Override
-        public boolean eval(final Map<String, ?> map) {
-            final String p = (String) map.get(NAMESPACE_WIRING_HOST);
-            if (p == null) {
-                return false;
-            }
-
-            return hostName.equals(p) && super.eval(map);
-        }
-
-        @Override
-        public <T> T visit(final ExpressionVisitor<T> visitor) {
-            return visitor.visit(this);
-        }
-
-        @Override
-        void toString(final StringBuilder sb) {
-            sb.append(hostName);
-            super.toString(sb);
-        }
-
-        public String getHostName() {
-            return hostName;
-        }
-
-        @Override
-        public String query() {
-            return "bsn:" + hostName;
-        }
-
-        @Override
-        public String printExcludingRange() {
-            return hostName;
-        }
-    }
-
-    public static class BundleExpression extends WithRangeExpression {
-        final String bundleName;
-
-        public BundleExpression(final String value) {
-            bundleName = value;
-        }
-
-        @Override
-        public boolean eval(final Map<String, ?> map) {
-            final String p = (String) map.get(NAMESPACE_WIRING_BUNDLE);
-            if (p == null) {
-                return false;
-            }
-
-            return bundleName.equals(p) && super.eval(map);
-        }
-
-        @Override
-        public <T> T visit(final ExpressionVisitor<T> visitor) {
-            return visitor.visit(this);
-        }
-
-        @Override
-        void toString(final StringBuilder sb) {
-            sb.append(bundleName);
-            super.toString(sb);
-        }
-
-        @Override
-        public String query() {
-            return "bsn:" + bundleName;
-        }
-
-        @Override
-        public String printExcludingRange() {
-            return bundleName;
-        }
-
-    }
-
-    public static class IdentityExpression extends WithRangeExpression {
-        final String identity;
-
-        public IdentityExpression(final String value) {
-            identity = value;
-        }
-
-        @Override
-        public boolean eval(final Map<String, ?> map) {
-            final String p = (String) map.get(NAMESPACE_IDENTITY);
-            if (p == null) {
-                return false;
-            }
-
-            return identity.equals(p);
-        }
-
-        @Override
-        public <T> T visit(final ExpressionVisitor<T> visitor) {
-            return visitor.visit(this);
-        }
-
-        @Override
-        void toString(final StringBuilder sb) {
-            sb.append(identity);
-            super.toString(sb);
-        }
-
-        public String getSymbolicName() {
-            return identity;
-        }
-
-        @Override
-        public String query() {
-            return "bsn:" + identity;
-        }
-
-        @Override
-        public String printExcludingRange() {
-            return identity;
-        }
     }
 
     public abstract static class SubExpression extends Expression {
@@ -859,22 +668,6 @@ public final class FilterParser {
             return defaultValue;
         }
 
-        public T visit(final PackageExpression expr) {
-            return defaultValue;
-        }
-
-        public T visit(final HostExpression expr) {
-            return defaultValue;
-        }
-
-        public T visit(final BundleExpression expr) {
-            return defaultValue;
-        }
-
-        public T visit(final IdentityExpression expr) {
-            return defaultValue;
-        }
-
         public T visit(final And expr) {
             return defaultValue;
         }
@@ -1090,71 +883,4 @@ public final class FilterParser {
         return exprs;
     }
 
-    public static String namespaceToCategory(final String namespace) {
-        String result;
-
-        if (NAMESPACE_WIRING_PACKAGE.equals(namespace)) {
-            result = "Import-Package";
-        } else if (NAMESPACE_WIRING_BUNDLE.equals(namespace)) {
-            result = "Require-Bundle";
-        } else if (NAMESPACE_WIRING_HOST.equals(namespace)) {
-            result = "Fragment-Host";
-        } else if (NAMESPACE_IDENTITY.equals(namespace)) {
-            result = "ID";
-        } else if (NAMESPACE_CONTENT.equals(namespace)) {
-            result = "Content";
-        } else if (NAMESPACE_EXTENDER.equals(namespace)) {
-            result = "Extender";
-        } else if (NAMESPACE_SERVICE.equals(namespace)) {
-            result = "Service";
-        } else if (NAMESPACE_CONTRACT.equals(namespace)) {
-            return "Contract";
-        } else {
-            result = namespace;
-        }
-
-        return result;
-    }
-
-    public static String toString(final Requirement r) {
-        try {
-            final StringBuilder sb = new StringBuilder();
-            final String category = namespaceToCategory(r.getNamespace());
-            if (category != null && category.length() > 0) {
-                sb.append(namespaceToCategory(category)).append(": ");
-            }
-
-            final FilterParser fp = new FilterParser();
-            final String filter = r.getDirectives().get("filter");
-            if (filter == null) {
-                sb.append("<no filter>");
-            } else {
-                final Expression parse = fp.parse(filter);
-                sb.append(parse);
-            }
-            return sb.toString();
-        } catch (final Exception e) {
-            return MessageHelper.stackTraceToString(e);
-        }
-    }
-
-    public String simple(final Resource resource) {
-        if (resource == null) {
-            return "<>";
-        }
-
-        final List<Capability> capabilities = resource.getCapabilities(NAMESPACE_IDENTITY);
-        if (capabilities.isEmpty()) {
-            return resource.toString();
-        }
-
-        final Capability c = capabilities.get(0);
-        final String bsn = (String) c.getAttributes().get(NAMESPACE_IDENTITY);
-        final Object version = c.getAttributes().get("version");
-        if (version == null) {
-            return bsn;
-        } else {
-            return bsn + ";version=" + version;
-        }
-    }
 }
