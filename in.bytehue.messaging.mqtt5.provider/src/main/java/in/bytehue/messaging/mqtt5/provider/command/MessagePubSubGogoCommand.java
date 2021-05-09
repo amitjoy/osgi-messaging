@@ -33,6 +33,7 @@ import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 
 import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
+import in.bytehue.messaging.mqtt5.provider.MessageClientProvider;
 import in.bytehue.messaging.mqtt5.provider.MessagePublisherProvider;
 import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionProvider;
 import in.bytehue.messaging.mqtt5.provider.helper.FelixGogoCommand;
@@ -40,7 +41,7 @@ import in.bytehue.messaging.mqtt5.provider.helper.Table;
 
 // @formatter:off
 @Descriptor("Gogo commands to publish/subscribe to topics")
-@FelixGogoCommand(scope = "mqtt", function = { "pub", "sub" })
+@FelixGogoCommand(scope = "mqtt", function = { "pub", "sub", "state" })
 @Component(
         immediate = true,
         configurationPid = PID,
@@ -51,6 +52,9 @@ public final class MessagePubSubGogoCommand {
     public static final String PID = "in.bytehue.messaging.mqtt.command";
 
     @Reference
+    private MessageClientProvider client;
+
+    @Reference
     private MessagePublisherProvider publisher;
 
     @Reference
@@ -58,6 +62,11 @@ public final class MessagePubSubGogoCommand {
 
     @Reference
     private ComponentServiceObjects<MqttMessageContextBuilder> mcbFactory;
+
+    @Descriptor("Returns the current state of the MQTT client")
+    public String state() {
+        return client.client.getState().toString();
+    }
 
     @Descriptor("Subscribes to specific topic/filter with the input context")
     public String sub(
