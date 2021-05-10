@@ -15,7 +15,7 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider.command;
 
-import static in.bytehue.messaging.mqtt5.provider.command.MessagePubSubGogoCommand.PID;
+import static in.bytehue.messaging.mqtt5.provider.command.MqttCommand.PID;
 import static java.util.Collections.emptyMap;
 import static org.osgi.framework.namespace.PackageNamespace.PACKAGE_NAMESPACE;
 

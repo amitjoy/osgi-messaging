@@ -15,7 +15,7 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider.command;
 
-import static in.bytehue.messaging.mqtt5.provider.command.MessagePubSubGogoCommand.PID;
+import static in.bytehue.messaging.mqtt5.provider.command.MqttCommand.PID;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.stackTraceToString;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.osgi.service.component.annotations.ConfigurationPolicy.REQUIRE;
@@ -46,8 +46,8 @@ import in.bytehue.messaging.mqtt5.provider.helper.Table;
         immediate = true,
         configurationPid = PID,
         configurationPolicy = REQUIRE,
-        service = MessagePubSubGogoCommand.class)
-public final class MessagePubSubGogoCommand {
+        service = MqttCommand.class)
+public final class MqttCommand {
 
     public static final String PID = "in.bytehue.messaging.mqtt.command";
 
