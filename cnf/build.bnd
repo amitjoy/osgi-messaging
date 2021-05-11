@@ -25,9 +25,11 @@ javac.encoding                        =         UTF-8
 -sources                              =         true
 -resolve.effective                    =         resolve, active
 -x-overwritestrategy                  =         gc
+
 -nodefaultversion                     =         true
 -noimportjava                         =         true
 -remoteworkspace                      =         true
+
 -removeheaders                        =         Created-By, Private-Package, Tool
 
 src                                   =         src/main/java, src/main/resources
