@@ -143,10 +143,10 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "Last Will Delay Interval")
         long lastWillDelayInterval() default 30L;
 
-        @AttributeDefinition(name = "Maximum concurrent messages to be received")
+        @AttributeDefinition(name = "Maximum Concurrent Messages to be received")
         int receiveMaximum() default 10;
 
-        @AttributeDefinition(name = "Maximum concurrent messages to be sent")
+        @AttributeDefinition(name = "Maximum Concurrent Messages to be sent")
         int sendMaximum() default 10;
 
         @AttributeDefinition(name = "Maximum Packet Size for receiving")
