@@ -40,7 +40,7 @@ import in.bytehue.messaging.mqtt5.provider.helper.FelixGogoCommand;
 import in.bytehue.messaging.mqtt5.provider.helper.Table;
 
 // @formatter:off
-@Descriptor("Gogo commands to publish/subscribe to topics")
+@Descriptor("Gogo commands for MQTT")
 @FelixGogoCommand(scope = "mqtt", function = { "pub", "sub", "state" })
 @Component(
         immediate = true,
