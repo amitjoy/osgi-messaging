@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  ******************************************************************************/
-package in.bytehue.messaging.mqtt5.example.gogo;
+package in.bytehue.messaging.mqtt5.example2;
 
 import java.nio.ByteBuffer;
 
