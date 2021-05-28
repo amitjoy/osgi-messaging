@@ -20,7 +20,7 @@ org.osgi:osgi.enroute.junit.wrapper:4.12.0
 # HiveMQ Dependencies
 
 com.google.dagger:dagger:2.30.1
-com.hivemq:hivemq-mqtt-client:1.2.1
+com.hivemq:hivemq-mqtt-client:1.2.2
 io.netty:netty-buffer:4.1.54.Final
 io.netty:netty-codec-http:4.1.54.Final
 io.netty:netty-codec-mqtt:4.1.54.Final
