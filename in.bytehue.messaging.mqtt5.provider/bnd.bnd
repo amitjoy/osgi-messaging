@@ -62,6 +62,8 @@ Export-Package                 : \
 	com.hivemq.client.util
 
 Import-Package                 : \
+	!com.aayushatharva.brotli4j,\
+	!com.aayushatharva.brotli4j.decoder,\
 	!com.google.protobuf,\
 	!com.google.protobuf.nano,\
 	!com.jcraft.jzlib,\
@@ -84,6 +86,8 @@ Import-Package                 : \
 	!org.bouncycastle.cert,\
 	!org.bouncycastle.cert.jcajce,\
 	!org.bouncycastle.jce.provider,\
+	!org.bouncycastle.jsse,\
+	!org.bouncycastle.jsse.provider,\
 	!org.bouncycastle.operator,\
 	!org.bouncycastle.operator.jcajce,\
 	!org.conscrypt,\
