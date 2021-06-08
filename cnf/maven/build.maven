@@ -9,7 +9,7 @@ org.apache.commons:commons-lang3:3.11
 
 # OSGi
 
-org.apache.felix:org.apache.felix.framework.security:2.6.1
+org.apache.felix:org.apache.felix.framework.security:2.8.0
 org.apache.felix:org.apache.felix.utils:1.11.2
 org.osgi:osgi.annotation:7.0.0
 org.osgi:osgi.cmpn:7.0.0
