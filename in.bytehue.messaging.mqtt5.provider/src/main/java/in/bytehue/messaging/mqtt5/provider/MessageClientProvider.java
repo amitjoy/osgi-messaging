@@ -235,7 +235,7 @@ public final class MessageClientProvider {
         this.config = config;
         this.bundleContext = bundleContext;
 
-        final String clientId = clientID(bundleContext);
+        final String clientId = getClientID(bundleContext);
 
         clientBuilder = Mqtt5Client.builder()
                                    .identifier(MqttClientIdentifier.of(clientId))
@@ -456,7 +456,7 @@ public final class MessageClientProvider {
         }
     }
 
-    private String clientID(final BundleContext bundleContext) {
+    private String getClientID(final BundleContext bundleContext) {
         // check for the existence of configuration
         if(config.id().isEmpty()) {
             // check for framework property if available
