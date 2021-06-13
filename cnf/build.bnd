@@ -30,7 +30,7 @@ javac.encoding                        =         UTF-8
 -noimportjava                         =         true
 -remoteworkspace                      =         true
 
--removeheaders                        =         Created-By, Private-Package, Tool
+-removeheaders                        =         Created-By, Private-Package, Tool, Bnd-LastModified
 
 src                                   =         src/main/java, src/main/resources
 bin                                   =         ${bin.directory}
