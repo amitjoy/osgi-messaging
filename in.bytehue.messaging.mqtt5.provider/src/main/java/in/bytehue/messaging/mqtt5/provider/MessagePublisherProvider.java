@@ -66,14 +66,20 @@ import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
         name = MESSAGING_ID,
         protocol = MESSAGING_PROTOCOL,
         feature = {
-                RETAIN,
-                EXTENSION_QOS,
-                USER_PROPERTIES,
-                MESSAGE_EXPIRY_INTERVAL,
-                EXTENSION_GUARANTEED_DELIVERY,
-                EXTENSION_GUARANTEED_ORDERING })
+                    RETAIN,
+                    EXTENSION_QOS,
+                    USER_PROPERTIES,
+                    MESSAGE_EXPIRY_INTERVAL,
+                    EXTENSION_GUARANTEED_DELIVERY,
+                    EXTENSION_GUARANTEED_ORDERING
+                  }
+)
+@Component(service = {
+                       MessagePublisher.class,
+                       MessagePublisherProvider.class
+                     }
+)
 //@formatter:on
-@Component(service = { MessagePublisher.class, MessagePublisherProvider.class })
 public final class MessagePublisherProvider implements MessagePublisher {
 
     @Reference(service = LoggerFactory.class)

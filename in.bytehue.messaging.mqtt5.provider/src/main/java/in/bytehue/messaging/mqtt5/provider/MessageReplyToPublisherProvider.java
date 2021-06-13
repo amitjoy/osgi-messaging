@@ -60,11 +60,13 @@ import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
         name = MESSAGING_ID,
         protocol = MESSAGING_PROTOCOL,
         feature = {
-                REPLY_TO,
-                REPLY_TO_MANY_PUBLISH,
-                REPLY_TO_MANY_SUBSCRIBE,
-                GENERATE_CORRELATION_ID,
-                GENERATE_REPLY_CHANNEL })
+                    REPLY_TO,
+                    REPLY_TO_MANY_PUBLISH,
+                    REPLY_TO_MANY_SUBSCRIBE,
+                    GENERATE_CORRELATION_ID,
+                    GENERATE_REPLY_CHANNEL
+                  }
+)
 public final class MessageReplyToPublisherProvider implements ReplyToPublisher, ReplyToManyPublisher {
 
     @ObjectClassDefinition(

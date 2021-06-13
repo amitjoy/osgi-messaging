@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2021 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -54,22 +54,24 @@ import in.bytehue.messaging.mqtt5.provider.helper.FelixGogoCommand;
         name = MESSAGING_ID,
         protocol = MESSAGING_PROTOCOL,
         feature = {
-                RETAIN,
-                REPLY_TO,
-                ACKNOWLEDGE,
-                EXTENSION_QOS,
-                RECEIVE_LOCAL,
-                USER_PROPERTIES,
-                EXTENSION_LAST_WILL,
-                REPLY_TO_MANY_PUBLISH,
-                GENERATE_REPLY_CHANNEL,
-                MESSAGE_EXPIRY_INTERVAL,
-                MESSAGE_CONTEXT_BUILDER,
-                REPLY_TO_MANY_SUBSCRIBE,
-                GENERATE_CORRELATION_ID,
-                EXTENSION_AUTO_ACKNOWLEDGE,
-                EXTENSION_GUARANTEED_DELIVERY,
-                EXTENSION_GUARANTEED_ORDERING })
+                    RETAIN,
+                    REPLY_TO,
+                    ACKNOWLEDGE,
+                    EXTENSION_QOS,
+                    RECEIVE_LOCAL,
+                    USER_PROPERTIES,
+                    EXTENSION_LAST_WILL,
+                    REPLY_TO_MANY_PUBLISH,
+                    GENERATE_REPLY_CHANNEL,
+                    MESSAGE_EXPIRY_INTERVAL,
+                    MESSAGE_CONTEXT_BUILDER,
+                    REPLY_TO_MANY_SUBSCRIBE,
+                    GENERATE_CORRELATION_ID,
+                    EXTENSION_AUTO_ACKNOWLEDGE,
+                    EXTENSION_GUARANTEED_DELIVERY,
+                    EXTENSION_GUARANTEED_ORDERING
+                  }
+)
 @FelixGogoCommand(scope = "mqtt", function = "runtime")
 //@formatter:on
 public final class MessageServiceRuntimeProvider implements MessageServiceRuntime {

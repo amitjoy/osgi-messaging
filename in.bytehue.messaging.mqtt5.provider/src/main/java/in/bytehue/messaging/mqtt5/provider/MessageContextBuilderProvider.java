@@ -46,17 +46,20 @@ import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
 @Component(
         scope = PROTOTYPE,
         service = {
-                MessageContextBuilder.class,
-                MqttMessageContextBuilder.class,
-                MessageContextBuilderProvider.class,
-                AcknowledgeMessageContextBuilder.class
-        })
+                    MessageContextBuilder.class,
+                    MqttMessageContextBuilder.class,
+                    MessageContextBuilderProvider.class,
+                    AcknowledgeMessageContextBuilder.class
+                  }
+)
 @MessagingFeature(
         name = MESSAGING_ID,
         protocol = MESSAGING_PROTOCOL,
         feature = {
-                MESSAGE_CONTEXT_BUILDER,
-                ACKNOWLEDGE })
+                    MESSAGE_CONTEXT_BUILDER,
+                    ACKNOWLEDGE
+                  }
+)
 @ProvideMessagingAcknowledgeFeature
 public final class MessageContextBuilderProvider
         implements
