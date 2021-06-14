@@ -77,6 +77,8 @@ public final class MqttMessageConstants {
 
     /**
      * Standard constants for the {@code MQTT Messaging} extension features
+     *
+     * @since 1.0
      */
     public static final class Extension {
 
@@ -132,6 +134,8 @@ public final class MqttMessageConstants {
 
     /**
      * Defines standard constants for the MQTT messaging configuration PIDs
+     *
+     * @since 1.0
      */
     public static final class ConfigurationPid {
 
