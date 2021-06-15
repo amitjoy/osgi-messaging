@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2021 Amit Kumar Mondal
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -20,7 +20,6 @@ import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.REMOTE_R
 import static org.osgi.namespace.implementation.ImplementationNamespace.IMPLEMENTATION_NAMESPACE;
 
 import org.osgi.annotation.bundle.Capability;
-import org.osgi.service.messaging.Message;
 
 /**
  * Define capability for MQTT Remote Resource Management.
@@ -35,10 +34,11 @@ import org.osgi.service.messaging.Message;
  * This annotation is not retained at runtime. It is for use by tools to
  * generate bundle manifests or otherwise process the package.
  */
-@Capability(//
-        name = REMOTE_RESOURCE_MANAGEMENT_IMPLEMENTATION, //
-        namespace = IMPLEMENTATION_NAMESPACE, //
-        version = REMOTE_RESOURCE_MANAGEMENT_VERSION, uses = Message.class)
+// @formatter:off
+@Capability(
+        name = REMOTE_RESOURCE_MANAGEMENT_IMPLEMENTATION,
+        namespace = IMPLEMENTATION_NAMESPACE,
+        version = REMOTE_RESOURCE_MANAGEMENT_VERSION)
 public @interface ProvideMQTTRemoteResourceManagement {
 
 }

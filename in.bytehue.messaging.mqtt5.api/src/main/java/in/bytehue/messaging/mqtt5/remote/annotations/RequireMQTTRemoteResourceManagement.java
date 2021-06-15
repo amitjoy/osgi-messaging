@@ -41,10 +41,14 @@ import org.osgi.annotation.bundle.Requirement;
  *
  * @since 1.0
  */
+//@formatter:off
 @Documented
 @Retention(CLASS)
 @Target({ TYPE, PACKAGE })
-@Requirement(namespace = IMPLEMENTATION_NAMESPACE, name = REMOTE_RESOURCE_MANAGEMENT_IMPLEMENTATION, version = REMOTE_RESOURCE_MANAGEMENT_VERSION)
+@Requirement(
+        namespace = IMPLEMENTATION_NAMESPACE,
+        name = REMOTE_RESOURCE_MANAGEMENT_IMPLEMENTATION,
+        version = REMOTE_RESOURCE_MANAGEMENT_VERSION)
 public @interface RequireMQTTRemoteResourceManagement {
     // This is a marker annotation.
 }
