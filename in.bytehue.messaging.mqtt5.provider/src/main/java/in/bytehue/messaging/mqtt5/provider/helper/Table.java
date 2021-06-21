@@ -23,13 +23,16 @@ import java.util.List;
 public final class Table {
 
     private static final String HORIZONTAL_SEP = "-";
-    private String verticalSep;
+
     private String joinSep;
     private String[] headers;
-    private final List<String[]> rows = new ArrayList<>();
+    private String verticalSep;
     private boolean rightAlign;
 
+    private final List<String[]> rows;
+
     public Table() {
+        rows = new ArrayList<>();
         setShowVerticalLines(false);
     }
 
@@ -38,8 +41,8 @@ public final class Table {
     }
 
     public void setShowVerticalLines(final boolean showVerticalLines) {
-        verticalSep = showVerticalLines ? "|" : "";
         joinSep = showVerticalLines ? "+" : " ";
+        verticalSep = showVerticalLines ? "|" : "";
     }
 
     public void setHeaders(final String... headers) {
