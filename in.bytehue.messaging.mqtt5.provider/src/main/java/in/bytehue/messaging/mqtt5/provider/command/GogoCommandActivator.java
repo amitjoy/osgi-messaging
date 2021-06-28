@@ -16,7 +16,6 @@
 package in.bytehue.messaging.mqtt5.provider.command;
 
 import static in.bytehue.messaging.mqtt5.provider.command.MqttCommand.PID;
-import static java.util.Collections.emptyMap;
 import static org.osgi.framework.namespace.PackageNamespace.PACKAGE_NAMESPACE;
 
 import java.io.IOException;
@@ -70,7 +69,7 @@ public final class GogoCommandActivator {
     private void createGogoCommandConfig() {
         try {
             final Configuration configuration = configAdmin.getConfiguration(PID, "?");
-            configuration.updateIfDifferent(new Hashtable<>(emptyMap()));
+            configuration.updateIfDifferent(new Hashtable<>());
         } catch (final IOException e) {
             // ignore due to location check as it's never gonna happen
         }
