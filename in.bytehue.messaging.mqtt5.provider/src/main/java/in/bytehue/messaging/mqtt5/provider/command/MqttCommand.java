@@ -75,7 +75,7 @@ public final class MqttCommand {
             @Parameter(names = { "-t", "--topic" }, absentValue = "foo/bar")
             final String topic,
 
-            @Descriptor("Quality of Service")
+            @Descriptor("Quality of Service (QoS)")
             @Parameter(names = { "-q", "--qos" }, absentValue = "0")
             final int qos,
 
@@ -124,7 +124,7 @@ public final class MqttCommand {
             @Parameter(names = { "-t", "--topic" }, absentValue = "foo/bar")
             final String topic,
 
-            @Descriptor("Quality of Service")
+            @Descriptor("Quality of Service (QoS)")
             @Parameter(names = { "-q", "--qos" }, absentValue = "0")
             final int qos,
 
