@@ -35,9 +35,7 @@ import org.osgi.service.messaging.MessageContextBuilder;
  *
  * <p>
  * <b>Note that</b>, access to this service requires the
- * {@code ServicePermission[MqttMessageContextBuilder, GET]} permission. It is intended
- * that only administrative bundles should be granted this permission to limit
- * access to the potentially intrusive methods provided by this service.
+ * {@code ServicePermission[MqttMessageContextBuilder, GET]} permission.
  * </p>
  *
  * @noimplement This interface is not intended to be implemented by consumers.
