@@ -281,6 +281,7 @@ public final class MessageClientProvider {
 
         logger.debug(
                 "Adding highest priority connection listeners for (de)/registering MQTT connection ready OSGi service");
+
         clientBuilder.addConnectedListener(this::registerReadyService);
         clientBuilder.addDisconnectedListener(this::unregisterReadyService);
 
