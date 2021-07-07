@@ -50,7 +50,7 @@ import org.osgi.annotation.versioning.ConsumerType;
  * Example: {@code ([sum]bar>=3)}
  *
  * <p>
- * Assume we have a service R that represents a link to a remote service. For performance and
+ * Let's assume we have a service {@code R} that represents a link to a remote service. For performance and
  * reliability reasons, we require at least 3 of those services to be present before we can start
  * the MQTT client. Additionally, these services must come from at least 2 different regions. For
  * this reason, we define a property region that can take the values south, east, north, and west.
