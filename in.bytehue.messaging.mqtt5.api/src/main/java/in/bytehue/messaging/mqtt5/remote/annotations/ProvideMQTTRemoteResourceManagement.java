@@ -36,8 +36,8 @@ import org.osgi.annotation.bundle.Capability;
  */
 // @formatter:off
 @Capability(
-        name = REMOTE_RESOURCE_MANAGEMENT_IMPLEMENTATION,
         namespace = IMPLEMENTATION_NAMESPACE,
+        name = REMOTE_RESOURCE_MANAGEMENT_IMPLEMENTATION,
         version = REMOTE_RESOURCE_MANAGEMENT_VERSION)
 public @interface ProvideMQTTRemoteResourceManagement {
 
