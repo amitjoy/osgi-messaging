@@ -39,6 +39,9 @@ import org.osgi.annotation.bundle.Requirement;
  * &#64;ProvideMQTTRemoteResourceManagement
  * </pre>
  *
+ * This annotation is not retained at runtime. It is for use by tools to
+ * generate bundle manifests or otherwise process the package.
+ *
  * @since 1.0
  */
 //@formatter:off
