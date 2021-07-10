@@ -33,6 +33,8 @@ import org.osgi.annotation.bundle.Capability;
  * <p>
  * This annotation is not retained at runtime. It is for use by tools to
  * generate bundle manifests or otherwise process the package.
+ *
+ * @since 1.0
  */
 // @formatter:off
 @Capability(
