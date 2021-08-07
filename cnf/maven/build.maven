@@ -5,7 +5,7 @@ biz.aQute:biz.aQute.osgi.conditionaltarget:1.7.0
 
 # Apache
 
-org.apache.commons:commons-lang3:3.11
+org.apache.commons:commons-lang3:3.12.0
 
 # OSGi
 
