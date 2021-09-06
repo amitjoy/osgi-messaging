@@ -45,9 +45,9 @@ public final class RemoteResourceHelper {
     }
 
     public static class RequestDTO extends DTO {
-        String applicationId;
         String resource;
         MethodType method;
+        String applicationId;
         Message requestMessage;
     }
 
@@ -61,7 +61,6 @@ public final class RemoteResourceHelper {
             super(message);
             this.code = code;
         }
-
     }
 
     public static String clientID(final ConfigurationAdmin configurationAdmin, final BundleContext bundleContext) {
