@@ -48,7 +48,7 @@ username                              =         ${env;REPOSITORY_USERNAME;}
 -connection-settings                  =         ${if;${password};server;-dummy};id=${sonatype.url};username=${username};password=${password}, -bnd
 
 -groupid                              =         in.bytehue
--pom                                  =         version=${base.version}-SNAPSHOT
+-pom                                  =         version=${if;${def;-snapshot};${versionmask;===;${@version}}-${-snapshot};${versionmask;===s;${@version}}}
 -releaserepo                          =         Release
 
 bin.directory                         =         ${if;${is;${driver};gradle};target/gradle/classes;target/classes}
