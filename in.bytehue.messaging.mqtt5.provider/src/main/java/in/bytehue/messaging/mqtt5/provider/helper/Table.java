@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 public final class Table {
 
@@ -53,7 +54,7 @@ public final class Table {
         rows.add(cells);
     }
 
-    public void print() {
+    public String print() {
         int[] maxWidths = headers != null ? Arrays.stream(headers).mapToInt(String::length).toArray() : null;
 
         for (final String[] cells : rows) {
@@ -64,43 +65,53 @@ public final class Table {
                 throw new IllegalArgumentException("Number of row-cells and headers should be consistent");
             }
             for (int i = 0; i < cells.length; i++) {
-                maxWidths[i] = Math.max(maxWidths[i], cells[i].length());
+                maxWidths[i] = Math.max(maxWidths[i], Objects.toString(cells[i], "").length());
             }
         }
 
+        final StringBuilder b = new StringBuilder();
         if (headers != null) {
-            printLine(maxWidths);
-            printRow(headers, maxWidths);
-            printLine(maxWidths);
+            final StringBuilder b1 = printLine(maxWidths);
+            final StringBuilder b2 = printRow(headers, maxWidths);
+            final StringBuilder b3 = printLine(maxWidths);
+
+            b.append(b1).append(b2).append(b3);
         }
         for (final String[] cells : rows) {
-            printRow(cells, maxWidths);
+            final StringBuilder b4 = printRow(cells, maxWidths);
+            b.append(b4);
         }
         if (headers != null && maxWidths != null) {
-            printLine(maxWidths);
+            final StringBuilder b5 = printLine(maxWidths);
+            b.append(b5);
         }
+        return b.toString();
     }
 
-    private void printLine(final int[] columnWidths) {
+    private StringBuilder printLine(final int[] columnWidths) {
+        final StringBuilder builder = new StringBuilder();
         for (int i = 0; i < columnWidths.length; i++) {
             final String line = String.join("",
                     Collections.nCopies(columnWidths[i] + verticalSep.length() + 1, HORIZONTAL_SEP));
-            System.out.print(joinSep + line + (i == columnWidths.length - 1 ? joinSep : ""));
+            builder.append(joinSep + line + (i == columnWidths.length - 1 ? joinSep : ""));
         }
-        System.out.println();
+        builder.append(System.lineSeparator());
+        return builder;
     }
 
-    private void printRow(final String[] cells, final int[] maxWidths) {
+    private StringBuilder printRow(final String[] cells, final int[] maxWidths) {
+        final StringBuilder builder = new StringBuilder();
         for (int i = 0; i < cells.length; i++) {
             final String s = cells[i];
             final String verStrTemp = i == cells.length - 1 ? verticalSep : "";
             if (rightAlign) {
-                System.out.printf("%s %" + maxWidths[i] + "s %s", verticalSep, s, verStrTemp);
+                builder.append(String.format("%s %" + maxWidths[i] + "s %s", verticalSep, s, verStrTemp));
             } else {
-                System.out.printf("%s %-" + maxWidths[i] + "s %s", verticalSep, s, verStrTemp);
+                builder.append(String.format("%s %-" + maxWidths[i] + "s %s", verticalSep, s, verStrTemp));
             }
         }
-        System.out.println();
+        builder.append(System.lineSeparator());
+        return builder;
     }
 
 }

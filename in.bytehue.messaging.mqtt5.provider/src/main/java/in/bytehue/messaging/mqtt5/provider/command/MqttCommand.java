@@ -31,9 +31,17 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
+import org.osgi.service.messaging.dto.ChannelDTO;
+import org.osgi.service.messaging.dto.MessagingRuntimeDTO;
+import org.osgi.service.messaging.dto.ReplyToSubscriptionDTO;
+import org.osgi.service.messaging.dto.SubscriptionDTO;
+import org.osgi.service.messaging.runtime.MessageServiceRuntime;
+import org.osgi.util.converter.Converter;
+import org.osgi.util.converter.Converters;
 
 import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
 import in.bytehue.messaging.mqtt5.provider.MessageClientProvider;
+import in.bytehue.messaging.mqtt5.provider.MessageClientProvider.Config;
 import in.bytehue.messaging.mqtt5.provider.MessagePublisherProvider;
 import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionProvider;
 import in.bytehue.messaging.mqtt5.provider.helper.FelixGogoCommand;
@@ -41,7 +49,7 @@ import in.bytehue.messaging.mqtt5.provider.helper.Table;
 
 // @formatter:off
 @Descriptor("MQTT 5 Messaging")
-@FelixGogoCommand(scope = "mqtt", function = { "pub", "sub", "state" })
+@FelixGogoCommand(scope = "mqtt", function = { "pub", "sub", "runtime" })
 @Component(
         immediate = true,
         configurationPid = PID,
@@ -55,6 +63,9 @@ public final class MqttCommand {
     private MessageClientProvider client;
 
     @Reference
+    private MessageServiceRuntime runtime;
+
+    @Reference
     private MessagePublisherProvider publisher;
 
     @Reference
@@ -63,9 +74,54 @@ public final class MqttCommand {
     @Reference
     private ComponentServiceObjects<MqttMessageContextBuilder> mcbFactory;
 
-    @Descriptor("Returns the current state of the MQTT client")
-    public String state() {
-        return client.client.getState().toString();
+    @Descriptor("Returns the current runtime information of the MQTT client")
+    public String runtime(
+            @Descriptor("Shows full MQTT configuration ")
+            @Parameter(absentValue = "false", presentValue = "true", names = { "-showconfig" })
+            final boolean showconfig) {
+
+        final Converter converter = Converters.standardConverter();
+        final MessagingRuntimeDTO runtimeInfo = runtime.getRuntimeDTO();
+
+        final StringBuilder output = new StringBuilder();
+
+        final Table table = new Table();
+
+        table.setShowVerticalLines(true);
+        table.setHeaders("Name", "Value");
+
+        table.addRow("Connection URI", runtimeInfo.connectionURI);
+        table.addRow("Connection Port", String.valueOf(client.config().port()));
+        table.addRow("Connection SSL",  String.valueOf(client.config().useSSL()));
+        table.addRow("Connection State", client.client.getState().toString());
+        table.addRow("Provider", runtimeInfo.providerName);
+        table.addRow("Supported Protocols", converter.convert(runtimeInfo.protocols).to(String.class));
+        table.addRow("Instance ID", runtimeInfo.instanceId);
+
+        final String subscriptions = prepareSubscriptions(runtimeInfo.subscriptions);
+        final String replyToSubscriptions = prepareReplyToSubscriptions(runtimeInfo.replyToSubscriptions);
+
+
+        output.append(table.print())
+              .append(System.lineSeparator())
+              .append(System.lineSeparator())
+              .append("Subscriptions: ")
+              .append(System.lineSeparator())
+              .append(subscriptions)
+              .append(System.lineSeparator())
+              .append(System.lineSeparator())
+              .append("ReplyTo Subscriptions: ")
+              .append(System.lineSeparator())
+              .append(replyToSubscriptions);
+
+        if (showconfig) {
+            output.append(System.lineSeparator())
+                  .append(System.lineSeparator())
+                  .append("Configuration: ")
+                  .append(System.lineSeparator())
+                  .append(prepareConfig(client.config(), converter));
+        }
+        return output.toString();
     }
 
     @Descriptor("Subscribes to specific topic/filter with the input context")
@@ -90,14 +146,17 @@ public final class MqttCommand {
         final MqttMessageContextBuilder mcb = mcbFactory.getService();
         try {
             // display the configuration
-            final Table st = new Table();
-            st.setShowVerticalLines(true);
-            st.setHeaders("Configuration", "Value");
-            st.addRow("Channel", topic);
-            st.addRow("QoS", String.valueOf(qos));
-            st.addRow("Receive Local", String.valueOf(receiveLocal));
-            st.addRow("Retain as Published", String.valueOf(retainAsPublished));
-            st.print();
+            final Table table = new Table();
+
+            table.setShowVerticalLines(true);
+            table.setHeaders("Configuration", "Value");
+
+            table.addRow("Channel", topic);
+            table.addRow("QoS", String.valueOf(qos));
+            table.addRow("Receive Local", String.valueOf(receiveLocal));
+            table.addRow("Retain as Published", String.valueOf(retainAsPublished));
+
+            System.out.println(table.print());
 
             final MessageContext context = mcb.channel(topic)
                                               .withQoS(qos)
@@ -114,7 +173,7 @@ public final class MqttCommand {
         } finally {
             mcbFactory.ungetService(mcb);
         }
-        return "Subscribed to "+ topic;
+        return "Subscribed to " + topic;
     }
 
     @Descriptor("Publishes to specific topic/filter with the input context")
@@ -184,6 +243,83 @@ public final class MqttCommand {
             mcbFactory.ungetService(mcb);
         }
         return "Published to " + topic;
+    }
+
+    private String prepareSubscriptions(final SubscriptionDTO[] subscriptions) {
+        final Table table = new Table();
+
+        table.setShowVerticalLines(true);
+        table.setHeaders("Channel Name");
+
+        for (final SubscriptionDTO subscription : subscriptions) {
+            final ChannelDTO channel = subscription.channel;
+            table.addRow(channel.name);
+        }
+        return table.print();
+    }
+
+    private String prepareReplyToSubscriptions(final ReplyToSubscriptionDTO[] replyToSubscriptions) {
+        final Table table = new Table();
+
+        table.setShowVerticalLines(true);
+        table.setHeaders("Request Channel", "Response Channel");
+
+        for (final ReplyToSubscriptionDTO subscription : replyToSubscriptions) {
+            final ChannelDTO reqChannel = subscription.requestChannel;
+            final ChannelDTO resChannel = subscription.responseChannel;
+
+            table.addRow(reqChannel.name, resChannel.name);
+        }
+        return table.print();
+    }
+
+    private String prepareConfig(final Config config, final Converter converter) {
+        final Table table = new Table();
+
+        table.setShowVerticalLines(true);
+        table.setHeaders("Name", "Value");
+
+        table.addRow("Client ID", config.id());
+        table.addRow("Automatic Reconnect", String.valueOf(config.automaticReconnect()));
+        table.addRow("Clean Start", String.valueOf(config.cleanStart()));
+        table.addRow("Initial Delay", String.valueOf(config.initialDelay()));
+        table.addRow("Max Delay", String.valueOf(config.maxDelay()));
+        table.addRow("Session Expiry Interval", String.valueOf(config.sessionExpiryInterval()));
+        table.addRow("Simple Authentication", String.valueOf(config.simpleAuth()));
+        table.addRow("SSL Configuration Cipher Suites", converter.convert(config.cipherSuites()).to(String.class));
+        table.addRow("SSL Configuration Handshake Timeout", String.valueOf(config.sslHandshakeTimeout()));
+        table.addRow("SSL Configuration Trust Manager Factory Service Target Filter", config.trustManagerFactoryTargetFilter());
+        table.addRow("Last Will Topic", config.lastWillTopic());
+        table.addRow("Last Will QoS", String.valueOf(config.lastWillQoS()));
+        table.addRow("Last Will Payload", config.lastWillPayLoad());
+        table.addRow("Last Will Content Type", config.lastWillContentType());
+        table.addRow("Last Will Message Expiry Interval", String.valueOf(config.lastWillMessageExpiryInterval()));
+        table.addRow("Last Will Delay Interval",  String.valueOf(config.lastWillDelayInterval()));
+        table.addRow("Maximum Concurrent Messages to be received", String.valueOf(config.receiveMaximum()));
+        table.addRow("Maximum Concurrent Messages to be sent", String.valueOf(config.sendMaximum()));
+        table.addRow("Maximum Packet Size for receiving", String.valueOf(config.maximumPacketSize()));
+        table.addRow("Maximum Packet Size for sending", String.valueOf(config.sendMaximumPacketSize()));
+        table.addRow("Maximum Topic Aliases", String.valueOf(config.topicAliasMaximum()));
+        table.addRow("MQTT over Web Socket", String.valueOf(config.useWebSocket()));
+        table.addRow("Web Socket Query String", config.queryString());
+        table.addRow("Web Socket Server Path", config.serverPath());
+        table.addRow("Web Socket Sub Protocol", config.subProtocol());
+        table.addRow("Web Socket Handshake Timeout", String.valueOf(config.webSocketHandshakeTimeout()));
+        table.addRow("Enhanced Authentication", String.valueOf(config.useEnhancedAuthentication()));
+        table.addRow("Enhanced Authentication Service Filter", config.enhancedAuthTargetFilter());
+        table.addRow("Server Reauthentication", String.valueOf(config.useServerReauth()));
+        table.addRow("Connected Listener Service Filter", config.connectedListenerFilter());
+        table.addRow("Disconnected Listener Service Filter", config.disconnectedListenerFilter());
+        table.addRow("QoS 1 Incoming Interceptor Service Filter", config.qos1IncomingInterceptorFilter());
+        table.addRow("QoS 2 Incoming Interceptor Service Filter", config.qos2IncomingInterceptorFilter());
+        table.addRow("QoS 1 Outgoing Interceptor Service Filter", config.qos1OutgoingInterceptorFilter());
+        table.addRow("QoS 2 Outgoing Interceptor Service Filter", config.qos2OutgoingInterceptorFilter());
+        table.addRow("Filter that needs to be satisfied for the client to be active", config.condition_target());
+        table.addRow("Reason for the disconnection when the client component is stopped", config.disconnectionReasonDescription());
+        table.addRow("Code for the disconnection when the client component is stopped", config.disconnectionReasonCode().name());
+
+        return table.print();
+
     }
 
     private Map<String, String> initUserProperties(final String userProperties) {

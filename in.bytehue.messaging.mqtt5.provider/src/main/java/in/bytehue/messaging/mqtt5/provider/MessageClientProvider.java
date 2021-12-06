@@ -79,7 +79,8 @@ public final class MessageClientProvider {
     @ObjectClassDefinition(
             name = "MQTT 5.0 Messaging Client Configuration",
             description = "This configuration is used to configure the messaging connection")
-    @interface Config {
+
+    public @interface Config {
         @AttributeDefinition(name = "Client Identifier")
         String id() default "";
 
@@ -260,6 +261,10 @@ public final class MessageClientProvider {
                   .reasonCode(config.disconnectionReasonCode())
                   .reasonString(config.disconnectionReasonDescription())
               .send();
+    }
+
+    public synchronized Config config() {
+        return config;
     }
 
     public void updateLWT(final MqttWillPublish lastWillMessage) {
