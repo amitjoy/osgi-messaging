@@ -66,7 +66,7 @@ public final class MessageReplyToManyHandlerTest {
         final AtomicBoolean flag1 = new AtomicBoolean();
         final AtomicBoolean flag2 = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String replyToChannel = "c/d";
         final String payload = "abc";
         final String responsePyload = "test";
@@ -123,7 +123,7 @@ public final class MessageReplyToManyHandlerTest {
 
     @Test
     public void test_reply_to_many_subscription_handler_without_protocol_name_in_target_key() throws Exception {
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String replyToChannel = "c/d";
         final String payload = "abc";
         final String responsePyload = "test";
@@ -178,7 +178,7 @@ public final class MessageReplyToManyHandlerTest {
 
     @Test
     public void test_reply_to_many_subscription_handler_without_messaging_name_in_target_key() throws Exception {
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String replyToChannel = "c/d";
         final String payload = "abc";
         final String responsePyload = "test";
@@ -233,7 +233,7 @@ public final class MessageReplyToManyHandlerTest {
 
     @Test
     public void test_reply_to_many_subscription_handler_without_feature_in_target_key() throws Exception {
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String replyToChannel = "c/d";
         final String payload = "abc";
         final String responsePyload = "test";
@@ -288,7 +288,7 @@ public final class MessageReplyToManyHandlerTest {
 
     @Test
     public void test_reply_to_many_subscription_handler_with_different_feature_in_target_key() throws Exception {
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String replyToChannel = "c/d";
         final String payload = "abc";
         final String responsePyload = "test";
@@ -343,7 +343,7 @@ public final class MessageReplyToManyHandlerTest {
 
     @Test
     public void test_reply_to_many_subscription_handler_with_different_messaging_name_in_target_key() throws Exception {
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String replyToChannel = "c/d";
         final String payload = "abc";
         final String responsePyload = "test";
@@ -398,7 +398,7 @@ public final class MessageReplyToManyHandlerTest {
 
     @Test
     public void test_reply_to_many_subscription_handler_with_different_protocol_in_target_key() throws Exception {
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String replyToChannel = "c/d";
         final String payload = "abc";
         final String responsePyload = "test";
@@ -453,7 +453,7 @@ public final class MessageReplyToManyHandlerTest {
 
     @Test
     public void test_reply_to_many_subscription_handler_without_target_key() throws Exception {
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String replyToChannel = "c/d";
         final String payload = "abc";
         final String responsePyload = "test";
@@ -505,7 +505,7 @@ public final class MessageReplyToManyHandlerTest {
 
     @Test
     public void test_reply_to_many_subscription_handler_without_channel_key() throws Exception {
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String replyToChannel = "c/d";
         final String payload = "abc";
         final String responsePyload = "test";
@@ -557,7 +557,7 @@ public final class MessageReplyToManyHandlerTest {
 
     @Test
     public void test_reply_to_many_subscription_handler_without_reply_to_channel_key() throws Exception {
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String replyToChannel = "c/d";
         final String payload = "abc";
         final String responsePyload = "test";

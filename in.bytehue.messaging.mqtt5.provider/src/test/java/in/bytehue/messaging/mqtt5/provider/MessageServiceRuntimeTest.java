@@ -159,7 +159,7 @@ public final class MessageServiceRuntimeTest {
     public void test_subscription() throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String payload = "abc";
         final String contentType = "text/plain";
 
@@ -196,7 +196,7 @@ public final class MessageServiceRuntimeTest {
         final AtomicBoolean flag1 = new AtomicBoolean();
         final AtomicBoolean flag2 = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String replyToChannel = "c/d";
         final String payload = "abc";
         final String contentType = "text/plain";
@@ -252,7 +252,7 @@ public final class MessageServiceRuntimeTest {
     public void test_reply_to_subscription() throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String payload = "abc";
         final String contentType = "text/plain";
 
@@ -294,7 +294,7 @@ public final class MessageServiceRuntimeTest {
         final AtomicBoolean flag1 = new AtomicBoolean();
         final AtomicBoolean flag2 = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String replyToChannel = "c/d";
         final String payload = "abc";
         final String responsePyload = "test";

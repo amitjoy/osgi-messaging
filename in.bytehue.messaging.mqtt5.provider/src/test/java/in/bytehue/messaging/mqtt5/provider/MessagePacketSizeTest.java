@@ -64,7 +64,7 @@ public final class MessagePacketSizeTest {
     public void test_packet_configuration_size_exceeds() throws IOException, InterruptedException {
         final AtomicBoolean flag = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String payload = "abc";
         final String contentType = "text/plain";
 

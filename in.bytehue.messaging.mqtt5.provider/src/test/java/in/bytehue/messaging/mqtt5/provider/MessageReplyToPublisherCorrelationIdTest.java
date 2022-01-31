@@ -64,7 +64,7 @@ public final class MessageReplyToPublisherCorrelationIdTest {
     public void test_auto_generated_correlation_id_is_UUID() throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 
-        final String reqChannel = "a/b";
+        final String reqChannel = "ab/ba";
         final String resChannel = "c/d";
         final String payload = "abc";
 
@@ -100,7 +100,7 @@ public final class MessageReplyToPublisherCorrelationIdTest {
 
         final AtomicBoolean flag = new AtomicBoolean();
 
-        final String reqChannel = "a/b";
+        final String reqChannel = "ab/ba";
         final String resChannel = "c/d";
         final String payload = "abc";
 

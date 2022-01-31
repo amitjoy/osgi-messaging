@@ -71,7 +71,7 @@ public final class MessageSubPubWithAcknowledgeTest {
         final AtomicBoolean flag1 = new AtomicBoolean();
         final AtomicBoolean flag2 = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String payload = "abc";
         final String contentType = "text/plain";
 
@@ -105,7 +105,7 @@ public final class MessageSubPubWithAcknowledgeTest {
         final AtomicBoolean flag1 = new AtomicBoolean();
         final AtomicBoolean flag2 = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String payload = "abc";
         final String contentType = "text/plain";
 
@@ -142,7 +142,7 @@ public final class MessageSubPubWithAcknowledgeTest {
         final AtomicBoolean flag1 = new AtomicBoolean();
         final AtomicBoolean flag2 = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "amit/bdbdbdbddb";
         final String payload = "abc";
         final String contentType = "text/plain";
 
@@ -176,7 +176,7 @@ public final class MessageSubPubWithAcknowledgeTest {
         final AtomicBoolean flag1 = new AtomicBoolean();
         final AtomicBoolean flag2 = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String payload = "abc";
         final String contentType = "text/plain";
 
@@ -217,7 +217,7 @@ public final class MessageSubPubWithAcknowledgeTest {
         final AtomicBoolean flag2 = new AtomicBoolean();
         final AtomicBoolean flag3 = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String payload = "abc";
         final String contentType = "text/plain";
 
@@ -254,7 +254,7 @@ public final class MessageSubPubWithAcknowledgeTest {
         final AtomicBoolean flag2 = new AtomicBoolean();
         final AtomicBoolean flag3 = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String payload = "abc";
         final String contentType = "text/plain";
 
@@ -292,7 +292,7 @@ public final class MessageSubPubWithAcknowledgeTest {
         final AtomicBoolean flag1 = new AtomicBoolean();
         final AtomicBoolean flag2 = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String payload = "abc";
         final String contentType = "text/plain";
 
@@ -311,6 +311,8 @@ public final class MessageSubPubWithAcknowledgeTest {
             final String ctype = m.getContext().getContentType();
             final String content = new String(m.payload().array(), UTF_8);
             final AcknowledgeType acknowledgeState = ((AcknowledgeMessageContext) m.getContext()).getAcknowledgeState();
+            
+            System.out.println("=====>"+content);
 
             assertThat(channel).isEqualTo(topic);
             assertThat(payload).isEqualTo(content);
@@ -328,7 +330,7 @@ public final class MessageSubPubWithAcknowledgeTest {
     public void test_handle_acknowledge_with_filter_when_message_not_acknowledged() throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String payload = "abc";
         final String contentType = "text/plain";
 
@@ -355,7 +357,7 @@ public final class MessageSubPubWithAcknowledgeTest {
     public void test_handle_acknowledge_without_filter_and_handler() throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String payload = "abc";
         final String contentType = "text/plain";
 
@@ -382,7 +384,7 @@ public final class MessageSubPubWithAcknowledgeTest {
     public void test_handle_acknowledge_without_filter_but_handler() throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String payload = "abc";
         final String contentType = "text/plain";
 
@@ -414,7 +416,7 @@ public final class MessageSubPubWithAcknowledgeTest {
         final AtomicBoolean flag1 = new AtomicBoolean();
         final AtomicBoolean flag2 = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String payload = "abc";
         final String contentType = "text/plain";
 
@@ -444,7 +446,7 @@ public final class MessageSubPubWithAcknowledgeTest {
         final AtomicBoolean flag1 = new AtomicBoolean();
         final AtomicBoolean flag2 = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String payload = "abc";
         final String contentType = "text/plain";
 
@@ -477,7 +479,7 @@ public final class MessageSubPubWithAcknowledgeTest {
             throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String payload = "abc";
         final String contentType = "text/plain";
 
@@ -514,7 +516,7 @@ public final class MessageSubPubWithAcknowledgeTest {
     public void test_handle_acknowledge_when_user_tried_to_reject_message_when_already_acknowledged() throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String payload = "abc";
         final String contentType = "text/plain";
 
@@ -553,7 +555,7 @@ public final class MessageSubPubWithAcknowledgeTest {
         final AtomicBoolean flag2 = new AtomicBoolean();
         final AtomicBoolean flag3 = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String payload = "abc";
         final String contentType = "text/plain";
 
@@ -594,7 +596,7 @@ public final class MessageSubPubWithAcknowledgeTest {
         final AtomicBoolean flag2 = new AtomicBoolean();
         final AtomicBoolean flag3 = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String payload = "abc";
         final String contentType = "text/plain";
 

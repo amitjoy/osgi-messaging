@@ -66,7 +66,7 @@ public final class MessageSubPubTest {
     public void test_sub_pub_with_1() throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String payload = "abc";
         final String contentType = "text/plain";
 
@@ -96,7 +96,7 @@ public final class MessageSubPubTest {
     public void test_sub_pub_with_2() throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String payload = "abc";
         final String contentType = "text/plain";
 
@@ -126,7 +126,7 @@ public final class MessageSubPubTest {
     public void test_sub_pub_with_3() throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String inputChannel = "c/d";
         final String payload = "abc";
         final String contentType = "text/plain";
@@ -158,7 +158,7 @@ public final class MessageSubPubTest {
     public void test_sub_pub_with_4() throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String inputChannel = "c/d";
         final String payload = "abc";
         final String contentType = "text/plain";
@@ -193,7 +193,7 @@ public final class MessageSubPubTest {
     public void test_sub_pub_extensions_guaranteedDelivery() throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String inputChannel = "c/d";
         final String payload = "abc";
         final String contentType = "text/plain";
@@ -236,7 +236,7 @@ public final class MessageSubPubTest {
     public void test_sub_pub_extensions_guaranteedOrdering() throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 
-        final String channel = "a/b";
+        final String channel = "ab/ba";
         final String inputChannel = "c/d";
         final String payload = "abc";
         final String contentType = "text/plain";
