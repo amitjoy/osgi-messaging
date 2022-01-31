@@ -27,10 +27,13 @@ import static org.osgi.service.metatype.annotations.AttributeType.PASSWORD;
 import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.osgi.framework.BundleContext;
@@ -120,11 +123,20 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "SSL Configuration Cipher Suites")
         String[] cipherSuites() default {};
 
+        @AttributeDefinition(name = "SSL Configuration Protocols")
+        String[] protocols() default {};
+
         @AttributeDefinition(name = "SSL Configuration Handshake Timeout")
-        long sslHandshakeTimeout() default 1L;
+        long sslHandshakeTimeout() default 10L;
+
+        @AttributeDefinition(name = "SSL Configuration Key Manager Factory Service Target Filter")
+        String keyManagerFactoryTargetFilter() default "";
 
         @AttributeDefinition(name = "SSL Configuration Trust Manager Factory Service Target Filter")
         String trustManagerFactoryTargetFilter() default "";
+
+        @AttributeDefinition(name = "SSL Configuration Host Name Verifier Service Target Filter")
+        String hostNameVerifierTargetFilter() default "";
 
         @AttributeDefinition(name = "Last Will Topic")
         String lastWillTopic() default "";
@@ -318,12 +330,27 @@ public final class MessageClientProvider {
         if (config.useSSL()) {
             logger.debug("Applying SSL Configuration");
             clientBuilder.sslConfig()
-                             .cipherSuites(Arrays.asList(config.cipherSuites()))
+                             .cipherSuites(emptyToNull(config.cipherSuites()))
+                             .protocols(emptyToNull(config.protocols()))
                              .handshakeTimeout(config.sslHandshakeTimeout(), SECONDS)
+                             .keyManagerFactory(
+                                     getOptionalService(
+                                             KeyManagerFactory.class,
+                                             config.keyManagerFactoryTargetFilter(),
+                                             bundleContext,
+                                             logger)
+                                     .orElse(null))
                              .trustManagerFactory(
                                      getOptionalService(
                                              TrustManagerFactory.class,
                                              config.trustManagerFactoryTargetFilter(),
+                                             bundleContext,
+                                             logger)
+                                     .orElse(null))
+                             .hostnameVerifier(
+                                     getOptionalService(
+                                             HostnameVerifier.class,
+                                             config.hostNameVerifierTargetFilter(),
                                              bundleContext,
                                              logger)
                                      .orElse(null))
@@ -492,6 +519,13 @@ public final class MessageClientProvider {
         if (readyServiceReg != null) {
             readyServiceReg.unregister();
         }
+    }
+    
+    private <T> List<T> emptyToNull(T[] array) {
+        if (array.length == 0) {
+            return null;
+        }
+        return Arrays.asList(array);
     }
 
 }
