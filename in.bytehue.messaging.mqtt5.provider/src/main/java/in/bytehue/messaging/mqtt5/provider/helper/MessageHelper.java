@@ -102,10 +102,13 @@ public final class MessageHelper {
 
     public static <T> Optional<T> getOptionalService(final Class<T> clazz, final String filter, final BundleContext context, final Logger logger) {
         try {
+            if (filter == null || filter.trim().isEmpty()) {
+                return Optional.empty();
+            }
             final T service = getService(clazz, filter, context);
             return Optional.ofNullable(service);
         } catch (final Exception e) {
-            logger.warn("Service '{}' cannot be retrieved", clazz.getName(), e);
+            logger.warn("Service '{}' cannot be retrieved", clazz.getName());
             return Optional.empty();
         }
     }
