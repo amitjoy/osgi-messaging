@@ -79,7 +79,7 @@ import in.bytehue.messaging.mqtt5.provider.MessageClientProvider.Config;
 @Component(service = MessageClientProvider.class, configurationPid = CLIENT)
 public final class MessageClientProvider {
 
-    //@formatter:off
+	//@formatter:off
     @ObjectClassDefinition(
             name = "MQTT 5.0 Messaging Client Configuration",
             description = "This configuration is used to configure the messaging connection")
@@ -331,9 +331,7 @@ public final class MessageClientProvider {
         		final Optional<SimpleAuthentication> auth =
         				getOptionalService(
         						SimpleAuthentication.class,
-        						config.simpleAuthCredFilter().isEmpty()
-        							    ? null
-        								: config.simpleAuthCredFilter(),
+        						config.simpleAuthCredFilter(),
         						bundleContext,
         						logger);
         		if (auth.isPresent()) {
@@ -530,21 +528,20 @@ public final class MessageClientProvider {
 
     private String getClientID(final BundleContext bundleContext) {
         // check for the existence of configuration
-        if(config.id().isEmpty()) {
-            // check for framework property if available
-            final String id = bundleContext.getProperty(CLIENT_ID_FRAMEWORK_PROPERTY);
-            // generate client ID if framework property is absent
-            if (id == null) {
-                final String generatedClientId = UUID.randomUUID().toString();
-                // update the generated framework property for others to use
-                System.setProperty(CLIENT_ID_FRAMEWORK_PROPERTY, generatedClientId);
-                return generatedClientId;
-            } else {
-                return id;
-            }
-        } else {
+        if(!config.id().isEmpty()) {
             return config.id();
         }
+		// check for framework property if available
+		final String id = bundleContext.getProperty(CLIENT_ID_FRAMEWORK_PROPERTY);
+		// generate client ID if framework property is absent
+		if (id == null) {
+		    final String generatedClientId = UUID.randomUUID().toString();
+		    // update the generated framework property for others to use
+		    System.setProperty(CLIENT_ID_FRAMEWORK_PROPERTY, generatedClientId);
+		    return generatedClientId;
+		} else {
+		    return id;
+		}
     }
 
     private void registerReadyService(final MqttClientConnectedContext context) {
@@ -559,8 +556,8 @@ public final class MessageClientProvider {
             readyServiceReg.unregister();
         }
     }
-    
-    private <T> List<T> emptyToNull(T[] array) {
+
+    private <T> List<T> emptyToNull(final T[] array) {
         if (array.length == 0) {
             return null;
         }

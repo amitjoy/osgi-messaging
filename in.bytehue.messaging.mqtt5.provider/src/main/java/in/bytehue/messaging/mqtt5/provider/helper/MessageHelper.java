@@ -77,14 +77,14 @@ import in.bytehue.messaging.mqtt5.provider.MessageContextProvider;
 
 public final class MessageHelper {
 
-    private MessageHelper() {
-        throw new IllegalAccessError("Non-instantiable");
-    }
+	private MessageHelper() {
+		throw new IllegalAccessError("Non-instantiable");
+	}
 
-    public static <T> T getService(final Class<T> clazz, final String filter, final BundleContext context) {
-        try {
-            final Collection<ServiceReference<T>> references = context.getServiceReferences(clazz, filter);
-            // @formatter:off
+	public static <T> T getService(final Class<T> clazz, final String filter, final BundleContext context) {
+		try {
+			final Collection<ServiceReference<T>> references = context.getServiceReferences(clazz, filter);
+			// @formatter:off
             final ToLongFunction<ServiceReference<?>> srFunc =
                     sr -> Optional.ofNullable(sr.getProperty(SERVICE_RANKING))
                                   .map(long.class::cast)
@@ -100,10 +100,10 @@ public final class MessageHelper {
         }
     }
 
-    public static <T> Optional<T> getOptionalService(final Class<T> clazz, final String filter, final BundleContext context, final Logger logger) {
+    public static <T> Optional<T> getOptionalService(final Class<T> clazz, String filter, final BundleContext context, final Logger logger) {
         try {
-            if (filter == null || filter.trim().isEmpty()) {
-                return Optional.empty();
+            if (filter.trim().isEmpty()) {
+            	filter = null;
             }
             final T service = getService(clazz, filter, context);
             return Optional.ofNullable(service);
@@ -156,63 +156,63 @@ public final class MessageHelper {
                                     .extensions(extensions)
                                     .buildMessage();
         // @formatter:on
-    }
+	}
 
-    public static <T> ServiceReferenceDTO toServiceReferenceDTO(final Class<T> clazz, final BundleContext context) {
-        final ServiceReference<T> ref = context.getServiceReference(clazz);
-        return toServiceReferenceDTO(ref);
-    }
+	public static <T> ServiceReferenceDTO toServiceReferenceDTO(final Class<T> clazz, final BundleContext context) {
+		final ServiceReference<T> ref = context.getServiceReference(clazz);
+		return toServiceReferenceDTO(ref);
+	}
 
-    public static ServiceReferenceDTO toServiceReferenceDTO(final ServiceReference<?> ref) {
-        final ServiceReferenceDTO dto = new ServiceReferenceDTO();
+	public static ServiceReferenceDTO toServiceReferenceDTO(final ServiceReference<?> ref) {
+		final ServiceReferenceDTO dto = new ServiceReferenceDTO();
 
-        dto.bundle = ref.getBundle().getBundleId();
-        dto.id = (Long) ref.getProperty(SERVICE_ID);
-        dto.properties = new HashMap<>();
+		dto.bundle = ref.getBundle().getBundleId();
+		dto.id = (Long) ref.getProperty(SERVICE_ID);
+		dto.properties = new HashMap<>();
 
-        for (final String key : ref.getPropertyKeys()) {
-            final Object val = ref.getProperty(key);
-            dto.properties.put(key, getDTOValue(val));
-        }
+		for (final String key : ref.getPropertyKeys()) {
+			final Object val = ref.getProperty(key);
+			dto.properties.put(key, getDTOValue(val));
+		}
 
-        final Bundle[] usingBundles = ref.getUsingBundles();
+		final Bundle[] usingBundles = ref.getUsingBundles();
 
-        if (usingBundles == null) {
-            dto.usingBundles = new long[0];
-        } else {
-            dto.usingBundles = new long[usingBundles.length];
-            for (int j = 0; j < usingBundles.length; j++) {
-                dto.usingBundles[j] = usingBundles[j].getBundleId();
-            }
-        }
-        return dto;
-    }
+		if (usingBundles == null) {
+			dto.usingBundles = new long[0];
+		} else {
+			dto.usingBundles = new long[usingBundles.length];
+			for (int j = 0; j < usingBundles.length; j++) {
+				dto.usingBundles[j] = usingBundles[j].getBundleId();
+			}
+		}
+		return dto;
+	}
 
-    public static Object getDTOValue(final Object value) {
-        Class<?> c = value.getClass();
-        if (c.isArray()) {
-            c = c.getComponentType();
-        }
-        if ( // @formatter:off
+	public static Object getDTOValue(final Object value) {
+		Class<?> c = value.getClass();
+		if (c.isArray()) {
+			c = c.getComponentType();
+		}
+		if ( // @formatter:off
                 Number.class.isAssignableFrom(c)  ||
                 Boolean.class.isAssignableFrom(c) ||
                 String.class.isAssignableFrom(c)  ||
                 DTO.class.isAssignableFrom(c)) {
             // @formatter:on
-            return value;
-        }
-        if (value.getClass().isArray()) {
-            final int length = Array.getLength(value);
-            final String[] converted = new String[length];
-            for (int i = 0; i < length; i++) {
-                converted[i] = String.valueOf(Array.get(value, i));
-            }
-            return converted;
-        }
-        return String.valueOf(value);
-    }
+			return value;
+		}
+		if (value.getClass().isArray()) {
+			final int length = Array.getLength(value);
+			final String[] converted = new String[length];
+			for (int i = 0; i < length; i++) {
+				converted[i] = String.valueOf(Array.get(value, i));
+			}
+			return converted;
+		}
+		return String.valueOf(value);
+	}
 
-    // @formatter:off
+	// @formatter:off
     public static void acknowledgeMessage(
             final Message message,
             final MessageContextProvider ctx,
@@ -287,33 +287,33 @@ public final class MessageHelper {
     }
     // @formatter:on
 
-    public static Message prepareExceptionAsMessage(final Throwable t, final MessageContextBuilder mcb) {
-        final Optional<String> message = Optional.ofNullable(t.getMessage());
-        return mcb.content(ByteBuffer.wrap(message.orElse(stackTraceToString(t)).getBytes())).buildMessage();
-    }
+	public static Message prepareExceptionAsMessage(final Throwable t, final MessageContextBuilder mcb) {
+		final Optional<String> message = Optional.ofNullable(t.getMessage());
+		return mcb.content(ByteBuffer.wrap(message.orElse(stackTraceToString(t)).getBytes())).buildMessage();
+	}
 
-    public static String stackTraceToString(final Throwable t) {
-        final StringBuilder result = new StringBuilder(t.toString()).append(lineSeparator());
-        final StackTraceElement[] trace = t.getStackTrace();
-        Stream.of(trace).forEach(e -> result.append(e.toString()).append(lineSeparator()));
-        return result.toString();
-    }
+	public static String stackTraceToString(final Throwable t) {
+		final StringBuilder result = new StringBuilder(t.toString()).append(lineSeparator());
+		final StackTraceElement[] trace = t.getStackTrace();
+		Stream.of(trace).forEach(e -> result.append(e.toString()).append(lineSeparator()));
+		return result.toString();
+	}
 
-    public static int getQoS(final Map<String, Object> extensions, final Converter converter) {
-        final Object isGuaranteedDeliveryProp = extensions.getOrDefault(EXTENSION_GUARANTEED_DELIVERY, false);
-        final Object isGuranteedOrderingProp = extensions.getOrDefault(EXTENSION_GUARANTEED_ORDERING, false);
+	public static int getQoS(final Map<String, Object> extensions, final Converter converter) {
+		final Object isGuaranteedDeliveryProp = extensions.getOrDefault(EXTENSION_GUARANTEED_DELIVERY, false);
+		final Object isGuranteedOrderingProp = extensions.getOrDefault(EXTENSION_GUARANTEED_ORDERING, false);
 
-        final boolean isGuaranteedDelivery = adaptTo(isGuranteedOrderingProp, boolean.class, converter);
-        final boolean isGuranteedOrdering = adaptTo(isGuaranteedDeliveryProp, boolean.class, converter);
+		final boolean isGuaranteedDelivery = adaptTo(isGuranteedOrderingProp, boolean.class, converter);
+		final boolean isGuranteedOrdering = adaptTo(isGuaranteedDeliveryProp, boolean.class, converter);
 
-        if (isGuaranteedDelivery || isGuranteedOrdering) {
-            return EXACTLY_ONCE.getCode();
-        }
-        final Object dflt = extensions.getOrDefault(EXTENSION_QOS, DEFAULT_QOS.getCode());
-        return adaptTo(dflt, int.class, converter);
-    }
+		if (isGuaranteedDelivery || isGuranteedOrdering) {
+			return EXACTLY_ONCE.getCode();
+		}
+		final Object dflt = extensions.getOrDefault(EXTENSION_QOS, DEFAULT_QOS.getCode());
+		return adaptTo(dflt, int.class, converter);
+	}
 
-    // @formatter:off
+	// @formatter:off
     public static MqttWillPublish toLWT(
             final String channel,
             final ByteBuffer payload,
@@ -358,30 +358,30 @@ public final class MessageHelper {
     }
     // @formatter:on
 
-    public static <A, B> B setIfNotNull(final A a, final Function<A, B> function) {
-        return a == null ? null : function.apply(a);
-    }
+	public static <A, B> B setIfNotNull(final A a, final Function<A, B> function) {
+		return a == null ? null : function.apply(a);
+	}
 
-    public static <T> T adaptTo(final Object value, final Class<T> to, final Converter converter) {
-        return converter.convert(value).to(to);
-    }
+	public static <T> T adaptTo(final Object value, final Class<T> to, final Converter converter) {
+		return converter.convert(value).to(to);
+	}
 
-    public static <T> T adapt(final Object value, final TypeReference<T> ref, final Converter converter) {
-        return converter.convert(value).to(ref);
-    }
+	public static <T> T adapt(final Object value, final TypeReference<T> ref, final Converter converter) {
+		return converter.convert(value).to(ref);
+	}
 
-    public static String asString(final MqttUtf8String string) {
-        return string.toString();
-    }
+	public static String asString(final MqttUtf8String string) {
+		return string.toString();
+	}
 
-    public static String asString(final ByteBuffer buffer) {
-        if (buffer == null) {
-            return null;
-        }
-        return new String(buffer.array(), UTF_8);
-    }
+	public static String asString(final ByteBuffer buffer) {
+		if (buffer == null) {
+			return null;
+		}
+		return new String(buffer.array(), UTF_8);
+	}
 
-    // @formatter:off
+	// @formatter:off
     public static String getCorrelationId(
             final MessageContextProvider messageContext,
             final BundleContext bundleContext,
