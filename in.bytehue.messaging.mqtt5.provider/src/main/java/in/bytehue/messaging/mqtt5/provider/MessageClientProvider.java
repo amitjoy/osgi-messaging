@@ -70,6 +70,7 @@ import com.hivemq.client.mqtt.mqtt5.message.connect.connack.Mqtt5ConnAck;
 import com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode;
 
 import aQute.osgi.conditionaltarget.api.ConditionalTarget;
+import in.bytehue.messaging.mqtt5.api.SimpleAuthentication;
 import in.bytehue.messaging.mqtt5.api.TargetCondition;
 import in.bytehue.messaging.mqtt5.provider.MessageClientProvider.Config;
 
@@ -110,6 +111,12 @@ public final class MessageClientProvider {
 
         @AttributeDefinition(name = "Simple Authentication")
         boolean simpleAuth() default false;
+
+        @AttributeDefinition(name = "Configuration to use static credentials specified in username and password configurations")
+        boolean staticAuthCred() default true;
+
+        @AttributeDefinition(name = "Simple Authentication Service Filter")
+        String simpleAuthCredFilter() default "";
 
         @AttributeDefinition(name = "Simple Authentication Username")
         String username() default "";
@@ -312,11 +319,43 @@ public final class MessageClientProvider {
             clientBuilder.automaticReconnectWithDefaultConfig();
         }
         if (config.simpleAuth()) {
-            logger.debug("Applying Simple Authentiation Configuration");
-            clientBuilder.simpleAuth()
-                             .username(config.username())
-                             .password(config.password().getBytes())
-                         .applySimpleAuth();
+        	logger.debug("Applying Simple Authentication Configuration");
+        	String username = null;
+        	String password = null;
+        	if (config.staticAuthCred()) {
+        		logger.debug("Applying Simple Authentication Configuration (Static)");
+        		username = config.username();
+        		password = config.password();
+        	} else {
+        		logger.debug("Applying Simple Authentication Configuration (Dynamic)");
+        		final Optional<SimpleAuthentication> auth =
+        				getOptionalService(
+        						SimpleAuthentication.class,
+        						config.simpleAuthCredFilter().isEmpty()
+        							    ? null
+        								: config.simpleAuthCredFilter(),
+        						bundleContext,
+        						logger);
+        		if (auth.isPresent()) {
+        			logger.debug("Found Simple Authentication Service - {}", auth.get().getClass().getName());
+        			try {
+						username = auth.get().username();
+						password = auth.get().password();
+					} catch (final Exception e) {
+						logger.error("Cannot Retrieve Credentials from Simple Authentication Service", e);
+					}
+        		} else {
+        			logger.warn("Simple Authentiation Service Not Found");
+        		}
+        	}
+        	if (username == null || password == null) {
+        		logger.warn("Skipping Simple Authentication Configuration - Username or Password is null");
+        	} else {
+	        	clientBuilder.simpleAuth()
+				 			 .username(username)
+				 			 .password(password.getBytes())
+				 			 .applySimpleAuth();
+        	}
         }
         if (config.useWebSocket()) {
             logger.debug("Applying Web Socket Configuration");
