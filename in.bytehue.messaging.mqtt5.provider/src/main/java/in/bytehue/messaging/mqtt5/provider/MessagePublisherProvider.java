@@ -82,74 +82,73 @@ import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
 //@formatter:on
 public final class MessagePublisherProvider implements MessagePublisher {
 
-    @Reference(service = LoggerFactory.class)
-    private Logger logger;
+	@Reference(service = LoggerFactory.class)
+	private Logger logger;
 
-    @Reference
-    private ConverterAdapter converter;
+	@Reference
+	private ConverterAdapter converter;
 
-    @Reference
-    private MessageClientProvider messagingClient;
+	@Reference
+	private MessageClientProvider messagingClient;
 
-    @Activate
-    private BundleContext bundleContext;
+	@Activate
+	private BundleContext bundleContext;
 
-    @Override
-    public void publish(final Message message) {
-        publish(message, null, null);
-    }
+	@Override
+	public void publish(final Message message) {
+		publish(message, null, null);
+	}
 
-    @Override
-    public void publish(final Message message, final String channel) {
-        publish(message, null, channel);
-    }
+	@Override
+	public void publish(final Message message, final String channel) {
+		publish(message, null, channel);
+	}
 
-    @Override
-    public void publish(final Message message, final MessageContext context) {
-        publish(message, context, null);
-    }
+	@Override
+	public void publish(final Message message, final MessageContext context) {
+		publish(message, context, null);
+	}
 
-    private void publish(final Message message, MessageContext context, String channel) {
-        try {
-            if (context == null) {
-                context = message.getContext();
-            }
-            if (channel == null) {
-                channel = context.getChannel();
-            }
-            final MqttClientState clientState = messagingClient.client.getState();
-            if (clientState == DISCONNECTED || clientState == DISCONNECTED_RECONNECT) {
-                logger.warn("Cannot publish the message '{}' to '{}' since the client is disconnected", message,
-                        channel);
-                return;
-            }
-            final String ch = channel; // needed for lambda as it needs to be effectively final :(
-            final Map<String, Object> extensions = context.getExtensions();
+	private void publish(final Message message, MessageContext context, String channel) {
+		try {
+			if (context == null) {
+				context = message.getContext();
+			}
+			if (channel == null) {
+				channel = context.getChannel();
+			}
+			final MqttClientState clientState = messagingClient.client.getState();
+			if (clientState == DISCONNECTED || clientState == DISCONNECTED_RECONNECT) {
+				logger.warn("Cannot publish the message to '{}' since the client is disconnected", channel);
+				return;
+			}
+			final String ch = channel; // needed for lambda as it needs to be effectively final :(
+			final Map<String, Object> extensions = context.getExtensions();
 
-            final String contentType = context.getContentType();
-            final String replyToChannel = context.getReplyToChannel();
-            final String correlationId = getCorrelationId((MessageContextProvider) context, bundleContext, logger);
-            final ByteBuffer content = message.payload();
+			final String contentType = context.getContentType();
+			final String replyToChannel = context.getReplyToChannel();
+			final String correlationId = getCorrelationId((MessageContextProvider) context, bundleContext, logger);
+			final ByteBuffer content = message.payload();
 
-            final Object messageExpiry = extensions.getOrDefault(MESSAGE_EXPIRY_INTERVAL, null);
-            final Long messageExpiryInterval = adaptTo(messageExpiry, Long.class, converter);
+			final Object messageExpiry = extensions.getOrDefault(MESSAGE_EXPIRY_INTERVAL, null);
+			final Long messageExpiryInterval = adaptTo(messageExpiry, Long.class, converter);
 
-            final int qos = getQoS(extensions, converter);
+			final int qos = getQoS(extensions, converter);
 
-            final Object isRetain = extensions.getOrDefault(RETAIN, false);
-            final boolean retain = adaptTo(isRetain, boolean.class, converter);
+			final Object isRetain = extensions.getOrDefault(RETAIN, false);
+			final boolean retain = adaptTo(isRetain, boolean.class, converter);
 
-            final String contentEncoding = context.getContentEncoding();
+			final String contentEncoding = context.getContentEncoding();
 
-            final Object lastWillDelay = extensions.getOrDefault(LAST_WILL_DELAY_INTERVAL, 0L);
-            final long lastWillDelayInterval = adaptTo(lastWillDelay, long.class, converter);
+			final Object lastWillDelay = extensions.getOrDefault(LAST_WILL_DELAY_INTERVAL, 0L);
+			final long lastWillDelayInterval = adaptTo(lastWillDelay, long.class, converter);
 
-            Mqtt5PayloadFormatIndicator payloadFormat = null;
-            if ("UTF-8".equalsIgnoreCase(contentEncoding)) {
-                payloadFormat = UTF_8;
-            }
+			Mqtt5PayloadFormatIndicator payloadFormat = null;
+			if ("UTF-8".equalsIgnoreCase(contentEncoding)) {
+				payloadFormat = UTF_8;
+			}
 
-            // @formatter:off
+			// @formatter:off
             final Object userProp = extensions.getOrDefault(USER_PROPERTIES, emptyMap());
             final Map<String, String> userProperties =
                     adapt(
@@ -202,22 +201,20 @@ public final class MessagePublisherProvider implements MessagePublisher {
                           .whenComplete((result, throwable) -> {
                               if (throwable != null) {
                                   logger.error("Error occurred while publishing message", throwable);
-                              } else {
-                                  if (isPublishSuccessful(result)) {
-                                      logger.debug("New publish request for '{}' has been processed successfully", ch);
-                                  } else {
-                                      logger.error("New publish request for '{}' failed - {}", ch, result.getError().get());
-                                  }
-                              }
+                              } else if (isPublishSuccessful(result)) {
+							      logger.debug("New publish request for '{}' has been processed successfully", ch);
+							  } else {
+							      logger.error("New publish request for '{}' failed - {}", ch, result.getError().get());
+							  }
                           });
             // @formatter:on
-        } catch (final Exception e) {
-            logger.error("Error while publishing data", e);
-        }
-    }
+		} catch (final Exception e) {
+			logger.error("Error while publishing data", e);
+		}
+	}
 
-    private boolean isPublishSuccessful(final Mqtt5PublishResult result) {
-        return !result.getError().isPresent();
-    }
+	private boolean isPublishSuccessful(final Mqtt5PublishResult result) {
+		return !result.getError().isPresent();
+	}
 
 }
