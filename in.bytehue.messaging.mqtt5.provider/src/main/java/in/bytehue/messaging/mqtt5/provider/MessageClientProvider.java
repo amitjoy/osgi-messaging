@@ -41,6 +41,7 @@ import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.log.Logger;
 import org.osgi.service.log.LoggerFactory;
@@ -234,27 +235,20 @@ public final class MessageClientProvider {
 
     public volatile Mqtt5AsyncClient client;
 
-    private final Logger logger;
-    private final Config config;
-    private final BundleContext bundleContext;
-    private final Mqtt5ClientBuilder clientBuilder;
-
-    private ServiceRegistration<TargetCondition> readyServiceReg;
-
+    @Reference(service = LoggerFactory.class)
+    private Logger logger;
+    @Activate
+    private BundleContext bundleContext;
     @Reference
     private ConditionalTarget<TargetCondition> condition;
 
+    private Config config;
+    private Mqtt5ClientBuilder clientBuilder;
+    private ServiceRegistration<TargetCondition> readyServiceReg;
+
     @Activate
-    public MessageClientProvider(
-            final Config config,
-            final BundleContext bundleContext,
-            @Reference(service = LoggerFactory.class)
-            final Logger logger) {
-
-        this.logger = logger;
-        this.config = config;
-        this.bundleContext = bundleContext;
-
+    void activate(final Config config) {
+    	this.config = config;
         final String clientId = getClientID(bundleContext);
 
         clientBuilder = Mqtt5Client.builder()
@@ -272,6 +266,13 @@ public final class MessageClientProvider {
         } catch (final Exception e) {
             logger.error("Error occurred while establishing connection to the broker '{}'", config.server(), e);
         }
+    }
+
+    @Modified
+    void modified(final Config config) {
+    	logger.info("Client configuration has been modified");
+    	deactivate();
+    	activate(config);
     }
 
     @Deactivate
@@ -539,9 +540,8 @@ public final class MessageClientProvider {
 		    // update the generated framework property for others to use
 		    System.setProperty(CLIENT_ID_FRAMEWORK_PROPERTY, generatedClientId);
 		    return generatedClientId;
-		} else {
-		    return id;
 		}
+		return id;
     }
 
     private void registerReadyService(final MqttClientConnectedContext context) {
