@@ -70,4 +70,5 @@ bin.testbin.directory                 =         ${if;${is;${driver};gradle};targ
     aQute.bnd.repository.maven.provider.MavenBndRepository; \
           snapshotUrl         = "${github.messaging.packages.url}"; \
           releaseUrl          = "${github.messaging.packages.url}"; \
-          name                = "Release"
+          name                = "Release"; \
+          index               = ${.}/maven/release.maven
