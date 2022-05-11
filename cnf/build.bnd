@@ -1,20 +1,7 @@
-base.version                          =         0.1.0
+Bundle-Version                        =         1.0.0.${tstamp}
 
 -includeresource.all                  =         -src/main/resources
 -donotcopy                            =         \.gitignore|\.DS_Store
-
-Bundle-Vendor                         =         Byte Hue
-Bundle-License                        =         https://www.apache.org/licenses/LICENSE-2.0.txt
-Bundle-DocURL                         =         https://bytehue.in
-Bundle-Version                        =         ${base.version}.${tstamp}
-Bundle-Copyright                      =         Amit Kumar Mondal (c) 2022
-Bundle-Developers                     =         amit.kumar.mondal; \
-                                                   email=admin@amitinside.com; \
-                                                   name="Amit Kumar Mondal"; \
-                                                   organization="Deutsche Telekom AG"
-Bundle-SCM                            =         url=https://github.com/amitjoy/osgi-messaging.git, \
-                                                connection=scm:git:https://github.com/amitjoy/osgi-messaging.git, \
-                                                developerConnection=scm:git:git@github.com:amitjoy/osgi-messaging.git
 
 javac.source                          =         1.8
 javac.target                          =         ${javac.source}
@@ -39,21 +26,24 @@ testbin                               =         ${testbin.directory}
 target-dir                            =         target
 
 mave.central.url                      =         https://repo.maven.apache.org/maven2/
+github.packages.url                   =         https://maven.pkg.github.com
+github.messaging.packages.url         =         ${github.packages.url}/amitjoy/osgi-messaging
 sonatype.url                          =         https://oss.sonatype.org
 sonatype.url.snapshot                 =         ${sonatype.url}/content/repositories/snapshots/
 sonatype.url.staging                  =         ${sonatype.url}/service/local/staging/deploy/maven2/
 
-password                              =         ${env;REPOSITORY_PASSWORD;}
-username                              =         ${env;REPOSITORY_USERNAME;}
--connection-settings                  =         ${if;${password};server;-dummy};id=${sonatype.url};username=${username};password=${password}, -bnd
+usr                                   =         ${env;GITHUB_ACTOR;}
+pwd                                   =         ${env;GITHUB_TOKEN;}
+-connection-settings                  =         ${if;${pwd};server;-dummy};id=${github.packages.url};username=${usr};password=${pwd}, -bnd
+-releaserepo                          =         Release
 
 -groupid                              =         in.bytehue
--pom                                  =         version=${if;${def;-snapshot};${versionmask;===;${@version}}-${-snapshot};${versionmask;===s;${@version}}}
+-pom                                  =         version=${if;${def;-snapshot};${versionmask;===;${@version}}-${def;-snapshot};${versionmask;===s;${@version}}}
 -releaserepo                          =         Release
 
 bin.directory                         =         ${if;${is;${driver};gradle};target/gradle/classes;target/classes}
 testbin.directory                     =         ${if;${is;${driver};gradle};target/gradle/test-classes;target/test-classes}
-bin.testbin.directory                 =         ${if;${is;${driver};gradle};target/gradle/classes,target/gradle/test-classes;target/classes,target/test-classes}
+bin.testbin.directory                 =         ${if;${is;${driver};gradle};target/classes,target/test-classes;target/gradle/classes,target/gradle/test-classes}
 
 -builderignore                        =         ${bin.testbin.directory}
 
@@ -78,6 +68,6 @@ bin.testbin.directory                 =         ${if;${is;${driver};gradle};targ
 
 -plugin.3.Release             = \
     aQute.bnd.repository.maven.provider.MavenBndRepository; \
-          snapshotUrl         = "${sonatype.url.snapshot}"; \
-          releaseUrl          = "${sonatype.url.staging}"; \
+          snapshotUrl         = "${github.messaging.packages.url}"; \
+          releaseUrl          = "${github.messaging.packages.url}"; \
           name                = "Release"
