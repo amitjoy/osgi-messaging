@@ -157,6 +157,7 @@ The OSGi messaging specification is catered to provide a unified solution to acc
 | `in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder`         | an extended service of `org.osgi.service.messaging.MessageContextBuilder`  that could be used to prepare MQTT 5.0 specific message context                                                                                                                       |
 | `in.bytehue.messaging.mqtt5.api.TargetCondition`                   | marker service interface which consumers can implement to provide services  with properties that can be used as conditional target to the MQTT client.  That means, consumer can provide filters that should be satisfied before MQTT  client is up and running. |
 | `in.bytehue.messaging.mqtt5.api.MqttMessageCorrelationIdGenerator` | service interface to be implemented by consumers to provide the functionality  for generating correlation identifiers required for reply-to channels                                                                                                             |
+| `in.bytehue.messaging.mqtt5.api.SimpleAuthentication`              | service interface to be implemented by consumers to provide the username and password authentication credential for MQTT simple authentication                                                                                                                  |
 
 #### Examples in Action
 
