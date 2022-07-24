@@ -28,7 +28,7 @@ org.apache.felix:org.apache.felix.metatype:1.2.4
 org.apache.felix:org.apache.felix.rootcause:0.1.0
 org.apache.felix:org.apache.felix.scr:2.1.28
 org.apache.felix:org.apache.felix.useradmin:1.0.4
-org.apache.felix:org.apache.felix.webconsole:4.6.0
+org.apache.felix:org.apache.felix.webconsole:4.8.2
 org.apache.felix:org.apache.felix.webconsole.plugins.ds:2.1.0
 org.apache.felix:org.apache.felix.webconsole.plugins.event:1.1.8
 org.apache.felix:org.apache.felix.webconsole.plugins.packageadmin:1.0.4
