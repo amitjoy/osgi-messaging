@@ -35,7 +35,7 @@ org.apache.felix:org.apache.felix.webconsole.plugins.packageadmin:1.0.4
 org.apache.felix:org.apache.felix.webconsole.plugins.useradmin:1.0.2
 org.osgi:org.osgi.util.function:1.2.0
 org.osgi:org.osgi.util.promise:1.2.0
-org.osgi:org.osgi.util.pushstream:1.0.1
+org.osgi:org.osgi.util.pushstream:1.0.2
 
 # slf4j
 
