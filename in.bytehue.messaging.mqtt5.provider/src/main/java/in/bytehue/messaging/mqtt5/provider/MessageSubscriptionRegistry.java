@@ -22,11 +22,12 @@ import static java.util.stream.Collectors.toList;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 
 import org.osgi.framework.BundleContext;
@@ -60,7 +61,7 @@ public final class MessageSubscriptionRegistry {
     private MessageClientProvider messagingClient;
 
     // wildcard topic filter as key
-    private final Map<String, List<ExtendedSubscriptionDTO>> subscriptions = new HashMap<>();
+    private final Map<String, List<ExtendedSubscriptionDTO>> subscriptions = new ConcurrentHashMap<>();
 
     public void addSubscription(
             final String pubChannel,
@@ -143,7 +144,7 @@ public final class MessageSubscriptionRegistry {
         subscriptions.keySet().forEach(this::removeSubscription);
     }
 
-    private class ExtendedSubscriptionDTO {
+    private static class ExtendedSubscriptionDTO {
 
         ChannelDTO pubChannel;
         ChannelDTO subChannel;
@@ -163,7 +164,7 @@ public final class MessageSubscriptionRegistry {
             this.subChannel       = createChannelDTO(subChannel, isConnected);
             this.handlerReference = handlerReference;
 
-            connectedStreams = new ArrayList<>();
+            connectedStreams = new CopyOnWriteArrayList<>();
             connectedStreams.add(stream);
         }
 
