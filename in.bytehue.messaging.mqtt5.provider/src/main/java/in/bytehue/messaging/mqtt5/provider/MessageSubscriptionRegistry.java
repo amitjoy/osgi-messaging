@@ -85,7 +85,7 @@ public final class MessageSubscriptionRegistry {
                 .forEach(dto -> dto.connectedStreams.add(pushStream));
             dtos.add(subDTO);
         } else {
-            final List<ExtendedSubscriptionDTO> dtos = new ArrayList<>();
+            final List<ExtendedSubscriptionDTO> dtos = new CopyOnWriteArrayList<>();
             dtos.add(subDTO);
             subscriptions.put(topicFilter, dtos);
         }
