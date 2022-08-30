@@ -87,23 +87,23 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
     }
     //@formatter:on
 
-    @Reference(service = LoggerFactory.class)
-    private Logger logger;
+	@Reference(service = LoggerFactory.class)
+	private Logger logger;
 
-    @Reference
-    private MessagePublisherProvider publisher;
+	@Reference
+	private MessagePublisherProvider publisher;
 
-    @Reference
-    private MessageSubscriptionProvider subscriber;
+	@Reference
+	private MessageSubscriptionProvider subscriber;
 
-    @Activate
-    private BundleContext bundleContext;
+	@Activate
+	private BundleContext bundleContext;
 
-    private final PromiseFactory promiseFactory;
+	private final PromiseFactory promiseFactory;
 
-    @Activate
-    public MessageReplyToPublisherProvider(final Config config) {
-        //@formatter:off
+	@Activate
+	public MessageReplyToPublisherProvider(final Config config) {
+		//@formatter:off
         final ThreadFactory threadFactory =
                 new ThreadFactoryBuilder()
                         .setThreadFactoryName(config.threadNamePrefix())
@@ -112,63 +112,65 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
                         .build();
         promiseFactory = new PromiseFactory(newFixedThreadPool(config.numThreads(), threadFactory));
         //@formatter:on
-    }
+	}
 
-    @Override
-    public Promise<Message> publishWithReply(final Message requestMessage) {
-        return publishWithReply(requestMessage, requestMessage.getContext());
-    }
+	@Override
+	public Promise<Message> publishWithReply(final Message requestMessage) {
+		return publishWithReply(requestMessage, requestMessage.getContext());
+	}
 
-    @Override
-    public Promise<Message> publishWithReply(final Message requestMessage, final MessageContext replyToContext) {
-        final Deferred<Message> deferred = promiseFactory.deferred();
-        final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
+	@Override
+	public synchronized Promise<Message> publishWithReply(final Message requestMessage,
+			final MessageContext replyToContext) {
+		final Deferred<Message> deferred = promiseFactory.deferred();
+		final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
 
-        publisher.publish(requestMessage, dto.pubChannel);
-        // resolve the promise on first response
-        subscriber.subscribe(dto.subChannel).forEach(deferred::resolve);
-        return deferred.getPromise();
-    }
+		publisher.publish(requestMessage, dto.pubChannel);
+		// resolve the promise on first response
+		subscriber.subscribe(dto.subChannel).forEach(deferred::resolve);
+		return deferred.getPromise();
+	}
 
-    @Override
-    public PushStream<Message> publishWithReplyMany(final Message requestMessage) {
-        return publishWithReplyMany(requestMessage, requestMessage.getContext());
-    }
+	@Override
+	public PushStream<Message> publishWithReplyMany(final Message requestMessage) {
+		return publishWithReplyMany(requestMessage, requestMessage.getContext());
+	}
 
-    @Override
-    public PushStream<Message> publishWithReplyMany(final Message requestMessage, final MessageContext replyToContext) {
-        final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
+	@Override
+	public synchronized PushStream<Message> publishWithReplyMany(final Message requestMessage,
+			final MessageContext replyToContext) {
+		final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
 
-        publisher.publish(requestMessage, dto.pubChannel);
-        return subscriber.subscribe(dto.subChannel);
-    }
+		publisher.publish(requestMessage, dto.pubChannel);
+		return subscriber.subscribe(dto.subChannel);
+	}
 
-    private class ReplyToDTO {
-        String pubChannel;
-        String subChannel;
+	private class ReplyToDTO {
+		String pubChannel;
+		String subChannel;
 
-        ReplyToDTO(final Message message, final MessageContext context) {
-            autoGenerateCorrelationIdIfAbsent(message);
-            autoGenerateReplyToChannelIfAbsent(message);
+		ReplyToDTO(final Message message, final MessageContext context) {
+			autoGenerateCorrelationIdIfAbsent(message);
+			autoGenerateReplyToChannelIfAbsent(message);
 
-            pubChannel = context.getChannel();
-            subChannel = context.getReplyToChannel();
-        }
+			pubChannel = context.getChannel();
+			subChannel = context.getReplyToChannel();
+		}
 
-        private void autoGenerateCorrelationIdIfAbsent(final Message message) {
-            final MessageContextProvider context = (MessageContextProvider) message.getContext();
-            context.correlationId = getCorrelationId(context, bundleContext, logger);
-        }
+		private void autoGenerateCorrelationIdIfAbsent(final Message message) {
+			final MessageContextProvider context = (MessageContextProvider) message.getContext();
+			context.correlationId = getCorrelationId(context, bundleContext, logger);
+		}
 
-        private void autoGenerateReplyToChannelIfAbsent(final Message message) {
-            final MessageContextProvider context = (MessageContextProvider) message.getContext();
+		private void autoGenerateReplyToChannelIfAbsent(final Message message) {
+			final MessageContextProvider context = (MessageContextProvider) message.getContext();
 
-            if (context.getReplyToChannel() == null) {
-                context.replyToChannel = UUID.randomUUID().toString();
-                logger.info("Auto-generated reply-to channel '{}' as it is missing in the request",
-                        context.replyToChannel);
-            }
-        }
-    }
+			if (context.getReplyToChannel() == null) {
+				context.replyToChannel = UUID.randomUUID().toString();
+				logger.info("Auto-generated reply-to channel '{}' as it is missing in the request",
+						context.replyToChannel);
+			}
+		}
+	}
 
 }
