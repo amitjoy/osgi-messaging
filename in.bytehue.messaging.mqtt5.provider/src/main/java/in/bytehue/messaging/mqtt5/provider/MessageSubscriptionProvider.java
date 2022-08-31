@@ -114,11 +114,11 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         return subscribe(null, subChannel, pubChannel, reference);
     }
 
-    private PushStream<Message> subscribe(
-            MessageContext context,
-            final String subChannel,
-            final String pubChannel,
-            final ServiceReference<?> reference) {
+    private synchronized PushStream<Message> subscribe(
+	            MessageContext context,
+	            final String subChannel,
+	            final String pubChannel,
+	            final ServiceReference<?> reference) {
 
         final PushStreamProvider provider = new PushStreamProvider();
         final SimplePushEventSource<Message> source = provider.createSimpleEventSource(Message.class);
