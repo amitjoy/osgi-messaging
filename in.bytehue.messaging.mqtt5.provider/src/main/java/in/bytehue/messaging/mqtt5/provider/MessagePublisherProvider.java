@@ -109,7 +109,7 @@ public final class MessagePublisherProvider implements MessagePublisher {
 		publish(message, context, null);
 	}
 
-	private synchronized void publish(final Message message, MessageContext context, String channel) {
+	private void publish(final Message message, MessageContext context, String channel) {
 		try {
 			if (context == null) {
 				context = message.getContext();

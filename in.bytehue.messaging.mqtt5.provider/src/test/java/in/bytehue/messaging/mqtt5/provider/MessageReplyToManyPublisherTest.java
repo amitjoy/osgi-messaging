@@ -37,58 +37,65 @@ import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
 @RunWith(LaunchpadRunner.class)
 public final class MessageReplyToManyPublisherTest {
 
-    @Service
-    private Launchpad launchpad;
+	@Service
+	private Launchpad launchpad;
 
-    @Service
-    private MessagePublisher publisher;
+	@Service
+	private MessagePublisher publisher;
 
-    @Service
-    private ReplyToManyPublisher replyToPublisher;
+	@Service
+	private ReplyToManyPublisher replyToPublisher;
 
-    @Service
-    private MqttMessageContextBuilder mcb;
+	@Service
+	private MqttMessageContextBuilder mcb;
 
-    static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
+	static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
 
-    @Before
-    public void setup() throws InterruptedException {
-        waitForMqttConnectionReady(launchpad);
-    }
+	@Before
+	public void setup() throws InterruptedException {
+		waitForMqttConnectionReady(launchpad);
+	}
 
-    @Test
-    public void test_publish_with_reply_many() throws Exception {
-        final AtomicBoolean flag = new AtomicBoolean();
+	@Test
+	public void test_publish_with_reply_many() throws Exception {
+		final AtomicBoolean flag = new AtomicBoolean();
 
-        final String reqChannel = "a/b";
-        final String resChannel = "c/d";
-        final String payload = "abc";
-        final String stopPayload = "stop";
+		final String reqChannel = "a/b";
+		final String resChannel = "c/d";
+		final String payload = "abc";
+		final String stopPayload = "stop";
+		final String correlationId = "a";
 
-        // @formatter:off
+		// @formatter:off
         final Message message = mcb.channel(resChannel)
                                    .replyTo(reqChannel)
                                    .content(ByteBuffer.wrap(payload.getBytes()))
+                                   .correlationId(correlationId)
                                    .buildMessage();
 
         replyToPublisher.publishWithReplyMany(message).forEach(m -> flag.set(true));
 
         final Message reqMessage = mcb.channel(resChannel)
                                       .content(ByteBuffer.wrap(payload.getBytes()))
+                                      .correlationId(correlationId)
                                       .buildMessage();
 
         final MessageProvider stopMessage = new MessageProvider();
         stopMessage.byteBuffer = ByteBuffer.wrap(stopPayload.getBytes());
-        stopMessage.messageContext = new MessageContextProvider();
+
+        final MessageContextProvider messageContext = new MessageContextProvider();
+        messageContext.correlationId = correlationId;
+
+		stopMessage.messageContext = messageContext;
         // @formatter:on
 
-        publisher.publish(reqMessage);
-        publisher.publish(reqMessage);
-        publisher.publish(reqMessage);
+		publisher.publish(reqMessage);
+		publisher.publish(reqMessage);
+		publisher.publish(reqMessage);
 
-        publisher.publish(stopMessage, reqChannel);
+		publisher.publish(stopMessage, reqChannel);
 
-        waitForRequestProcessing(flag);
-    }
+		waitForRequestProcessing(flag);
+	}
 
 }

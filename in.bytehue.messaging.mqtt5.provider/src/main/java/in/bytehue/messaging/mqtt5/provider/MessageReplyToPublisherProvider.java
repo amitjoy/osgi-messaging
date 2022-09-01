@@ -120,14 +120,15 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 	}
 
 	@Override
-	public synchronized Promise<Message> publishWithReply(final Message requestMessage,
-			final MessageContext replyToContext) {
+	public Promise<Message> publishWithReply(final Message requestMessage, final MessageContext replyToContext) {
 		final Deferred<Message> deferred = promiseFactory.deferred();
 		final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
 
 		publisher.publish(requestMessage, dto.pubChannel);
-		// resolve the promise on first response
-		subscriber.subscribe(dto.subChannel).forEach(deferred::resolve);
+		// resolve the promise on first response matching the specified correlation ID
+		subscriber.subscribe(dto.subChannel)
+				.filter(responseMessage -> matchCorrelationId(requestMessage, responseMessage))
+				.forEach(deferred::resolve);
 		return deferred.getPromise();
 	}
 
@@ -137,12 +138,11 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 	}
 
 	@Override
-	public synchronized PushStream<Message> publishWithReplyMany(final Message requestMessage,
-			final MessageContext replyToContext) {
+	public PushStream<Message> publishWithReplyMany(final Message requestMessage, final MessageContext replyToContext) {
 		final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
-
 		publisher.publish(requestMessage, dto.pubChannel);
-		return subscriber.subscribe(dto.subChannel);
+		return subscriber.subscribe(dto.subChannel)
+				.filter(responseMessage -> matchCorrelationId(requestMessage, responseMessage));
 	}
 
 	private class ReplyToDTO {
@@ -171,6 +171,15 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 						context.replyToChannel);
 			}
 		}
+	}
+
+	private boolean matchCorrelationId(final Message requestMessage, final Message responseMessage) {
+		final String requestCorrelationId = requestMessage.getContext().getCorrelationId();
+		if (requestCorrelationId == null) {
+			return false;
+		}
+		final String responseCorrelationId = responseMessage.getContext().getCorrelationId();
+		return requestCorrelationId.equals(responseCorrelationId);
 	}
 
 }
