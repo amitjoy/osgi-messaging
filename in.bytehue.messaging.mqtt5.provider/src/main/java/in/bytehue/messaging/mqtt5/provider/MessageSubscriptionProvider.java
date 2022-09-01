@@ -114,7 +114,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         return subscribe(null, subChannel, pubChannel, reference);
     }
 
-    private synchronized PushStream<Message> subscribe(
+    private PushStream<Message> subscribe(
 	            MessageContext context,
 	            final String subChannel,
 	            final String pubChannel,
@@ -156,35 +156,35 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 
             // @formatter:off
             messagingClient.client.subscribeWith()
-                                      .topicFilter(subChannel)
-                                      .qos(MqttQos.fromCode(qos))
-                                      .noLocal(receiveLocal)
-                                      .retainAsPublished(retainAsPublished)
-                                      .callback(p -> {
-                                          final MessageContextBuilderProvider mcb = mcbFactory.getService();
-                                          try {
-                                              final Message message = toMessage(p, ctx, mcb);
+                                  .topicFilter(subChannel)
+                                  .qos(MqttQos.fromCode(qos))
+                                  .noLocal(receiveLocal)
+                                  .retainAsPublished(retainAsPublished)
+                                  .callback(p -> {
+                                	  final MessageContextBuilderProvider mcb = mcbFactory.getService();
+                                	  try {
+                                		  final Message message = toMessage(p, ctx, mcb);
                                               acknowledgeMessage(
                                                       message,
                                                       ctx,
                                                       source::publish,
                                                       bundleContext,
                                                       logger);
-                                          } catch (final Exception e) {
-                                              source.error(e);
-                                          } finally {
-                                              mcbFactory.ungetService(mcb);
-                                          }
-                                      })
-                                      .send()
-                                      .thenAccept(ack -> {
-                                          if (isSubscriptionAcknowledged(ack)) {
-                                              subscriptionRegistry.addSubscription(pubChannel, subChannel, stream, reference);
-                                              logger.debug("New subscription request for '{}' processed successfully - {}", subChannel, ack);
-                                          } else {
-                                              logger.error("New subscription request for '{}' failed - {}", subChannel, ack);
-                                          }
-                                      });
+                                      } catch (final Exception e) {
+                                           source.error(e);
+                                      } finally {
+                                           mcbFactory.ungetService(mcb);
+                                      }
+                                   })
+                                  .send()
+                                  .thenAccept(ack -> {
+                                	  if (isSubscriptionAcknowledged(ack)) {
+                                		  subscriptionRegistry.addSubscription(pubChannel, subChannel, stream, reference);
+                                          logger.debug("New subscription request for '{}' processed successfully - {}", subChannel, ack);
+                                      } else {
+                                          logger.error("New subscription request for '{}' failed - {}", subChannel, ack);
+                                      }
+                                   });
             stream.onClose(() -> {
                 subscriptionRegistry.removeSubscription(subChannel, ps -> ps == stream);
                 source.close();
