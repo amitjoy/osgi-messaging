@@ -1,5 +1,8 @@
 -runbundles: \
 	assertj-core,\
+	net.bytebuddy.byte-buddy,\
+	net.bytebuddy.byte-buddy-agent,\
+	org.apache.aries.spifly.dynamic.framework.extension,\
 	org.apache.felix.cm.json,\
 	org.apache.felix.configadmin,\
 	org.apache.felix.configurator,\
@@ -8,11 +11,13 @@
 	org.apache.felix.scr,\
 	org.apache.sling.commons.johnzon,\
 	org.awaitility,\
+	org.osgi.service.component,\
 	org.osgi.util.function,\
 	org.osgi.util.promise,\
 	org.osgi.util.pushstream,\
 	osgi.enroute.hamcrest.wrapper,\
 	slf4j.api,\
+	slf4j.osgi,\
 	slf4j.simple
 
 -runproperties: configurator.initial='{\
