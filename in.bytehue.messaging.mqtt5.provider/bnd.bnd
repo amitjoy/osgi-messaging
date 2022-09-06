@@ -5,8 +5,10 @@ Bundle-Description             : MQTT 5.0 implementation conforming to OSGi mess
 								 exports the HiveMQ MQTT client APIs too for further extension.
 
 -fixupmessages.private.ref     : 'private references'
+-fixupmessages.split.package   : 'split'
 
 -buildpath                     :   \
+	biz.aQute.bnd.util,\
 	biz.aQute.osgi.conditionaltarget,\
 	in.bytehue.messaging.mqtt5.api,\
 	org.apache.felix.gogo.runtime,\
@@ -30,7 +32,7 @@ Bundle-Description             : MQTT 5.0 implementation conforming to OSGi mess
 	io.reactivex.rxjava2.rxjava,\
 	org.apache.servicemix.bundles.javax-inject,\
 	org.jctools.core,\
-	org.reactivestreams.reactive-streams
+	reactive-streams
 
 -testpath                      : \
     assertj-core,\
@@ -62,8 +64,9 @@ Export-Package                 : \
 	com.hivemq.client.util
 
 Import-Package                 : \
+	!com.aayushatharva.brotli4j*,\
 	!com.aayushatharva.brotli4j,\
-	!com.aayushatharva.brotli4j.decoder,\
+	!com.github.luben.zstd,\
 	!com.google.protobuf,\
 	!com.google.protobuf.nano,\
 	!com.jcraft.jzlib,\
@@ -71,6 +74,7 @@ Import-Package                 : \
 	!com.ning.compress.lzf,\
 	!com.ning.compress.lzf.util,\
 	!com.oracle.svm.core.annotate,\
+	!io.netty.channel.epoll,\
 	!io.netty.internal.tcnative,\
 	!lzma.sdk,\
 	!lzma.sdk.lzma,\
@@ -82,14 +86,7 @@ Import-Package                 : \
 	!org.apache.logging.log4j,\
 	!org.apache.logging.log4j.message,\
 	!org.apache.logging.log4j.spi,\
-	!org.bouncycastle.asn1.x500,\
-	!org.bouncycastle.cert,\
-	!org.bouncycastle.cert.jcajce,\
-	!org.bouncycastle.jce.provider,\
-	!org.bouncycastle.jsse,\
-	!org.bouncycastle.jsse.provider,\
-	!org.bouncycastle.operator,\
-	!org.bouncycastle.operator.jcajce,\
+	!org.bouncycastle.*,\
 	!org.conscrypt,\
 	!org.eclipse.jetty.alpn,\
 	!org.eclipse.jetty.npn,\
