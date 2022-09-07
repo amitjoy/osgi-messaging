@@ -126,7 +126,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 
 		publisher.publish(requestMessage, dto.pubChannel);
 		// resolve the promise on first response matching the specified correlation ID
-		subscriber.subscribe(dto.subChannel)
+		subscriber.replyToSubscribe(dto.subChannel, dto.pubChannel, null)
 				.filter(responseMessage -> matchCorrelationId(requestMessage, responseMessage))
 				.forEach(deferred::resolve);
 		return deferred.getPromise();
@@ -141,7 +141,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 	public PushStream<Message> publishWithReplyMany(final Message requestMessage, final MessageContext replyToContext) {
 		final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
 		publisher.publish(requestMessage, dto.pubChannel);
-		return subscriber.subscribe(dto.subChannel)
+		return subscriber.replyToSubscribe(dto.subChannel, dto.pubChannel, null)
 				.filter(responseMessage -> matchCorrelationId(requestMessage, responseMessage));
 	}
 
