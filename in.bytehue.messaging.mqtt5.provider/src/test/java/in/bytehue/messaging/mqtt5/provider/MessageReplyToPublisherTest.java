@@ -38,34 +38,34 @@ import aQute.launchpad.junit.LaunchpadRunner;
 @RunWith(LaunchpadRunner.class)
 public final class MessageReplyToPublisherTest {
 
-    @Service
-    private Launchpad launchpad;
+	@Service
+	private Launchpad launchpad;
 
-    @Service
-    private MessagePublisher publisher;
+	@Service
+	private MessagePublisher publisher;
 
-    @Service
-    private ReplyToPublisher replyToPublisher;
+	@Service
+	private ReplyToPublisher replyToPublisher;
 
-    @Service
-    private MessageContextBuilder mcb;
+	@Service
+	private MessageContextBuilder mcb;
 
-    static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
+	static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
 
-    @Before
-    public void setup() throws InterruptedException {
-        waitForMqttConnectionReady(launchpad);
-    }
+	@Before
+	public void setup() throws InterruptedException {
+		waitForMqttConnectionReady(launchpad);
+	}
 
-    @Test
-    public void test_publish_with_reply_1() throws Exception {
-        final AtomicBoolean flag = new AtomicBoolean();
+	@Test
+	public void test_publish_with_reply_1() throws Exception {
+		final AtomicBoolean flag = new AtomicBoolean();
 
-        final String reqChannel = "a/b";
-        final String resChannel = "c/d";
-        final String payload = "abc";
+		final String reqChannel = "a/b";
+		final String resChannel = "c/d";
+		final String payload = "abc";
 
-        // @formatter:off
+		// @formatter:off
         final Message message = mcb.channel(resChannel)
                                    .replyTo(reqChannel)
                                    .content(ByteBuffer.wrap(payload.getBytes()))
@@ -78,20 +78,20 @@ public final class MessageReplyToPublisherTest {
                                       .buildMessage();
         // @formatter:on
 
-        publisher.publish(reqMessage);
+		publisher.publish(reqMessage);
 
-        waitForRequestProcessing(flag);
-    }
+		waitForRequestProcessing(flag);
+	}
 
-    @Test
-    public void test_publish_with_reply_2() throws Exception {
-        final AtomicBoolean flag = new AtomicBoolean();
+	@Test
+	public void test_publish_with_reply_2() throws Exception {
+		final AtomicBoolean flag = new AtomicBoolean();
 
-        final String reqChannel = "a/b";
-        final String resChannel = "c/d";
-        final String payload = "abc";
+		final String reqChannel = "a/b";
+		final String resChannel = "c/d";
+		final String payload = "abc";
 
-        // @formatter:off
+		// @formatter:off
         final Message message = mcb.channel(resChannel)
                                    .content(ByteBuffer.wrap(payload.getBytes()))
                                    .buildMessage();
@@ -107,9 +107,38 @@ public final class MessageReplyToPublisherTest {
                                       .buildMessage();
         // @formatter:on
 
-        publisher.publish(reqMessage);
+		publisher.publish(reqMessage);
 
-        waitForRequestProcessing(flag);
-    }
+		waitForRequestProcessing(flag);
+	}
+
+	@Test
+	public void test_publish_with_reply_3() throws Exception {
+		final AtomicBoolean flag1 = new AtomicBoolean();
+		final AtomicBoolean flag2 = new AtomicBoolean();
+
+		final String reqChannel = "a/b";
+		final String resChannel = "c/d";
+		final String payload = "abc";
+
+		// @formatter:off
+        final Message message = mcb.channel(resChannel)
+                                   .replyTo(reqChannel)
+                                   .content(ByteBuffer.wrap(payload.getBytes()))
+                                   .buildMessage();
+
+        replyToPublisher.publishWithReply(message).onSuccess(m -> flag1.set(true));
+
+        final Message reqMessage = mcb.channel(reqChannel)
+                                      .content(ByteBuffer.wrap(payload.getBytes()))
+                                      .buildMessage();
+        // @formatter:on
+		publisher.publish(reqMessage);
+		waitForRequestProcessing(flag1);
+
+		replyToPublisher.publishWithReply(message).onSuccess(m -> flag2.set(true));
+		publisher.publish(reqMessage);
+		waitForRequestProcessing(flag2);
+	}
 
 }

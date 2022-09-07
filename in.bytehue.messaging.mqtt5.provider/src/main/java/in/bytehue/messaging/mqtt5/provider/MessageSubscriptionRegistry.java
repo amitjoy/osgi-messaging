@@ -56,8 +56,16 @@ public final class MessageSubscriptionRegistry {
 	@Reference
 	private MessageClientProvider messagingClient;
 
-	// wildcard topic filter as key
+	// topic as key
 	private final Map<String, ExtendedSubscriptionDTO> subscriptions = new ConcurrentHashMap<>();
+
+	public boolean hasSubscription(final String channel) {
+		return subscriptions.containsKey(channel);
+	}
+
+	public ExtendedSubscriptionDTO getSubscription(final String channel) {
+		return subscriptions.get(channel);
+	}
 
 	public void addSubscription(final String pubChannel, final String subChannel, final PushStream<Message> pushStream,
 			final ServiceReference<?> handlerReference, final boolean isReplyToSubscription) {
@@ -83,10 +91,6 @@ public final class MessageSubscriptionRegistry {
 	@Deactivate
 	public void clearAllSubscriptions() {
 		subscriptions.keySet().forEach(this::removeSubscription);
-	}
-
-	public ExtendedSubscriptionDTO getExistingSubsciption(final String channel) {
-		return subscriptions.get(channel);
 	}
 
 	static class ExtendedSubscriptionDTO {
