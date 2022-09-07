@@ -123,12 +123,6 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 	            final ServiceReference<?> reference,
 	            final boolean isReplyToSubscription) {
 
-    	// use the existing connection for the same topic subscription
-    	final ExtendedSubscriptionDTO existingSubsciption = subscriptionRegistry.getExistingSubsciption(subChannel);
-    	if (existingSubsciption != null) {
-    		return existingSubsciption.connectedStream;
-    	}
-
         final PushStreamProvider provider = new PushStreamProvider();
         final SimplePushEventSource<Message> source = provider.createSimpleEventSource(Message.class);
         final PushStream<Message> stream = provider.createStream(source); //NOSONAR
@@ -188,7 +182,13 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
                                   .send()
                                   .thenAccept(ack -> {
                                 	  if (isSubscriptionAcknowledged(ack)) {
-                                		  subscriptionRegistry.addSubscription(pubChannel, subChannel, stream, reference, isReplyToSubscription);
+                                		  final boolean isSubscribed = subscriptionRegistry.hasSubscription(subChannel);
+                                		  if (!isSubscribed) {
+                                			  subscriptionRegistry.addSubscription(pubChannel, subChannel, stream, reference, isReplyToSubscription);
+                                		  } else {
+                                			  final ExtendedSubscriptionDTO subsciption = subscriptionRegistry.getSubscription(subChannel);
+                                			  subsciption.connectedStream = stream;
+                                		  }
                                           logger.debug("New subscription request for '{}' processed successfully - {}", subChannel, ack);
                                       } else {
                                           logger.error("New subscription request for '{}' failed - {}", subChannel, ack);

@@ -74,13 +74,13 @@ public final class MessageSubscriptionRegistryTest {
 		final PushStream<Message> stream = subscriber.subscribe(channel);
 		TimeUnit.SECONDS.sleep(2);
 
-		assertThat(registry.getExistingSubsciption(channel)).isNotNull();
-		assertThat(registry.getExistingSubsciption(channel).connectedStream).isEqualTo(stream);
+		assertThat(registry.getSubscription(channel)).isNotNull();
+		assertThat(registry.getSubscription(channel).connectedStream).isEqualTo(stream);
 
 		stream.close();
 		TimeUnit.SECONDS.sleep(2);
 
-		assertThat(registry.getExistingSubsciption(channel)).isNull();
+		assertThat(registry.getSubscription(channel)).isNull();
 	}
 
 	@Test
@@ -89,14 +89,14 @@ public final class MessageSubscriptionRegistryTest {
 		final PushStream<Message> stream = subscriber.subscribe(channel);
 		TimeUnit.SECONDS.sleep(2);
 
-		assertThat(registry.getExistingSubsciption(channel)).isNotNull();
-		assertThat(registry.getExistingSubsciption(channel).connectedStream).isEqualTo(stream);
+		assertThat(registry.getSubscription(channel)).isNotNull();
+		assertThat(registry.getSubscription(channel).connectedStream).isEqualTo(stream);
 
 		final boolean isRemoved = registry.removeSubscription(channel);
 		TimeUnit.SECONDS.sleep(2);
 
 		assertThat(isRemoved).isTrue();
-		assertThat(registry.getExistingSubsciption(channel)).isNull();
+		assertThat(registry.getSubscription(channel)).isNull();
 	}
 
 	@Test
@@ -107,7 +107,7 @@ public final class MessageSubscriptionRegistryTest {
 		TimeUnit.SECONDS.sleep(2);
 
 		assertThat(isRemoved).isFalse();
-		assertThat(registry.getExistingSubsciption(channel)).isNull();
+		assertThat(registry.getSubscription(channel)).isNull();
 	}
 
 	@Test
@@ -119,7 +119,7 @@ public final class MessageSubscriptionRegistryTest {
 		stream.close();
 		TimeUnit.SECONDS.sleep(2);
 
-		assertThat(registry.getExistingSubsciption(channel)).isNull();
+		assertThat(registry.getSubscription(channel)).isNull();
 	}
 
 	@Test
@@ -136,8 +136,8 @@ public final class MessageSubscriptionRegistryTest {
 
 		TimeUnit.SECONDS.sleep(2);
 
-		assertThat(registry.getExistingSubsciption(channel1)).isNull();
-		assertThat(registry.getExistingSubsciption(channel2)).isNull();
+		assertThat(registry.getSubscription(channel1)).isNull();
+		assertThat(registry.getSubscription(channel2)).isNull();
 	}
 
 	@Test
@@ -160,9 +160,9 @@ public final class MessageSubscriptionRegistryTest {
 
 		assertThat(registry.getSubscriptionDTOs()).isEmpty();
 		assertThat(registry.getReplyToSubscriptionDTOs()).isNotNull().hasSize(1);
-		assertThat(registry.getExistingSubsciption(reqChannel)).isNotNull();
-		assertThat(registry.getExistingSubsciption(reqChannel).pubChannel.name).isEqualTo(resChannel);
-		assertThat(registry.getExistingSubsciption(reqChannel).subChannel.name).isEqualTo(reqChannel);
+		assertThat(registry.getSubscription(reqChannel)).isNotNull();
+		assertThat(registry.getSubscription(reqChannel).pubChannel.name).isEqualTo(resChannel);
+		assertThat(registry.getSubscription(reqChannel).subChannel.name).isEqualTo(reqChannel);
 	}
 
 	@Test
@@ -237,11 +237,15 @@ public final class MessageSubscriptionRegistryTest {
 		final PushStream<Message> stream1 = subscriber.subscribe(channel);
 		TimeUnit.SECONDS.sleep(2);
 
+		assertThat(registry.getSubscription(channel).connectedStream).isEqualTo(stream1);
+
 		final PushStream<Message> stream2 = subscriber.subscribe(channel);
 		TimeUnit.SECONDS.sleep(2);
 
-		assertThat(registry.getExistingSubsciption(channel)).isNotNull();
-		assertThat(stream1).isEqualTo(stream2);
+		assertThat(registry.getSubscription(channel)).isNotNull();
+		assertThat(stream1).isNotEqualTo(stream2);
+		assertThat(registry.getSubscription(channel).connectedStream).isEqualTo(stream2);
+
 	}
 
 }
