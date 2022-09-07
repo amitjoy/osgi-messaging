@@ -56,6 +56,8 @@ import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAck;
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode;
 
+import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionRegistry.ExtendedSubscriptionDTO;
+
 //@formatter:off
 @MessagingFeature(
         name = MESSAGING_ID,
@@ -99,26 +101,33 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 
     @Override
     public PushStream<Message> subscribe(final String subChannel) {
-        return subscribe(null, subChannel, null, null);
+        return subscribe(null, subChannel, null, null, false);
     }
 
     @Override
     public PushStream<Message> subscribe(final MessageContext context) {
-        return subscribe(context, context.getChannel(), null, null);
+        return subscribe(context, context.getChannel(), null, null, false);
     }
 
     public PushStream<Message> replyToSubscribe(
             final String subChannel,
             final String pubChannel,
             final ServiceReference<?> reference) {
-        return subscribe(null, subChannel, pubChannel, reference);
+        return subscribe(null, subChannel, pubChannel, reference, true);
     }
 
     private PushStream<Message> subscribe(
 	            MessageContext context,
 	            final String subChannel,
 	            final String pubChannel,
-	            final ServiceReference<?> reference) {
+	            final ServiceReference<?> reference,
+	            final boolean isReplyToSubscription) {
+
+    	// use the existing connection for the same topic subscription
+    	final ExtendedSubscriptionDTO existingSubsciption = subscriptionRegistry.getExistingSubsciption(subChannel);
+    	if (existingSubsciption != null) {
+    		return existingSubsciption.connectedStream;
+    	}
 
         final PushStreamProvider provider = new PushStreamProvider();
         final SimplePushEventSource<Message> source = provider.createSimpleEventSource(Message.class);
@@ -179,14 +188,14 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
                                   .send()
                                   .thenAccept(ack -> {
                                 	  if (isSubscriptionAcknowledged(ack)) {
-                                		  subscriptionRegistry.addSubscription(pubChannel, subChannel, stream, reference);
+                                		  subscriptionRegistry.addSubscription(pubChannel, subChannel, stream, reference, isReplyToSubscription);
                                           logger.debug("New subscription request for '{}' processed successfully - {}", subChannel, ack);
                                       } else {
                                           logger.error("New subscription request for '{}' failed - {}", subChannel, ack);
                                       }
                                    });
             stream.onClose(() -> {
-                subscriptionRegistry.removeSubscription(subChannel, ps -> ps == stream);
+                subscriptionRegistry.removeSubscription(subChannel);
                 source.close();
             });
             return stream;

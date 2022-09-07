@@ -25,10 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Predicate;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -47,214 +44,139 @@ import org.osgi.util.pushstream.PushStream;
 import com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAck;
 import com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode;
 
-//@formatter:off
 @Component(service = MessageSubscriptionRegistry.class)
 public final class MessageSubscriptionRegistry {
 
-    @Activate
-    private BundleContext bundleContext;
+	@Activate
+	private BundleContext bundleContext;
 
-    @Reference(service = LoggerFactory.class)
-    private Logger logger;
+	@Reference(service = LoggerFactory.class)
+	private Logger logger;
 
-    @Reference
-    private MessageClientProvider messagingClient;
+	@Reference
+	private MessageClientProvider messagingClient;
 
-    // wildcard topic filter as key
-    private final Map<String, List<ExtendedSubscriptionDTO>> subscriptions = new ConcurrentHashMap<>();
+	// wildcard topic filter as key
+	private final Map<String, ExtendedSubscriptionDTO> subscriptions = new ConcurrentHashMap<>();
 
-    public void addSubscription(
-            final String pubChannel,
-            final String subChannel,
-            final PushStream<Message> pushStream,
-            final ServiceReference<?> handlerReference) {
+	public void addSubscription(final String pubChannel, final String subChannel, final PushStream<Message> pushStream,
+			final ServiceReference<?> handlerReference, final boolean isReplyToSubscription) {
+		subscriptions.computeIfAbsent(subChannel, entry -> new ExtendedSubscriptionDTO(pubChannel, subChannel,
+				pushStream, handlerReference, isReplyToSubscription));
+	}
 
-        final String topicFilter = toTopicFilter(subChannel);
-        final ExtendedSubscriptionDTO subDTO =  new ExtendedSubscriptionDTO(
-                                                            pubChannel,
-                                                            subChannel,
-                                                            pushStream,
-                                                            handlerReference);
+	public boolean removeSubscription(final String subChannel) {
+		if (subscriptions.containsKey(subChannel)) {
+			messagingClient.client.unsubscribeWith().addTopicFilter(subChannel).send().thenAccept(ack -> {
+				if (isUnsubscriptionAcknowledged(ack)) {
+					subscriptions.remove(subChannel);
+					logger.debug("Unsubscription request for '{}' processed successfully - {}", subChannel, ack);
+				} else {
+					logger.error("Unsubscription request for '{}' failed - {}", subChannel, ack);
+				}
+			});
+			return true;
+		}
+		return false;
+	}
 
-        // there can be multiple subscriptions under the same wildcard filter
-        if (subscriptions.containsKey(topicFilter)) {
-            final List<ExtendedSubscriptionDTO> dtos = subscriptions.get(topicFilter);
-            // there can be multiple connected streams for the same handler
-            dtos.stream()
-                .filter(dto -> dto.handlerReference == handlerReference)
-                .forEach(dto -> dto.connectedStreams.add(pushStream));
-            dtos.add(subDTO);
-        } else {
-            final List<ExtendedSubscriptionDTO> dtos = new CopyOnWriteArrayList<>();
-            dtos.add(subDTO);
-            subscriptions.put(topicFilter, dtos);
-        }
-    }
+	@Deactivate
+	public void clearAllSubscriptions() {
+		subscriptions.keySet().forEach(this::removeSubscription);
+	}
 
-    public void removeSubscription(final String subChannel) {
-        removeSubscription(subChannel, ps -> true);
-    }
+	public ExtendedSubscriptionDTO getExistingSubsciption(final String channel) {
+		return subscriptions.get(channel);
+	}
 
-    public void removeSubscription(final String subChannel, final Predicate<PushStream<Message>> predicate) {
-        final String topicFilter = toTopicFilter(subChannel);
+	static class ExtendedSubscriptionDTO {
 
-        // check if there exists the wildcard topic filter for the input subscription topic
-        if (subscriptions.containsKey(topicFilter)) {
-            final List<ExtendedSubscriptionDTO> dtos = subscriptions.get(topicFilter);
+		boolean isReplyToSub;
+		ChannelDTO pubChannel;
+		ChannelDTO subChannel;
+		PushStream<Message> connectedStream;
+		ServiceReference<?> handlerReference;
 
-            for(final ExtendedSubscriptionDTO dto: dtos) {
-                final List<PushStream<Message>> pushStreams = dto.connectedStreams;
+		public ExtendedSubscriptionDTO(final String pubChannel, final String subChannel,
+				final PushStream<Message> connectedStream, final ServiceReference<?> handlerReference,
+				final boolean isReplyToSub) {
 
-                // only remove the input pushstream from the list of associated pushstreams as
-                // multiple pushstreams from the same handler can exist simultaneously
-                pushStreams.removeIf(predicate::test);
+			// a channel is connected if a subscription in client exists
+			final boolean isConnected = true;
 
-                // if there exists no active pushstreams, the channels are disconnected since
-                // messages will never arrive to these topics until further subscription
-                if (!pushStreams.isEmpty()) {
-                    Optional.ofNullable(dto.pubChannel).ifPresent(e -> e.connected = false);
-                    Optional.ofNullable(dto.subChannel).ifPresent(e -> e.connected = false);
-                }
-            }
-            // remove only if there exists no connected streams
-            dtos.removeIf(e -> e.connectedStreams.isEmpty());
+			this.pubChannel = createChannelDTO(pubChannel, isConnected);
+			this.subChannel = createChannelDTO(subChannel, isConnected);
+			this.connectedStream = connectedStream;
+			this.handlerReference = handlerReference;
+			this.isReplyToSub = isReplyToSub;
+		}
 
-            // if there exists no subscriptions associated with the wildcard entry, then send
-            // an unsubscription request for the wildcard. Since we are using wildcard for the
-            // unsubscription, the server will unsubscribe all registered topics under it.
-            if (dtos.isEmpty()) {
-                messagingClient.client
-                               .unsubscribeWith()
-                               .addTopicFilter(topicFilter)
-                               .send()
-                               .thenAccept(ack -> {
-                                   if (isUnsubscriptionAcknowledged(ack)) {
-                                       subscriptions.remove(topicFilter);
-                                       logger.debug("Unsubscription request for '{}' processed successfully - {}", subChannel, ack);
-                                   } else {
-                                       logger.error("Unsubscription request for '{}' failed - {}", subChannel, ack);
-                                   }
-                               });
-            }
-        }
-    }
+		private ChannelDTO createChannelDTO(final String name, final boolean isConnected) {
+			if (name == null) {
+				return null;
+			}
+			final String rountingKey = null; // no routing key for MQTT
+			final ChannelDTO dto = new ChannelDTO();
 
-    @Deactivate
-    public void clearAllSubscriptions() {
-        subscriptions.keySet().forEach(this::removeSubscription);
-    }
+			dto.name = name;
+			dto.extension = rountingKey;
+			dto.connected = isConnected;
 
-    private static class ExtendedSubscriptionDTO {
+			return dto;
+		}
+	}
 
-        ChannelDTO pubChannel;
-        ChannelDTO subChannel;
-        ServiceReference<?> handlerReference;
-        List<PushStream<Message>> connectedStreams;
+	public SubscriptionDTO[] getSubscriptionDTOs() {
+		final List<ChannelDTO> subChannels = getSubscriptionChannelDTOs();
+		return subChannels.stream().map(this::getSubscriptionDTO).toArray(SubscriptionDTO[]::new);
+	}
 
-        public ExtendedSubscriptionDTO(
-                final String pubChannel,
-                final String subChannel,
-                final PushStream<Message> stream,
-                final ServiceReference<?> handlerReference) {
+	private List<ChannelDTO> getSubscriptionChannelDTOs() {
+		return subscriptions.values().stream().filter(c -> !c.isReplyToSub).map(c -> c.subChannel).collect(toList());
+	}
 
-            // a channel is connected if a subscription in client exists
-            final boolean isConnected = true;
+	public ReplyToSubscriptionDTO[] getReplyToSubscriptionDTOs() {
+		final List<ReplyToSubscriptionDTO> replyToSubscriptions = new ArrayList<>();
 
-            this.pubChannel       = createChannelDTO(pubChannel, isConnected);
-            this.subChannel       = createChannelDTO(subChannel, isConnected);
-            this.handlerReference = handlerReference;
+		for (final Entry<String, ExtendedSubscriptionDTO> entry : subscriptions.entrySet()) {
+			final ExtendedSubscriptionDTO sub = entry.getValue();
+			if (sub.isReplyToSub) {
+				final ReplyToSubscriptionDTO replyToSub = getReplyToSubscriptionDTO(sub.pubChannel, sub.subChannel,
+						sub.handlerReference);
+				replyToSubscriptions.add(replyToSub);
+			}
+		}
+		return replyToSubscriptions.toArray(new ReplyToSubscriptionDTO[0]);
+	}
 
-            connectedStreams = new CopyOnWriteArrayList<>();
-            connectedStreams.add(stream);
-        }
+	private SubscriptionDTO getSubscriptionDTO(final ChannelDTO channelDTO) {
+		final SubscriptionDTO subscriptionDTO = new SubscriptionDTO();
 
-        private ChannelDTO createChannelDTO(final String name, final boolean isConnected) {
-            if (name == null) {
-                return null;
-            }
-            final String rountingKey = null; // no routing key for MQTT
-            final ChannelDTO dto = new ChannelDTO();
+		subscriptionDTO.serviceDTO = toServiceReferenceDTO(MessageSubscriptionProvider.class, bundleContext);
+		subscriptionDTO.channel = channelDTO;
 
-            dto.name = name;
-            dto.extension = rountingKey;
-            dto.connected = isConnected;
+		return subscriptionDTO;
+	}
 
-            return dto;
-        }
-    }
+	private ReplyToSubscriptionDTO getReplyToSubscriptionDTO(final ChannelDTO pubDTO, final ChannelDTO subDTO,
+			final ServiceReference<?> handlerReference) {
 
-    public SubscriptionDTO[] getSubscriptionDTOs() {
-        final List<ChannelDTO> subChannels = getSubscriptionChannelDTOs();
-        return subChannels.stream()
-                          .map(this::getSubscriptionDTO)
-                          .toArray(SubscriptionDTO[]::new);
-    }
+		final ReplyToSubscriptionDTO subscriptionDTO = new ReplyToSubscriptionDTO();
 
-    private List<ChannelDTO> getSubscriptionChannelDTOs() {
-        return subscriptions.values()
-                            .stream()
-                            .flatMap(List::stream)
-                            .filter(c -> c.handlerReference == null)
-                            .map(c -> c.subChannel)
-                            .collect(toList());
-    }
+		subscriptionDTO.requestChannel = subDTO;
+		subscriptionDTO.responseChannel = pubDTO;
+		subscriptionDTO.handlerService = toServiceReferenceDTO(handlerReference);
+		subscriptionDTO.serviceDTO = toServiceReferenceDTO(MessageSubscriptionProvider.class, bundleContext);
+		subscriptionDTO.generateCorrelationId = false;
+		subscriptionDTO.generateReplyChannel = false;
 
-    public ReplyToSubscriptionDTO[] getReplyToSubscriptionDTOs() {
-        final List<ReplyToSubscriptionDTO> replyToSubscriptions = new ArrayList<>();
+		return subscriptionDTO;
+	}
 
-        for (final Entry<String, List<ExtendedSubscriptionDTO>> entry : subscriptions.entrySet()) {
-            for (final ExtendedSubscriptionDTO dto : entry.getValue()) {
-                if (dto.handlerReference != null) {
-                    final ReplyToSubscriptionDTO replyToSub =
-                            getReplyToSubscriptionDTO(
-                                    dto.pubChannel,
-                                    dto.subChannel,
-                                    dto.handlerReference);
-                    replyToSubscriptions.add(replyToSub);
-                }
-            }
-        }
-        return replyToSubscriptions.toArray(new ReplyToSubscriptionDTO[0]);
-    }
-
-    private SubscriptionDTO getSubscriptionDTO(final ChannelDTO channelDTO) {
-        final SubscriptionDTO subscriptionDTO = new SubscriptionDTO();
-
-        subscriptionDTO.serviceDTO = toServiceReferenceDTO(MessageSubscriptionProvider.class, bundleContext);
-        subscriptionDTO.channel = channelDTO;
-
-        return subscriptionDTO;
-    }
-
-    private ReplyToSubscriptionDTO getReplyToSubscriptionDTO(
-            final ChannelDTO pubDTO,
-            final ChannelDTO subDTO,
-            final ServiceReference<?> handlerReference) {
-
-        final ReplyToSubscriptionDTO subscriptionDTO = new ReplyToSubscriptionDTO();
-
-        subscriptionDTO.requestChannel = subDTO;
-        subscriptionDTO.responseChannel = pubDTO;
-        subscriptionDTO.handlerService = toServiceReferenceDTO(handlerReference);
-        subscriptionDTO.serviceDTO = toServiceReferenceDTO(MessageSubscriptionProvider.class, bundleContext);
-        subscriptionDTO.generateCorrelationId = true;
-        subscriptionDTO.generateReplyChannel = true;
-
-        return subscriptionDTO;
-    }
-
-    private String toTopicFilter(final String subChannel) {
-        final int indexOfFirstSlash = subChannel.indexOf('/');
-        return indexOfFirstSlash != -1 ? subChannel.substring(0, indexOfFirstSlash) + "/#" : subChannel;
-    }
-
-    private boolean isUnsubscriptionAcknowledged(final Mqtt5UnsubAck ack) {
-        final List<Mqtt5UnsubAckReasonCode> acceptedCodes = Arrays.asList(
-                SUCCESS,
-                NO_SUBSCRIPTIONS_EXISTED
-        );
-        final List<Mqtt5UnsubAckReasonCode> reasonCodes = ack.getReasonCodes();
-        return reasonCodes.stream().findFirst().filter(acceptedCodes::contains).isPresent();
-    }
+	private boolean isUnsubscriptionAcknowledged(final Mqtt5UnsubAck ack) {
+		final List<Mqtt5UnsubAckReasonCode> acceptedCodes = Arrays.asList(SUCCESS, NO_SUBSCRIPTIONS_EXISTED);
+		final List<Mqtt5UnsubAckReasonCode> reasonCodes = ack.getReasonCodes();
+		return reasonCodes.stream().findFirst().filter(acceptedCodes::contains).isPresent();
+	}
 
 }

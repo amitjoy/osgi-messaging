@@ -164,6 +164,9 @@ public final class MessageHelper {
 	}
 
 	public static ServiceReferenceDTO toServiceReferenceDTO(final ServiceReference<?> ref) {
+		if (ref == null) {
+			return null;
+		}
 		final ServiceReferenceDTO dto = new ServiceReferenceDTO();
 
 		dto.bundle = ref.getBundle().getBundleId();
