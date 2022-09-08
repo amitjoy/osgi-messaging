@@ -56,8 +56,6 @@ import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAck;
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode;
 
-import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionRegistry.ExtendedSubscriptionDTO;
-
 //@formatter:off
 @MessagingFeature(
         name = MESSAGING_ID,
@@ -182,13 +180,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
                                   .send()
                                   .thenAccept(ack -> {
                                 	  if (isSubscriptionAcknowledged(ack)) {
-                                		  final boolean isSubscribed = subscriptionRegistry.hasSubscription(subChannel);
-                                		  if (!isSubscribed) {
-                                			  subscriptionRegistry.addSubscription(pubChannel, subChannel, stream, reference, isReplyToSubscription);
-                                		  } else {
-                                			  final ExtendedSubscriptionDTO subsciption = subscriptionRegistry.getSubscription(subChannel);
-                                			  subsciption.connectedStream = stream;
-                                		  }
+                            			  subscriptionRegistry.addSubscription(pubChannel, subChannel, stream, reference, isReplyToSubscription);
                                           logger.debug("New subscription request for '{}' processed successfully - {}", subChannel, ack);
                                       } else {
                                           logger.error("New subscription request for '{}' failed - {}", subChannel, ack);

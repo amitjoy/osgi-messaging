@@ -245,7 +245,35 @@ public final class MessageSubscriptionRegistryTest {
 		assertThat(registry.getSubscription(channel)).isNotNull();
 		assertThat(stream1).isNotEqualTo(stream2);
 		assertThat(registry.getSubscription(channel).connectedStream).isEqualTo(stream2);
+	}
 
+	@Test
+	public void test_existing_subscription_stream_close() throws Exception {
+		final String channel = "ab/ba";
+		final PushStream<Message> stream1 = subscriber.subscribe(channel);
+		TimeUnit.SECONDS.sleep(2);
+
+		assertThat(registry.getSubscription(channel)).isNotNull();
+
+		stream1.close();
+		TimeUnit.SECONDS.sleep(2);
+
+		assertThat(registry.getSubscription(channel)).isNull();
+	}
+
+	@Test
+	public void test_existing_subscription_explicit_close() throws Exception {
+		final String channel = "ab/ba";
+		final PushStream<Message> stream1 = subscriber.subscribe(channel);
+		TimeUnit.SECONDS.sleep(2);
+
+		final PushStream<Message> connectedStream = registry.getSubscription(channel).connectedStream;
+		assertThat(connectedStream).isNotNull().isEqualTo(stream1);
+
+		registry.closeSubscriptionStream(channel);
+		TimeUnit.SECONDS.sleep(2);
+
+		assertThat(registry.getSubscription(channel)).isNull();
 	}
 
 }
