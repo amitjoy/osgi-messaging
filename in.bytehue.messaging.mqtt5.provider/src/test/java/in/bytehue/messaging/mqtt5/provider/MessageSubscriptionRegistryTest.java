@@ -75,7 +75,6 @@ public final class MessageSubscriptionRegistryTest {
 		TimeUnit.SECONDS.sleep(2);
 
 		assertThat(registry.getSubscription(channel)).isNotNull();
-		assertThat(registry.getSubscription(channel).connectedStream).isEqualTo(stream);
 
 		stream.close();
 		TimeUnit.SECONDS.sleep(2);
@@ -84,13 +83,12 @@ public final class MessageSubscriptionRegistryTest {
 	}
 
 	@Test
-	public void test_registry_when_unsubscription_happens() throws Exception {
+	public void test_registry_when_existing_stream_closed() throws Exception {
 		final String channel = "ab/ba";
-		final PushStream<Message> stream = subscriber.subscribe(channel);
+		subscriber.subscribe(channel);
 		TimeUnit.SECONDS.sleep(2);
 
 		assertThat(registry.getSubscription(channel)).isNotNull();
-		assertThat(registry.getSubscription(channel).connectedStream).isEqualTo(stream);
 
 		final boolean isRemoved = registry.removeSubscription(channel);
 		TimeUnit.SECONDS.sleep(2);
@@ -237,14 +235,13 @@ public final class MessageSubscriptionRegistryTest {
 		final PushStream<Message> stream1 = subscriber.subscribe(channel);
 		TimeUnit.SECONDS.sleep(2);
 
-		assertThat(registry.getSubscription(channel).connectedStream).isEqualTo(stream1);
+		assertThat(registry.getSubscription(channel)).isNotNull();
 
 		final PushStream<Message> stream2 = subscriber.subscribe(channel);
 		TimeUnit.SECONDS.sleep(2);
 
 		assertThat(registry.getSubscription(channel)).isNotNull();
 		assertThat(stream1).isNotEqualTo(stream2);
-		assertThat(registry.getSubscription(channel).connectedStream).isEqualTo(stream2);
 	}
 
 	@Test
@@ -262,15 +259,12 @@ public final class MessageSubscriptionRegistryTest {
 	}
 
 	@Test
-	public void test_existing_subscription_explicit_close() throws Exception {
+	public void test_existing_subscription_explicit_unsubscribe() throws Exception {
 		final String channel = "ab/ba";
-		final PushStream<Message> stream1 = subscriber.subscribe(channel);
+		subscriber.subscribe(channel);
 		TimeUnit.SECONDS.sleep(2);
 
-		final PushStream<Message> connectedStream = registry.getSubscription(channel).connectedStream;
-		assertThat(connectedStream).isNotNull().isEqualTo(stream1);
-
-		registry.closeSubscriptionStream(channel);
+		registry.unsubscribeSubscription(channel);
 		TimeUnit.SECONDS.sleep(2);
 
 		assertThat(registry.getSubscription(channel)).isNull();

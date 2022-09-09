@@ -180,16 +180,13 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
                                   .send()
                                   .thenAccept(ack -> {
                                 	  if (isSubscriptionAcknowledged(ack)) {
-                            			  subscriptionRegistry.addSubscription(pubChannel, subChannel, stream, reference, isReplyToSubscription);
+                            			  subscriptionRegistry.addSubscription(pubChannel, subChannel, source::close, reference, isReplyToSubscription);
                                           logger.debug("New subscription request for '{}' processed successfully - {}", subChannel, ack);
                                       } else {
                                           logger.error("New subscription request for '{}' failed - {}", subChannel, ack);
                                       }
                                    });
-            stream.onClose(() -> {
-                subscriptionRegistry.removeSubscription(subChannel);
-                source.close();
-            });
+            stream.onClose(() -> subscriptionRegistry.unsubscribeSubscription(subChannel));
             return stream;
         } catch (final Exception e) {
             logger.error("Error while subscribing to {}", subChannel, e);
