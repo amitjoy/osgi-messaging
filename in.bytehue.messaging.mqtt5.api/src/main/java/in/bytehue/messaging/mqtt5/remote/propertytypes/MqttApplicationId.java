@@ -26,14 +26,14 @@ import org.osgi.service.component.annotations.ComponentPropertyType;
  * </ul>
  *
  * <p>
- * This annotation can be used on a {@link Component} to declare the id of
- * the application.
+ * This annotation can be used on a {@link Component} to declare the id of the
+ * application.
  *
  * @see "Component Property Types"
  */
 @ComponentPropertyType
 public @interface MqttApplicationId {
 
-    String value();
+	String value();
 
 }

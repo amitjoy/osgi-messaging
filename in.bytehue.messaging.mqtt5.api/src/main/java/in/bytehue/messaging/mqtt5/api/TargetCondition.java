@@ -18,9 +18,10 @@ package in.bytehue.messaging.mqtt5.api;
 import org.osgi.annotation.versioning.ConsumerType;
 
 /**
- * This is a marker interface which consumers can implement to provide services with properties
- * that can be used as conditional target to the MQTT client. That means, consumer can provide
- * filters that should be satisfied before MQTT client is up and running.
+ * This is a marker interface which consumers can implement to provide services
+ * with properties that can be used as conditional target to the MQTT client.
+ * That means, consumer can provide filters that should be satisfied before MQTT
+ * client is up and running.
  *
  * <p>
  * As an example, it can be used the following way:
@@ -29,12 +30,12 @@ import org.osgi.annotation.versioning.ConsumerType;
  * {@code (|(&((bar=0)(bar=1)))(&((bar=1)(bar=0))))}
  *
  * <p>
- * Besides calculating the aggregate values from the properties of the whiteboard services,
- * it also accepts filters that have calculated fields.
+ * Besides calculating the aggregate values from the properties of the
+ * whiteboard services, it also accepts filters that have calculated fields.
  *
  * <p>
- * For example, if you need at least three services that have a bar property then you can filter
- * on {@code #bar}. There are a number of calculated values:
+ * For example, if you need at least three services that have a bar property
+ * then you can filter on {@code #bar}. There are a number of calculated values:
  *
  * <p>
  * <ul>
@@ -50,18 +51,21 @@ import org.osgi.annotation.versioning.ConsumerType;
  * Example: {@code ([sum]bar>=3)}
  *
  * <p>
- * Let's assume we have a service {@code R} that represents a link to a remote service. For performance and
- * reliability reasons, we require at least 3 of those services to be present before we can start
- * the MQTT client. Additionally, these services must come from at least 2 different regions. For
- * this reason, we define a property region that can take the values south, east, north, and west.
+ * Let's assume we have a service {@code R} that represents a link to a remote
+ * service. For performance and reliability reasons, we require at least 3 of
+ * those services to be present before we can start the MQTT client.
+ * Additionally, these services must come from at least 2 different regions. For
+ * this reason, we define a property region that can take the values south,
+ * east, north, and west.
  *
  * <p>
  * Example: {@code (&(#>=3)([unq]region>=2))}
  *
  * <p>
- * This is useful is certain circumstances where MQTT client requires few services to be up and running
- * before the client is connected to the server. For example, you could provide the following services
- * for the client to use before it connects to the server -
+ * This is useful is certain circumstances where MQTT client requires few
+ * services to be up and running before the client is connected to the server.
+ * For example, you could provide the following services for the client to use
+ * before it connects to the server -
  *
  * <p>
  * <ul>
@@ -77,16 +81,18 @@ import org.osgi.annotation.versioning.ConsumerType;
  * </ul>
  *
  * <p>
- * This will ensure that your services will be up and running before the client gets activated. This also
- * guarantees that the start order of the bundles is not at all required in this scenario.
+ * This will ensure that your services will be up and running before the client
+ * gets activated. This also guarantees that the start order of the bundles is
+ * not at all required in this scenario.
  */
 @ConsumerType
 public interface TargetCondition {
 
-    /**
-     * The default target filter is registered by the framework during framework initialization and
-     * therefore can always be relied upon and therefore satisfiable.
-     */
-    String DEFAULT_SATISFIABLE_FILTER = "(satisfy=always)";
+	/**
+	 * The default target filter is registered by the framework during framework
+	 * initialization and therefore can always be relied upon and therefore
+	 * satisfiable.
+	 */
+	String DEFAULT_SATISFIABLE_FILTER = "(satisfy=always)";
 
 }

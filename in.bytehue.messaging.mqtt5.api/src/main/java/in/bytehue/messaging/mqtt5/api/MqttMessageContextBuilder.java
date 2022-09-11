@@ -30,8 +30,8 @@ import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageContextBuilder;
 
 /**
- * The {@link MqttMessageContextBuilder} service is the application access point to
- * build a {@code MQTT 5.0} message.
+ * The {@link MqttMessageContextBuilder} service is the application access point
+ * to build a {@code MQTT 5.0} message.
  *
  * <p>
  * <b>Note that</b>, access to this service requires the
@@ -49,180 +49,184 @@ import org.osgi.service.messaging.MessageContextBuilder;
 @ProviderType
 public interface MqttMessageContextBuilder extends MessageContextBuilder {
 
-    /**
-     * Sets the provided {@link MessageContext} instance. If this context is set,
-     * calling message context builder functions on this builder will no override
-     * the values from the given context.
-     *
-     * @param context an existing context
-     * @return the {@link MqttMessageContextBuilder} instance
-     */
-    @Override
-    MqttMessageContextBuilder withContext(MessageContext context);
+	/**
+	 * Sets the provided {@link MessageContext} instance. If this context is set,
+	 * calling message context builder functions on this builder will no override
+	 * the values from the given context.
+	 *
+	 * @param context an existing context
+	 * @return the {@link MqttMessageContextBuilder} instance
+	 */
+	@Override
+	MqttMessageContextBuilder withContext(MessageContext context);
 
-    /**
-     * Adds the content to the message
-     *
-     * @param byteBuffer the content
-     * @return the {@link MqttMessageContextBuilder} instance
-     */
-    @Override
-    MqttMessageContextBuilder content(ByteBuffer byteBuffer);
+	/**
+	 * Adds the content to the message
+	 *
+	 * @param byteBuffer the content
+	 * @return the {@link MqttMessageContextBuilder} instance
+	 */
+	@Override
+	MqttMessageContextBuilder content(ByteBuffer byteBuffer);
 
-    /**
-     * Adds typed content to the message and maps it using the provided mapping function
-     *
-     * @param <T> the content type
-     * @param object the input object
-     * @param contentMapper a mapping function to map T into the {@link ByteBuffer}
-     * @return the {@link MqttMessageContextBuilder} instance
-     */
-    @Override
-    <T> MqttMessageContextBuilder content(T object, Function<T, ByteBuffer> contentMapper);
+	/**
+	 * Adds typed content to the message and maps it using the provided mapping
+	 * function
+	 *
+	 * @param <T>           the content type
+	 * @param object        the input object
+	 * @param contentMapper a mapping function to map T into the {@link ByteBuffer}
+	 * @return the {@link MqttMessageContextBuilder} instance
+	 */
+	@Override
+	<T> MqttMessageContextBuilder content(T object, Function<T, ByteBuffer> contentMapper);
 
-    /**
-     * Defines a reply to address when submitting a reply-to request. So the receiver will
-     * knows, where to send the reply.
-     *
-     * @param replyToAddress the reply address
-     * @return the {@link MqttMessageContextBuilder} instance
-     */
-    @Override
-    MqttMessageContextBuilder replyTo(String replyToAddress);
+	/**
+	 * Defines a reply to address when submitting a reply-to request. So the
+	 * receiver will knows, where to send the reply.
+	 *
+	 * @param replyToAddress the reply address
+	 * @return the {@link MqttMessageContextBuilder} instance
+	 */
+	@Override
+	MqttMessageContextBuilder replyTo(String replyToAddress);
 
-    /**
-     * Defines a correlation id that is usually used for reply-to requests.
-     *
-     * The correlation id is an identifier to assign a response to its corresponding request.
-     *
-     * This option can be used when the underlying system doesn't provide the generation of these
-     * correlation ids
-     *
-     * @param correlationId the correlation id
-     * @return the {@link MqttMessageContextBuilder} instance
-     */
-    @Override
-    MqttMessageContextBuilder correlationId(String correlationId);
+	/**
+	 * Defines a correlation id that is usually used for reply-to requests.
+	 *
+	 * The correlation id is an identifier to assign a response to its corresponding
+	 * request.
+	 *
+	 * This option can be used when the underlying system doesn't provide the
+	 * generation of these correlation ids
+	 *
+	 * @param correlationId the correlation id
+	 * @return the {@link MqttMessageContextBuilder} instance
+	 */
+	@Override
+	MqttMessageContextBuilder correlationId(String correlationId);
 
-    /**
-     * Defines a service filter used to generate correlation id.
-     *
-     * The correlation id is an identifier to assign a response to its corresponding request.
-     *
-     * @param filter the correlation id generator filter
-     * @return the {@link MqttMessageContextBuilder} instance
-     */
-    MqttMessageContextBuilder correlationIdGenerator(String filter);
+	/**
+	 * Defines a service filter used to generate correlation id.
+	 *
+	 * The correlation id is an identifier to assign a response to its corresponding
+	 * request.
+	 *
+	 * @param filter the correlation id generator filter
+	 * @return the {@link MqttMessageContextBuilder} instance
+	 */
+	MqttMessageContextBuilder correlationIdGenerator(String filter);
 
-    /**
-     * Defines a content encoding
-     *
-     * @param content the content encoding
-     * @return the {@link MqttMessageContextBuilder} instance
-     */
-    @Override
-    MqttMessageContextBuilder contentEncoding(String contentEncoding);
+	/**
+	 * Defines a content encoding
+	 *
+	 * @param content the content encoding
+	 * @return the {@link MqttMessageContextBuilder} instance
+	 */
+	@Override
+	MqttMessageContextBuilder contentEncoding(String contentEncoding);
 
-    /**
-     * Defines a content-type like the content mime-type.
-     *
-     * @param contentType the content type
-     * @return the {@link MqttMessageContextBuilder} instance
-     */
-    @Override
-    MqttMessageContextBuilder contentType(String contentType);
+	/**
+	 * Defines a content-type like the content mime-type.
+	 *
+	 * @param contentType the content type
+	 * @return the {@link MqttMessageContextBuilder} instance
+	 */
+	@Override
+	MqttMessageContextBuilder contentType(String contentType);
 
-    /**
-     * Defines a channel name and a routing key
-     *
-     * @param channelName the channel name
-     * @param channelExtension the special key for routing a message
-     * @return the {@link MqttMessageContextBuilder} instance
-     */
-    @Override
-    MqttMessageContextBuilder channel(String channelName, String channelExtension);
+	/**
+	 * Defines a channel name and a routing key
+	 *
+	 * @param channelName      the channel name
+	 * @param channelExtension the special key for routing a message
+	 * @return the {@link MqttMessageContextBuilder} instance
+	 */
+	@Override
+	MqttMessageContextBuilder channel(String channelName, String channelExtension);
 
-    /**
-     * Defines a channel name that can be a topic or queue name
-     *
-     * @param channelName the channel name
-     * @return the {@link MqttMessageContextBuilder} instance
-     */
-    @Override
-    MqttMessageContextBuilder channel(String channelName);
+	/**
+	 * Defines a channel name that can be a topic or queue name
+	 *
+	 * @param channelName the channel name
+	 * @return the {@link MqttMessageContextBuilder} instance
+	 */
+	@Override
+	MqttMessageContextBuilder channel(String channelName);
 
-    /**
-     * Adds an options entry with the given key and the given value
-     *
-     * @param key the option/property key
-     * @param value the option value
-     * @return the {@link MqttMessageContextBuilder} instance
-     */
-    @Override
-    MqttMessageContextBuilder extensionEntry(String key, Object value);
+	/**
+	 * Adds an options entry with the given key and the given value
+	 *
+	 * @param key   the option/property key
+	 * @param value the option value
+	 * @return the {@link MqttMessageContextBuilder} instance
+	 */
+	@Override
+	MqttMessageContextBuilder extensionEntry(String key, Object value);
 
-    /**
-     * Appends the given options to the context options
-     *
-     * @param options the options map to be added to the options
-     * @return the {@link MqttMessageContextBuilder} instance
-     */
-    @Override
-    MqttMessageContextBuilder extensions(Map<String, Object> extension);
+	/**
+	 * Appends the given options to the context options
+	 *
+	 * @param options the options map to be added to the options
+	 * @return the {@link MqttMessageContextBuilder} instance
+	 */
+	@Override
+	MqttMessageContextBuilder extensions(Map<String, Object> extension);
 
-    /**
-     * Sets the quality of service
-     *
-     * @param qos the qos value
-     * @return the {@link MqttMessageContextBuilder} instance
-     */
-    default MqttMessageContextBuilder withQoS(final int qos) {
-        extensionEntry(EXTENSION_QOS, qos);
-        return this;
-    }
+	/**
+	 * Sets the quality of service
+	 *
+	 * @param qos the qos value
+	 * @return the {@link MqttMessageContextBuilder} instance
+	 */
+	default MqttMessageContextBuilder withQoS(final int qos) {
+		extensionEntry(EXTENSION_QOS, qos);
+		return this;
+	}
 
-    /**
-     * Sets the retain flag for the MQTT communication.
-     *
-     * @param retain {@code true} to retain the messages, otherwise {@code false}
-     * @return the {@link MqttMessageContextBuilder} instance
-     */
-    default MqttMessageContextBuilder withRetain(final boolean retain) {
-        extensionEntry(RETAIN, retain);
-        return this;
-    }
+	/**
+	 * Sets the retain flag for the MQTT communication.
+	 *
+	 * @param retain {@code true} to retain the messages, otherwise {@code false}
+	 * @return the {@link MqttMessageContextBuilder} instance
+	 */
+	default MqttMessageContextBuilder withRetain(final boolean retain) {
+		extensionEntry(RETAIN, retain);
+		return this;
+	}
 
-    /**
-     * Sets the message expiry interval for the MQTT communication.
-     *
-     * @param interval the interval to set
-     * @return the {@link MqttMessageContextBuilder} instance
-     */
-    default MqttMessageContextBuilder withMessageExpiryInterval(final long interval) {
-        extensionEntry(MESSAGE_EXPIRY_INTERVAL, interval);
-        return this;
-    }
+	/**
+	 * Sets the message expiry interval for the MQTT communication.
+	 *
+	 * @param interval the interval to set
+	 * @return the {@link MqttMessageContextBuilder} instance
+	 */
+	default MqttMessageContextBuilder withMessageExpiryInterval(final long interval) {
+		extensionEntry(MESSAGE_EXPIRY_INTERVAL, interval);
+		return this;
+	}
 
-    /**
-     * Sets the user specified properties for the MQTT communication.
-     *
-     * @param userProperties the user properties
-     * @return the {@link MqttMessageContextBuilder} instance
-     */
-    default MqttMessageContextBuilder withUserProperties(final Map<String, String> userProperties) {
-        extensionEntry(USER_PROPERTIES, userProperties);
-        return this;
-    }
+	/**
+	 * Sets the user specified properties for the MQTT communication.
+	 *
+	 * @param userProperties the user properties
+	 * @return the {@link MqttMessageContextBuilder} instance
+	 */
+	default MqttMessageContextBuilder withUserProperties(final Map<String, String> userProperties) {
+		extensionEntry(USER_PROPERTIES, userProperties);
+		return this;
+	}
 
-    /**
-     * Sets the flag to receive own messages
-     *
-     * @param receiveLocal {@code true} to receive own messages, otherwise {@code false}
-     * @return the {@link MqttMessageContextBuilder} instance
-     */
-    default MqttMessageContextBuilder withReceiveLocal(final boolean receiveLocal) {
-        extensionEntry(RECEIVE_LOCAL, receiveLocal);
-        return this;
-    }
+	/**
+	 * Sets the flag to receive own messages
+	 *
+	 * @param receiveLocal {@code true} to receive own messages, otherwise
+	 *                     {@code false}
+	 * @return the {@link MqttMessageContextBuilder} instance
+	 */
+	default MqttMessageContextBuilder withReceiveLocal(final boolean receiveLocal) {
+		extensionEntry(RECEIVE_LOCAL, receiveLocal);
+		return this;
+	}
 
 }

@@ -21,7 +21,8 @@ import org.osgi.service.messaging.Message;
 import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
 
 /**
- * This interface {@link MqttApplication} should be implemented by consumers to leverage remote resource management
+ * This interface {@link MqttApplication} should be implemented by consumers to
+ * leverage remote resource management
  *
  * <p>
  * Every application must provide the following service property:
@@ -29,20 +30,21 @@ import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
  * <b>mqtt.application.id</b> - that will be used to identify this application
  *
  * <ul>
- * <li>{@link MqttApplication#doPUT(String, Message, MqttMessageContextBuilder)} is used to implement a CREATE request
- * for a resource identified in the
+ * <li>{@link MqttApplication#doPUT(String, Message, MqttMessageContextBuilder)}
+ * is used to implement a CREATE request for a resource identified in the
  * supplied {@link Message}</li>
- * <li>{@link MqttApplication#doGET(String, Message, MqttMessageContextBuilder)} is used to implement a READ request for
- * a resource identified in the supplied
+ * <li>{@link MqttApplication#doGET(String, Message, MqttMessageContextBuilder)}
+ * is used to implement a READ request for a resource identified in the supplied
  * {@link Message)}</li>
- * <li>{@link MqttApplication#doPOST(String, Message, MqttMessageContextBuilder)} is used to implement an UPDATE request
- * for a resource identified in the supplied
- * {@link Message}</li>
- * <li>{@link MqttApplication#doDELETE(String, Message, MqttMessageContextBuilder)} is used to implement a DELETE
- * request for a resource identified in the supplied
- * {@link Message}</li>
- * <li>{@link MqttApplication#doEXEC(String, Message, MqttMessageContextBuilder)} is used to perform application
- * operation not necessary tied to a given resource.</li>
+ * <li>{@link MqttApplication#doPOST(String, Message, MqttMessageContextBuilder)}
+ * is used to implement an UPDATE request for a resource identified in the
+ * supplied {@link Message}</li>
+ * <li>{@link MqttApplication#doDELETE(String, Message, MqttMessageContextBuilder)}
+ * is used to implement a DELETE request for a resource identified in the
+ * supplied {@link Message}</li>
+ * <li>{@link MqttApplication#doEXEC(String, Message, MqttMessageContextBuilder)}
+ * is used to perform application operation not necessary tied to a given
+ * resource.</li>
  * </ul>
  *
  * @since 1.0
