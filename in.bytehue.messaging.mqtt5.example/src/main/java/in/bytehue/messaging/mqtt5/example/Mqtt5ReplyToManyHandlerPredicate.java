@@ -25,10 +25,10 @@ import org.osgi.service.messaging.Message;
 @Component(property = "foo1=bar1")
 public final class Mqtt5ReplyToManyHandlerPredicate implements Predicate<Message> {
 
-    @Override
-    public boolean test(final Message message) {
-        final String content = new String(message.payload().array(), UTF_8);
-        return "sample".equals(content);
-    }
+	@Override
+	public boolean test(final Message message) {
+		final String content = new String(message.payload().array(), UTF_8);
+		return "sample".equals(content);
+	}
 
 }

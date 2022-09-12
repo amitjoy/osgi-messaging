@@ -29,25 +29,25 @@ import org.osgi.service.messaging.replyto.ReplyToPublisher;
 @Component(service = MyRemotePublisher.class, immediate = true)
 public final class MyRemotePublisher {
 
-    @Reference
-    private ReplyToPublisher publisher;
+	@Reference
+	private ReplyToPublisher publisher;
 
-    @Reference
-    private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
+	@Reference
+	private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
 
-    public void send(final String topic, final String value) {
-        final MessageContextBuilder mcb = mcbFactory.getService();
-        try {
-            // @formatter:off
+	public void send(final String topic, final String value) {
+		final MessageContextBuilder mcb = mcbFactory.getService();
+		try {
+			// @formatter:off
             final Message message = mcb.channel(topic)
                                        .replyTo("dummy-byte-hue")
                                        .content(ByteBuffer.wrap(value.getBytes()))
                                        .buildMessage();
             // @formatter:on
-            publisher.publishWithReply(message).onSuccess(m -> System.out.println(m.getContext()));
-        } finally {
-            mcbFactory.ungetService(mcb);
-        }
-    }
+			publisher.publishWithReply(message).onSuccess(m -> System.out.println(m.getContext()));
+		} finally {
+			mcbFactory.ungetService(mcb);
+		}
+	}
 
 }

@@ -34,9 +34,9 @@ import org.osgi.service.messaging.replyto.ReplyToSingleSubscriptionHandler;
 // @formatter:on
 public final class MyReplyToSingleSubscriptionHandler implements ReplyToSingleSubscriptionHandler {
 
-    @Override
-    public Message handleResponse(final Message requestMessage, final MessageContextBuilder responseBuilder) {
-        return responseBuilder.content(ByteBuffer.wrap("Message from Handler".getBytes())).buildMessage();
-    }
+	@Override
+	public Message handleResponse(final Message requestMessage, final MessageContextBuilder responseBuilder) {
+		return responseBuilder.content(ByteBuffer.wrap("Message from Handler".getBytes())).buildMessage();
+	}
 
 }

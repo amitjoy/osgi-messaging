@@ -23,9 +23,9 @@ import org.osgi.service.messaging.Message;
 @Component(property = "foo=bar")
 public final class Mqtt5JsonPredicate implements Predicate<Message> {
 
-    @Override
-    public boolean test(final Message m) {
-        return m.getContext().getContentType().equals("application/json");
-    }
+	@Override
+	public boolean test(final Message m) {
+		return m.getContext().getContentType().equals("application/json");
+	}
 
 }

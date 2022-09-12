@@ -33,16 +33,16 @@ import org.osgi.service.messaging.MessagePublisher;
 @Component(service = Mqtt5LastWillPublish.class, immediate = true)
 public final class Mqtt5LastWillPublish {
 
-    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
-    private MessagePublisher publisher;
+	@Reference(target = "(osgi.messaging.protocol=mqtt5)")
+	private MessagePublisher publisher;
 
-    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
-    private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
+	@Reference(target = "(osgi.messaging.protocol=mqtt5)")
+	private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
 
-    public void lastWillPublish() {
-        final MessageContextBuilder mcb = mcbFactory.getService();
-        try {
-            // @formatter:off
+	public void lastWillPublish() {
+		final MessageContextBuilder mcb = mcbFactory.getService();
+		try {
+			// @formatter:off
             publisher.publish(
                     mcb.content(ByteBuffer.wrap("CLOSED_CONNECTION".getBytes()))
                        .channel("last/will/topc/example")
@@ -52,9 +52,9 @@ public final class Mqtt5LastWillPublish {
                        .extensionEntry(MESSAGE_EXPIRY_INTERVAL, 30L)
                        .buildMessage());
             // @formatter:on
-        } finally {
-            mcbFactory.ungetService(mcb);
-        }
-    }
+		} finally {
+			mcbFactory.ungetService(mcb);
+		}
+	}
 
 }

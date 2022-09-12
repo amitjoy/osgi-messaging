@@ -24,22 +24,22 @@ import org.osgi.service.messaging.acknowledge.AcknowledgeMessageContext;
 @Component(property = "myConsumer=true")
 public final class Mqtt5Consumer implements Consumer<Message> {
 
-    @Override
-    public void accept(final Message m) {
+	@Override
+	public void accept(final Message m) {
 
-        final AcknowledgeMessageContext amc = (AcknowledgeMessageContext) m.getContext();
-        switch (amc.getAcknowledgeState()) {
-            case ACKNOWLEDGED:
-                System.out.println("Log Acknowledged Message");
-                break;
-            case REJECTED:
-                System.out.println("Log Rejected Message");
-                break;
-            default:
-                System.out.println("Log Message state " + amc.getAcknowledgeState());
-                break;
-        }
+		final AcknowledgeMessageContext amc = (AcknowledgeMessageContext) m.getContext();
+		switch (amc.getAcknowledgeState()) {
+		case ACKNOWLEDGED:
+			System.out.println("Log Acknowledged Message");
+			break;
+		case REJECTED:
+			System.out.println("Log Rejected Message");
+			break;
+		default:
+			System.out.println("Log Message state " + amc.getAcknowledgeState());
+			break;
+		}
 
-    }
+	}
 
 }

@@ -28,12 +28,12 @@ import org.osgi.service.messaging.runtime.MessageServiceRuntime;
 @GogoCommand(function = "runtime", scope = "test")
 public final class Mqtt5MessageServiceRuntimeExampleUsage {
 
-    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
-    private MessageServiceRuntime runtime;
+	@Reference(target = "(osgi.messaging.protocol=mqtt5)")
+	private MessageServiceRuntime runtime;
 
-    public String runtime() {
-        final MessagingRuntimeDTO runtimeDTO = runtime.getRuntimeDTO();
-        return ReflectionToStringBuilder.toString(runtimeDTO, JSON_STYLE);
-    }
+	public String runtime() {
+		final MessagingRuntimeDTO runtimeDTO = runtime.getRuntimeDTO();
+		return ReflectionToStringBuilder.toString(runtimeDTO, JSON_STYLE);
+	}
 
 }

@@ -31,44 +31,44 @@ import org.osgi.util.pushstream.PushStream;
 @Component(service = Mqtt5PubSubExample.class, immediate = true)
 public final class Mqtt5PubSubExample {
 
-    private PushStream<Message> stream;
+	private PushStream<Message> stream;
 
-    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
-    private MessagePublisher publisher;
+	@Reference(target = "(osgi.messaging.protocol=mqtt5)")
+	private MessagePublisher publisher;
 
-    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
-    private MessageSubscription subscriber;
+	@Reference(target = "(osgi.messaging.protocol=mqtt5)")
+	private MessageSubscription subscriber;
 
-    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
-    private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
+	@Reference(target = "(osgi.messaging.protocol=mqtt5)")
+	private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
 
-    @Deactivate
-    void deactivate() {
-        stream.close();
-    }
+	@Deactivate
+	void deactivate() {
+		stream.close();
+	}
 
-    public String sub(final String channel) {
-        stream = subscriber.subscribe(channel);
-        stream.forEach(m -> {
-            System.out.println("Message Received");
-            System.out.println(StandardCharsets.UTF_8.decode(m.payload()).toString());
-        });
-        return "Subscribed to " + channel;
-    }
+	public String sub(final String channel) {
+		stream = subscriber.subscribe(channel);
+		stream.forEach(m -> {
+			System.out.println("Message Received");
+			System.out.println(StandardCharsets.UTF_8.decode(m.payload()).toString());
+		});
+		return "Subscribed to " + channel;
+	}
 
-    public String pub(final String channel, final String data) {
-        final MessageContextBuilder mcb = mcbFactory.getService();
-        try {
-            // @formatter:off
+	public String pub(final String channel, final String data) {
+		final MessageContextBuilder mcb = mcbFactory.getService();
+		try {
+			// @formatter:off
             publisher.publish(
                     mcb.content(ByteBuffer.wrap(data.getBytes()))
                        .channel(channel)
                        .buildMessage());
             // @formatter:on
-        } finally {
-            mcbFactory.ungetService(mcb);
-        }
-        return "Published to " + channel;
-    }
+		} finally {
+			mcbFactory.ungetService(mcb);
+		}
+		return "Published to " + channel;
+	}
 
 }

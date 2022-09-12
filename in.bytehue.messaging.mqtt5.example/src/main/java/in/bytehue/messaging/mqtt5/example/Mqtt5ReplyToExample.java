@@ -27,16 +27,16 @@ import org.osgi.service.messaging.replyto.ReplyToPublisher;
 @Component
 public final class Mqtt5ReplyToExample {
 
-    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
-    private ReplyToPublisher mqttPublisher;
+	@Reference(target = "(osgi.messaging.protocol=mqtt5)")
+	private ReplyToPublisher mqttPublisher;
 
-    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
-    private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
+	@Reference(target = "(osgi.messaging.protocol=mqtt5)")
+	private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
 
-    public void publishReplyToMessage() {
-        final MessageContextBuilder mcb = mcbFactory.getService();
-        try {
-            // @formatter:off
+	public void publishReplyToMessage() {
+		final MessageContextBuilder mcb = mcbFactory.getService();
+		try {
+			// @formatter:off
             final Message request =
                     mcb.channel("/demo")
                        .correlationId("test123")
@@ -44,10 +44,10 @@ public final class Mqtt5ReplyToExample {
                        .content(ByteBuffer.wrap("Hello Word!".getBytes()))
                        .buildMessage();
             // @formatter:on
-            mqttPublisher.publishWithReply(request).onSuccess(System.out::println);
-        } finally {
-            mcbFactory.ungetService(mcb);
-        }
-    }
+			mqttPublisher.publishWithReply(request).onSuccess(System.out::println);
+		} finally {
+			mcbFactory.ungetService(mcb);
+		}
+	}
 
 }
