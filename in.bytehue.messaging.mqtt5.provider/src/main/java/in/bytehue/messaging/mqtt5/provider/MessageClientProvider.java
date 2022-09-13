@@ -221,7 +221,7 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "QoS 2 Outgoing Interceptor Service Filter")
         String qos2OutgoingInterceptorFilter() default "";
 
-        @AttributeDefinition(name = "Filter that needs to be satisfied for the client to be active")
+        @AttributeDefinition(name = "Filter to be satisfied for the client to be active")
         String condition_target() default DEFAULT_SATISFIABLE_FILTER;
 
         @AttributeDefinition(name = "Reason for the disconnection when the component is stopped")
