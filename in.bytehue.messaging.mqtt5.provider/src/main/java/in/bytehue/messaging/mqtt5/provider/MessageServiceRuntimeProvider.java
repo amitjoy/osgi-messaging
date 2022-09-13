@@ -73,28 +73,28 @@ import org.osgi.service.messaging.runtime.MessageServiceRuntime;
 //@formatter:on
 public final class MessageServiceRuntimeProvider implements MessageServiceRuntime {
 
-    @Activate
-    private ComponentContext componentContext;
+	@Activate
+	private ComponentContext componentContext;
 
-    @Reference
-    private MessageSubscriptionRegistry subscriptionRegistry;
+	@Reference
+	private MessageSubscriptionRegistry subscriptionRegistry;
 
-    @Reference
-    private ComponentServiceObjects<MessageClientProvider> messagingClient;
+	@Reference
+	private ComponentServiceObjects<MessageClientProvider> messagingClient;
 
-    public MessagingRuntimeDTO runtime() {
-        return getRuntimeDTO();
-    }
+	public MessagingRuntimeDTO runtime() {
+		return getRuntimeDTO();
+	}
 
-    @Override
-    public MessagingRuntimeDTO getRuntimeDTO() {
-        final MessageClientProvider client = messagingClient.getService();
-        try {
-            final MessagingRuntimeDTO dto = new MessagingRuntimeDTO();
+	@Override
+	public MessagingRuntimeDTO getRuntimeDTO() {
+		final MessageClientProvider client = messagingClient.getService();
+		try {
+			final MessagingRuntimeDTO dto = new MessagingRuntimeDTO();
 
-            dto.connectionURI = client.client.getConfig().getServerHost();
-            dto.serviceDTO = toServiceReferenceDTO(componentContext.getServiceReference());
-            // @formatter:off
+			dto.connectionURI = client.client.getConfig().getServerHost();
+			dto.serviceDTO = toServiceReferenceDTO(componentContext.getServiceReference());
+			// @formatter:off
             dto.features =
                     new String[] {
                             RETAIN,
@@ -114,16 +114,16 @@ public final class MessageServiceRuntimeProvider implements MessageServiceRuntim
                             EXTENSION_GUARANTEED_ORDERING,
                             EXTENSION_GUARANTEED_DELIVERY };
             // @formatter:on
-            dto.instanceId = messagingClient.getServiceReference().getProperties().get(SERVICE_ID).toString();
-            dto.protocols = new String[] { MESSAGING_PROTOCOL };
-            dto.providerName = MESSAGING_PROVIDER;
-            dto.subscriptions = subscriptionRegistry.getSubscriptionDTOs();
-            dto.replyToSubscriptions = subscriptionRegistry.getReplyToSubscriptionDTOs();
+			dto.instanceId = messagingClient.getServiceReference().getProperties().get(SERVICE_ID).toString();
+			dto.protocols = new String[] { MESSAGING_PROTOCOL };
+			dto.providerName = MESSAGING_PROVIDER;
+			dto.subscriptions = subscriptionRegistry.getSubscriptionDTOs();
+			dto.replyToSubscriptions = subscriptionRegistry.getReplyToSubscriptionDTOs();
 
-            return dto;
-        } finally {
-            messagingClient.ungetService(client);
-        }
-    }
+			return dto;
+		} finally {
+			messagingClient.ungetService(client);
+		}
+	}
 
 }

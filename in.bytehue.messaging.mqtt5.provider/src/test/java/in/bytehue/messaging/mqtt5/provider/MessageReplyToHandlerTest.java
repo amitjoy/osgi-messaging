@@ -38,263 +38,263 @@ import aQute.launchpad.junit.LaunchpadRunner;
 @RunWith(LaunchpadRunner.class)
 public final class MessageReplyToHandlerTest {
 
-    @Service
-    private Launchpad launchpad;
+	@Service
+	private Launchpad launchpad;
 
-    @Service
-    private MessageContextBuilder mcb;
+	@Service
+	private MessageContextBuilder mcb;
 
-    @Service
-    private MessagePublisher publisher;
+	@Service
+	private MessagePublisher publisher;
 
-    @Service
-    private MessageSubscription subscriber;
+	@Service
+	private MessageSubscription subscriber;
 
-    static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
+	static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
 
-    @Before
-    public void setup() throws InterruptedException {
-        waitForMqttConnectionReady(launchpad);
-    }
+	@Before
+	public void setup() throws InterruptedException {
+		waitForMqttConnectionReady(launchpad);
+	}
 
-    @Test
-    public void test_reply_to_subscription_handler() throws Exception {
-        final AtomicBoolean flag = new AtomicBoolean();
+	@Test
+	public void test_reply_to_subscription_handler() throws Exception {
+		final AtomicBoolean flag = new AtomicBoolean();
 
-        final String channel = "a/b";
-        final String payload = "abc";
-        final String contentType = "text/plain";
+		final String channel = "a/b";
+		final String payload = "abc";
+		final String contentType = "text/plain";
 
-        final ReplyToSubscriptionHandler handler = m -> {
-            flag.set(true);
-        };
-        final String targetKey = "osgi.messaging.replyToSubscription.target";
-        final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
+		final ReplyToSubscriptionHandler handler = m -> {
+			flag.set(true);
+		};
+		final String targetKey = "osgi.messaging.replyToSubscription.target";
+		final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
 
-        final String channelKey = "osgi.messaging.replyToSubscription.channel";
-        final String[] channelValue = new String[] { channel };
+		final String channelKey = "osgi.messaging.replyToSubscription.channel";
+		final String[] channelValue = new String[] { channel };
 
-        launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
+		launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
 
-        // @formatter:off
+		// @formatter:off
         final Message message = mcb.channel(channel)
                                    .contentType(contentType)
                                    .content(ByteBuffer.wrap(payload.getBytes()))
                                    .buildMessage();
         // @formatter:on
 
-        publisher.publish(message);
-        waitForRequestProcessing(flag);
-    }
+		publisher.publish(message);
+		waitForRequestProcessing(flag);
+	}
 
-    @Test
-    public void test_reply_to_subscription_handler_without_protocol_in_target_key() throws Exception {
-        final String channel = "a/b";
-        final String payload = "abc";
-        final String contentType = "text/plain";
+	@Test
+	public void test_reply_to_subscription_handler_without_protocol_in_target_key() throws Exception {
+		final String channel = "a/b";
+		final String payload = "abc";
+		final String contentType = "text/plain";
 
-        final ReplyToSubscriptionHandler handler = m -> {
-            throw new AssertionError("Will never be executed");
-        };
-        final String targetKey = "osgi.messaging.replyToSubscription.target";
-        final String targetValue = "(&(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
+		final ReplyToSubscriptionHandler handler = m -> {
+			throw new AssertionError("Will never be executed");
+		};
+		final String targetKey = "osgi.messaging.replyToSubscription.target";
+		final String targetValue = "(&(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
 
-        final String channelKey = "osgi.messaging.replyToSubscription.channel";
-        final String[] channelValue = new String[] { channel };
+		final String channelKey = "osgi.messaging.replyToSubscription.channel";
+		final String[] channelValue = new String[] { channel };
 
-        launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
+		launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
 
-        // @formatter:off
+		// @formatter:off
         final Message message = mcb.channel(channel)
                 .contentType(contentType)
                 .content(ByteBuffer.wrap(payload.getBytes()))
                 .buildMessage();
         // @formatter:on
 
-        publisher.publish(message);
-    }
+		publisher.publish(message);
+	}
 
-    @Test
-    public void test_reply_to_subscription_handler_without_messaging_name_in_target_key() throws Exception {
-        final String channel = "a/b";
-        final String payload = "abc";
-        final String contentType = "text/plain";
+	@Test
+	public void test_reply_to_subscription_handler_without_messaging_name_in_target_key() throws Exception {
+		final String channel = "a/b";
+		final String payload = "abc";
+		final String contentType = "text/plain";
 
-        final ReplyToSubscriptionHandler handler = m -> {
-            throw new AssertionError("Will never be executed");
-        };
-        final String targetKey = "osgi.messaging.replyToSubscription.target";
-        final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.feature=replyTo))";
+		final ReplyToSubscriptionHandler handler = m -> {
+			throw new AssertionError("Will never be executed");
+		};
+		final String targetKey = "osgi.messaging.replyToSubscription.target";
+		final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.feature=replyTo))";
 
-        final String channelKey = "osgi.messaging.replyToSubscription.channel";
-        final String[] channelValue = new String[] { channel };
+		final String channelKey = "osgi.messaging.replyToSubscription.channel";
+		final String[] channelValue = new String[] { channel };
 
-        launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
+		launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
 
-        // @formatter:off
+		// @formatter:off
         final Message message = mcb.channel(channel)
                 .contentType(contentType)
                 .content(ByteBuffer.wrap(payload.getBytes()))
                 .buildMessage();
         // @formatter:on
 
-        publisher.publish(message);
-    }
+		publisher.publish(message);
+	}
 
-    @Test
-    public void test_reply_to_subscription_handler_without_feature_in_target_key() throws Exception {
-        final String channel = "a/b";
-        final String payload = "abc";
-        final String contentType = "text/plain";
+	@Test
+	public void test_reply_to_subscription_handler_without_feature_in_target_key() throws Exception {
+		final String channel = "a/b";
+		final String payload = "abc";
+		final String contentType = "text/plain";
 
-        final ReplyToSubscriptionHandler handler = m -> {
-            throw new AssertionError("Will never be executed");
-        };
-        final String targetKey = "osgi.messaging.replyToSubscription.target";
-        final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter))";
+		final ReplyToSubscriptionHandler handler = m -> {
+			throw new AssertionError("Will never be executed");
+		};
+		final String targetKey = "osgi.messaging.replyToSubscription.target";
+		final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter))";
 
-        final String channelKey = "osgi.messaging.replyToSubscription.channel";
-        final String[] channelValue = new String[] { channel };
+		final String channelKey = "osgi.messaging.replyToSubscription.channel";
+		final String[] channelValue = new String[] { channel };
 
-        launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
+		launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
 
-        // @formatter:off
+		// @formatter:off
         final Message message = mcb.channel(channel)
                 .contentType(contentType)
                 .content(ByteBuffer.wrap(payload.getBytes()))
                 .buildMessage();
         // @formatter:on
 
-        publisher.publish(message);
-    }
+		publisher.publish(message);
+	}
 
-    @Test
-    public void test_reply_to_subscription_handler_with_different_feature_in_target_key() throws Exception {
-        final String channel = "a/b";
-        final String payload = "abc";
-        final String contentType = "text/plain";
+	@Test
+	public void test_reply_to_subscription_handler_with_different_feature_in_target_key() throws Exception {
+		final String channel = "a/b";
+		final String payload = "abc";
+		final String contentType = "text/plain";
 
-        final ReplyToSubscriptionHandler handler = m -> {
-            throw new AssertionError("Will never be executed");
-        };
-        final String targetKey = "osgi.messaging.replyToSubscription.target";
-        final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=abc))";
+		final ReplyToSubscriptionHandler handler = m -> {
+			throw new AssertionError("Will never be executed");
+		};
+		final String targetKey = "osgi.messaging.replyToSubscription.target";
+		final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=abc))";
 
-        final String channelKey = "osgi.messaging.replyToSubscription.channel";
-        final String[] channelValue = new String[] { channel };
+		final String channelKey = "osgi.messaging.replyToSubscription.channel";
+		final String[] channelValue = new String[] { channel };
 
-        launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
+		launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
 
-        // @formatter:off
+		// @formatter:off
         final Message message = mcb.channel(channel)
                 .contentType(contentType)
                 .content(ByteBuffer.wrap(payload.getBytes()))
                 .buildMessage();
         // @formatter:on
 
-        publisher.publish(message);
-    }
+		publisher.publish(message);
+	}
 
-    @Test
-    public void test_reply_to_subscription_handler_with_different_messaging_name_in_target_key() throws Exception {
-        final String channel = "a/b";
-        final String payload = "abc";
-        final String contentType = "text/plain";
+	@Test
+	public void test_reply_to_subscription_handler_with_different_messaging_name_in_target_key() throws Exception {
+		final String channel = "a/b";
+		final String payload = "abc";
+		final String contentType = "text/plain";
 
-        final ReplyToSubscriptionHandler handler = m -> {
-            throw new AssertionError("Will never be executed");
-        };
-        final String targetKey = "osgi.messaging.replyToSubscription.target";
-        final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=blahblah)(osgi.messaging.feature=replyTo))";
+		final ReplyToSubscriptionHandler handler = m -> {
+			throw new AssertionError("Will never be executed");
+		};
+		final String targetKey = "osgi.messaging.replyToSubscription.target";
+		final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=blahblah)(osgi.messaging.feature=replyTo))";
 
-        final String channelKey = "osgi.messaging.replyToSubscription.channel";
-        final String[] channelValue = new String[] { channel };
+		final String channelKey = "osgi.messaging.replyToSubscription.channel";
+		final String[] channelValue = new String[] { channel };
 
-        launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
+		launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
 
-        // @formatter:off
+		// @formatter:off
         final Message message = mcb.channel(channel)
                 .contentType(contentType)
                 .content(ByteBuffer.wrap(payload.getBytes()))
                 .buildMessage();
         // @formatter:on
 
-        publisher.publish(message);
-    }
+		publisher.publish(message);
+	}
 
-    @Test
-    public void test_reply_to_subscription_handler_with_different_protocol_in_target_key() throws Exception {
-        final String channel = "a/b";
-        final String payload = "abc";
-        final String contentType = "text/plain";
+	@Test
+	public void test_reply_to_subscription_handler_with_different_protocol_in_target_key() throws Exception {
+		final String channel = "a/b";
+		final String payload = "abc";
+		final String contentType = "text/plain";
 
-        final ReplyToSubscriptionHandler handler = m -> {
-            throw new AssertionError("Will never be executed");
-        };
-        final String targetKey = "osgi.messaging.replyToSubscription.target";
-        final String targetValue = "(&(osgi.messaging.protocol=amqp)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
+		final ReplyToSubscriptionHandler handler = m -> {
+			throw new AssertionError("Will never be executed");
+		};
+		final String targetKey = "osgi.messaging.replyToSubscription.target";
+		final String targetValue = "(&(osgi.messaging.protocol=amqp)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
 
-        final String channelKey = "osgi.messaging.replyToSubscription.channel";
-        final String[] channelValue = new String[] { channel };
+		final String channelKey = "osgi.messaging.replyToSubscription.channel";
+		final String[] channelValue = new String[] { channel };
 
-        launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
+		launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
 
-        // @formatter:off
+		// @formatter:off
         final Message message = mcb.channel(channel)
                 .contentType(contentType)
                 .content(ByteBuffer.wrap(payload.getBytes()))
                 .buildMessage();
         // @formatter:on
 
-        publisher.publish(message);
-    }
+		publisher.publish(message);
+	}
 
-    @Test
-    public void test_reply_to_subscription_handler_without_target_key() throws Exception {
-        final String channel = "a/b";
-        final String payload = "abc";
-        final String contentType = "text/plain";
+	@Test
+	public void test_reply_to_subscription_handler_without_target_key() throws Exception {
+		final String channel = "a/b";
+		final String payload = "abc";
+		final String contentType = "text/plain";
 
-        final ReplyToSubscriptionHandler handler = m -> {
-            throw new AssertionError("Will never be executed");
-        };
-        final String channelKey = "osgi.messaging.replyToSubscription.channel";
-        final String[] channelValue = new String[] { channel };
+		final ReplyToSubscriptionHandler handler = m -> {
+			throw new AssertionError("Will never be executed");
+		};
+		final String channelKey = "osgi.messaging.replyToSubscription.channel";
+		final String[] channelValue = new String[] { channel };
 
-        launchpad.register(ReplyToSubscriptionHandler.class, handler, channelKey, channelValue);
+		launchpad.register(ReplyToSubscriptionHandler.class, handler, channelKey, channelValue);
 
-        // @formatter:off
+		// @formatter:off
         final Message message = mcb.channel(channel)
                 .contentType(contentType)
                 .content(ByteBuffer.wrap(payload.getBytes()))
                 .buildMessage();
         // @formatter:on
 
-        publisher.publish(message);
-    }
+		publisher.publish(message);
+	}
 
-    @Test
-    public void test_reply_to_subscription_handler_without_channel_key() throws Exception {
-        final String channel = "a/b";
-        final String payload = "abc";
-        final String contentType = "text/plain";
+	@Test
+	public void test_reply_to_subscription_handler_without_channel_key() throws Exception {
+		final String channel = "a/b";
+		final String payload = "abc";
+		final String contentType = "text/plain";
 
-        final ReplyToSubscriptionHandler handler = m -> {
-            throw new AssertionError("Will never be executed");
-        };
-        final String targetKey = "osgi.messaging.replyToSubscription.target";
-        final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
+		final ReplyToSubscriptionHandler handler = m -> {
+			throw new AssertionError("Will never be executed");
+		};
+		final String targetKey = "osgi.messaging.replyToSubscription.target";
+		final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
 
-        launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue);
+		launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue);
 
-        // @formatter:off
+		// @formatter:off
         final Message message = mcb.channel(channel)
                                    .contentType(contentType)
                                    .content(ByteBuffer.wrap(payload.getBytes()))
                                    .buildMessage();
         // @formatter:on
 
-        publisher.publish(message);
-    }
+		publisher.publish(message);
+	}
 
 }

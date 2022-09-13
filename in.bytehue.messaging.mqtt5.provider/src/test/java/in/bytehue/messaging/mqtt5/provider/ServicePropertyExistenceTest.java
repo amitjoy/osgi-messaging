@@ -58,54 +58,54 @@ import in.bytehue.messaging.mqtt5.api.MqttMessageConstants;
 @RunWith(LaunchpadRunner.class)
 public final class ServicePropertyExistenceTest {
 
-    @Service
-    private Launchpad launchpad;
+	@Service
+	private Launchpad launchpad;
 
-    static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
+	static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
 
-    @Before
-    public void setup() throws InterruptedException {
-        waitForMqttConnectionReady(launchpad);
-    }
+	@Before
+	public void setup() throws InterruptedException {
+		waitForMqttConnectionReady(launchpad);
+	}
 
-    @Test
-    public void test_message_context_builder() {
-        final String propertyKey1 = "osgi.messaging.name";
-        final String propertyKey2 = "osgi.messaging.protocol";
-        final String propertyKey3 = "osgi.messaging.feature";
+	@Test
+	public void test_message_context_builder() {
+		final String propertyKey1 = "osgi.messaging.name";
+		final String propertyKey2 = "osgi.messaging.protocol";
+		final String propertyKey3 = "osgi.messaging.feature";
 
-        final String propertyValue1 = MqttMessageConstants.MESSAGING_ID;
-        final String[] propertyValue2 = new String[] { MqttMessageConstants.MESSAGING_PROTOCOL };
-        final String[] propertyValue3 = new String[] { MESSAGE_CONTEXT_BUILDER, ACKNOWLEDGE };
+		final String propertyValue1 = MqttMessageConstants.MESSAGING_ID;
+		final String[] propertyValue2 = new String[] { MqttMessageConstants.MESSAGING_PROTOCOL };
+		final String[] propertyValue3 = new String[] { MESSAGE_CONTEXT_BUILDER, ACKNOWLEDGE };
 
-        // @formatter:off
+		// @formatter:off
         final Optional<ServiceReference<MessageContextBuilder>> ref =
                 launchpad.waitForServiceReference(MessageContextBuilder.class, 10_000L);
         // @formatter:on
 
-        if (ref.isPresent()) {
-            final Dictionary<String, Object> properties = ref.get().getProperties();
+		if (ref.isPresent()) {
+			final Dictionary<String, Object> properties = ref.get().getProperties();
 
-            final Map<String, Object> check = new HashMap<>();
-            check.put(propertyKey1, propertyValue1);
-            check.put(propertyKey2, propertyValue2);
-            check.put(propertyKey3, propertyValue3);
+			final Map<String, Object> check = new HashMap<>();
+			check.put(propertyKey1, propertyValue1);
+			check.put(propertyKey2, propertyValue2);
+			check.put(propertyKey3, propertyValue3);
 
-            assertThat(TestHelper.toMap(properties)).containsAllEntriesOf(check);
-            return;
-        }
-        throw new AssertionError("Will never reach");
-    }
+			assertThat(TestHelper.toMap(properties)).containsAllEntriesOf(check);
+			return;
+		}
+		throw new AssertionError("Will never reach");
+	}
 
-    @Test
-    public void test_message_publisher() {
-        final String propertyKey1 = "osgi.messaging.name";
-        final String propertyKey2 = "osgi.messaging.protocol";
-        final String propertyKey3 = "osgi.messaging.feature";
+	@Test
+	public void test_message_publisher() {
+		final String propertyKey1 = "osgi.messaging.name";
+		final String propertyKey2 = "osgi.messaging.protocol";
+		final String propertyKey3 = "osgi.messaging.feature";
 
-        final String propertyValue1 = MqttMessageConstants.MESSAGING_ID;
-        final String[] propertyValue2 = new String[] { MqttMessageConstants.MESSAGING_PROTOCOL };
-        // @formatter:off
+		final String propertyValue1 = MqttMessageConstants.MESSAGING_ID;
+		final String[] propertyValue2 = new String[] { MqttMessageConstants.MESSAGING_PROTOCOL };
+		// @formatter:off
         final String[] propertyValue3 = new String[] {
                 RETAIN,
                 EXTENSION_QOS,
@@ -118,29 +118,29 @@ public final class ServicePropertyExistenceTest {
                 launchpad.waitForServiceReference(MessagePublisher.class, 10_000L);
         // @formatter:on
 
-        if (ref.isPresent()) {
-            final Dictionary<String, Object> properties = ref.get().getProperties();
+		if (ref.isPresent()) {
+			final Dictionary<String, Object> properties = ref.get().getProperties();
 
-            final Map<String, Object> check = new HashMap<>();
-            check.put(propertyKey1, propertyValue1);
-            check.put(propertyKey2, propertyValue2);
-            check.put(propertyKey3, propertyValue3);
+			final Map<String, Object> check = new HashMap<>();
+			check.put(propertyKey1, propertyValue1);
+			check.put(propertyKey2, propertyValue2);
+			check.put(propertyKey3, propertyValue3);
 
-            assertThat(TestHelper.toMap(properties)).containsAllEntriesOf(check);
-            return;
-        }
-        throw new AssertionError("Will never reach");
-    }
+			assertThat(TestHelper.toMap(properties)).containsAllEntriesOf(check);
+			return;
+		}
+		throw new AssertionError("Will never reach");
+	}
 
-    @Test
-    public void test_message_reply_to_publisher() {
-        final String propertyKey1 = "osgi.messaging.name";
-        final String propertyKey2 = "osgi.messaging.protocol";
-        final String propertyKey3 = "osgi.messaging.feature";
+	@Test
+	public void test_message_reply_to_publisher() {
+		final String propertyKey1 = "osgi.messaging.name";
+		final String propertyKey2 = "osgi.messaging.protocol";
+		final String propertyKey3 = "osgi.messaging.feature";
 
-        final String propertyValue1 = MqttMessageConstants.MESSAGING_ID;
-        final String[] propertyValue2 = new String[] { MqttMessageConstants.MESSAGING_PROTOCOL };
-        // @formatter:off
+		final String propertyValue1 = MqttMessageConstants.MESSAGING_ID;
+		final String[] propertyValue2 = new String[] { MqttMessageConstants.MESSAGING_PROTOCOL };
+		// @formatter:off
         final String[] propertyValue3 = new String[] {
                 REPLY_TO,
                 REPLY_TO_MANY_PUBLISH,
@@ -152,29 +152,29 @@ public final class ServicePropertyExistenceTest {
                 launchpad.waitForServiceReference(ReplyToPublisher.class, 10_000L);
         // @formatter:on
 
-        if (ref.isPresent()) {
-            final Dictionary<String, Object> properties = ref.get().getProperties();
+		if (ref.isPresent()) {
+			final Dictionary<String, Object> properties = ref.get().getProperties();
 
-            final Map<String, Object> check = new HashMap<>();
-            check.put(propertyKey1, propertyValue1);
-            check.put(propertyKey2, propertyValue2);
-            check.put(propertyKey3, propertyValue3);
+			final Map<String, Object> check = new HashMap<>();
+			check.put(propertyKey1, propertyValue1);
+			check.put(propertyKey2, propertyValue2);
+			check.put(propertyKey3, propertyValue3);
 
-            assertThat(TestHelper.toMap(properties)).containsAllEntriesOf(check);
-            return;
-        }
-        throw new AssertionError("Will never reach");
-    }
+			assertThat(TestHelper.toMap(properties)).containsAllEntriesOf(check);
+			return;
+		}
+		throw new AssertionError("Will never reach");
+	}
 
-    @Test
-    public void test_message_service_runtime() {
-        final String propertyKey1 = "osgi.messaging.name";
-        final String propertyKey2 = "osgi.messaging.protocol";
-        final String propertyKey3 = "osgi.messaging.feature";
+	@Test
+	public void test_message_service_runtime() {
+		final String propertyKey1 = "osgi.messaging.name";
+		final String propertyKey2 = "osgi.messaging.protocol";
+		final String propertyKey3 = "osgi.messaging.feature";
 
-        final String propertyValue1 = MqttMessageConstants.MESSAGING_ID;
-        final String[] propertyValue2 = new String[] { MqttMessageConstants.MESSAGING_PROTOCOL };
-        // @formatter:off
+		final String propertyValue1 = MqttMessageConstants.MESSAGING_ID;
+		final String[] propertyValue2 = new String[] { MqttMessageConstants.MESSAGING_PROTOCOL };
+		// @formatter:off
         final String[] propertyValue3 = new String[] {
                 RETAIN,
                 REPLY_TO,
@@ -197,29 +197,29 @@ public final class ServicePropertyExistenceTest {
                 launchpad.waitForServiceReference(MessageServiceRuntime.class, 10_000L);
         // @formatter:on
 
-        if (ref.isPresent()) {
-            final Dictionary<String, Object> properties = ref.get().getProperties();
+		if (ref.isPresent()) {
+			final Dictionary<String, Object> properties = ref.get().getProperties();
 
-            final Map<String, Object> check = new HashMap<>();
-            check.put(propertyKey1, propertyValue1);
-            check.put(propertyKey2, propertyValue2);
-            check.put(propertyKey3, propertyValue3);
+			final Map<String, Object> check = new HashMap<>();
+			check.put(propertyKey1, propertyValue1);
+			check.put(propertyKey2, propertyValue2);
+			check.put(propertyKey3, propertyValue3);
 
-            assertThat(TestHelper.toMap(properties)).containsAllEntriesOf(check);
-            return;
-        }
-        throw new AssertionError("Will never reach");
-    }
+			assertThat(TestHelper.toMap(properties)).containsAllEntriesOf(check);
+			return;
+		}
+		throw new AssertionError("Will never reach");
+	}
 
-    @Test
-    public void test_message_subscription() {
-        final String propertyKey1 = "osgi.messaging.name";
-        final String propertyKey2 = "osgi.messaging.protocol";
-        final String propertyKey3 = "osgi.messaging.feature";
+	@Test
+	public void test_message_subscription() {
+		final String propertyKey1 = "osgi.messaging.name";
+		final String propertyKey2 = "osgi.messaging.protocol";
+		final String propertyKey3 = "osgi.messaging.feature";
 
-        final String propertyValue1 = MqttMessageConstants.MESSAGING_ID;
-        final String[] propertyValue2 = new String[] { MqttMessageConstants.MESSAGING_PROTOCOL };
-        // @formatter:off
+		final String propertyValue1 = MqttMessageConstants.MESSAGING_ID;
+		final String[] propertyValue2 = new String[] { MqttMessageConstants.MESSAGING_PROTOCOL };
+		// @formatter:off
         final String[] propertyValue3 = new String[] {
                 EXTENSION_QOS,
                 RETAIN,
@@ -230,18 +230,18 @@ public final class ServicePropertyExistenceTest {
                 launchpad.waitForServiceReference(MessageSubscription.class, 10_000L);
         // @formatter:on
 
-        if (ref.isPresent()) {
-            final Dictionary<String, Object> properties = ref.get().getProperties();
+		if (ref.isPresent()) {
+			final Dictionary<String, Object> properties = ref.get().getProperties();
 
-            final Map<String, Object> check = new HashMap<>();
-            check.put(propertyKey1, propertyValue1);
-            check.put(propertyKey2, propertyValue2);
-            check.put(propertyKey3, propertyValue3);
+			final Map<String, Object> check = new HashMap<>();
+			check.put(propertyKey1, propertyValue1);
+			check.put(propertyKey2, propertyValue2);
+			check.put(propertyKey3, propertyValue3);
 
-            assertThat(TestHelper.toMap(properties)).containsAllEntriesOf(check);
-            return;
-        }
-        throw new AssertionError("Will never reach");
-    }
+			assertThat(TestHelper.toMap(properties)).containsAllEntriesOf(check);
+			return;
+		}
+		throw new AssertionError("Will never reach");
+	}
 
 }

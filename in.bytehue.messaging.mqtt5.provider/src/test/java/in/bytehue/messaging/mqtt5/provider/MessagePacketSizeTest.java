@@ -41,53 +41,53 @@ import aQute.launchpad.junit.LaunchpadRunner;
 @RunWith(LaunchpadRunner.class)
 public final class MessagePacketSizeTest {
 
-    @Service
-    private Launchpad launchpad;
+	@Service
+	private Launchpad launchpad;
 
-    @Service
-    private MessagePublisher publisher;
+	@Service
+	private MessagePublisher publisher;
 
-    @Service
-    private MessageSubscription subscriber;
+	@Service
+	private MessageSubscription subscriber;
 
-    @Service
-    private MessageContextBuilder mcb;
+	@Service
+	private MessageContextBuilder mcb;
 
-    static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
+	static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
 
-    @Before
-    public void setup() throws InterruptedException {
-        waitForMqttConnectionReady(launchpad);
-    }
+	@Before
+	public void setup() throws InterruptedException {
+		waitForMqttConnectionReady(launchpad);
+	}
 
-    @Test(expected = ConditionTimeoutException.class)
-    public void test_packet_configuration_size_exceeds() throws IOException, InterruptedException {
-        final AtomicBoolean flag = new AtomicBoolean();
+	@Test(expected = ConditionTimeoutException.class)
+	public void test_packet_configuration_size_exceeds() throws IOException, InterruptedException {
+		final AtomicBoolean flag = new AtomicBoolean();
 
-        final String channel = "ab/ba";
-        final String payload = "abc";
-        final String contentType = "text/plain";
+		final String channel = "ab/ba";
+		final String payload = "abc";
+		final String contentType = "text/plain";
 
-        // @formatter:off
+		// @formatter:off
         final Message message = mcb.channel(channel)
                                    .contentType(contentType)
                                    .content(ByteBuffer.wrap(new byte[100_000]))
                                    .buildMessage();
         // @formatter:on
 
-        subscriber.subscribe(channel).forEach(m -> {
-            final String topic = m.getContext().getChannel();
-            final String ctype = m.getContext().getContentType();
-            final String content = new String(m.payload().array(), UTF_8);
+		subscriber.subscribe(channel).forEach(m -> {
+			final String topic = m.getContext().getChannel();
+			final String ctype = m.getContext().getContentType();
+			final String content = new String(m.payload().array(), UTF_8);
 
-            assertThat(channel).isEqualTo(topic);
-            assertThat(payload).isEqualTo(content);
-            assertThat(contentType).isEqualTo(ctype);
+			assertThat(channel).isEqualTo(topic);
+			assertThat(payload).isEqualTo(content);
+			assertThat(contentType).isEqualTo(ctype);
 
-            flag.set(true);
-        });
-        publisher.publish(message);
-        waitForRequestProcessing(flag);
-    }
+			flag.set(true);
+		});
+		publisher.publish(message);
+		waitForRequestProcessing(flag);
+	}
 
 }

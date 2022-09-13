@@ -20,8 +20,8 @@ import org.osgi.service.component.annotations.Component;
 import in.bytehue.messaging.mqtt5.api.TargetCondition;
 
 /**
- * This is the default implementation of {@link TargetCondition} which
- * will be available always
+ * This is the default implementation of {@link TargetCondition} which will be
+ * available always
  */
 @Component(property = "satisfy=always")
 public final class DefaultTargetCondition implements TargetCondition {

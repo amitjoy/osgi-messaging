@@ -26,26 +26,26 @@ import org.osgi.util.converter.Functioning;
 @Component(service = ConverterAdapter.class)
 public final class ConverterAdapter implements Converter {
 
-    private final Converter converter;
+	private final Converter converter;
 
-    @Activate
-    public ConverterAdapter() {
-        converter = Converters.standardConverter();
-    }
+	@Activate
+	public ConverterAdapter() {
+		converter = Converters.standardConverter();
+	}
 
-    @Override
-    public Converting convert(final Object obj) {
-        return converter.convert(obj);
-    }
+	@Override
+	public Converting convert(final Object obj) {
+		return converter.convert(obj);
+	}
 
-    @Override
-    public Functioning function() {
-        return converter.function();
-    }
+	@Override
+	public Functioning function() {
+		return converter.function();
+	}
 
-    @Override
-    public ConverterBuilder newConverterBuilder() {
-        return converter.newConverterBuilder();
-    }
+	@Override
+	public ConverterBuilder newConverterBuilder() {
+		return converter.newConverterBuilder();
+	}
 
 }

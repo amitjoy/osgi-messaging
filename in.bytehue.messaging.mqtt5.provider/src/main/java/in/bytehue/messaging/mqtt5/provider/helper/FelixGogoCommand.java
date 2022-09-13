@@ -28,16 +28,16 @@ import org.osgi.service.component.annotations.ComponentPropertyType;
 @ComponentPropertyType
 public @interface FelixGogoCommand {
 
-    String PREFIX_ = "osgi.command.";
+	String PREFIX_ = "osgi.command.";
 
-    /**
-     * @return the scope used to disambiguate command functions
-     */
-    String scope();
+	/**
+	 * @return the scope used to disambiguate command functions
+	 */
+	String scope();
 
-    /**
-     * @return the command functions provided by the service
-     */
-    String[] function();
+	/**
+	 * @return the command functions provided by the service
+	 */
+	String[] function();
 
 }

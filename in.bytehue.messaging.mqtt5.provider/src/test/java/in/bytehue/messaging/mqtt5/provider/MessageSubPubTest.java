@@ -43,127 +43,127 @@ import aQute.launchpad.junit.LaunchpadRunner;
 @RunWith(LaunchpadRunner.class)
 public final class MessageSubPubTest {
 
-    @Service
-    private Launchpad launchpad;
+	@Service
+	private Launchpad launchpad;
 
-    @Service
-    private MessagePublisher publisher;
+	@Service
+	private MessagePublisher publisher;
 
-    @Service
-    private MessageSubscription subscriber;
+	@Service
+	private MessageSubscription subscriber;
 
-    @Service
-    private MessageContextBuilder mcb;
+	@Service
+	private MessageContextBuilder mcb;
 
-    static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
+	static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
 
-    @Before
-    public void setup() throws InterruptedException {
-        waitForMqttConnectionReady(launchpad);
-    }
+	@Before
+	public void setup() throws InterruptedException {
+		waitForMqttConnectionReady(launchpad);
+	}
 
-    @Test
-    public void test_sub_pub_with_1() throws Exception {
-        final AtomicBoolean flag = new AtomicBoolean();
+	@Test
+	public void test_sub_pub_with_1() throws Exception {
+		final AtomicBoolean flag = new AtomicBoolean();
 
-        final String channel = "ab/ba";
-        final String payload = "abc";
-        final String contentType = "text/plain";
+		final String channel = "ab/ba";
+		final String payload = "abc";
+		final String contentType = "text/plain";
 
-        // @formatter:off
+		// @formatter:off
         final Message message = mcb.channel(channel)
                                    .contentType(contentType)
                                    .content(ByteBuffer.wrap(payload.getBytes()))
                                    .buildMessage();
         // @formatter:on
 
-        subscriber.subscribe(channel).forEach(m -> {
-            final String topic = m.getContext().getChannel();
-            final String ctype = m.getContext().getContentType();
-            final String content = new String(m.payload().array(), UTF_8);
+		subscriber.subscribe(channel).forEach(m -> {
+			final String topic = m.getContext().getChannel();
+			final String ctype = m.getContext().getContentType();
+			final String content = new String(m.payload().array(), UTF_8);
 
-            assertThat(channel).isEqualTo(topic);
-            assertThat(payload).isEqualTo(content);
-            assertThat(contentType).isEqualTo(ctype);
+			assertThat(channel).isEqualTo(topic);
+			assertThat(payload).isEqualTo(content);
+			assertThat(contentType).isEqualTo(ctype);
 
-            flag.set(true);
-        });
-        publisher.publish(message);
-        waitForRequestProcessing(flag);
-    }
+			flag.set(true);
+		});
+		publisher.publish(message);
+		waitForRequestProcessing(flag);
+	}
 
-    @Test
-    public void test_sub_pub_with_2() throws Exception {
-        final AtomicBoolean flag = new AtomicBoolean();
+	@Test
+	public void test_sub_pub_with_2() throws Exception {
+		final AtomicBoolean flag = new AtomicBoolean();
 
-        final String channel = "ab/ba";
-        final String payload = "abc";
-        final String contentType = "text/plain";
+		final String channel = "ab/ba";
+		final String payload = "abc";
+		final String contentType = "text/plain";
 
-        // @formatter:off
+		// @formatter:off
         final Message message = mcb.channel(channel)
                                    .contentType(contentType)
                                    .content(ByteBuffer.wrap(payload.getBytes()))
                                    .buildMessage();
         // @formatter:on
 
-        subscriber.subscribe(message.getContext()).forEach(m -> {
-            final String topic = m.getContext().getChannel();
-            final String ctype = m.getContext().getContentType();
-            final String content = new String(m.payload().array(), UTF_8);
+		subscriber.subscribe(message.getContext()).forEach(m -> {
+			final String topic = m.getContext().getChannel();
+			final String ctype = m.getContext().getContentType();
+			final String content = new String(m.payload().array(), UTF_8);
 
-            assertThat(channel).isEqualTo(topic);
-            assertThat(payload).isEqualTo(content);
-            assertThat(contentType).isEqualTo(ctype);
+			assertThat(channel).isEqualTo(topic);
+			assertThat(payload).isEqualTo(content);
+			assertThat(contentType).isEqualTo(ctype);
 
-            flag.set(true);
-        });
-        publisher.publish(message);
-        waitForRequestProcessing(flag);
-    }
+			flag.set(true);
+		});
+		publisher.publish(message);
+		waitForRequestProcessing(flag);
+	}
 
-    @Test
-    public void test_sub_pub_with_3() throws Exception {
-        final AtomicBoolean flag = new AtomicBoolean();
+	@Test
+	public void test_sub_pub_with_3() throws Exception {
+		final AtomicBoolean flag = new AtomicBoolean();
 
-        final String channel = "ab/ba";
-        final String inputChannel = "c/d";
-        final String payload = "abc";
-        final String contentType = "text/plain";
+		final String channel = "ab/ba";
+		final String inputChannel = "c/d";
+		final String payload = "abc";
+		final String contentType = "text/plain";
 
-        // @formatter:off
+		// @formatter:off
         final Message message = mcb.channel(channel)
                 .contentType(contentType)
                 .content(ByteBuffer.wrap(payload.getBytes()))
                 .buildMessage();
         // @formatter:on
 
-        subscriber.subscribe(inputChannel).forEach(m -> {
-            final String topic = m.getContext().getChannel();
-            final String ctype = m.getContext().getContentType();
-            final String content = new String(m.payload().array(), UTF_8);
+		subscriber.subscribe(inputChannel).forEach(m -> {
+			final String topic = m.getContext().getChannel();
+			final String ctype = m.getContext().getContentType();
+			final String content = new String(m.payload().array(), UTF_8);
 
-            assertThat(inputChannel).isEqualTo(topic);
-            assertThat(payload).isEqualTo(content);
-            assertThat(contentType).isEqualTo(ctype);
+			assertThat(inputChannel).isEqualTo(topic);
+			assertThat(payload).isEqualTo(content);
+			assertThat(contentType).isEqualTo(ctype);
 
-            flag.set(true);
-        });
-        // inputChannel has higher priority over message.getContext().getChannel()
-        publisher.publish(message, inputChannel);
-        waitForRequestProcessing(flag);
-    }
+			flag.set(true);
+		});
+		// inputChannel has higher priority over message.getContext().getChannel()
+		publisher.publish(message, inputChannel);
+		waitForRequestProcessing(flag);
+	}
 
-    @Test
-    public void test_sub_pub_with_4() throws Exception {
-        final AtomicBoolean flag = new AtomicBoolean();
+	@Test
+	public void test_sub_pub_with_4() throws Exception {
+		final AtomicBoolean flag = new AtomicBoolean();
 
-        final String channel = "ab/ba";
-        final String inputChannel = "c/d";
-        final String payload = "abc";
-        final String contentType = "text/plain";
+		final String channel = "ab/ba";
+		final String inputChannel = "c/d";
+		final String payload = "abc";
+		final String contentType = "text/plain";
 
-        // @formatter:off
+		// @formatter:off
         final Message message = mcb.channel(channel)
                 .contentType(contentType)
                 .content(ByteBuffer.wrap(payload.getBytes()))
@@ -173,35 +173,35 @@ public final class MessageSubPubTest {
                 .buildContext();
         // @formatter:on
 
-        subscriber.subscribe(inputChannel).forEach(m -> {
-            final String topic = m.getContext().getChannel();
-            final String ctype = m.getContext().getContentType();
-            final String content = new String(m.payload().array(), UTF_8);
+		subscriber.subscribe(inputChannel).forEach(m -> {
+			final String topic = m.getContext().getChannel();
+			final String ctype = m.getContext().getContentType();
+			final String content = new String(m.payload().array(), UTF_8);
 
-            assertThat(inputChannel).isEqualTo(topic);
-            assertThat(payload).isEqualTo(content);
-            assertThat(contentType).isEqualTo(ctype);
+			assertThat(inputChannel).isEqualTo(topic);
+			assertThat(payload).isEqualTo(content);
+			assertThat(contentType).isEqualTo(ctype);
 
-            flag.set(true);
-        });
-        // messageContext has higher priority over message.getContext().getChannel()
-        publisher.publish(message, messageContext);
-        waitForRequestProcessing(flag);
-    }
+			flag.set(true);
+		});
+		// messageContext has higher priority over message.getContext().getChannel()
+		publisher.publish(message, messageContext);
+		waitForRequestProcessing(flag);
+	}
 
-    @Test
-    public void test_sub_pub_extensions_guaranteedDelivery() throws Exception {
-        final AtomicBoolean flag = new AtomicBoolean();
+	@Test
+	public void test_sub_pub_extensions_guaranteedDelivery() throws Exception {
+		final AtomicBoolean flag = new AtomicBoolean();
 
-        final String channel = "ab/ba";
-        final String inputChannel = "c/d";
-        final String payload = "abc";
-        final String contentType = "text/plain";
+		final String channel = "ab/ba";
+		final String inputChannel = "c/d";
+		final String payload = "abc";
+		final String contentType = "text/plain";
 
-        final Map<String, Object> extensions = new HashMap<>();
-        extensions.put(Features.EXTENSION_GUARANTEED_DELIVERY, true);
+		final Map<String, Object> extensions = new HashMap<>();
+		extensions.put(Features.EXTENSION_GUARANTEED_DELIVERY, true);
 
-        // @formatter:off
+		// @formatter:off
         final Message message = mcb.channel(channel)
                 .contentType(contentType)
                 .content(ByteBuffer.wrap(payload.getBytes()))
@@ -212,39 +212,39 @@ public final class MessageSubPubTest {
                 .buildContext();
         // @formatter:on
 
-        subscriber.subscribe(messageContext).forEach(m -> {
-            final MessageContext context = m.getContext();
-            final String topic = context.getChannel();
-            final String ctype = context.getContentType();
-            final String content = new String(m.payload().array(), UTF_8);
+		subscriber.subscribe(messageContext).forEach(m -> {
+			final MessageContext context = m.getContext();
+			final String topic = context.getChannel();
+			final String ctype = context.getContentType();
+			final String content = new String(m.payload().array(), UTF_8);
 
-            final Map<String, Object> ext = context.getExtensions();
+			final Map<String, Object> ext = context.getExtensions();
 
-            assertThat(2).isEqualTo(ext.get(Features.EXTENSION_QOS));
-            assertThat(inputChannel).isEqualTo(topic);
-            assertThat(payload).isEqualTo(content);
-            assertThat(contentType).isEqualTo(ctype);
+			assertThat(2).isEqualTo(ext.get(Features.EXTENSION_QOS));
+			assertThat(inputChannel).isEqualTo(topic);
+			assertThat(payload).isEqualTo(content);
+			assertThat(contentType).isEqualTo(ctype);
 
-            flag.set(true);
-        });
-        // messageContext has higher priority over message.getContext().getChannel()
-        publisher.publish(message, messageContext);
-        waitForRequestProcessing(flag);
-    }
+			flag.set(true);
+		});
+		// messageContext has higher priority over message.getContext().getChannel()
+		publisher.publish(message, messageContext);
+		waitForRequestProcessing(flag);
+	}
 
-    @Test
-    public void test_sub_pub_extensions_guaranteedOrdering() throws Exception {
-        final AtomicBoolean flag = new AtomicBoolean();
+	@Test
+	public void test_sub_pub_extensions_guaranteedOrdering() throws Exception {
+		final AtomicBoolean flag = new AtomicBoolean();
 
-        final String channel = "ab/ba";
-        final String inputChannel = "c/d";
-        final String payload = "abc";
-        final String contentType = "text/plain";
+		final String channel = "ab/ba";
+		final String inputChannel = "c/d";
+		final String payload = "abc";
+		final String contentType = "text/plain";
 
-        final Map<String, Object> extensions = new HashMap<>();
-        extensions.put(Features.EXTENSION_GUARANTEED_ORDERING, true);
+		final Map<String, Object> extensions = new HashMap<>();
+		extensions.put(Features.EXTENSION_GUARANTEED_ORDERING, true);
 
-        // @formatter:off
+		// @formatter:off
         final Message message = mcb.channel(channel)
                 .contentType(contentType)
                 .content(ByteBuffer.wrap(payload.getBytes()))
@@ -254,24 +254,24 @@ public final class MessageSubPubTest {
                 .buildContext();
         // @formatter:on
 
-        subscriber.subscribe(messageContext).forEach(m -> {
-            final MessageContext context = m.getContext();
-            final String topic = context.getChannel();
-            final String ctype = context.getContentType();
-            final String content = new String(m.payload().array(), UTF_8);
+		subscriber.subscribe(messageContext).forEach(m -> {
+			final MessageContext context = m.getContext();
+			final String topic = context.getChannel();
+			final String ctype = context.getContentType();
+			final String content = new String(m.payload().array(), UTF_8);
 
-            final Map<String, Object> ext = context.getExtensions();
+			final Map<String, Object> ext = context.getExtensions();
 
-            assertThat(2).isEqualTo(ext.get(Features.EXTENSION_QOS));
-            assertThat(inputChannel).isEqualTo(topic);
-            assertThat(payload).isEqualTo(content);
-            assertThat(contentType).isEqualTo(ctype);
+			assertThat(2).isEqualTo(ext.get(Features.EXTENSION_QOS));
+			assertThat(inputChannel).isEqualTo(topic);
+			assertThat(payload).isEqualTo(content);
+			assertThat(contentType).isEqualTo(ctype);
 
-            flag.set(true);
-        });
-        // messageContext has higher priority over message.getContext().getChannel()
-        publisher.publish(message, messageContext);
-        waitForRequestProcessing(flag);
-    }
+			flag.set(true);
+		});
+		// messageContext has higher priority over message.getContext().getChannel()
+		publisher.publish(message, messageContext);
+		waitForRequestProcessing(flag);
+	}
 
 }

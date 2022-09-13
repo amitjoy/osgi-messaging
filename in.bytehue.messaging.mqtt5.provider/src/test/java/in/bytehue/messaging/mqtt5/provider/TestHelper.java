@@ -32,38 +32,38 @@ import in.bytehue.messaging.mqtt5.api.TargetCondition;
 
 public final class TestHelper {
 
-    /**
-     * Non-instantiable
-     */
-    private TestHelper() {
-        throw new IllegalAccessError("Non-Instantiable");
-    }
+	/**
+	 * Non-instantiable
+	 */
+	private TestHelper() {
+		throw new IllegalAccessError("Non-Instantiable");
+	}
 
-    /**
-     * Wait 20 seconds for the flag to be true
-     *
-     * @param flag the flag
-     * @throws InterruptedException if the thread becomes interrupted
-     */
-    public static void waitForRequestProcessing(final AtomicBoolean flag) throws InterruptedException {
-        await().atMost(20, TimeUnit.SECONDS).untilTrue(flag);
-    }
+	/**
+	 * Wait 20 seconds for the flag to be true
+	 *
+	 * @param flag the flag
+	 * @throws InterruptedException if the thread becomes interrupted
+	 */
+	public static void waitForRequestProcessing(final AtomicBoolean flag) throws InterruptedException {
+		await().atMost(20, TimeUnit.SECONDS).untilTrue(flag);
+	}
 
-    /**
-     * Converts dictionary to map
-     *
-     * @param dictionary the dictionary to convert
-     * @return the converted map
-     */
-    public static Map<String, Object> toMap(final Dictionary<String, Object> dictionary) {
-        final List<String> keys = Collections.list(dictionary.keys());
-        return keys.stream().collect(Collectors.toMap(Function.identity(), dictionary::get));
-    }
+	/**
+	 * Converts dictionary to map
+	 *
+	 * @param dictionary the dictionary to convert
+	 * @return the converted map
+	 */
+	public static Map<String, Object> toMap(final Dictionary<String, Object> dictionary) {
+		final List<String> keys = Collections.list(dictionary.keys());
+		return keys.stream().collect(Collectors.toMap(Function.identity(), dictionary::get));
+	}
 
-    public static void waitForMqttConnectionReady(final Launchpad launchpad) {
-        await().atMost(20, TimeUnit.SECONDS) //
-                .until((Callable<Boolean>) () -> launchpad
-                        .getService(TargetCondition.class, "(mqtt.connection.ready=true)").isPresent());
-    }
+	public static void waitForMqttConnectionReady(final Launchpad launchpad) {
+		await().atMost(20, TimeUnit.SECONDS) //
+				.until((Callable<Boolean>) () -> launchpad
+						.getService(TargetCondition.class, "(mqtt.connection.ready=true)").isPresent());
+	}
 
 }
