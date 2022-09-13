@@ -22,51 +22,51 @@ import org.osgi.service.log.Logger;
 
 public final class AcknowledgePair<B> {
 
-    private B concrete;
-    private String serviceFilter;
+	private B concrete;
+	private String serviceFilter;
 
-    private Class<?> clazz;
+	private Class<?> clazz;
 
-    public static <B> AcknowledgePair<B> emptyOf(final Class<?> clazz) {
-        return new AcknowledgePair<>(clazz);
-    }
+	public static <B> AcknowledgePair<B> emptyOf(final Class<?> clazz) {
+		return new AcknowledgePair<>(clazz);
+	}
 
-    public static <B> AcknowledgePair<B> of(final String serviceFilter, final B second, final Class<?> clazz) {
-        return new AcknowledgePair<>(serviceFilter, second, clazz);
-    }
+	public static <B> AcknowledgePair<B> of(final String serviceFilter, final B second, final Class<?> clazz) {
+		return new AcknowledgePair<>(serviceFilter, second, clazz);
+	}
 
-    public AcknowledgePair(final Class<?> clazz) {
-        this(null, null, clazz);
-    }
+	public AcknowledgePair(final Class<?> clazz) {
+		this(null, null, clazz);
+	}
 
-    public AcknowledgePair(final String serviceFilter, final B concrete, final Class<?> clazz) {
-        this.clazz = clazz;
-        this.concrete = concrete;
-        this.serviceFilter = serviceFilter;
-    }
+	public AcknowledgePair(final String serviceFilter, final B concrete, final Class<?> clazz) {
+		this.clazz = clazz;
+		this.concrete = concrete;
+		this.serviceFilter = serviceFilter;
+	}
 
-    public String serviceFilter() {
-        return serviceFilter;
-    }
+	public String serviceFilter() {
+		return serviceFilter;
+	}
 
-    public B concrete() {
-        return concrete;
-    }
+	public B concrete() {
+		return concrete;
+	}
 
-    public void setServiceFilter(final String first) {
-        this.serviceFilter = first;
-    }
+	public void setServiceFilter(final String first) {
+		this.serviceFilter = first;
+	}
 
-    public void setConcrete(final B concrete) {
-        this.concrete = concrete;
-    }
+	public void setConcrete(final B concrete) {
+		this.concrete = concrete;
+	}
 
-    @SuppressWarnings("unchecked")
-    public B findEffective(final BundleContext context, final Logger logger) {
-        B effective = null;
-        if (serviceFilter != null) {
-            effective = (B) getOptionalService(clazz, serviceFilter, context, logger).orElse(null);
-        }
-        return effective == null ? concrete : effective;
-    }
+	@SuppressWarnings("unchecked")
+	public B findEffective(final BundleContext context, final Logger logger) {
+		B effective = null;
+		if (serviceFilter != null) {
+			effective = (B) getOptionalService(clazz, serviceFilter, context, logger).orElse(null);
+		}
+		return effective == null ? concrete : effective;
+	}
 }

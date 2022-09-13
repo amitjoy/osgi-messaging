@@ -41,34 +41,34 @@ import in.bytehue.messaging.mqtt5.api.MqttMessageCorrelationIdGenerator;
 @RunWith(LaunchpadRunner.class)
 public final class MessageReplyToPublisherCorrelationIdTest {
 
-    @Service
-    private Launchpad launchpad;
+	@Service
+	private Launchpad launchpad;
 
-    @Service
-    private MessagePublisher publisher;
+	@Service
+	private MessagePublisher publisher;
 
-    @Service
-    private ReplyToPublisher replyToPublisher;
+	@Service
+	private ReplyToPublisher replyToPublisher;
 
-    @Service
-    private MqttMessageContextBuilder mcb;
+	@Service
+	private MqttMessageContextBuilder mcb;
 
-    static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
+	static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
 
-    @Before
-    public void setup() throws InterruptedException {
-        waitForMqttConnectionReady(launchpad);
-    }
+	@Before
+	public void setup() throws InterruptedException {
+		waitForMqttConnectionReady(launchpad);
+	}
 
-    @Test
-    public void test_auto_generated_correlation_id_is_UUID() throws Exception {
-        final AtomicBoolean flag = new AtomicBoolean();
+	@Test
+	public void test_auto_generated_correlation_id_is_UUID() throws Exception {
+		final AtomicBoolean flag = new AtomicBoolean();
 
-        final String reqChannel = "ab/ba";
-        final String resChannel = "c/d";
-        final String payload = "abc";
+		final String reqChannel = "ab/ba";
+		final String resChannel = "c/d";
+		final String payload = "abc";
 
-        // @formatter:off
+		// @formatter:off
         final Message message = mcb.channel(resChannel)
                                    .replyTo(reqChannel)
                                    .content(ByteBuffer.wrap(payload.getBytes()))
@@ -85,26 +85,26 @@ public final class MessageReplyToPublisherCorrelationIdTest {
                                       .buildMessage();
         // @formatter:on
 
-        publisher.publish(reqMessage);
+		publisher.publish(reqMessage);
 
-        waitForRequestProcessing(flag);
-    }
+		waitForRequestProcessing(flag);
+	}
 
-    @Test
-    public void test_custom_generated_correlation_id() throws Exception {
+	@Test
+	public void test_custom_generated_correlation_id() throws Exception {
 
-        final String ID = "MY_CORRELATION_ID";
-        final MqttMessageCorrelationIdGenerator gen = () -> ID;
+		final String ID = "MY_CORRELATION_ID";
+		final MqttMessageCorrelationIdGenerator gen = () -> ID;
 
-        launchpad.register(MqttMessageCorrelationIdGenerator.class, gen, "custom_generator", "abc");
+		launchpad.register(MqttMessageCorrelationIdGenerator.class, gen, "custom_generator", "abc");
 
-        final AtomicBoolean flag = new AtomicBoolean();
+		final AtomicBoolean flag = new AtomicBoolean();
 
-        final String reqChannel = "ab/ba";
-        final String resChannel = "c/d";
-        final String payload = "abc";
+		final String reqChannel = "ab/ba";
+		final String resChannel = "c/d";
+		final String payload = "abc";
 
-        // @formatter:off
+		// @formatter:off
         final Message message = mcb.channel(resChannel)
                                    .content(ByteBuffer.wrap(payload.getBytes()))
                                    .buildMessage();
@@ -126,9 +126,9 @@ public final class MessageReplyToPublisherCorrelationIdTest {
                                       .buildMessage();
         // @formatter:on
 
-        publisher.publish(reqMessage);
+		publisher.publish(reqMessage);
 
-        waitForRequestProcessing(flag);
-    }
+		waitForRequestProcessing(flag);
+	}
 
 }

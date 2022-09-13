@@ -24,20 +24,20 @@ import org.osgi.service.messaging.MessageContext;
 
 public final class MessageProvider implements Message {
 
-    public ByteBuffer byteBuffer;
-    public MessageContext messageContext;
+	public ByteBuffer byteBuffer;
+	public MessageContext messageContext;
 
-    @Override
-    public ByteBuffer payload() {
-        return byteBuffer;
-    }
+	@Override
+	public ByteBuffer payload() {
+		return byteBuffer;
+	}
 
-    @Override
-    public MessageContext getContext() {
-        return messageContext;
-    }
+	@Override
+	public MessageContext getContext() {
+		return messageContext;
+	}
 
-    // @formatter:off
+	// @formatter:off
     @Override
     public String toString() {
         return new StringBuilder().append("Message [payload=")

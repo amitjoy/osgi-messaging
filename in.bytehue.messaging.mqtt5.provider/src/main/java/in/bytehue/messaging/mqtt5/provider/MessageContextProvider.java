@@ -33,80 +33,80 @@ import in.bytehue.messaging.mqtt5.provider.helper.AcknowledgePair;
 
 public final class MessageContextProvider implements MessageContext, AcknowledgeMessageContext {
 
-    public String channel;
-    public String contentType;
-    public String contentEncoding;
-    public String correlationId;
-    public String correlationIdGenerator;
-    public String replyToChannel;
+	public String channel;
+	public String contentType;
+	public String contentEncoding;
+	public String correlationId;
+	public String correlationIdGenerator;
+	public String replyToChannel;
 
-    public volatile AcknowledgeType acknowledgeState;
-    public Map<String, Object> extensions = new HashMap<>();
+	public volatile AcknowledgeType acknowledgeState;
+	public Map<String, Object> extensions = new HashMap<>();
 
-    public final AcknowledgePair<Predicate<Message>> acknowledgeFilter = AcknowledgePair.emptyOf(Predicate.class);
-    public final AcknowledgePair<Consumer<Message>> acknowledgeHandler = AcknowledgePair.emptyOf(Consumer.class);
-    public final AcknowledgePair<Consumer<Message>> acknowledgeConsumer = AcknowledgePair.emptyOf(Consumer.class);
+	public final AcknowledgePair<Predicate<Message>> acknowledgeFilter = AcknowledgePair.emptyOf(Predicate.class);
+	public final AcknowledgePair<Consumer<Message>> acknowledgeHandler = AcknowledgePair.emptyOf(Consumer.class);
+	public final AcknowledgePair<Consumer<Message>> acknowledgeConsumer = AcknowledgePair.emptyOf(Consumer.class);
 
-    @Override
-    public String getChannel() {
-        return channel;
-    }
+	@Override
+	public String getChannel() {
+		return channel;
+	}
 
-    @Override
-    public String getContentType() {
-        return contentType;
-    }
+	@Override
+	public String getContentType() {
+		return contentType;
+	}
 
-    @Override
-    public String getContentEncoding() {
-        return contentEncoding;
-    }
+	@Override
+	public String getContentEncoding() {
+		return contentEncoding;
+	}
 
-    @Override
-    public String getCorrelationId() {
-        return correlationId;
-    }
+	@Override
+	public String getCorrelationId() {
+		return correlationId;
+	}
 
-    @Override
-    public String getReplyToChannel() {
-        return replyToChannel;
-    }
+	@Override
+	public String getReplyToChannel() {
+		return replyToChannel;
+	}
 
-    @Override
-    public Map<String, Object> getExtensions() {
-        return extensions;
-    }
+	@Override
+	public Map<String, Object> getExtensions() {
+		return extensions;
+	}
 
-    @Override
-    public AcknowledgeType getAcknowledgeState() {
-        return acknowledgeState;
-    }
+	@Override
+	public AcknowledgeType getAcknowledgeState() {
+		return acknowledgeState;
+	}
 
-    @Override
-    public AcknowledgeHandler getAcknowledgeHandler() {
-        return new AcknowledgeHandler() {
+	@Override
+	public AcknowledgeHandler getAcknowledgeHandler() {
+		return new AcknowledgeHandler() {
 
-            @Override
-            public synchronized boolean reject() {
-                if (acknowledgeState == ACKNOWLEDGED) {
-                    return false;
-                }
-                acknowledgeState = REJECTED;
-                return true;
-            }
+			@Override
+			public synchronized boolean reject() {
+				if (acknowledgeState == ACKNOWLEDGED) {
+					return false;
+				}
+				acknowledgeState = REJECTED;
+				return true;
+			}
 
-            @Override
-            public synchronized boolean acknowledge() {
-                if (acknowledgeState == REJECTED) {
-                    return false;
-                }
-                acknowledgeState = ACKNOWLEDGED;
-                return true;
-            }
-        };
-    }
+			@Override
+			public synchronized boolean acknowledge() {
+				if (acknowledgeState == REJECTED) {
+					return false;
+				}
+				acknowledgeState = ACKNOWLEDGED;
+				return true;
+			}
+		};
+	}
 
-    // @formatter:off
+	// @formatter:off
     @Override
     public String toString() {
         return new StringBuilder().append("MessageContext [channel=")

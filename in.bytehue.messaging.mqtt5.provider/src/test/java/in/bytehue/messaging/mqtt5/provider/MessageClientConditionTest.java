@@ -39,53 +39,53 @@ import in.bytehue.messaging.mqtt5.api.TargetCondition;
 @RunWith(LaunchpadRunner.class)
 public final class MessageClientConditionTest {
 
-    @Service
-    private Launchpad launchpad;
+	@Service
+	private Launchpad launchpad;
 
-    @Service
-    private ConfigurationAdmin configAdmin;
+	@Service
+	private ConfigurationAdmin configAdmin;
 
-    static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
+	static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
 
-    @Before
-    public void setup() throws InterruptedException {
-        waitForMqttConnectionReady(launchpad);
-    }
+	@Before
+	public void setup() throws InterruptedException {
+		waitForMqttConnectionReady(launchpad);
+	}
 
-    @Test
-    public void test_default_condition() throws Exception {
-        await().atMost(3, SECONDS).until(() -> launchpad.getService(MessageClientProvider.class).isPresent());
-    }
+	@Test
+	public void test_default_condition() throws Exception {
+		await().atMost(3, SECONDS).until(() -> launchpad.getService(MessageClientProvider.class).isPresent());
+	}
 
-    @Test
-    public void test_unsatisfiable_condition() throws IOException {
-        final Configuration config = configAdmin.getConfiguration(CLIENT, "?");
+	@Test
+	public void test_unsatisfiable_condition() throws IOException {
+		final Configuration config = configAdmin.getConfiguration(CLIENT, "?");
 
-        final Dictionary<String, Object> properties = new Hashtable<>();
-        properties.put("condition.target", "(a=b)");
+		final Dictionary<String, Object> properties = new Hashtable<>();
+		properties.put("condition.target", "(a=b)");
 
-        config.update(properties);
+		config.update(properties);
 
-        await().atMost(3, SECONDS).until(() -> !launchpad.getService(MessageClientProvider.class).isPresent());
-    }
+		await().atMost(3, SECONDS).until(() -> !launchpad.getService(MessageClientProvider.class).isPresent());
+	}
 
-    @Test
-    public void test_satisfiable_condition() throws IOException {
-        final Configuration config = configAdmin.getConfiguration(CLIENT, "?");
+	@Test
+	public void test_satisfiable_condition() throws IOException {
+		final Configuration config = configAdmin.getConfiguration(CLIENT, "?");
 
-        final Dictionary<String, Object> properties = new Hashtable<>();
-        properties.put("condition.target", "(a=b)");
+		final Dictionary<String, Object> properties = new Hashtable<>();
+		properties.put("condition.target", "(a=b)");
 
-        config.update(properties);
+		config.update(properties);
 
-        await().atMost(13, SECONDS).until(() -> !launchpad.getService(MessageClientProvider.class).isPresent());
+		await().atMost(13, SECONDS).until(() -> !launchpad.getService(MessageClientProvider.class).isPresent());
 
-        final TargetCondition condition = new TargetCondition() {
-        };
+		final TargetCondition condition = new TargetCondition() {
+		};
 
-        launchpad.register(TargetCondition.class, condition, "a", "b");
+		launchpad.register(TargetCondition.class, condition, "a", "b");
 
-        await().atMost(13, SECONDS).until(() -> launchpad.getService(MessageClientProvider.class).isPresent());
-    }
+		await().atMost(13, SECONDS).until(() -> launchpad.getService(MessageClientProvider.class).isPresent());
+	}
 
 }

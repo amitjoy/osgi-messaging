@@ -84,135 +84,135 @@ public final class MessageContextBuilderProvider
     }
     //@formatter:on
 
-    @Override
-    public MessageContext buildContext() {
-        return messageContext;
-    }
+	@Override
+	public MessageContext buildContext() {
+		return messageContext;
+	}
 
-    @Override
-    public Message buildMessage() {
-        return message;
-    }
+	@Override
+	public Message buildMessage() {
+		return message;
+	}
 
-    @Override
-    public MqttMessageContextBuilder withContext(final MessageContext context) {
-        if (context instanceof MessageContextProvider) {
-            message.messageContext = context;
-        }
-        return this;
-    }
+	@Override
+	public MqttMessageContextBuilder withContext(final MessageContext context) {
+		if (context instanceof MessageContextProvider) {
+			message.messageContext = context;
+		}
+		return this;
+	}
 
-    @Override
-    public MqttMessageContextBuilder content(final ByteBuffer byteBuffer) {
-        message.byteBuffer = byteBuffer;
-        return this;
-    }
+	@Override
+	public MqttMessageContextBuilder content(final ByteBuffer byteBuffer) {
+		message.byteBuffer = byteBuffer;
+		return this;
+	}
 
-    @Override
-    public <T> MqttMessageContextBuilder content(final T object, final Function<T, ByteBuffer> contentMapper) {
-        message.byteBuffer = Optional.ofNullable(contentMapper).map(c -> c.apply(object)).orElse(null);
-        return this;
-    }
+	@Override
+	public <T> MqttMessageContextBuilder content(final T object, final Function<T, ByteBuffer> contentMapper) {
+		message.byteBuffer = Optional.ofNullable(contentMapper).map(c -> c.apply(object)).orElse(null);
+		return this;
+	}
 
-    @Override
-    public MqttMessageContextBuilder replyTo(final String replyToAddress) {
-        messageContext.replyToChannel = replyToAddress;
-        return this;
-    }
+	@Override
+	public MqttMessageContextBuilder replyTo(final String replyToAddress) {
+		messageContext.replyToChannel = replyToAddress;
+		return this;
+	}
 
-    @Override
-    public MqttMessageContextBuilder correlationId(final String correlationId) {
-        messageContext.correlationId = correlationId;
-        return this;
-    }
+	@Override
+	public MqttMessageContextBuilder correlationId(final String correlationId) {
+		messageContext.correlationId = correlationId;
+		return this;
+	}
 
-    @Override
-    public MqttMessageContextBuilder correlationIdGenerator(final String filter) {
-        messageContext.correlationIdGenerator = filter;
-        return this;
-    }
+	@Override
+	public MqttMessageContextBuilder correlationIdGenerator(final String filter) {
+		messageContext.correlationIdGenerator = filter;
+		return this;
+	}
 
-    @Override
-    public MqttMessageContextBuilder contentEncoding(final String contentEncoding) {
-        messageContext.contentEncoding = contentEncoding;
-        return this;
-    }
+	@Override
+	public MqttMessageContextBuilder contentEncoding(final String contentEncoding) {
+		messageContext.contentEncoding = contentEncoding;
+		return this;
+	}
 
-    @Override
-    public MqttMessageContextBuilder contentType(final String contentType) {
-        messageContext.contentType = contentType;
-        return this;
-    }
+	@Override
+	public MqttMessageContextBuilder contentType(final String contentType) {
+		messageContext.contentType = contentType;
+		return this;
+	}
 
-    @Override
-    public MqttMessageContextBuilder channel(final String channelName, final String channelExtension) {
-        // routing key ('channelExtension') is not required by MQTT
-        channel(channelName);
-        logger.debug("Channel extension will be ignored");
-        return this;
-    }
+	@Override
+	public MqttMessageContextBuilder channel(final String channelName, final String channelExtension) {
+		// routing key ('channelExtension') is not required by MQTT
+		channel(channelName);
+		logger.debug("Channel extension will be ignored");
+		return this;
+	}
 
-    @Override
-    public MqttMessageContextBuilder channel(final String channelName) {
-        messageContext.channel = channelName;
-        return this;
-    }
+	@Override
+	public MqttMessageContextBuilder channel(final String channelName) {
+		messageContext.channel = channelName;
+		return this;
+	}
 
-    @Override
-    public MqttMessageContextBuilder extensionEntry(final String key, final Object value) {
-        if (key != null && value != null) {
-            messageContext.extensions.put(key, value);
-        }
-        return this;
-    }
+	@Override
+	public MqttMessageContextBuilder extensionEntry(final String key, final Object value) {
+		if (key != null && value != null) {
+			messageContext.extensions.put(key, value);
+		}
+		return this;
+	}
 
-    @Override
-    public MqttMessageContextBuilder extensions(final Map<String, Object> extensions) {
-        if (extensions != null) {
-            messageContext.extensions.putAll(extensions);
-        }
-        return this;
-    }
+	@Override
+	public MqttMessageContextBuilder extensions(final Map<String, Object> extensions) {
+		if (extensions != null) {
+			messageContext.extensions.putAll(extensions);
+		}
+		return this;
+	}
 
-    @Override
-    public AcknowledgeMessageContextBuilder handleAcknowledge(final Consumer<Message> acknowledgeHandler) {
-        messageContext.acknowledgeHandler.setConcrete(acknowledgeHandler);
-        return this;
-    }
+	@Override
+	public AcknowledgeMessageContextBuilder handleAcknowledge(final Consumer<Message> acknowledgeHandler) {
+		messageContext.acknowledgeHandler.setConcrete(acknowledgeHandler);
+		return this;
+	}
 
-    @Override
-    public AcknowledgeMessageContextBuilder handleAcknowledge(final String acknowledgeHandlerTarget) {
-        messageContext.acknowledgeHandler.setServiceFilter(acknowledgeHandlerTarget);
-        return this;
-    }
+	@Override
+	public AcknowledgeMessageContextBuilder handleAcknowledge(final String acknowledgeHandlerTarget) {
+		messageContext.acknowledgeHandler.setServiceFilter(acknowledgeHandlerTarget);
+		return this;
+	}
 
-    @Override
-    public AcknowledgeMessageContextBuilder filterAcknowledge(final Predicate<Message> acknowledgeFilter) {
-        messageContext.acknowledgeFilter.setConcrete(acknowledgeFilter);
-        return this;
-    }
+	@Override
+	public AcknowledgeMessageContextBuilder filterAcknowledge(final Predicate<Message> acknowledgeFilter) {
+		messageContext.acknowledgeFilter.setConcrete(acknowledgeFilter);
+		return this;
+	}
 
-    @Override
-    public AcknowledgeMessageContextBuilder filterAcknowledge(final String acknowledgeFilterTarget) {
-        messageContext.acknowledgeFilter.setServiceFilter(acknowledgeFilterTarget);
-        return this;
-    }
+	@Override
+	public AcknowledgeMessageContextBuilder filterAcknowledge(final String acknowledgeFilterTarget) {
+		messageContext.acknowledgeFilter.setServiceFilter(acknowledgeFilterTarget);
+		return this;
+	}
 
-    @Override
-    public AcknowledgeMessageContextBuilder postAcknowledge(final Consumer<Message> acknowledgeConsumer) {
-        messageContext.acknowledgeConsumer.setConcrete(acknowledgeConsumer);
-        return this;
-    }
+	@Override
+	public AcknowledgeMessageContextBuilder postAcknowledge(final Consumer<Message> acknowledgeConsumer) {
+		messageContext.acknowledgeConsumer.setConcrete(acknowledgeConsumer);
+		return this;
+	}
 
-    @Override
-    public AcknowledgeMessageContextBuilder postAcknowledge(final String ackowledgeConsumerTarget) {
-        messageContext.acknowledgeConsumer.setServiceFilter(ackowledgeConsumerTarget);
-        return this;
-    }
+	@Override
+	public AcknowledgeMessageContextBuilder postAcknowledge(final String ackowledgeConsumerTarget) {
+		messageContext.acknowledgeConsumer.setServiceFilter(ackowledgeConsumerTarget);
+		return this;
+	}
 
-    @Override
-    public MessageContextBuilder messageContextBuilder() {
-        return this;
-    }
+	@Override
+	public MessageContextBuilder messageContextBuilder() {
+		return this;
+	}
 
 }

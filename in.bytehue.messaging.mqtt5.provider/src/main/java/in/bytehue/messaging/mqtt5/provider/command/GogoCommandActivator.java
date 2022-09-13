@@ -33,30 +33,30 @@ import org.osgi.service.component.annotations.Reference;
 @Component
 public final class GogoCommandActivator {
 
-    private static final String GOGO_PACKAGE = "org.apache.felix.service.command";
+	private static final String GOGO_PACKAGE = "org.apache.felix.service.command";
 
-    private final BundleContext bundleContext;
-    private final ConfigurationAdmin configAdmin;
+	private final BundleContext bundleContext;
+	private final ConfigurationAdmin configAdmin;
 
-    @Activate
-    public GogoCommandActivator(
-    // @formatter:off
+	@Activate
+	public GogoCommandActivator(
+	// @formatter:off
             final BundleContext bundleContext,
             @Reference
             final ConfigurationAdmin configAdmin
     // @formatter:on
-    ) {
-        this.configAdmin = configAdmin;
-        this.bundleContext = bundleContext;
+	) {
+		this.configAdmin = configAdmin;
+		this.bundleContext = bundleContext;
 
-        if (isGogoPackageImported()) {
-            createGogoCommandConfig();
-        }
-    }
+		if (isGogoPackageImported()) {
+			createGogoCommandConfig();
+		}
+	}
 
-    private boolean isGogoPackageImported() {
-        final BundleWiring wiring = bundleContext.getBundle().adapt(BundleWiring.class);
-        // @formatter:off
+	private boolean isGogoPackageImported() {
+		final BundleWiring wiring = bundleContext.getBundle().adapt(BundleWiring.class);
+		// @formatter:off
         return wiring.getRequiredWires(PACKAGE_NAMESPACE)
                      .stream()
                      .map(wire -> (String) wire.getCapability()
@@ -64,25 +64,25 @@ public final class GogoCommandActivator {
                                                .get(PACKAGE_NAMESPACE))
                      .anyMatch(pkg -> pkg.equals(GOGO_PACKAGE));
         // @formatter:on
-    }
+	}
 
-    private void createGogoCommandConfig() {
-        try {
-            final Configuration configuration = configAdmin.getConfiguration(PID, "?");
-            configuration.updateIfDifferent(new Hashtable<>());
-        } catch (final IOException e) {
-            // ignore due to location check as it's never gonna happen
-        }
-    }
+	private void createGogoCommandConfig() {
+		try {
+			final Configuration configuration = configAdmin.getConfiguration(PID, "?");
+			configuration.updateIfDifferent(new Hashtable<>());
+		} catch (final IOException e) {
+			// ignore due to location check as it's never gonna happen
+		}
+	}
 
-    @Deactivate
-    private void deleteGogoCommandConfig() {
-        try {
-            final Configuration configuration = configAdmin.getConfiguration(PID, "?");
-            configuration.delete();
-        } catch (final IOException e) {
-            // ignore due to location check as it's never gonna happen
-        }
-    }
+	@Deactivate
+	private void deleteGogoCommandConfig() {
+		try {
+			final Configuration configuration = configAdmin.getConfiguration(PID, "?");
+			configuration.delete();
+		} catch (final IOException e) {
+			// ignore due to location check as it's never gonna happen
+		}
+	}
 
 }
