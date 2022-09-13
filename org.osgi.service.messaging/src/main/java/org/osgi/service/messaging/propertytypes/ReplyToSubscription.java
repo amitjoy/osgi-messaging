@@ -21,12 +21,12 @@ import org.osgi.service.component.annotations.ComponentPropertyType;
 @ComponentPropertyType
 public @interface ReplyToSubscription {
 
-    String PREFIX_ = "osgi.messaging.replyToSubscription.";
+	String PREFIX_ = "osgi.messaging.replyToSubscription.";
 
-    String target();
+	String target();
 
-    String[] channel();
+	String[] channel();
 
-    String replyChannel() default "";
+	String replyChannel() default "";
 
 }

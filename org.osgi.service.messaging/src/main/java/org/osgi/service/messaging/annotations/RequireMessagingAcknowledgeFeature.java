@@ -14,11 +14,11 @@ import java.lang.annotation.Target;
 import org.osgi.annotation.bundle.Requirement;
 
 /**
- * This annotation can be used to require the Messaging Acknowledge implementation. It
- * can be used directly, or as a meta-annotation.
+ * This annotation can be used to require the Messaging Acknowledge
+ * implementation. It can be used directly, or as a meta-annotation.
  * <p>
- * This annotation is applied to several of the Messaging component
- * property annotations meaning that it does not normally need to be applied to
+ * This annotation is applied to several of the Messaging component property
+ * annotations meaning that it does not normally need to be applied to
  * Declarative Services components which use the Messaging.
  */
 @Documented
@@ -26,5 +26,5 @@ import org.osgi.annotation.bundle.Requirement;
 @Target({ TYPE, PACKAGE })
 @Requirement(namespace = IMPLEMENTATION_NAMESPACE, name = ACKNOWLEDGE_IMPLEMENTATION, version = MESSAGING_SPECIFICATION_VERSION)
 public @interface RequireMessagingAcknowledgeFeature {
-    // This is a marker annotation.
+	// This is a marker annotation.
 }

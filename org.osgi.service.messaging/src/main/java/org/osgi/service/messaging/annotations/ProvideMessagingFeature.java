@@ -21,10 +21,10 @@ import org.osgi.service.messaging.Message;
  * generate bundle manifests or otherwise process the package.
  */
 @Capability(//
-        name = MESSAGING_IMPLEMENTATION, //
-        namespace = IMPLEMENTATION_NAMESPACE, //
-        version = MESSAGING_SPECIFICATION_VERSION, //
-        uses = Message.class)
+		name = MESSAGING_IMPLEMENTATION, //
+		namespace = IMPLEMENTATION_NAMESPACE, //
+		version = MESSAGING_SPECIFICATION_VERSION, //
+		uses = Message.class)
 public @interface ProvideMessagingFeature {
 
 }
