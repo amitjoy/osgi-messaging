@@ -4,11 +4,11 @@ import org.osgi.service.messaging.Message;
 
 public interface ReplyToSubscriptionHandler {
 
-    /**
-     * Just handles the incoming request {@link Message}.
-     *
-     * @param requestMessage the {@link Message}
-     */
-    void handleResponse(Message requestMessage);
+	/**
+	 * Just handles the incoming request {@link Message}.
+	 *
+	 * @param requestMessage the {@link Message}
+	 */
+	void handleResponse(Message requestMessage);
 
 }

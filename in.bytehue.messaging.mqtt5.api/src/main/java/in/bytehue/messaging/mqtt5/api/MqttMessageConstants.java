@@ -20,146 +20,151 @@ package in.bytehue.messaging.mqtt5.api;
  */
 public final class MqttMessageConstants {
 
-    private static final String NON_INSTANTIABLE = "Non-Instantiable";
+	private static final String NON_INSTANTIABLE = "Non-Instantiable";
 
-    /**
-     * Non-instantiable
-     */
-    private MqttMessageConstants() {
-        throw new IllegalAccessError(NON_INSTANTIABLE);
-    }
+	/**
+	 * Non-instantiable
+	 */
+	private MqttMessageConstants() {
+		throw new IllegalAccessError(NON_INSTANTIABLE);
+	}
 
-    /**
-     * The name of the MQTT {@code Protocol} that conforms to the {@code Messaging} specification
-     *
-     * @since 1.0
-     */
-    public static final String MESSAGING_PROTOCOL = "mqtt5";
+	/**
+	 * The name of the MQTT {@code Protocol} that conforms to the {@code Messaging}
+	 * specification
+	 *
+	 * @since 1.0
+	 */
+	public static final String MESSAGING_PROTOCOL = "mqtt5";
 
-    /**
-     * The identifier of the {@code Messaging} instance
-     *
-     * @since 1.0
-     */
-    public static final String MESSAGING_ID = "mqtt5-hivemq-adapter";
+	/**
+	 * The identifier of the {@code Messaging} instance
+	 *
+	 * @since 1.0
+	 */
+	public static final String MESSAGING_ID = "mqtt5-hivemq-adapter";
 
-    /**
-     * The name of the provider of the {@code MQTT Messaging} implementation
-     *
-     * @since 1.0
-     */
-    public static final String MESSAGING_PROVIDER = "Byte Hue";
+	/**
+	 * The name of the provider of the {@code MQTT Messaging} implementation
+	 *
+	 * @since 1.0
+	 */
+	public static final String MESSAGING_PROVIDER = "Byte Hue";
 
-    /**
-     * The name of framework property to be queried for client identifier if there exists no
-     * specified configuration in {@link ConfigurationPid#CLIENT}.
-     *
-     * @since 1.0
-     */
-    public static final String CLIENT_ID_FRAMEWORK_PROPERTY = "in.bytehue.client.id";
+	/**
+	 * The name of framework property to be queried for client identifier if there
+	 * exists no specified configuration in {@link ConfigurationPid#CLIENT}.
+	 *
+	 * @since 1.0
+	 */
+	public static final String CLIENT_ID_FRAMEWORK_PROPERTY = "in.bytehue.client.id";
 
-    /**
-     * The name of property which is available to the service that gets registered
-     * when there exists a valid connection to the MQTT broker.
-     *
-     * @since 1.0
-     */
-    public static final String MQTT_CONNECTION_READY_SERVICE_PROPERTY = "mqtt.connection.ready";
+	/**
+	 * The name of property which is available to the service that gets registered
+	 * when there exists a valid connection to the MQTT broker.
+	 *
+	 * @since 1.0
+	 */
+	public static final String MQTT_CONNECTION_READY_SERVICE_PROPERTY = "mqtt.connection.ready";
 
-    /**
-     * The service filter to track the OSGi service which gets registered
-     * when there exists a valid connection to the MQTT broker.
-     *
-     * @since 1.0
-     */
-    public static final String MQTT_CONNECTION_READY_SERVICE_PROPERTY_FILTER = "("
-            + MQTT_CONNECTION_READY_SERVICE_PROPERTY + "=true)";
+	/**
+	 * The service filter to track the OSGi service which gets registered when there
+	 * exists a valid connection to the MQTT broker.
+	 *
+	 * @since 1.0
+	 */
+	public static final String MQTT_CONNECTION_READY_SERVICE_PROPERTY_FILTER = "("
+			+ MQTT_CONNECTION_READY_SERVICE_PROPERTY + "=true)";
 
-    /**
-     * Standard constants for the {@code MQTT Messaging} extension features
-     *
-     * @since 1.0
-     */
-    public static final class Extension {
+	/**
+	 * Standard constants for the {@code MQTT Messaging} extension features
+	 *
+	 * @since 1.0
+	 */
+	public static final class Extension {
 
-        /**
-         * Non-instantiable
-         */
-        private Extension() {
-            throw new IllegalAccessError(NON_INSTANTIABLE);
-        }
+		/**
+		 * Non-instantiable
+		 */
+		private Extension() {
+			throw new IllegalAccessError(NON_INSTANTIABLE);
+		}
 
-        /**
-         * The name of the {@code Message Expiry Interval} extension of the {@code MQTT 5.0 specification}.
-         * An integer value indicates the expiry interval of the messages.
-         *
-         * @since 1.0
-         */
-        public static final String MESSAGE_EXPIRY_INTERVAL = "messageExpiryInterval";
+		/**
+		 * The name of the {@code Message Expiry Interval} extension of the
+		 * {@code MQTT 5.0 specification}. An integer value indicates the expiry
+		 * interval of the messages.
+		 *
+		 * @since 1.0
+		 */
+		public static final String MESSAGE_EXPIRY_INTERVAL = "messageExpiryInterval";
 
-        /**
-         * The name of the {@code Message Retain} extension of the {@code MQTT 5.0 specification}.
-         * This indicates the message will be retained. A value of {code true} ensures
-         * successful retention of messages.
-         *
-         * @since 1.0
-         */
-        public static final String RETAIN = "retain";
+		/**
+		 * The name of the {@code Message Retain} extension of the
+		 * {@code MQTT 5.0 specification}. This indicates the message will be retained.
+		 * A value of {code true} ensures successful retention of messages.
+		 *
+		 * @since 1.0
+		 */
+		public static final String RETAIN = "retain";
 
-        /**
-         * The name of the {@code User Properties} extension of the {@code MQTT 5.0 specification}.
-         * A {@code Map<String, String>} can be provided.
-         *
-         * @since 1.0
-         */
-        public static final String USER_PROPERTIES = "userProperties";
+		/**
+		 * The name of the {@code User Properties} extension of the
+		 * {@code MQTT 5.0 specification}. A {@code Map<String, String>} can be
+		 * provided.
+		 *
+		 * @since 1.0
+		 */
+		public static final String USER_PROPERTIES = "userProperties";
 
-        /**
-         * The name of the {@code Local} extension of the {@code MQTT 5.0 specification}. This ensures
-         * if we want to receive our own messages. A value of {code true} ascertains the receipt
-         * of own messages.
-         *
-         * @since 1.0
-         */
-        public static final String RECEIVE_LOCAL = "receiveLocal";
+		/**
+		 * The name of the {@code Local} extension of the
+		 * {@code MQTT 5.0 specification}. This ensures if we want to receive our own
+		 * messages. A value of {code true} ascertains the receipt of own messages.
+		 *
+		 * @since 1.0
+		 */
+		public static final String RECEIVE_LOCAL = "receiveLocal";
 
-        /**
-         * The name of the {@code last will delay interval} extension of the {@code MQTT 5.0 specification}.
-         * A value of {@code Long} can be provided.
-         *
-         * @since 1.0
-         */
-        public static final String LAST_WILL_DELAY_INTERVAL = "lastWillDelayInterval";
-    }
+		/**
+		 * The name of the {@code last will delay interval} extension of the
+		 * {@code MQTT 5.0 specification}. A value of {@code Long} can be provided.
+		 *
+		 * @since 1.0
+		 */
+		public static final String LAST_WILL_DELAY_INTERVAL = "lastWillDelayInterval";
+	}
 
-    /**
-     * Defines standard constants for the MQTT messaging configuration PIDs
-     *
-     * @since 1.0
-     */
-    public static final class ConfigurationPid {
+	/**
+	 * Defines standard constants for the MQTT messaging configuration PIDs
+	 *
+	 * @since 1.0
+	 */
+	public static final class ConfigurationPid {
 
-        /**
-         * Non-instantiable
-         */
-        private ConfigurationPid() {
-            throw new IllegalAccessError(NON_INSTANTIABLE);
-        }
+		/**
+		 * Non-instantiable
+		 */
+		private ConfigurationPid() {
+			throw new IllegalAccessError(NON_INSTANTIABLE);
+		}
 
-        /**
-         * The configuration PID to configure the internal executor in Reply-To publisher
-         *
-         * @since 1.0
-         */
-        public static final String PUBLISHER = "in.bytehue.messaging.publisher";
+		/**
+		 * The configuration PID to configure the internal executor in Reply-To
+		 * publisher
+		 *
+		 * @since 1.0
+		 */
+		public static final String PUBLISHER = "in.bytehue.messaging.publisher";
 
-        /**
-         * The configuration PID to configure the internal executor in Reply-To publisher
-         *
-         * @since 1.0
-         */
-        public static final String CLIENT = "in.bytehue.messaging.client";
+		/**
+		 * The configuration PID to configure the internal executor in Reply-To
+		 * publisher
+		 *
+		 * @since 1.0
+		 */
+		public static final String CLIENT = "in.bytehue.messaging.client";
 
-    }
+	}
 
 }

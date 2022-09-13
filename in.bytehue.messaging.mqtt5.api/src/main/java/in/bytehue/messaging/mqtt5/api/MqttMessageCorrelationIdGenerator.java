@@ -19,16 +19,18 @@ import org.osgi.annotation.versioning.ConsumerType;
 import org.osgi.service.messaging.MessageContext;
 
 /**
- * {@link MqttMessageCorrelationIdGenerator} is primarily used to provide the functionality
- * for generating correlation identifiers required for reply-to channels. User can either
- * provide the identifiers by setting them directly through {@link MessageContext} or let
- * them be generated automatically. Users can provide multiple implementations of this service
- * and configure the {@link MessageContext} using {@link MqttMessageContextBuilder} where one
- * set the service filter.
+ * {@link MqttMessageCorrelationIdGenerator} is primarily used to provide the
+ * functionality for generating correlation identifiers required for reply-to
+ * channels. User can either provide the identifiers by setting them directly
+ * through {@link MessageContext} or let them be generated automatically. Users
+ * can provide multiple implementations of this service and configure the
+ * {@link MessageContext} using {@link MqttMessageContextBuilder} where one set
+ * the service filter.
  *
  * <p>
- * This is actually useful where you can introduce multiple reply-to channels and the correlation
- * identifiers can be generated in a unique way to identify them properly.
+ * This is actually useful where you can introduce multiple reply-to channels
+ * and the correlation identifiers can be generated in a unique way to identify
+ * them properly.
  *
  * @see MessageContext
  * @See MqttMessageContextBuilder
@@ -39,11 +41,11 @@ import org.osgi.service.messaging.MessageContext;
 @FunctionalInterface
 public interface MqttMessageCorrelationIdGenerator {
 
-    /**
-     * Returns the generated identifier (cannot be (@code null))
-     *
-     * @return the generated identifier
-     */
-    String generate();
+	/**
+	 * Returns the generated identifier (cannot be (@code null))
+	 *
+	 * @return the generated identifier
+	 */
+	String generate();
 
 }

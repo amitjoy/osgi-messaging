@@ -32,59 +32,55 @@ import org.osgi.service.messaging.Message;
 
 public final class RemoteResourceHelper {
 
-    private RemoteResourceHelper() {
-        throw new IllegalAccessError("Cannot be instantiated");
-    }
+	private RemoteResourceHelper() {
+		throw new IllegalAccessError("Cannot be instantiated");
+	}
 
-    public enum MethodType {
-        GET,
-        POST,
-        PUT,
-        DELETE,
-        EXEC
-    }
+	public enum MethodType {
+		GET, POST, PUT, DELETE, EXEC
+	}
 
-    public static class RequestDTO extends DTO {
-        String resource;
-        MethodType method;
-        String applicationId;
-        Message requestMessage;
-    }
+	public static class RequestDTO extends DTO {
+		String resource;
+		MethodType method;
+		String applicationId;
+		Message requestMessage;
+	}
 
-    public static class MqttException extends RuntimeException {
+	public static class MqttException extends RuntimeException {
 
-        private static final long serialVersionUID = 4877572873981748364L;
+		private static final long serialVersionUID = 4877572873981748364L;
 
-        public final int code;
+		public final int code;
 
-        public MqttException(final int code, final String message) {
-            super(message);
-            this.code = code;
-        }
-    }
+		public MqttException(final int code, final String message) {
+			super(message);
+			this.code = code;
+		}
+	}
 
-    public static String clientID(final ConfigurationAdmin configurationAdmin, final BundleContext bundleContext) {
-        try {
-            final Configuration configuration = configurationAdmin.getConfiguration(CLIENT, "?");
-            final Dictionary<String, Object> properties = configuration.getProperties();
-            if (properties == null || properties.get("id") == null) {
-                // check for framework property if available
-                final String id = bundleContext.getProperty(CLIENT_ID_FRAMEWORK_PROPERTY);
-                requireNonNull(id, "No MQTT Client ID has been assigned");
-                return id;
-            } else {
-                return String.valueOf(properties.get("id"));
-            }
-        } catch (final IOException e) {
-            // not gonna happen at all
-        }
-        return "+";
-    }
+	public static String clientID(final ConfigurationAdmin configurationAdmin, final BundleContext bundleContext) {
+		try {
+			final Configuration configuration = configurationAdmin.getConfiguration(CLIENT, "?");
+			final Dictionary<String, Object> properties = configuration.getProperties();
+			if (properties == null || properties.get("id") == null) {
+				// check for framework property if available
+				final String id = bundleContext.getProperty(CLIENT_ID_FRAMEWORK_PROPERTY);
+				requireNonNull(id, "No MQTT Client ID has been assigned");
+				return id;
+			} else {
+				return String.valueOf(properties.get("id"));
+			}
+		} catch (final IOException e) {
+			// not gonna happen at all
+		}
+		return "+";
+	}
 
-    public static String exceptionToString(final Exception exception) {
-        final StringWriter sw = new StringWriter();
-        exception.printStackTrace(new PrintWriter(sw));
-        return sw.toString();
-    }
+	public static String exceptionToString(final Exception exception) {
+		final StringWriter sw = new StringWriter();
+		exception.printStackTrace(new PrintWriter(sw));
+		return sw.toString();
+	}
 
 }

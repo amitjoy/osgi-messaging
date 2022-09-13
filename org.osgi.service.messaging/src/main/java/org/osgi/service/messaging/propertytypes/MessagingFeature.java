@@ -21,12 +21,12 @@ import org.osgi.service.component.annotations.ComponentPropertyType;
 @ComponentPropertyType
 public @interface MessagingFeature {
 
-    String PREFIX_ = "osgi.messaging.";
+	String PREFIX_ = "osgi.messaging.";
 
-    String name();
+	String name();
 
-    String[] protocol();
+	String[] protocol();
 
-    String[] feature() default {};
+	String[] feature() default {};
 
 }

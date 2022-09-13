@@ -29,10 +29,10 @@ import org.osgi.service.messaging.replyto.ReplyToSingleSubscriptionHandler;
 @ReplyToSubscription(target = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo)))", channel = "a/b", replyChannel = "c/d")
 public final class Mqtt5ReplyToSingleSubscriptionHandler implements ReplyToSingleSubscriptionHandler {
 
-    @Override
-    public Message handleResponse(final Message requestMessage, final MessageContextBuilder responseBuilder) {
-        final String content = new String(requestMessage.payload().array(), UTF_8);
-        return responseBuilder.content(ByteBuffer.wrap(content.getBytes())).buildMessage();
-    }
+	@Override
+	public Message handleResponse(final Message requestMessage, final MessageContextBuilder responseBuilder) {
+		final String content = new String(requestMessage.payload().array(), UTF_8);
+		return responseBuilder.content(ByteBuffer.wrap(content.getBytes())).buildMessage();
+	}
 
 }

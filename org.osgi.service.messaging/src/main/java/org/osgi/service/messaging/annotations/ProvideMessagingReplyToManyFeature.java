@@ -22,11 +22,11 @@ import org.osgi.service.messaging.replyto.ReplyToManyPublisher;
  * generate bundle manifests or otherwise process the package.
  */
 @Capability(//
-        name = REPLY_TO_IMPLEMENTATION, //
-        namespace = IMPLEMENTATION_NAMESPACE, //
-        version = MESSAGING_SPECIFICATION_VERSION, //
-        attribute = "many:List<String>='publish,subscribe'", //
-        uses = { Message.class, ReplyToManyPublisher.class })
+		name = REPLY_TO_IMPLEMENTATION, //
+		namespace = IMPLEMENTATION_NAMESPACE, //
+		version = MESSAGING_SPECIFICATION_VERSION, //
+		attribute = "many:List<String>='publish,subscribe'", //
+		uses = { Message.class, ReplyToManyPublisher.class })
 public @interface ProvideMessagingReplyToManyFeature {
 
 }

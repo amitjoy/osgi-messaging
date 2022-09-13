@@ -30,34 +30,34 @@ import org.osgi.service.messaging.replyto.ReplyToPublisher;
 @Component(service = MyReplyToPublisher.class)
 public final class MyReplyToPublisher {
 
-    @interface Config {
-        String channel() default "channel_foo";
+	@interface Config {
+		String channel() default "channel_foo";
 
-        String replyToChannel() default "channel_bar";
-    }
+		String replyToChannel() default "channel_bar";
+	}
 
-    @Reference
-    private ReplyToPublisher publisher;
+	@Reference
+	private ReplyToPublisher publisher;
 
-    @Reference
-    private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
+	@Reference
+	private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
 
-    @Activate
-    private Config config;
+	@Activate
+	private Config config;
 
-    public void send(final String value) {
-        final MessageContextBuilder mcb = mcbFactory.getService();
-        try {
-            // @formatter:off
+	public void send(final String value) {
+		final MessageContextBuilder mcb = mcbFactory.getService();
+		try {
+			// @formatter:off
             final Message message = mcb.channel(config.channel())
                                        .replyTo(config.replyToChannel())
                                        .content(ByteBuffer.wrap(value.getBytes()))
                                        .buildMessage();
             // @formatter:on
-            publisher.publishWithReply(message).onSuccess(System.out::println);
-        } finally {
-            mcbFactory.ungetService(mcb);
-        }
-    }
+			publisher.publishWithReply(message).onSuccess(System.out::println);
+		} finally {
+			mcbFactory.ungetService(mcb);
+		}
+	}
 
 }

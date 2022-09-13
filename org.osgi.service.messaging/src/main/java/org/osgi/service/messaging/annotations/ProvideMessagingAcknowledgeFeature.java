@@ -22,10 +22,10 @@ import org.osgi.service.messaging.acknowledge.AcknowledgeMessageContextBuilder;
  * generate bundle manifests or otherwise process the package.
  */
 @Capability(//
-        name = ACKNOWLEDGE_IMPLEMENTATION, //
-        namespace = IMPLEMENTATION_NAMESPACE, //
-        version = MESSAGING_SPECIFICATION_VERSION, //
-        uses = { Message.class, AcknowledgeMessageContextBuilder.class })
+		name = ACKNOWLEDGE_IMPLEMENTATION, //
+		namespace = IMPLEMENTATION_NAMESPACE, //
+		version = MESSAGING_SPECIFICATION_VERSION, //
+		uses = { Message.class, AcknowledgeMessageContextBuilder.class })
 public @interface ProvideMessagingAcknowledgeFeature {
 
 }

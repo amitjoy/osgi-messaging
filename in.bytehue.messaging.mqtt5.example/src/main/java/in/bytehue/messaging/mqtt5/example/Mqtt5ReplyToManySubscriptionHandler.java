@@ -33,38 +33,38 @@ import org.osgi.util.pushstream.SimplePushEventSource;
 @ReplyToSubscription(target = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo)))", channel = "a/b", replyChannel = "c/d")
 public final class Mqtt5ReplyToManySubscriptionHandler implements ReplyToManySubscriptionHandler {
 
-    final PushStreamProvider provider = new PushStreamProvider();
-    final SimplePushEventSource<Message> source = provider.createSimpleEventSource(Message.class);
+	final PushStreamProvider provider = new PushStreamProvider();
+	final SimplePushEventSource<Message> source = provider.createSimpleEventSource(Message.class);
 
-    volatile String requestPayLoad;
+	volatile String requestPayLoad;
 
-    @Reference(target = "(foo1=bar1)")
-    private Predicate<Message> filter;
+	@Reference(target = "(foo1=bar1)")
+	private Predicate<Message> filter;
 
-    private Thread thread;
+	private Thread thread;
 
-    @Override
-    public PushStream<Message> handleResponses(final Message requestMessage,
-            final MessageContextBuilder responseBuilder) {
-        thread = new Thread(() -> {
-            try {
-                while (!filter.test(requestMessage)) {
-                    final Message responseMessage = responseBuilder.content(ByteBuffer.wrap("AMIT".getBytes()))
-                            .buildMessage();
-                    source.publish(responseMessage);
-                    try {
-                        TimeUnit.SECONDS.sleep(1L);
-                    } catch (final InterruptedException e) {
-                        source.error(e);
-                    }
-                }
-            } finally {
-                thread.interrupt();
-            }
-        });
-        thread.start();
-        source.endOfStream();
-        return provider.createStream(source);
-    }
+	@Override
+	public PushStream<Message> handleResponses(final Message requestMessage,
+			final MessageContextBuilder responseBuilder) {
+		thread = new Thread(() -> {
+			try {
+				while (!filter.test(requestMessage)) {
+					final Message responseMessage = responseBuilder.content(ByteBuffer.wrap("AMIT".getBytes()))
+							.buildMessage();
+					source.publish(responseMessage);
+					try {
+						TimeUnit.SECONDS.sleep(1L);
+					} catch (final InterruptedException e) {
+						source.error(e);
+					}
+				}
+			} finally {
+				thread.interrupt();
+			}
+		});
+		thread.start();
+		source.endOfStream();
+		return provider.createStream(source);
+	}
 
 }
