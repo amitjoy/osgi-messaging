@@ -1,5 +1,5 @@
 Bundle-Name                    : MQTT 5.0 Remote Resource Management
-Bundle-Description             : Provides implementation for remote resource management
+Bundle-Description             : Provides implementation for REST-like remote resource management 
 
 -buildpath                     : in.bytehue.messaging.mqtt5.api, org.osgi.service.messaging
 -privatepackage                : in.bytehue.messaging.mqtt5.remote.*
