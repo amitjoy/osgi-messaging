@@ -56,6 +56,8 @@ import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAck;
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode;
 
+import in.bytehue.messaging.mqtt5.provider.helper.InterruptSafe;
+
 //@formatter:off
 @MessagingFeature(
         name = MESSAGING_ID,
@@ -114,7 +116,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         return subscribe(null, subChannel, pubChannel, reference, true);
     }
 
-    private synchronized PushStream<Message> subscribe(
+    private PushStream<Message> subscribe(
 	            MessageContext context,
 	            final String subChannel,
 	            final String pubChannel,
@@ -122,7 +124,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 	            final boolean isReplyToSubscription) {
 
         final PushStreamProvider provider = new PushStreamProvider();
-        final SimplePushEventSource<Message> source = provider.createSimpleEventSource(Message.class);
+        final SimplePushEventSource<Message> source = acquirePushEventSource(provider);
         final PushStream<Message> stream = provider.createStream(source); //NOSONAR
         try {
             final MessageContextBuilderProvider builder = mcbFactory.getService();
@@ -193,6 +195,10 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
             throw e;
         }
     }
+
+	private SimplePushEventSource<Message> acquirePushEventSource(final PushStreamProvider provider) {
+		return InterruptSafe.execute(() -> provider.createSimpleEventSource(Message.class));
+	}
 
     private boolean isSubscriptionAcknowledged(final Mqtt5SubAck ack) {
         final List<Mqtt5SubAckReasonCode> acceptedCodes = Arrays.asList(
