@@ -114,7 +114,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         return subscribe(null, subChannel, pubChannel, reference, true);
     }
 
-    private PushStream<Message> subscribe(
+    private synchronized PushStream<Message> subscribe(
 	            MessageContext context,
 	            final String subChannel,
 	            final String pubChannel,
