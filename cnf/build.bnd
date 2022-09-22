@@ -50,25 +50,25 @@ bin.testbin.directory                 =         ${if;${is;${driver};gradle};targ
 -buildpath.all                        =         osgi.annotation, osgi.cmpn, osgi.core
 -testpath.all                         =         osgi.enroute.junit.wrapper, osgi.enroute.hamcrest.wrapper
 
--plugin.1.Build               = \
+-plugin.1.Build                       =         \
     aQute.bnd.repository.maven.provider.MavenBndRepository; \
-          snapshotUrl         = "${sonatype.url.snapshot}"; \
-          releaseUrl          = "${mave.central.url}"; \
-          readOnly            = true; \
-          name                = "Build"; \
-          index               = ${.}/maven/build.maven
+          snapshotUrl                 =        "${sonatype.url.snapshot}"; \
+          releaseUrl                  =        "${mave.central.url}"; \
+          readOnly                    =        true; \
+          name                        =        "Build"; \
+          index                       =        ${.}/maven/build.maven
 
--plugin.2.Runtime             = \
+-plugin.2.Runtime                     =        \
     aQute.bnd.repository.maven.provider.MavenBndRepository; \
-          snapshotUrl         = "${sonatype.url.snapshot}"; \
-          releaseUrl          = "${mave.central.url}"; \
-          readOnly            = true; \
-          name                = "Runtime"; \
-          index               = ${.}/maven/runtime.maven
+          snapshotUrl                 =        "${sonatype.url.snapshot}"; \
+          releaseUrl                  =        "${mave.central.url}"; \
+          readOnly                    =        true; \
+          name                        =        "Runtime"; \
+          index                       =        ${.}/maven/runtime.maven
 
--plugin.3.Release             = \
+-plugin.3.Release                     =        \
     aQute.bnd.repository.maven.provider.MavenBndRepository; \
-          snapshotUrl         = "${github.messaging.packages.url}"; \
-          releaseUrl          = "${github.messaging.packages.url}"; \
-          name                = "Release"; \
-          index               = ${.}/maven/release.maven
+          snapshotUrl                 =        "${github.messaging.packages.url}"; \
+          releaseUrl                  =        "${github.messaging.packages.url}"; \
+          name                        =        "Release"; \
+          index                       =        ${.}/maven/release.maven
