@@ -47,8 +47,20 @@ bin.testbin.directory                 =         ${if;${is;${driver};gradle};targ
 
 -builderignore                        =         ${bin.testbin.directory}
 
--buildpath.all                        =         osgi.annotation, osgi.cmpn, osgi.core
--testpath.all                         =         osgi.enroute.junit.wrapper, osgi.enroute.hamcrest.wrapper
+-buildpath.all                        =         osgi.annotation,\
+                                                osgi.core,\
+                                                org.osgi.namespace.implementation,\
+                                                org.osgi.service.cm,\
+                                                org.osgi.service.component,\
+                                                org.osgi.service.component.annotations,\
+                                                org.osgi.service.metatype.annotations,\
+                                                org.osgi.util.converter,\
+                                                org.osgi.util.function,\
+                                                org.osgi.util.promise,\
+                                                org.osgi.util.pushstream
+
+-testpath.all                         =         osgi.enroute.junit.wrapper,\
+                                                osgi.enroute.hamcrest.wrapper
 
 -plugin.1.Build                       =         \
     aQute.bnd.repository.maven.provider.MavenBndRepository; \
