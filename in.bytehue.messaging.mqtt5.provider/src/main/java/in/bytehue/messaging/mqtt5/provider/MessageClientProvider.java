@@ -19,18 +19,21 @@ import static com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectRea
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.CLIENT_ID_FRAMEWORK_PROPERTY;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CONNECTION_READY_SERVICE_PROPERTY;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.CLIENT;
-import static in.bytehue.messaging.mqtt5.api.TargetCondition.DEFAULT_SATISFIABLE_FILTER;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalService;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.osgi.service.condition.Condition.CONDITION_ID;
+import static org.osgi.service.condition.Condition.CONDITION_ID_TRUE;
 import static org.osgi.service.metatype.annotations.AttributeType.PASSWORD;
 
 import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.KeyManagerFactory;
@@ -70,9 +73,6 @@ import com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism;
 import com.hivemq.client.mqtt.mqtt5.message.connect.connack.Mqtt5ConnAck;
 import com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode;
 
-import aQute.osgi.conditionaltarget.api.ConditionalTarget;
-import in.bytehue.messaging.mqtt5.api.SimpleAuthentication;
-import in.bytehue.messaging.mqtt5.api.TargetCondition;
 import in.bytehue.messaging.mqtt5.provider.MessageClientProvider.Config;
 
 @ProvideMessagingFeature
@@ -222,7 +222,7 @@ public final class MessageClientProvider {
         String qos2OutgoingInterceptorFilter() default "";
 
         @AttributeDefinition(name = "Filter to be satisfied for the client to be active")
-        String condition_target() default DEFAULT_SATISFIABLE_FILTER;
+        String osgi_ds_satisfying_condition_target() default "(" + CONDITION_ID + "=" + CONDITION_ID_TRUE + ")";
 
         @AttributeDefinition(name = "Reason for the disconnection when the component is stopped")
         String disconnectionReasonDescription() default "OSGi Component Deactivated";
@@ -239,48 +239,26 @@ public final class MessageClientProvider {
     private Logger logger;
     @Activate
     private BundleContext bundleContext;
-    @Reference
-    private ConditionalTarget<TargetCondition> condition;
 
     private Config config;
     private Mqtt5ClientBuilder clientBuilder;
-    private ServiceRegistration<TargetCondition> readyServiceReg;
+    private ServiceRegistration<Object> readyServiceReg;
 
-    @Activate
-    void activate(final Config config) {
-    	this.config = config;
-        final String clientId = getClientID(bundleContext);
-
-        clientBuilder = Mqtt5Client.builder()
-                                   .identifier(MqttClientIdentifier.of(clientId))
-                                   .serverHost(config.server())
-                                   .serverPort(config.port());
-
-        // last will can be configured in two different ways =>
-        // 1. using initial configuration
-        // 2. client can send a special publish request which will be used as will message
-        // In case of the second scenario, a reconnection happens
-        initLastWill(null);
-        try {
-            connect();
-        } catch (final Exception e) {
-            logger.error("Error occurred while establishing connection to the broker '{}'", config.server(), e);
-        }
+	@Activate
+    void activate(final Config config, final Map<String, Object> properties) {
+    	init(config);
     }
 
     @Modified
-    void modified(final Config config) {
+    void modified(final Config config, final Map<String, Object> properties) {
     	logger.info("Client configuration has been modified");
-    	deactivate();
-    	activate(config);
+    	disconnect();
+    	init(config);
     }
 
     @Deactivate
-    void deactivate() {
-        client.disconnectWith()
-                  .reasonCode(config.disconnectionReasonCode())
-                  .reasonString(config.disconnectionReasonDescription())
-              .send();
+    void deactivate(final Map<String, Object> properties) {
+    	disconnect();
     }
 
     public synchronized Config config() {
@@ -300,6 +278,34 @@ public final class MessageClientProvider {
                   connect();
               });
     }
+
+    private void init(final Config config) {
+		this.config = config;
+        final String clientId = getClientID(bundleContext);
+
+        clientBuilder = Mqtt5Client.builder()
+                                   .identifier(MqttClientIdentifier.of(clientId))
+                                   .serverHost(config.server())
+                                   .serverPort(config.port());
+
+        // last will can be configured in two different ways =>
+        // 1. using initial configuration
+        // 2. client can send a special publish request which will be used as will message
+        // In case of the second scenario, a reconnection happens
+        initLastWill(null);
+        try {
+            connect();
+        } catch (final Exception e) {
+            logger.error("Error occurred while establishing connection to the broker '{}'", config.server(), e);
+        }
+	}
+
+    private void disconnect() {
+		client.disconnectWith()
+                  .reasonCode(config.disconnectionReasonCode())
+                  .reasonString(config.disconnectionReasonDescription())
+              .send();
+	}
 
     private void connect() {
         final Nested<? extends Mqtt5ClientBuilder> advancedConfig = clientBuilder.advancedConfig();
@@ -329,17 +335,29 @@ public final class MessageClientProvider {
         		password = config.password();
         	} else {
         		logger.debug("Applying Simple Authentication Configuration (Dynamic)");
-        		final Optional<SimpleAuthentication> auth =
+        		@SuppressWarnings("rawtypes")
+				final Optional<Supplier> auth =
         				getOptionalService(
-        						SimpleAuthentication.class,
+        						Supplier.class,
         						config.simpleAuthCredFilter(),
         						bundleContext,
         						logger);
         		if (auth.isPresent()) {
         			logger.debug("Found Simple Authentication Service - {}", auth.get().getClass().getName());
         			try {
-						username = auth.get().username();
-						password = auth.get().password();
+        				final Supplier<?> supplier = auth.get();
+        				final Object instance = supplier.get();
+						if (!(instance instanceof String)) {
+        					throw new RuntimeException("Simple Authentication Service should contain type of String");
+        				}
+						@SuppressWarnings("unchecked")
+						final Supplier<String> credSupplier = (Supplier<String>) instance;
+						final String[] tokens = credSupplier.get().split(":");
+						if (tokens == null) {
+							throw new RuntimeException("Simple Authentication Service should return non-null String");
+						}
+						username = tokens[0];
+						password = tokens[1];
 					} catch (final Exception e) {
 						logger.error("Cannot Retrieve Credentials from Simple Authentication Service", e);
 					}
@@ -548,7 +566,7 @@ public final class MessageClientProvider {
         final Dictionary<String, Object> properties = new Hashtable<>();
         properties.put(MQTT_CONNECTION_READY_SERVICE_PROPERTY, "true");
 
-        readyServiceReg = bundleContext.registerService(TargetCondition.class, new TargetCondition() {}, properties);
+        readyServiceReg = bundleContext.registerService(Object.class, new Object() {}, properties);
     }
 
     private void unregisterReadyService(final MqttClientDisconnectedContext context) {

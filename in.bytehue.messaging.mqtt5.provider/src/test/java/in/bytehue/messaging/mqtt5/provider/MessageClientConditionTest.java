@@ -29,12 +29,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
+import org.osgi.service.condition.Condition;
 
 import aQute.launchpad.Launchpad;
 import aQute.launchpad.LaunchpadBuilder;
 import aQute.launchpad.Service;
 import aQute.launchpad.junit.LaunchpadRunner;
-import in.bytehue.messaging.mqtt5.api.TargetCondition;
 
 @RunWith(LaunchpadRunner.class)
 public final class MessageClientConditionTest {
@@ -62,7 +62,7 @@ public final class MessageClientConditionTest {
 		final Configuration config = configAdmin.getConfiguration(CLIENT, "?");
 
 		final Dictionary<String, Object> properties = new Hashtable<>();
-		properties.put("condition.target", "(a=b)");
+		properties.put("osgi.ds.satisfying.condition.target", "(osgi.condition.id=my_condition)");
 
 		config.update(properties);
 
@@ -74,16 +74,15 @@ public final class MessageClientConditionTest {
 		final Configuration config = configAdmin.getConfiguration(CLIENT, "?");
 
 		final Dictionary<String, Object> properties = new Hashtable<>();
-		properties.put("condition.target", "(a=b)");
+		properties.put("osgi.ds.satisfying.condition.target", "(osgi.condition.id=my_condition)");
 
 		config.update(properties);
 
 		await().atMost(13, SECONDS).until(() -> !launchpad.getService(MessageClientProvider.class).isPresent());
 
-		final TargetCondition condition = new TargetCondition() {
-		};
+		final Condition condition = Condition.INSTANCE;
 
-		launchpad.register(TargetCondition.class, condition, "a", "b");
+		launchpad.register(Condition.class, condition, "osgi.condition.id", "my_condition");
 
 		await().atMost(13, SECONDS).until(() -> launchpad.getService(MessageClientProvider.class).isPresent());
 	}

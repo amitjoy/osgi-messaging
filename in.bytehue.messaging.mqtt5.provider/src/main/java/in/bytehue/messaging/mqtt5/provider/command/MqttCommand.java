@@ -314,7 +314,7 @@ public final class MqttCommand {
         table.addRow("QoS 2 Incoming Interceptor Service Filter", config.qos2IncomingInterceptorFilter());
         table.addRow("QoS 1 Outgoing Interceptor Service Filter", config.qos1OutgoingInterceptorFilter());
         table.addRow("QoS 2 Outgoing Interceptor Service Filter", config.qos2OutgoingInterceptorFilter());
-        table.addRow("Filter that needs to be satisfied for the client to be active", config.condition_target());
+        table.addRow("Filter that needs to be satisfied for the client to be active", config.osgi_ds_satisfying_condition_target());
         table.addRow("Reason for the disconnection when the client component is stopped", config.disconnectionReasonDescription());
         table.addRow("Code for the disconnection when the client component is stopped", config.disconnectionReasonCode().name());
 
