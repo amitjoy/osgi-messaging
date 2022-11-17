@@ -28,7 +28,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import aQute.launchpad.Launchpad;
-import in.bytehue.messaging.mqtt5.api.TargetCondition;
 
 public final class TestHelper {
 
@@ -62,8 +61,8 @@ public final class TestHelper {
 
 	public static void waitForMqttConnectionReady(final Launchpad launchpad) {
 		await().atMost(20, TimeUnit.SECONDS) //
-				.until((Callable<Boolean>) () -> launchpad
-						.getService(TargetCondition.class, "(mqtt.connection.ready=true)").isPresent());
+				.until((Callable<Boolean>) () -> launchpad.getService(Object.class, "(mqtt.connection.ready=true)")
+						.isPresent());
 	}
 
 }

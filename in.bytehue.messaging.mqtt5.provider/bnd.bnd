@@ -9,7 +9,6 @@ Bundle-Description             : MQTT 5.0 implementation conforming to OSGi mess
 
 -buildpath                     :   \
 	biz.aQute.bnd.util,\
-	biz.aQute.osgi.conditionaltarget,\
 	in.bytehue.messaging.mqtt5.api,\
 	org.apache.felix.gogo.runtime,\
 	org.apache.felix.log,\
