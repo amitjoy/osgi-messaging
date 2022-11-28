@@ -350,9 +350,8 @@ public final class MessageClientProvider {
 						if (!(instance instanceof String)) {
         					throw new RuntimeException("Simple Authentication Service should contain type of String");
         				}
-						@SuppressWarnings("unchecked")
-						final Supplier<String> credSupplier = (Supplier<String>) instance;
-						final String[] tokens = credSupplier.get().split(":");
+						final String cred = (String) instance;
+						final String[] tokens = cred.split(":");
 						if (tokens == null) {
 							throw new RuntimeException("Simple Authentication Service should return non-null String");
 						}
