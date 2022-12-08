@@ -124,11 +124,20 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 		final Deferred<Message> deferred = promiseFactory.deferred();
 		final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
 
-		publisher.publish(requestMessage, dto.pubChannel);
+		// subscribe to the channel first
+		final PushStream<Message> stream = subscriber.replyToSubscribe(dto.subChannel, dto.pubChannel, null)
+				.filter(responseMessage -> matchCorrelationId(requestMessage, responseMessage));
+
 		// resolve the promise on first response matching the specified correlation ID
-		subscriber.replyToSubscribe(dto.subChannel, dto.pubChannel, null)
-				.filter(responseMessage -> matchCorrelationId(requestMessage, responseMessage))
-				.forEach(deferred::resolve);
+		// and close the stream to proceed with the unsubscription as it is a fire and
+		// forget execution
+		stream.forEach(m -> {
+			deferred.resolve(m);
+			stream.close();
+		});
+
+		// publish the request to the channel
+		publisher.publish(requestMessage, dto.pubChannel);
 		return deferred.getPromise();
 	}
 
@@ -140,9 +149,14 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 	@Override
 	public PushStream<Message> publishWithReplyMany(final Message requestMessage, final MessageContext replyToContext) {
 		final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
-		publisher.publish(requestMessage, dto.pubChannel);
-		return subscriber.replyToSubscribe(dto.subChannel, dto.pubChannel, null)
+
+		// subscribe to the channel first
+		final PushStream<Message> stream = subscriber.replyToSubscribe(dto.subChannel, dto.pubChannel, null)
 				.filter(responseMessage -> matchCorrelationId(requestMessage, responseMessage));
+
+		// publish the request to the channel
+		publisher.publish(requestMessage, dto.pubChannel);
+		return stream;
 	}
 
 	private class ReplyToDTO {
