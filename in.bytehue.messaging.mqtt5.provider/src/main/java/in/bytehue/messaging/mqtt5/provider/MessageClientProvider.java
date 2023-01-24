@@ -568,10 +568,15 @@ public final class MessageClientProvider {
         readyServiceReg = bundleContext.registerService(Object.class, new Object() {}, properties);
     }
 
-    private void unregisterReadyService(final MqttClientDisconnectedContext context) {
-        if (readyServiceReg != null) {
-            readyServiceReg.unregister();
-        }
+    private synchronized void unregisterReadyService(final MqttClientDisconnectedContext context) {
+    	try {
+    		if (readyServiceReg != null) {
+    			readyServiceReg.unregister();
+    		}
+		} catch (final IllegalStateException e) {
+			// this could happen if the reconnect happens pretty quickly
+			logger.debug("The MQTT Connection Ready service has already been deregistered");
+		}
     }
 
     private <T> List<T> emptyToNull(final T[] array) {
