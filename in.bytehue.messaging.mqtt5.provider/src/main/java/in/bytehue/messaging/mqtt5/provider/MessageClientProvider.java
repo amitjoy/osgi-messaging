@@ -572,6 +572,7 @@ public final class MessageClientProvider {
     	try {
     		if (readyServiceReg != null) {
     			readyServiceReg.unregister();
+    			readyServiceReg = null;
     		}
 		} catch (final IllegalStateException e) {
 			// this could happen if the reconnect happens pretty quickly
