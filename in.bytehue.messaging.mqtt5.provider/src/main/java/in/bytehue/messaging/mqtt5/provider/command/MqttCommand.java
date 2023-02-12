@@ -286,9 +286,13 @@ public final class MqttCommand {
         table.addRow("Max Delay", String.valueOf(config.maxDelay()));
         table.addRow("Session Expiry Interval", String.valueOf(config.sessionExpiryInterval()));
         table.addRow("Simple Authentication", String.valueOf(config.simpleAuth()));
+        table.addRow("Use static credentials specified in username and password configurations", String.valueOf(config.staticAuthCred()));
         table.addRow("SSL Configuration Cipher Suites", converter.convert(config.cipherSuites()).to(String.class));
+        table.addRow("SSL Configuration Protocols", converter.convert(config.protocols()).to(String.class));
         table.addRow("SSL Configuration Handshake Timeout", String.valueOf(config.sslHandshakeTimeout()));
+        table.addRow("SSL Configuration Key Manager Factory Service Target Filter", config.keyManagerFactoryTargetFilter());
         table.addRow("SSL Configuration Trust Manager Factory Service Target Filter", config.trustManagerFactoryTargetFilter());
+        table.addRow("SSL Configuration Hostname Verifier Service Target Filter", config.hostNameVerifierTargetFilter());
         table.addRow("Last Will Topic", config.lastWillTopic());
         table.addRow("Last Will QoS", String.valueOf(config.lastWillQoS()));
         table.addRow("Last Will Payload", config.lastWillPayLoad());
