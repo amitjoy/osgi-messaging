@@ -11,6 +11,7 @@
 	org.apache.felix.scr,\
 	org.apache.sling.commons.johnzon,\
 	org.awaitility,\
+	org.glassfish.jakarta.json,\
 	org.osgi.service.component,\
 	org.osgi.util.function,\
 	org.osgi.util.promise,\
