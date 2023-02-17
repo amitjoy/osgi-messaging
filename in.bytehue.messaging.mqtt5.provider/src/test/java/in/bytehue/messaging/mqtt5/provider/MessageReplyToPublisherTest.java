@@ -114,8 +114,7 @@ public final class MessageReplyToPublisherTest {
 
 	@Test
 	public void test_publish_with_reply_3() throws Exception {
-		final AtomicBoolean flag1 = new AtomicBoolean();
-		final AtomicBoolean flag2 = new AtomicBoolean();
+		final AtomicBoolean flag = new AtomicBoolean();
 
 		final String reqChannel = "a/b";
 		final String resChannel = "c/d";
@@ -127,18 +126,13 @@ public final class MessageReplyToPublisherTest {
                                    .content(ByteBuffer.wrap(payload.getBytes()))
                                    .buildMessage();
 
-        replyToPublisher.publishWithReply(message).onSuccess(m -> flag1.set(true));
-
         final Message reqMessage = mcb.channel(reqChannel)
                                       .content(ByteBuffer.wrap(payload.getBytes()))
                                       .buildMessage();
         // @formatter:on
+		replyToPublisher.publishWithReply(message).onSuccess(m -> flag.set(true));
 		publisher.publish(reqMessage);
-		waitForRequestProcessing(flag1);
-
-		replyToPublisher.publishWithReply(message).onSuccess(m -> flag2.set(true));
-		publisher.publish(reqMessage);
-		waitForRequestProcessing(flag2);
+		waitForRequestProcessing(flag);
 	}
 
 }

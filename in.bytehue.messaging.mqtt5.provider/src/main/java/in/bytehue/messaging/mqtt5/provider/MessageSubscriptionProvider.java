@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -56,6 +55,7 @@ import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAck;
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode;
 
+import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionRegistry.ExtendedSubscription;
 import in.bytehue.messaging.mqtt5.provider.helper.InterruptSafe;
 
 //@formatter:off
@@ -101,27 +101,23 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 
     @Override
     public PushStream<Message> subscribe(final String subChannel) {
-        return subscribe(null, subChannel, null, null, false);
+        return subscribe(null, subChannel, null, false);
     }
 
     @Override
     public PushStream<Message> subscribe(final MessageContext context) {
-        return subscribe(context, context.getChannel(), null, null, false);
+        return subscribe(context, context.getChannel(), null, false);
     }
 
-    public PushStream<Message> replyToSubscribe(
-            final String subChannel,
-            final String pubChannel,
-            final ServiceReference<?> reference) {
-        return subscribe(null, subChannel, pubChannel, reference, true);
+    public PushStream<Message> replyToSubscribe(final String subChannel, final String pubChannel) {
+        return subscribe(null, subChannel, pubChannel, true);
     }
 
     private PushStream<Message> subscribe(
-	            MessageContext context,
-	            final String subChannel,
-	            final String pubChannel,
-	            final ServiceReference<?> reference,
-	            final boolean isReplyToSubscription) {
+    		                       MessageContext context,
+    		                       final String subChannel,
+    		                       final String pubChannel,
+    		                       final boolean isReplyToSub) {
 
         final PushStreamProvider provider = new PushStreamProvider();
         final SimplePushEventSource<Message> source = acquirePushEventSource(provider);
@@ -157,6 +153,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
                 retainAsPublished = false;
             }
 
+            final ExtendedSubscription subscription = subscriptionRegistry.addSubscription(subChannel, pubChannel, source::close, isReplyToSub);
             // @formatter:off
             messagingClient.client.subscribeWith()
                                   .topicFilter(subChannel)
@@ -182,7 +179,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
                                   .send()
                                   .thenAccept(ack -> {
                                 	  if (isSubscriptionAcknowledged(ack)) {
-                            			  subscriptionRegistry.addSubscription(pubChannel, subChannel, source::close, reference, isReplyToSubscription);
+                                		  subscription.setAcknowledged(true);
                                           logger.debug("New subscription request for '{}' processed successfully - {}", subChannel, ack);
                                       } else {
                                           logger.error("New subscription request for '{}' failed - {}", subChannel, ack);

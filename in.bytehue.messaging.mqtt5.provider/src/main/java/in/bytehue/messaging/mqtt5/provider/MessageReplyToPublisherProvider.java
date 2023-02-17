@@ -125,7 +125,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 		final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
 
 		// subscribe to the channel first
-		final PushStream<Message> stream = subscriber.replyToSubscribe(dto.subChannel, dto.pubChannel, null)
+		final PushStream<Message> stream = subscriber.replyToSubscribe(dto.subChannel, dto.pubChannel)
 				.filter(responseMessage -> matchCorrelationId(requestMessage, responseMessage));
 
 		// resolve the promise on first response matching the specified correlation ID
@@ -151,7 +151,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 		final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
 
 		// subscribe to the channel first
-		final PushStream<Message> stream = subscriber.replyToSubscribe(dto.subChannel, dto.pubChannel, null)
+		final PushStream<Message> stream = subscriber.replyToSubscribe(dto.subChannel, dto.pubChannel)
 				.filter(responseMessage -> matchCorrelationId(requestMessage, responseMessage));
 
 		// publish the request to the channel
