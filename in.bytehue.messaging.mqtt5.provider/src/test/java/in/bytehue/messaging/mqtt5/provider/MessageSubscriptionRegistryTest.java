@@ -159,7 +159,8 @@ public final class MessageSubscriptionRegistryTest {
 		assertThat(registry.getSubscriptionDTOs()).isEmpty();
 		assertThat(registry.getReplyToSubscriptionDTOs()).isNotNull().hasSize(1);
 		assertThat(registry.getSubscription(reqChannel)).isNotNull();
-		assertThat(registry.getSubscription(reqChannel).pubChannel.name).isEqualTo(resChannel);
+		assertThat(registry.getSubscription(reqChannel).pubChannels).isNotEmpty();
+		assertThat(registry.getSubscription(reqChannel).pubChannels.get(resChannel).name).isEqualTo(resChannel);
 		assertThat(registry.getSubscription(reqChannel).subChannel.name).isEqualTo(reqChannel);
 	}
 

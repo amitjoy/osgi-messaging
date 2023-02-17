@@ -84,7 +84,7 @@ public final class MessageReplyToSingleHandlerTest {
 		final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
 
 		final String channelKey = "osgi.messaging.replyToSubscription.channel";
-		final String[] channelValue = new String[] { channel };
+		final String[] channelValue = { channel };
 
 		final String replyToChannelKey = "osgi.messaging.replyToSubscription.replyChannel";
 		final String replyToChannelValue = replyToChannel;
@@ -129,10 +129,10 @@ public final class MessageReplyToSingleHandlerTest {
 		final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
 
 		final String channelKey = "osgi.messaging.replyToSubscription.channel";
-		final String[] channelValue = new String[] { channel }; // subscribe
+		final String[] channelValue = { channel }; // subscribe
 
 		final String replyToChannelKey = "osgi.messaging.replyToSubscription.replyChannel";
-		final String[] replyToChannelValue = new String[] { replyToChannel }; // publish
+		final String[] replyToChannelValue = { replyToChannel }; // publish
 
 		launchpad.register(ReplyToSingleSubscriptionHandler.class, handler, targetKey, targetValue, channelKey,
 				channelValue, replyToChannelKey, replyToChannelValue);
@@ -144,6 +144,48 @@ public final class MessageReplyToSingleHandlerTest {
                                    .content(ByteBuffer.wrap(payload.getBytes()))
                                    .buildMessage();
         // @formatter:on
+
+		replyToPublisher.publishWithReply(message).onSuccess(m -> flag2.set(true));
+
+		waitForRequestProcessing(flag1);
+		waitForRequestProcessing(flag2);
+	}
+
+	@Test
+	public void test_reply_to_single_subscription_handler_3() throws Exception {
+		final AtomicBoolean flag1 = new AtomicBoolean();
+		final AtomicBoolean flag2 = new AtomicBoolean();
+
+		final String channel = "a/b";
+		final String replyToChannel = "c/d";
+		final String payload = "abc";
+		final String contentType = "text/plain";
+
+		final ReplyToSingleSubscriptionHandler handler = (m, mcb) -> {
+			// @formatter:off
+			final Message message = mcb.contentType(contentType)
+					.content(ByteBuffer.wrap(payload.getBytes()))
+					.buildMessage();
+			// @formatter:on
+			flag1.set(true);
+			return message;
+		};
+		final String targetKey = "osgi.messaging.replyToSubscription.target";
+		final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
+
+		final String channelKey = "osgi.messaging.replyToSubscription.channel";
+		final String[] channelValue = { channel }; // subscribe
+
+		launchpad.register(ReplyToSingleSubscriptionHandler.class, handler, targetKey, targetValue, channelKey,
+				channelValue);
+
+		// @formatter:off
+		final Message message = mcb.channel(channel) // publish
+				.replyTo(replyToChannel) // subscribe
+				.contentType(contentType)
+				.content(ByteBuffer.wrap(payload.getBytes()))
+				.buildMessage();
+		// @formatter:on
 
 		replyToPublisher.publishWithReply(message).onSuccess(m -> flag2.set(true));
 
@@ -165,7 +207,7 @@ public final class MessageReplyToSingleHandlerTest {
 		final String targetValue = "(&(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
 
 		final String channelKey = "osgi.messaging.replyToSubscription.channel";
-		final String[] channelValue = new String[] { channel };
+		final String[] channelValue = { channel };
 
 		final String replyToChannelKey = "osgi.messaging.replyToSubscription.replyChannel";
 		final String replyToChannelValue = replyToChannel;
@@ -201,7 +243,7 @@ public final class MessageReplyToSingleHandlerTest {
 		final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.feature=replyTo))";
 
 		final String channelKey = "osgi.messaging.replyToSubscription.channel";
-		final String[] channelValue = new String[] { channel };
+		final String[] channelValue = { channel };
 
 		final String replyToChannelKey = "osgi.messaging.replyToSubscription.replyChannel";
 		final String replyToChannelValue = replyToChannel;
@@ -237,7 +279,7 @@ public final class MessageReplyToSingleHandlerTest {
 		final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter))";
 
 		final String channelKey = "osgi.messaging.replyToSubscription.channel";
-		final String[] channelValue = new String[] { channel };
+		final String[] channelValue = { channel };
 
 		final String replyToChannelKey = "osgi.messaging.replyToSubscription.replyChannel";
 		final String replyToChannelValue = replyToChannel;
@@ -273,7 +315,7 @@ public final class MessageReplyToSingleHandlerTest {
 		final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=abc))";
 
 		final String channelKey = "osgi.messaging.replyToSubscription.channel";
-		final String[] channelValue = new String[] { channel };
+		final String[] channelValue = { channel };
 
 		final String replyToChannelKey = "osgi.messaging.replyToSubscription.replyChannel";
 		final String replyToChannelValue = replyToChannel;
@@ -310,7 +352,7 @@ public final class MessageReplyToSingleHandlerTest {
 		final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=blahblah)(osgi.messaging.feature=replyTo))";
 
 		final String channelKey = "osgi.messaging.replyToSubscription.channel";
-		final String[] channelValue = new String[] { channel };
+		final String[] channelValue = { channel };
 
 		final String replyToChannelKey = "osgi.messaging.replyToSubscription.replyChannel";
 		final String replyToChannelValue = replyToChannel;
@@ -347,7 +389,7 @@ public final class MessageReplyToSingleHandlerTest {
 		final String targetValue = "(&(osgi.messaging.protocol=amqp)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
 
 		final String channelKey = "osgi.messaging.replyToSubscription.channel";
-		final String[] channelValue = new String[] { channel };
+		final String[] channelValue = { channel };
 
 		final String replyToChannelKey = "osgi.messaging.replyToSubscription.replyChannel";
 		final String replyToChannelValue = replyToChannel;
@@ -380,7 +422,7 @@ public final class MessageReplyToSingleHandlerTest {
 			throw new AssertionError("Will never be executed");
 		};
 		final String channelKey = "osgi.messaging.replyToSubscription.channel";
-		final String[] channelValue = new String[] { channel };
+		final String[] channelValue = { channel };
 
 		final String replyToChannelKey = "osgi.messaging.replyToSubscription.replyChannel";
 		final String replyToChannelValue = replyToChannel;
@@ -449,7 +491,7 @@ public final class MessageReplyToSingleHandlerTest {
 		final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
 
 		final String channelKey = "osgi.messaging.replyToSubscription.channel";
-		final String[] channelValue = new String[] { channel };
+		final String[] channelValue = { channel };
 
 		launchpad.register(ReplyToSingleSubscriptionHandler.class, handler, targetKey, targetValue, channelKey,
 				channelValue);
