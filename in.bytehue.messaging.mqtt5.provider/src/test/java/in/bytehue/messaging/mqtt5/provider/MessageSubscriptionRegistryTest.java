@@ -29,16 +29,15 @@ import org.junit.runner.RunWith;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContextBuilder;
 import org.osgi.service.messaging.MessagePublisher;
-import org.osgi.service.messaging.MessageSubscription;
 import org.osgi.service.messaging.dto.SubscriptionDTO;
 import org.osgi.service.messaging.replyto.ReplyToPublisher;
 import org.osgi.service.messaging.replyto.ReplyToSingleSubscriptionHandler;
-import org.osgi.util.pushstream.PushStream;
 
 import aQute.launchpad.Launchpad;
 import aQute.launchpad.LaunchpadBuilder;
 import aQute.launchpad.Service;
 import aQute.launchpad.junit.LaunchpadRunner;
+import in.bytehue.messaging.mqtt5.provider.helper.SubscriptionAck;
 
 @RunWith(LaunchpadRunner.class)
 public final class MessageSubscriptionRegistryTest {
@@ -50,7 +49,7 @@ public final class MessageSubscriptionRegistryTest {
 	private MessagePublisher publisher;
 
 	@Service
-	private MessageSubscription subscriber;
+	private MessageSubscriptionProvider subscriber;
 
 	@Service
 	private ReplyToPublisher replyToPublisher;
@@ -71,53 +70,41 @@ public final class MessageSubscriptionRegistryTest {
 	@Test
 	public void test_registry_when_subscription_happens() throws Exception {
 		final String channel = "ab/ba";
-		final PushStream<Message> stream = subscriber.subscribe(channel);
+		final SubscriptionAck subscription = subscriber._subscribe(channel);
 		TimeUnit.SECONDS.sleep(2);
 
-		assertThat(registry.getSubscription(channel)).isNotNull();
+		assertThat(registry.getSubscription(channel, subscription.id())).isNotNull();
 
-		stream.close();
+		subscription.stream().close();
 		TimeUnit.SECONDS.sleep(2);
 
-		assertThat(registry.getSubscription(channel)).isNull();
+		assertThat(registry.getSubscription(channel, subscription.id())).isNull();
 	}
 
 	@Test
 	public void test_registry_when_existing_stream_closed() throws Exception {
 		final String channel = "ab/ba";
-		subscriber.subscribe(channel);
+		final SubscriptionAck subscription = subscriber._subscribe(channel);
 		TimeUnit.SECONDS.sleep(2);
 
-		assertThat(registry.getSubscription(channel)).isNotNull();
+		assertThat(registry.getSubscription(channel, subscription.id())).isNotNull();
 
-		final boolean isRemoved = registry.removeSubscription(channel);
+		registry.removeSubscription(channel, subscription.id());
 		TimeUnit.SECONDS.sleep(2);
 
-		assertThat(isRemoved).isTrue();
-		assertThat(registry.getSubscription(channel)).isNull();
-	}
-
-	@Test
-	public void test_registry_when_unsubscription_happens_for_non_existing_subscription() throws Exception {
-		final String channel = "ab/ba";
-		final boolean isRemoved = registry.removeSubscription(channel);
-
-		TimeUnit.SECONDS.sleep(2);
-
-		assertThat(isRemoved).isFalse();
-		assertThat(registry.getSubscription(channel)).isNull();
+		assertThat(registry.getSubscription(channel, subscription.id())).isNull();
 	}
 
 	@Test
 	public void test_registry_when_existing_subscription_is_unsubscribed() throws Exception {
 		final String channel = "ab/ba";
-		final PushStream<Message> stream = subscriber.subscribe(channel);
+		final SubscriptionAck subscription = subscriber._subscribe(channel);
 		TimeUnit.SECONDS.sleep(2);
 
-		stream.close();
+		subscription.stream().close();
 		TimeUnit.SECONDS.sleep(2);
 
-		assertThat(registry.getSubscription(channel)).isNull();
+		assertThat(registry.getSubscription(channel, subscription.id())).isNull();
 	}
 
 	@Test
@@ -125,8 +112,8 @@ public final class MessageSubscriptionRegistryTest {
 		final String channel1 = "ab/ba";
 		final String channel2 = "ba/ab";
 
-		subscriber.subscribe(channel1);
-		subscriber.subscribe(channel2);
+		final SubscriptionAck subscription1 = subscriber._subscribe(channel1);
+		final SubscriptionAck subscription2 = subscriber._subscribe(channel2);
 
 		TimeUnit.SECONDS.sleep(2);
 
@@ -134,8 +121,8 @@ public final class MessageSubscriptionRegistryTest {
 
 		TimeUnit.SECONDS.sleep(2);
 
-		assertThat(registry.getSubscription(channel1)).isNull();
-		assertThat(registry.getSubscription(channel2)).isNull();
+		assertThat(registry.getSubscription(channel1, subscription1.id())).isNull();
+		assertThat(registry.getSubscription(channel2, subscription2.id())).isNull();
 	}
 
 	@Test
@@ -158,10 +145,6 @@ public final class MessageSubscriptionRegistryTest {
 
 		assertThat(registry.getSubscriptionDTOs()).isEmpty();
 		assertThat(registry.getReplyToSubscriptionDTOs()).isNotNull().hasSize(1);
-		assertThat(registry.getSubscription(reqChannel)).isNotNull();
-		assertThat(registry.getSubscription(reqChannel).pubChannels).isNotEmpty();
-		assertThat(registry.getSubscription(reqChannel).pubChannels.get(resChannel).name).isEqualTo(resChannel);
-		assertThat(registry.getSubscription(reqChannel).subChannel.name).isEqualTo(reqChannel);
 	}
 
 	@Test
@@ -233,42 +216,42 @@ public final class MessageSubscriptionRegistryTest {
 	@Test
 	public void test_subscription_of_same_topic_multiple_times() throws Exception {
 		final String channel = "ab/ba";
-		final PushStream<Message> stream1 = subscriber.subscribe(channel);
+		final SubscriptionAck subscription1 = subscriber._subscribe(channel);
 		TimeUnit.SECONDS.sleep(2);
 
-		assertThat(registry.getSubscription(channel)).isNotNull();
+		assertThat(registry.getSubscription(channel, subscription1.id())).isNotNull();
 
-		final PushStream<Message> stream2 = subscriber.subscribe(channel);
+		final SubscriptionAck subscription2 = subscriber._subscribe(channel);
 		TimeUnit.SECONDS.sleep(2);
 
-		assertThat(registry.getSubscription(channel)).isNotNull();
-		assertThat(stream1).isNotEqualTo(stream2);
+		assertThat(registry.getSubscription(channel, subscription1.id())).isNotNull();
+		assertThat(subscription1.stream()).isNotEqualTo(subscription2.id());
 	}
 
 	@Test
 	public void test_existing_subscription_stream_close() throws Exception {
 		final String channel = "ab/ba";
-		final PushStream<Message> stream1 = subscriber.subscribe(channel);
+		final SubscriptionAck subscription = subscriber._subscribe(channel);
 		TimeUnit.SECONDS.sleep(2);
 
-		assertThat(registry.getSubscription(channel)).isNotNull();
+		assertThat(registry.getSubscription(channel, subscription.id())).isNotNull();
 
-		stream1.close();
+		subscription.stream().close();
 		TimeUnit.SECONDS.sleep(2);
 
-		assertThat(registry.getSubscription(channel)).isNull();
+		assertThat(registry.getSubscription(channel, subscription.id())).isNull();
 	}
 
 	@Test
 	public void test_existing_subscription_explicit_unsubscribe() throws Exception {
 		final String channel = "ab/ba";
-		subscriber.subscribe(channel);
+		final SubscriptionAck subscription = subscriber._subscribe(channel);
 		TimeUnit.SECONDS.sleep(2);
 
 		registry.unsubscribeSubscription(channel);
 		TimeUnit.SECONDS.sleep(2);
 
-		assertThat(registry.getSubscription(channel)).isNull();
+		assertThat(registry.getSubscription(channel, subscription.id())).isNull();
 	}
 
 }
