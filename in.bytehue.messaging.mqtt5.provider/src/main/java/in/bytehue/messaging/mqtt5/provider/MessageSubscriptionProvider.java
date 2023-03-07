@@ -57,6 +57,7 @@ import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCo
 
 import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionRegistry.ExtendedSubscription;
 import in.bytehue.messaging.mqtt5.provider.helper.InterruptSafe;
+import in.bytehue.messaging.mqtt5.provider.helper.SubscriptionAck;
 
 //@formatter:off
 @MessagingFeature(
@@ -101,23 +102,31 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 
     @Override
     public PushStream<Message> subscribe(final String subChannel) {
-        return subscribe(null, subChannel, null, false);
+        return _subscribe(subChannel).stream();
     }
 
     @Override
     public PushStream<Message> subscribe(final MessageContext context) {
-        return subscribe(context, context.getChannel(), null, false);
+        return _subscribe(context).stream();
     }
 
-    public PushStream<Message> replyToSubscribe(final String subChannel, final String pubChannel) {
+    public SubscriptionAck _subscribe(final String subChannel) {
+    	return subscribe(null, subChannel, null, false);
+    }
+
+    public SubscriptionAck _subscribe(final MessageContext context) {
+    	return subscribe(context, context.getChannel(), null, false);
+    }
+
+    public SubscriptionAck replyToSubscribe(final String subChannel, final String pubChannel) {
         return subscribe(null, subChannel, pubChannel, true);
     }
 
-    private PushStream<Message> subscribe(
-    		                       MessageContext context,
-    		                       final String subChannel,
-    		                       final String pubChannel,
-    		                       final boolean isReplyToSub) {
+    private SubscriptionAck subscribe(
+    		                         MessageContext context,
+    		                         final String subChannel,
+    		                         final String pubChannel,
+    		                         final boolean isReplyToSub) {
 
         final PushStreamProvider provider = new PushStreamProvider();
         final SimplePushEventSource<Message> source = acquirePushEventSource(provider);
@@ -180,13 +189,16 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
                                   .thenAccept(ack -> {
                                 	  if (isSubscriptionAcknowledged(ack)) {
                                 		  subscription.setAcknowledged(true);
-                                          logger.debug("New subscription request for '{}' processed successfully - {}", subChannel, ack);
+                                          logger.debug("New subscription request for '{}' processed successfully - {} > ID: {}", subChannel, ack, subscription.id);
                                       } else {
-                                          logger.error("New subscription request for '{}' failed - {}", subChannel, ack);
+                                          logger.error("New subscription request for '{}' failed - {} > ID: {}", subChannel, ack, subscription.id);
                                       }
                                    });
-            stream.onClose(() -> subscriptionRegistry.unsubscribeSubscription(subChannel));
-            return stream;
+            stream.onClose(() -> {
+            	logger.debug("Removing subscription '{}'", subscription.id);
+            	subscriptionRegistry.removeSubscription(subChannel, subscription.id);
+            });
+            return SubscriptionAck.of(stream, subscription.id);
         } catch (final Exception e) {
             logger.error("Error while subscribing to {}", subChannel, e);
             throw e;
