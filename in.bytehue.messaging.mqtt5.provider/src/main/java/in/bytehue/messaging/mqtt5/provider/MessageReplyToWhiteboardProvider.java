@@ -56,6 +56,7 @@ import org.osgi.util.pushstream.PushStream;
 import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionRegistry.ExtendedSubscription;
 import in.bytehue.messaging.mqtt5.provider.helper.FilterParser;
 import in.bytehue.messaging.mqtt5.provider.helper.FilterParser.Expression;
+import in.bytehue.messaging.mqtt5.provider.helper.SubscriptionAck;
 
 @Component
 @MessagingFeature(name = MESSAGING_ID, protocol = MESSAGING_PROTOCOL)
@@ -95,24 +96,28 @@ public final class MessageReplyToWhiteboardProvider {
         final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
 
         Stream.of(replyToDTO.subChannels)
-              .forEach(c -> subscriber.replyToSubscribe(c, replyToDTO.pubChannel)
-                                  .map(m -> handleResponse(m, handler))
-                                  .forEach(m -> {
-                                	  final String pubChannelProp = replyToDTO.pubChannel;
-                                	  final String pubChannel =
-                                			  pubChannelProp == null ?
-                                					  m.getContext().getReplyToChannel() :
-                                						  pubChannelProp;
-                                	  if (pubChannel == null) {
-                                		  logger.warn("No reply to channel is specified in the received message");
-                                		  return;
-                                	  }
-                                	  // update the subscription
-                                	  final ExtendedSubscription subscription = registry.getSubscription(c);
-                                	  subscription.updateReplyToHandlerSubscription(pubChannel, reference);
+              .forEach(c -> {
+            	  final SubscriptionAck sub = subscriber.replyToSubscribe(c, replyToDTO.pubChannel);
+            	  sub
+            	  .stream()
+            	  .map(m -> handleResponse(m, handler))
+                  .forEach(m -> {
+                	  final String pubChannelProp = replyToDTO.pubChannel;
+                	  final String pubChannel =
+                			  pubChannelProp == null ?
+                					  m.getContext().getReplyToChannel() :
+                						  pubChannelProp;
+                	  if (pubChannel == null) {
+                		  logger.warn("No reply to channel is specified in the received message");
+                		  return;
+                	  }
+                	  // update the subscription
+                	  final ExtendedSubscription subscription = registry.getSubscription(c, sub.id());
+                	  subscription.updateReplyToHandlerSubscription(pubChannel, reference);
 
-                                	  publisher.publish(m, pubChannel);
-                                  }));
+                	  publisher.publish(m, pubChannel);
+                  });
+              });
     }
 
     void unbindReplyToSingleSubscriptionHandler(final ServiceReference<?> reference) {
@@ -128,6 +133,7 @@ public final class MessageReplyToWhiteboardProvider {
 
         Stream.of(replyToDTO.subChannels)
               .forEach(c -> subscriber.replyToSubscribe(c, replyToDTO.pubChannel)
+            		              .stream()
                                   .forEach(handler::handleResponse));
     }
 
@@ -143,21 +149,23 @@ public final class MessageReplyToWhiteboardProvider {
         final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
 
         Stream.of(replyToDTO.subChannels)
-              .forEach(c -> subscriber.replyToSubscribe(c, replyToDTO.pubChannel)
-                                  .forEach(m ->
-                                      handleResponses(m, handler)
-                                          .forEach(msg -> {
-                                        	  final String pubChannel =
-                                        			  replyToDTO.pubChannel == null ?
-                                        					  msg.getContext().getReplyToChannel() :
-                                        						  replyToDTO.pubChannel;
+              .forEach(c -> {
+            	  final SubscriptionAck sub = subscriber.replyToSubscribe(c, replyToDTO.pubChannel);
+            	  sub.stream().forEach(m ->
+                      handleResponses(m, handler)
+                          .forEach(msg -> {
+                        	  final String pubChannel =
+                        			  replyToDTO.pubChannel == null ?
+                        					  msg.getContext().getReplyToChannel() :
+                        						  replyToDTO.pubChannel;
 
-                                        	  // update the subscription
-                                        	  final ExtendedSubscription subscription = registry.getSubscription(c);
-                                        	  subscription.updateReplyToHandlerSubscription(pubChannel, reference);
+                        	  // update the subscription
+                        	  final ExtendedSubscription subscription = registry.getSubscription(c, sub.id());
+                        	  subscription.updateReplyToHandlerSubscription(pubChannel, reference);
 
-                                        	  publisher.publish(msg, replyToDTO.pubChannel);
-                                          })));
+                        	  publisher.publish(msg, replyToDTO.pubChannel);
+                          }));
+              });
     }
 
     void unbindReplyToManySubscriptionHandler(final ServiceReference<?> reference) {

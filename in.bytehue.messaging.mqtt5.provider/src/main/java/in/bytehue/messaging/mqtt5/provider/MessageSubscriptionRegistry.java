@@ -18,13 +18,13 @@ package in.bytehue.messaging.mqtt5.provider;
 import static com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode.NO_SUBSCRIPTIONS_EXISTED;
 import static com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode.SUCCESS;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.toServiceReferenceDTO;
-import static java.util.stream.Collectors.toList;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.osgi.framework.BundleContext;
@@ -55,35 +55,43 @@ public final class MessageSubscriptionRegistry {
 	@Reference
 	private MessageClientProvider messagingClient;
 
-	// topic as key
-	private final Map<String, ExtendedSubscription> subscriptions = new ConcurrentHashMap<>();
+	// topic as outer map's key and subscription id as internal map's key
+	// there can be multiple subscriptions for a single topic
+	private final Map<String, Map<String, ExtendedSubscription>> subscriptions = new ConcurrentHashMap<>();
 
-	public ExtendedSubscription addSubscription(final String subChannel, final String pubChannel,
+	public synchronized ExtendedSubscription addSubscription(final String subChannel, final String pubChannel,
 			final Runnable connectedStreamCloser, final boolean isReplyToSub) {
 		final ExtendedSubscription sub = new ExtendedSubscription(subChannel, pubChannel, connectedStreamCloser,
 				isReplyToSub);
-		final ExtendedSubscription existingSubscription = subscriptions.put(subChannel, sub);
-		if (existingSubscription != null && existingSubscription.connectedStreamCloser != null) {
-			// always close the existing pushstream if the same topic is subscribed once
-			// again, otherwise, the unused pushstreams will lead to classloader leaks
-			existingSubscription.connectedStreamCloser.run();
-		}
+		subscriptions.computeIfAbsent(subChannel, c -> new ConcurrentHashMap<>()).put(sub.id, sub);
 		return sub;
 	}
 
-	public boolean removeSubscription(final String channel) {
-		final ExtendedSubscription sub = subscriptions.remove(channel);
-		if (sub != null && sub.connectedStreamCloser != null) {
-			sub.connectedStreamCloser.run();
+	public synchronized void removeSubscription(final String channel, final String id) {
+		final Map<String, ExtendedSubscription> existingSubscriptions = subscriptions.get(channel);
+		if (existingSubscriptions == null || existingSubscriptions.isEmpty()) {
+			unsubscribeSubscription(channel);
+			return;
 		}
-		return sub != null;
+		final ExtendedSubscription existingSubscription = existingSubscriptions.remove(id);
+		if (existingSubscription != null) {
+			existingSubscription.connectedStreamCloser.run();
+		}
 	}
 
-	public ExtendedSubscription getSubscription(final String channel) {
-		return subscriptions.get(channel);
+	public synchronized void removeSubscription(final String channel) {
+		final Map<String, ExtendedSubscription> exisitngSubscriptions = subscriptions.remove(channel);
+		if (exisitngSubscriptions != null) {
+			exisitngSubscriptions.forEach((k, v) -> v.connectedStreamCloser.run());
+		}
 	}
 
-	public void unsubscribeSubscription(final String subChannel) {
+	public synchronized ExtendedSubscription getSubscription(final String channel, final String id) {
+		final Map<String, ExtendedSubscription> existingSubscriptions = subscriptions.get(channel);
+		return existingSubscriptions != null ? existingSubscriptions.get(id) : null;
+	}
+
+	public synchronized void unsubscribeSubscription(final String subChannel) {
 		messagingClient.client.unsubscribeWith().addTopicFilter(subChannel).send().thenAccept(ack -> {
 			if (isUnsubscriptionAcknowledged(ack)) {
 				removeSubscription(subChannel);
@@ -96,30 +104,32 @@ public final class MessageSubscriptionRegistry {
 
 	@Deactivate
 	public void clearAllSubscriptions() {
-		subscriptions.values().stream().forEach(sub -> unsubscribeSubscription(sub.subChannel.name));
+		subscriptions.keySet().stream().forEach(this::unsubscribeSubscription);
 	}
 
-	public SubscriptionDTO[] getSubscriptionDTOs() {
+	public synchronized SubscriptionDTO[] getSubscriptionDTOs() {
 		final List<ChannelDTO> subChannels = getSubscriptionChannelDTOs();
 		return subChannels.stream().map(this::getSubscriptionDTO).toArray(SubscriptionDTO[]::new);
 	}
 
-	public ReplyToSubscriptionDTO[] getReplyToSubscriptionDTOs() {
+	public synchronized ReplyToSubscriptionDTO[] getReplyToSubscriptionDTOs() {
 		final List<ReplyToSubscriptionDTO> replyToSubscriptions = new ArrayList<>();
 
-		for (final Entry<String, ExtendedSubscription> entry : subscriptions.entrySet()) {
-			final ExtendedSubscription sub = entry.getValue();
-			if (sub.isReplyToSub && sub.isAcknowledged) {
-				if (sub.pubChannels.isEmpty()) {
-					// true for ReplyToSubscrriptionHandlers
-					final ReplyToSubscriptionDTO replyToSub = getReplyToSubscriptionDTO(null, sub.subChannel,
-							sub.handlerReference);
-					replyToSubscriptions.add(replyToSub);
-				} else {
-					for (final Entry<String, ChannelDTO> pubEntry : sub.pubChannels.entrySet()) {
-						final ReplyToSubscriptionDTO replyToSub = getReplyToSubscriptionDTO(pubEntry.getValue(),
-								sub.subChannel, sub.handlerReference);
+		for (final Entry<String, Map<String, ExtendedSubscription>> entry : subscriptions.entrySet()) {
+			for (final Entry<String, ExtendedSubscription> e : entry.getValue().entrySet()) {
+				final ExtendedSubscription sub = e.getValue();
+				if (sub.isReplyToSub && sub.isAcknowledged) {
+					if (sub.pubChannels.isEmpty()) {
+						// true for ReplyToSubscrriptionHandlers
+						final ReplyToSubscriptionDTO replyToSub = getReplyToSubscriptionDTO(null, sub.subChannel,
+								sub.handlerReference);
 						replyToSubscriptions.add(replyToSub);
+					} else {
+						for (final Entry<String, ChannelDTO> pubEntry : sub.pubChannels.entrySet()) {
+							final ReplyToSubscriptionDTO replyToSub = getReplyToSubscriptionDTO(pubEntry.getValue(),
+									sub.subChannel, sub.handlerReference);
+							replyToSubscriptions.add(replyToSub);
+						}
 					}
 				}
 			}
@@ -128,8 +138,16 @@ public final class MessageSubscriptionRegistry {
 	}
 
 	private List<ChannelDTO> getSubscriptionChannelDTOs() {
-		return subscriptions.values().stream().filter(c -> !c.isReplyToSub).filter(c -> c.isAcknowledged)
-				.map(c -> c.subChannel).collect(toList());
+		final List<ChannelDTO> channels = new ArrayList<>();
+		for (final Entry<String, Map<String, ExtendedSubscription>> entry : subscriptions.entrySet()) {
+			for (final Entry<String, ExtendedSubscription> e : entry.getValue().entrySet()) {
+				final ExtendedSubscription sub = e.getValue();
+				if (!sub.isReplyToSub && sub.isAcknowledged) {
+					channels.add(sub.subChannel);
+				}
+			}
+		}
+		return channels;
 	}
 
 	private SubscriptionDTO getSubscriptionDTO(final ChannelDTO channelDTO) {
@@ -164,6 +182,7 @@ public final class MessageSubscriptionRegistry {
 
 	static class ExtendedSubscription {
 
+		String id;
 		boolean isAcknowledged;
 		boolean isReplyToSub;
 		ChannelDTO subChannel;
@@ -173,6 +192,7 @@ public final class MessageSubscriptionRegistry {
 
 		private ExtendedSubscription(final String subChannel, final String pubChannel,
 				final Runnable connectedStreamCloser, final boolean isReplyToSub) {
+			id = UUID.randomUUID().toString();
 			this.connectedStreamCloser = connectedStreamCloser;
 			this.subChannel = createChannelDTO(subChannel);
 			this.isReplyToSub = isReplyToSub;
