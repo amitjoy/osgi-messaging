@@ -183,8 +183,8 @@ public final class MessageSubscriptionRegistry {
 	static class ExtendedSubscription {
 
 		String id;
-		boolean isAcknowledged;
-		boolean isReplyToSub;
+		volatile boolean isAcknowledged;
+		volatile boolean isReplyToSub;
 		ChannelDTO subChannel;
 		Runnable connectedStreamCloser;
 		ServiceReferenceDTO handlerReference;
@@ -201,11 +201,11 @@ public final class MessageSubscriptionRegistry {
 			}
 		}
 
-		public void setAcknowledged(final boolean isAcknowledged) {
+		public synchronized void setAcknowledged(final boolean isAcknowledged) {
 			this.isAcknowledged = isAcknowledged;
 		}
 
-		public void updateReplyToHandlerSubscription(final String pubChannel,
+		public synchronized void updateReplyToHandlerSubscription(final String pubChannel,
 				final ServiceReference<?> handlerReference) {
 			this.handlerReference = toServiceReferenceDTO(handlerReference);
 			pubChannels.put(pubChannel, createChannelDTO(pubChannel));

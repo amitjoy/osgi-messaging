@@ -108,7 +108,7 @@ public final class MessageReplyToWhiteboardProvider {
                 					  m.getContext().getReplyToChannel() :
                 						  pubChannelProp;
                 	  if (pubChannel == null) {
-                		  logger.warn("No reply to channel is specified in the received message");
+                		  logger.warn("No reply to channel is specified for the subscription handler");
                 		  return;
                 	  }
                 	  // update the subscription
