@@ -60,191 +60,255 @@ import in.bytehue.messaging.mqtt5.provider.helper.SubscriptionAck;
 
 @Component
 @MessagingFeature(name = MESSAGING_ID, protocol = MESSAGING_PROTOCOL)
-// @formatter:off
 public final class MessageReplyToWhiteboardProvider {
 
 	@Reference(service = LoggerFactory.class)
-    private Logger logger;
+	private Logger logger;
 
 	@Reference
-    private ConverterAdapter converter;
+	private ConverterAdapter converter;
 
-    @Reference
-    private MessagePublisherProvider publisher;
+	@Reference
+	private MessagePublisherProvider publisher;
 
-    @Reference
-    private MessageSubscriptionProvider subscriber;
+	@Reference
+	private MessageSubscriptionProvider subscriber;
 
-    @Reference
-    private MessageSubscriptionRegistry registry;
+	@Reference
+	private MessageSubscriptionRegistry registry;
 
-    @Reference
-    private ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
+	@Reference
+	private ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
 
-    private final Map<ServiceReference<?>, List<PushStream<?>>> streams = new ConcurrentHashMap<>();
+	private final List<ReplyToSubDTO> subscriptions = new CopyOnWriteArrayList<>();
 
-    @Deactivate
-    void stop() {
-        streams.values().forEach(list -> list.forEach(PushStream::close));
-    }
+	@Activate
+	void activate() {
+		subscriptions.stream().filter(sub -> !sub.isProcessed()).forEach(sub -> {
+			switch (sub.type) {
+			case REPLY_TO_SUB:
+				processReplyToSubscriptionHandler(sub);
+				break;
+			case REPLY_TO_SINGLE_SUB:
+				processReplyToSingleSubscriptionHandler(sub);
+				break;
+			case REPLY_TO_MANY_SUB:
+				processReplyToManySubscriptionHandler(sub);
+				break;
+			}
+		});
+	}
 
-    @Reference(policy = DYNAMIC, cardinality = MULTIPLE)
-    synchronized void bindReplyToSingleSubscriptionHandler(
-            final ReplyToSingleSubscriptionHandler handler,
-            final ServiceReference<?> reference) {
+	@Deactivate
+	void deactivate() {
+		subscriptions.stream().forEach(sub -> sub.subAcks.stream().forEach(s -> s.stream().close()));
+		subscriptions.clear();
+	}
 
-        final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
+	@Reference(policy = DYNAMIC, cardinality = MULTIPLE)
+	synchronized void addReplyToSingleSubscriptionHandler(final ReplyToSingleSubscriptionHandler handler,
+			final ServiceReference<?> reference) {
 
-        Stream.of(replyToDTO.subChannels)
-              .forEach(c -> {
-            	  final SubscriptionAck sub = subscriber.replyToSubscribe(c, replyToDTO.pubChannel);
-            	  sub
-            	  .stream()
-            	  .map(m -> handleResponse(m, handler))
-                  .forEach(m -> {
-                	  final String pubChannelProp = replyToDTO.pubChannel;
-                	  final String pubChannel =
-                			  pubChannelProp == null ?
-                					  m.getContext().getReplyToChannel() :
-                						  pubChannelProp;
-                	  if (pubChannel == null) {
-                		  logger.warn("No reply to channel is specified for the subscription handler");
-                		  return;
-                	  }
-                	  // update the subscription
-                	  final ExtendedSubscription subscription = registry.getSubscription(c, sub.id());
-                	  subscription.updateReplyToHandlerSubscription(pubChannel, reference);
+		final ReplyToSubDTO sub = new ReplyToSubDTO(handler, REPLY_TO_SINGLE_SUB, reference);
+		subscriptions.add(sub);
 
-                	  publisher.publish(m, pubChannel);
-                  });
-              });
-    }
+		if (converter == null || subscriber == null || registry == null) {
+			// may happen that the services ain't injected yet
+			return;
+		}
+		processReplyToSingleSubscriptionHandler(sub);
+	}
 
-    void unbindReplyToSingleSubscriptionHandler(final ServiceReference<?> reference) {
-        closeConnectedPushStreams(reference);
-    }
+	synchronized void removeReplyToSingleSubscriptionHandler(final ServiceReference<?> reference) {
+		removeSubscription(reference);
+	}
 
-    @Reference(policy = DYNAMIC, cardinality = MULTIPLE)
-    synchronized void bindReplyToSubscriptionHandler(
-            final ReplyToSubscriptionHandler handler,
-            final ServiceReference<?> reference) {
+	@Reference(policy = DYNAMIC, cardinality = MULTIPLE)
+	synchronized void addReplyToSubscriptionHandler(final ReplyToSubscriptionHandler handler,
+			final ServiceReference<?> reference) {
 
-        final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
+		final ReplyToSubDTO sub = new ReplyToSubDTO(reference, REPLY_TO_SUB, reference);
+		subscriptions.add(sub);
 
-        Stream.of(replyToDTO.subChannels)
-              .forEach(c -> subscriber.replyToSubscribe(c, replyToDTO.pubChannel)
-            		              .stream()
-                                  .forEach(handler::handleResponse));
-    }
+		if (converter == null || subscriber == null || registry == null) {
+			// may happen that the services ain't injected yet
+			return;
+		}
+		processReplyToSubscriptionHandler(sub);
+	}
 
-    void unbindReplyToSubscriptionHandler(final ServiceReference<?> reference) {
-        closeConnectedPushStreams(reference);
-    }
+	synchronized void removeReplyToSubscriptionHandler(final ServiceReference<?> reference) {
+		removeSubscription(reference);
+	}
 
-    @Reference(policy = DYNAMIC, cardinality = MULTIPLE)
-    synchronized void bindReplyToManySubscriptionHandler(
-            final ReplyToManySubscriptionHandler handler,
-            final ServiceReference<?> reference) {
+	@Reference(policy = DYNAMIC, cardinality = MULTIPLE)
+	synchronized void addReplyToManySubscriptionHandler(final ReplyToManySubscriptionHandler handler,
+			final ServiceReference<?> reference) {
 
-        final ReplyToDTO replyToDTO = new ReplyToDTO(reference);
+		final ReplyToSubDTO sub = new ReplyToSubDTO(handler, REPLY_TO_MANY_SUB, reference);
+		subscriptions.add(sub);
 
-        Stream.of(replyToDTO.subChannels)
-              .forEach(c -> {
-            	  final SubscriptionAck sub = subscriber.replyToSubscribe(c, replyToDTO.pubChannel);
-            	  sub.stream().forEach(m ->
-                      handleResponses(m, handler)
-                          .forEach(msg -> {
-                        	  final String pubChannel =
-                        			  replyToDTO.pubChannel == null ?
-                        					  msg.getContext().getReplyToChannel() :
-                        						  replyToDTO.pubChannel;
+		if (converter == null || subscriber == null || registry == null) {
+			// may happen that the services ain't injected yet
+			return;
+		}
+		processReplyToManySubscriptionHandler(sub);
+	}
 
-                        	  // update the subscription
-                        	  final ExtendedSubscription subscription = registry.getSubscription(c, sub.id());
-                        	  subscription.updateReplyToHandlerSubscription(pubChannel, reference);
+	synchronized void removeReplyToManySubscriptionHandler(final ServiceReference<?> reference) {
+		removeSubscription(reference);
+	}
 
-                        	  publisher.publish(msg, replyToDTO.pubChannel);
-                          }));
-              });
-    }
+	private void processReplyToSingleSubscriptionHandler(final ReplyToSubDTO sub) {
+		final ReplyToDTO replyToDTO = new ReplyToDTO(sub.reference);
 
-    void unbindReplyToManySubscriptionHandler(final ServiceReference<?> reference) {
-        closeConnectedPushStreams(reference);
-    }
+		Stream.of(replyToDTO.subChannels).forEach(c -> {
+			final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel);
+			sub.addAck(ack);
 
-    private Message handleResponse(final Message request, final ReplyToSingleSubscriptionHandler handler) {
-        final MessageContextBuilderProvider mcb = getResponse(request);
-        try {
-            return handler.handleResponse(request, mcb);
-        } catch (final Exception e) {
-            return prepareExceptionAsMessage(e, mcb);
-        } finally {
-            mcbFactory.ungetService(mcb);
-        }
-    }
+			ack.stream().map(m -> handleResponse(m, (ReplyToSingleSubscriptionHandler) sub.handler))
+					.forEach(m -> handleMessageReceive(sub.reference, replyToDTO, c, ack, m));
+		});
+	}
 
-    private MessageContextBuilderProvider getResponse(final Message request) {
-        final MessageContext context = request.getContext();
-        final String channel = context.getChannel();
-        final String replyToChannel = context.getReplyToChannel();
-        final String correlation = context.getCorrelationId();
+	private void processReplyToSubscriptionHandler(final ReplyToSubDTO sub) {
+		final ReplyToDTO replyToDTO = new ReplyToDTO(sub.reference);
 
-        return (MessageContextBuilderProvider)
-                    mcbFactory.getService()
-                              .channel(channel)
-                              .replyTo(replyToChannel)
-                              .correlationId(correlation)
-                              .content(request.payload());
-    }
+		Stream.of(replyToDTO.subChannels).forEach(c -> {
+			final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel);
+			sub.addAck(ack);
 
-    private PushStream<Message> handleResponses(final Message request, final ReplyToManySubscriptionHandler handler) {
-        final MessageContextBuilder mcb = getResponse(request);
-        return handler.handleResponses(request, mcb);
-    }
+			ack.stream().forEach(((ReplyToSubscriptionHandler) sub.handler)::handleResponse);
+		});
+	}
 
-    private class ReplyToDTO {
+	private void processReplyToManySubscriptionHandler(final ReplyToSubDTO sub) {
+		final ReplyToDTO replyToDTO = new ReplyToDTO(sub.reference);
 
-        boolean isConform;
-        String pubChannel;
-        String[] subChannels;
+		Stream.of(replyToDTO.subChannels).forEach(c -> {
+			final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel);
+			sub.addAck(ack);
 
-        ReplyToDTO(final ServiceReference<?> reference) {
-            final Dictionary<String, ?> properties = reference.getProperties();
+			ack.stream().forEach(m -> handleResponses(m, (ReplyToManySubscriptionHandler) sub.handler)
+					.forEach(msg -> handleMessageReceive(sub.reference, replyToDTO, c, ack, msg)));
+		});
+	}
 
-            final Object replyToSubResponse = properties.get(REPLY_TO_SUBSCRIPTION_RESPONSE_CHANNEL_PROPERTY);
-            final Object replyToSubRequest = properties.get(REPLY_TO_SUBSCRIPTION_REQUEST_CHANNEL_PROPERTY);
+	private Message handleResponse(final Message request, final ReplyToSingleSubscriptionHandler handler) {
+		final MessageContextBuilderProvider mcb = getResponse(request);
+		try {
+			return handler.handleResponse(request, mcb);
+		} catch (final Exception e) {
+			return prepareExceptionAsMessage(e, mcb);
+		} finally {
+			mcbFactory.ungetService(mcb);
+		}
+	}
 
-            pubChannel = adaptTo(replyToSubResponse, String.class, converter);
-            subChannels = adaptTo(replyToSubRequest, String[].class, converter);
+	private MessageContextBuilderProvider getResponse(final Message request) {
+		final MessageContext context = request.getContext();
+		final String channel = context.getChannel();
+		final String replyToChannel = context.getReplyToChannel();
+		final String correlation = context.getCorrelationId();
 
-            if (subChannels == null) {
-                throw new IllegalStateException("The '" + reference
-                        + "' handler instance doesn't specify the reply-to subscription channel(s)");
-            }
+		return (MessageContextBuilderProvider) mcbFactory.getService().channel(channel).replyTo(replyToChannel)
+				.correlationId(correlation).content(request.payload());
+	}
 
-            final Object replyToSubTgt = properties.get(REPLY_TO_SUBSCRIPTION_TARGET_PROPERTY);
-            final String replyToSubTarget = adaptTo(replyToSubTgt, String.class, converter);
+	private PushStream<Message> handleResponses(final Message request, final ReplyToManySubscriptionHandler handler) {
+		final MessageContextBuilder mcb = getResponse(request);
+		return handler.handleResponses(request, mcb);
+	}
 
-            final FilterParser fp = new FilterParser();
-            final Expression exp = fp.parse(replyToSubTarget);
+	private void handleMessageReceive(final ServiceReference<?> reference, final ReplyToDTO replyToDTO,
+			final String channel, final SubscriptionAck sub, final Message msg) {
 
-            final Map<String, String> requiredValues = new HashMap<>();
+		final String pubChannelProp = replyToDTO.pubChannel;
+		final String pubChannel = pubChannelProp == null ? msg.getContext().getReplyToChannel() : pubChannelProp;
 
-            requiredValues.put(MESSAGING_FEATURE_PROPERTY, REPLY_TO);
-            requiredValues.put(MESSAGING_NAME_PROPERTY, MESSAGING_ID);
-            requiredValues.put(MESSAGING_PROTOCOL_PROPERTY, MESSAGING_PROTOCOL);
+		if (pubChannel == null) {
+			logger.warn("No reply to channel is specified for the subscription handler");
+			return;
+		}
+		// update the subscription
+		final ExtendedSubscription subscription = registry.getSubscription(channel, sub.id());
+		subscription.updateReplyToHandlerSubscription(pubChannel, reference);
 
-            isConform = exp.eval(requiredValues);
+		publisher.publish(msg, pubChannel);
+	}
 
-            if (!isConform) {
-                throw new IllegalStateException(
-                        "The '" + reference + "' handler service doesn't specify the reply-to target filter");
-            }
-        }
-    }
+	private class ReplyToDTO {
 
-    private void closeConnectedPushStreams(final ServiceReference<?> reference) {
-        Optional.ofNullable(streams.remove(reference)).ifPresent(s -> s.forEach(PushStream::close));
-    }
+		boolean isConform;
+		String pubChannel;
+		String[] subChannels;
+
+		ReplyToDTO(final ServiceReference<?> reference) {
+			final Dictionary<String, ?> properties = reference.getProperties();
+
+			final Object replyToSubResponse = properties.get(REPLY_TO_SUBSCRIPTION_RESPONSE_CHANNEL_PROPERTY);
+			final Object replyToSubRequest = properties.get(REPLY_TO_SUBSCRIPTION_REQUEST_CHANNEL_PROPERTY);
+
+			pubChannel = adaptTo(replyToSubResponse, String.class, converter);
+			subChannels = adaptTo(replyToSubRequest, String[].class, converter);
+
+			if (subChannels == null) {
+				throw new IllegalStateException("The '" + reference
+						+ "' handler instance doesn't specify the reply-to subscription channel(s)");
+			}
+
+			final Object replyToSubTgt = properties.get(REPLY_TO_SUBSCRIPTION_TARGET_PROPERTY);
+			final String replyToSubTarget = adaptTo(replyToSubTgt, String.class, converter);
+
+			final FilterParser fp = new FilterParser();
+			final Expression exp = fp.parse(replyToSubTarget);
+
+			final Map<String, String> requiredValues = new HashMap<>();
+
+			requiredValues.put(MESSAGING_FEATURE_PROPERTY, REPLY_TO);
+			requiredValues.put(MESSAGING_NAME_PROPERTY, MESSAGING_ID);
+			requiredValues.put(MESSAGING_PROTOCOL_PROPERTY, MESSAGING_PROTOCOL);
+
+			isConform = exp.eval(requiredValues);
+
+			if (!isConform) {
+				throw new IllegalStateException(
+						"The '" + reference + "' handler service doesn't specify the reply-to target filter");
+			}
+		}
+	}
+
+	static class ReplyToSubDTO {
+
+		enum Type {
+			REPLY_TO_SUB, REPLY_TO_SINGLE_SUB, REPLY_TO_MANY_SUB
+		}
+
+		Type type;
+		Object handler;
+		ServiceReference<?> reference;
+		List<SubscriptionAck> subAcks = new ArrayList<>();
+
+		public ReplyToSubDTO(final Object handler, final Type type, final ServiceReference<?> reference) {
+			this.handler = handler;
+			this.type = type;
+			this.reference = reference;
+		}
+
+		public synchronized void addAck(final SubscriptionAck subAck) {
+			subAcks.add(subAck);
+		}
+
+		public synchronized boolean isProcessed() {
+			return !subAcks.isEmpty();
+		}
+
+	}
+
+	private synchronized void removeSubscription(final ServiceReference<?> reference) {
+		subscriptions.stream().filter(sub -> sub.reference == reference)
+				.forEach(sub -> sub.subAcks.stream().forEach(s -> s.stream().close()));
+		subscriptions.removeIf(sub -> sub.reference == reference);
+	}
 
 }
