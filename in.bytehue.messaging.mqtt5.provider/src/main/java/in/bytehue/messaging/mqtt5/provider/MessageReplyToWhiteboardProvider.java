@@ -116,8 +116,8 @@ public final class MessageReplyToWhiteboardProvider {
 		final ReplyToSubDTO sub = new ReplyToSubDTO(handler, REPLY_TO_SINGLE_SUB, reference);
 		subscriptions.add(sub);
 
-		if (converter == null || subscriber == null || registry == null) {
-			// may happen that the services ain't injected yet
+		if (converter == null || subscriber == null) {
+			// may happen that the required services ain't injected yet
 			return;
 		}
 		processReplyToSingleSubscriptionHandler(sub);
@@ -134,8 +134,8 @@ public final class MessageReplyToWhiteboardProvider {
 		final ReplyToSubDTO sub = new ReplyToSubDTO(handler, REPLY_TO_SUB, reference);
 		subscriptions.add(sub);
 
-		if (converter == null || subscriber == null || registry == null) {
-			// may happen that the services ain't injected yet
+		if (converter == null || subscriber == null) {
+			// may happen that the required services ain't injected yet
 			return;
 		}
 		processReplyToSubscriptionHandler(sub);
@@ -152,8 +152,8 @@ public final class MessageReplyToWhiteboardProvider {
 		final ReplyToSubDTO sub = new ReplyToSubDTO(handler, REPLY_TO_MANY_SUB, reference);
 		subscriptions.add(sub);
 
-		if (converter == null || subscriber == null || registry == null) {
-			// may happen that the services ain't injected yet
+		if (converter == null || subscriber == null) {
+			// may happen that the required services ain't injected yet
 			return;
 		}
 		processReplyToManySubscriptionHandler(sub);
