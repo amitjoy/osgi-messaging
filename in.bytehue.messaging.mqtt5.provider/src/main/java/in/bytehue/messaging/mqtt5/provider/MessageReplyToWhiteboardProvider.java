@@ -131,7 +131,7 @@ public final class MessageReplyToWhiteboardProvider {
 	synchronized void addReplyToSubscriptionHandler(final ReplyToSubscriptionHandler handler,
 			final ServiceReference<?> reference) {
 
-		final ReplyToSubDTO sub = new ReplyToSubDTO(reference, REPLY_TO_SUB, reference);
+		final ReplyToSubDTO sub = new ReplyToSubDTO(handler, REPLY_TO_SUB, reference);
 		subscriptions.add(sub);
 
 		if (converter == null || subscriber == null || registry == null) {
