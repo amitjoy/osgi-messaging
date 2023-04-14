@@ -331,8 +331,6 @@ public final class MessageClientProvider {
                              .initialDelay(config.initialDelay(), SECONDS)
                              .maxDelay(config.maxDelay(), SECONDS)
                          .applyAutomaticReconnect();
-        } else {
-            clientBuilder.automaticReconnectWithDefaultConfig();
         }
         if (config.simpleAuth()) {
         	logger.debug("Applying Simple Authentication Configuration");
