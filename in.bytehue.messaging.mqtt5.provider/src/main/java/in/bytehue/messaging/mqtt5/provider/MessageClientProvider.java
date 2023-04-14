@@ -252,13 +252,13 @@ public final class MessageClientProvider {
     @Modified
     void modified(final Config config, final Map<String, Object> properties) {
     	logger.info("Client configuration has been modified");
-    	disconnect();
+    	disconnect(true);
     	init(config);
     }
 
     @Deactivate
     void deactivate(final Map<String, Object> properties) {
-    	disconnect();
+    	disconnect(false);
     }
 
     public synchronized Config config() {
@@ -300,10 +300,19 @@ public final class MessageClientProvider {
         }
 	}
 
-    private void disconnect() {
+    private void disconnect(final boolean isNormalDisconnection) {
+    	Mqtt5DisconnectReasonCode reasonCode;
+    	String reasonDescription;
+    	if (isNormalDisconnection) {
+    		reasonCode = NORMAL_DISCONNECTION;
+    		reasonDescription = "";
+    	} else {
+    		reasonCode = config.disconnectionReasonCode();
+    		reasonDescription = config.disconnectionReasonDescription();
+    	}
 		client.disconnectWith()
-                  .reasonCode(config.disconnectionReasonCode())
-                  .reasonString(config.disconnectionReasonDescription())
+                  .reasonCode(reasonCode)
+                  .reasonString(reasonDescription)
               .send();
 	}
 
