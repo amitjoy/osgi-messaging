@@ -313,7 +313,15 @@ public final class MessageClientProvider {
 		client.disconnectWith()
                   .reasonCode(reasonCode)
                   .reasonString(reasonDescription)
-              .send();
+              .send()
+              .whenComplete((ack, throwable) -> {
+                  if (throwable != null) {
+                      logger.error(
+                              "Error occurred while disconnecting from the broker '{}'", throwable);
+                  } else {
+                      logger.debug("Successfully disconnected from the broker - '{}'", ack);
+                  }
+              });
 	}
 
     private void connect() {
