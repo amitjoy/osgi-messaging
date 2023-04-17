@@ -104,6 +104,9 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "Max Delay if Custom Automatic Reconnection is enabled")
         long maxDelay() default 30L;
 
+        @AttributeDefinition(name = "Keep Alive Interval", min = "0", max = "65535")
+        int keepAliveInterval() default 300;
+
         @AttributeDefinition(name = "Keep Session State")
         long sessionExpiryInterval() default 30L;
 
@@ -495,6 +498,7 @@ public final class MessageClientProvider {
                       .connectWith()
                            .cleanStart(config.cleanStart())
                            .sessionExpiryInterval(config.sessionExpiryInterval())
+                           .keepAlive(config.keepAliveInterval())
                        .restrictions()
                            .receiveMaximum(config.receiveMaximum())
                            .sendMaximum(config.sendMaximum())
