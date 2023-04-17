@@ -202,7 +202,7 @@ public final class MessagePublisherProvider implements MessagePublisher {
                               if (throwable != null) {
                                   logger.error("Error occurred while publishing message", throwable);
                               } else if (isPublishSuccessful(result)) {
-							      logger.debug("New publish request for '{}' has been processed successfully", ch);
+							      logger.trace("New publish request for '{}' has been processed successfully", ch);
 							  } else {
 							      logger.error("New publish request for '{}' failed - {}", ch, result.getError().get());
 							  }
