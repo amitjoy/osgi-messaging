@@ -314,14 +314,7 @@ public final class MessageClientProvider {
                   .reasonCode(reasonCode)
                   .reasonString(reasonDescription)
               .send()
-              .whenComplete((ack, throwable) -> {
-                  if (throwable != null) {
-                      logger.error(
-                              "Error occurred while disconnecting from the broker '{}'", throwable);
-                  } else {
-                      logger.debug("Successfully disconnected from the broker - '{}'", ack);
-                  }
-              });
+              .whenComplete((ack, throwable) -> logger.debug("Successfully disconnected from the broker - '{}'", ack));
 	}
 
     private void connect() {
@@ -514,15 +507,14 @@ public final class MessageClientProvider {
         ack.whenComplete((connAck, throwable) -> {
             if (throwable != null) {
                 logger.error(
-                        "Error occurred while establishing connection to the broker '{}'", config.server(), throwable);
+                        "Error occurred while connecting to the broker '{}'", config.server(), throwable);
             } else {
-                logger.debug("Connection successfully established with the broker - '{}'", connAck);
+                logger.debug("Successfully connected to the broker - '{}'", connAck);
             }
         });
     }
 
     private void initLastWill(final MqttWillPublish publish) {
-
         String topic = null;
         MqttQos qos = null;
         byte[] payload = null;
