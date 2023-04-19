@@ -313,11 +313,12 @@ public final class MessageClientProvider {
     		reasonCode = config.disconnectionReasonCode();
     		reasonDescription = config.disconnectionReasonDescription();
     	}
-		client.disconnectWith()
-                  .reasonCode(reasonCode)
+    	// blocking disconnection ensures that we gracefully disconnect the established connection
+    	client.toBlocking()
+    	      .disconnectWith()
+    	          .reasonCode(reasonCode)
                   .reasonString(reasonDescription)
-              .send()
-              .whenComplete((ack, throwable) -> logger.debug("Successfully disconnected from the broker - '{}'", ack));
+    	      .send();
 	}
 
     private void connect() {
