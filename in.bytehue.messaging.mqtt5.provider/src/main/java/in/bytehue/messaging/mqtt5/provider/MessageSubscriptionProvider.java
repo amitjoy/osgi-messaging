@@ -28,12 +28,15 @@ import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adaptTo;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getQoS;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.toMessage;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
 import static org.osgi.service.messaging.Features.EXTENSION_QOS;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentServiceObjects;
@@ -76,6 +79,13 @@ import in.bytehue.messaging.mqtt5.provider.helper.SubscriptionAck;
                      }
 )
 public final class MessageSubscriptionProvider implements MessageSubscription {
+
+	@interface AwaitConfig {
+		long timeoutInMillis() default 30_000L;
+	}
+
+	@Activate
+	private AwaitConfig config;
 
     @Activate
     private BundleContext bundleContext;
