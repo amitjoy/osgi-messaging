@@ -29,6 +29,7 @@ import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adaptTo;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getCorrelationId;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getQoS;
 import static java.util.Collections.emptyMap;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_DELIVERY;
 import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_ORDERING;
 import static org.osgi.service.messaging.Features.EXTENSION_LAST_WILL;
@@ -82,6 +83,13 @@ import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
 )
 //@formatter:on
 public final class MessagePublisherProvider implements MessagePublisher {
+
+	@interface AwaitConfig {
+		long timeoutInMillis() default 30_000L;
+	}
+
+	@Activate
+	private AwaitConfig config;
 
 	@Reference(service = LoggerFactory.class)
 	private Logger logger;
