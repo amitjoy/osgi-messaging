@@ -197,6 +197,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 											                                      }
 										                                	  } catch (final Exception ex) {
 										                                		  logger.error("Exception occurred while processing message", ex);
+										                                		  source.error(ex);
 										                                	  }
 										                                   })
 										                                  .send();
