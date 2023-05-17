@@ -150,12 +150,26 @@ public final class MqttMessageConstants {
 		}
 
 		/**
+		 * The configuration PID to configure the subscriber
+		 *
+		 * @since 1.0
+		 */
+		public static final String SUBSCRIBER = "in.bytehue.messaging.subscriber";
+
+		/**
+		 * The configuration PID to configure the publisher
+		 *
+		 * @since 1.0
+		 */
+		public static final String PUBLISHER = "in.bytehue.messaging.publisher";
+
+		/**
 		 * The configuration PID to configure the internal executor in Reply-To
 		 * publisher
 		 *
 		 * @since 1.0
 		 */
-		public static final String PUBLISHER = "in.bytehue.messaging.publisher";
+		public static final String PUBLISHER_REPLYTO = "in.bytehue.messaging.publisher.replyto";
 
 		/**
 		 * The configuration PID to configure the internal executor in Reply-To

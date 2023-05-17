@@ -17,7 +17,7 @@ package in.bytehue.messaging.mqtt5.provider;
 
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.PUBLISHER;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.PUBLISHER_REPLYTO;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getCorrelationId;
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static org.osgi.service.messaging.Features.GENERATE_CORRELATION_ID;
@@ -55,7 +55,7 @@ import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 //@formatter:off
 @Designate(ocd = Config.class)
 @ProvideMessagingReplyToManyFeature
-@Component(configurationPid = PUBLISHER)
+@Component(configurationPid = PUBLISHER_REPLYTO)
 @MessagingFeature(
         name = MESSAGING_ID,
         protocol = MESSAGING_PROTOCOL,

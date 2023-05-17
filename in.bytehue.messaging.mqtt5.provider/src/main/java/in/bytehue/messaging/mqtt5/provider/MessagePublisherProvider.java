@@ -20,6 +20,7 @@ import static com.hivemq.client.mqtt.MqttClientState.DISCONNECTED_RECONNECT;
 import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatIndicator.UTF_8;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.PUBLISHER;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.LAST_WILL_DELAY_INTERVAL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.MESSAGE_EXPIRY_INTERVAL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
@@ -79,7 +80,8 @@ import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
 @Component(service = {
                        MessagePublisher.class,
                        MessagePublisherProvider.class
-                     }
+                     },
+           configurationPid = PUBLISHER
 )
 //@formatter:on
 public final class MessagePublisherProvider implements MessagePublisher {

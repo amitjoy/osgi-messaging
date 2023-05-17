@@ -21,6 +21,7 @@ import static com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckR
 import static com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode.GRANTED_QOS_2;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.SUBSCRIBER;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RECEIVE_LOCAL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.acknowledgeMessage;
@@ -76,7 +77,8 @@ import in.bytehue.messaging.mqtt5.provider.helper.SubscriptionAck;
 @Component(service = {
                        MessageSubscription.class,
                        MessageSubscriptionProvider.class
-                     }
+                     },
+           configurationPid = SUBSCRIBER
 )
 public final class MessageSubscriptionProvider implements MessageSubscription {
 
