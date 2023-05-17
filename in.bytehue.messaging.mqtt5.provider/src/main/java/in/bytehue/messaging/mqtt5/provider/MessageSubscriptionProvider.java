@@ -28,12 +28,15 @@ import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adaptTo;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getQoS;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.toMessage;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
 import static org.osgi.service.messaging.Features.EXTENSION_QOS;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentServiceObjects;
@@ -76,6 +79,13 @@ import in.bytehue.messaging.mqtt5.provider.helper.SubscriptionAck;
                      }
 )
 public final class MessageSubscriptionProvider implements MessageSubscription {
+
+	@interface AwaitConfig {
+		long timeoutInMillis() default 30_000L;
+	}
+
+	@Activate
+	private AwaitConfig config;
 
     @Activate
     private BundleContext bundleContext;
@@ -164,44 +174,53 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 
             final ExtendedSubscription subscription = subscriptionRegistry.addSubscription(subChannel, pubChannel, source::close, isReplyToSub);
             // @formatter:off
-            messagingClient.client.subscribeWith()
-                                  .topicFilter(subChannel)
-                                  .qos(MqttQos.fromCode(qos))
-                                  .noLocal(receiveLocal)
-                                  .retainAsPublished(retainAsPublished)
-                                  .callback(p -> {
-                                	  final MessageContextBuilderProvider mcb = mcbFactory.getService();
-                                	  try {
-                                		  final Message message = toMessage(p, ctx, mcb);
-                                              acknowledgeMessage(
-                                                      message,
-                                                      ctx,
-                                                      source::publish,
-                                                      bundleContext,
-                                                      logger);
-                                      } catch (final Exception e) {
-                                           source.error(e);
-                                      } finally {
-                                           mcbFactory.ungetService(mcb);
-                                      }
-                                   })
-                                  .send()
-                                  .thenAccept(ack -> {
-                                	  if (isSubscriptionAcknowledged(ack)) {
-                                		  subscription.setAcknowledged(true);
-                                          logger.debug("New subscription request for '{}' processed successfully - {} > ID: {}", subChannel, ack, subscription.id);
-                                      } else {
-                                          logger.error("New subscription request for '{}' failed - {} > ID: {}", subChannel, ack, subscription.id);
-                                      }
-                                   });
+			final CompletableFuture<Mqtt5SubAck> future = messagingClient.client.subscribeWith()
+										                                  .topicFilter(subChannel)
+										                                  .qos(MqttQos.fromCode(qos))
+										                                  .noLocal(receiveLocal)
+										                                  .retainAsPublished(retainAsPublished)
+										                                  .callback(p -> {
+										                                	  try {
+										                                		  final MessageContextBuilderProvider mcb = mcbFactory.getService();
+											                                	  try {
+											                                		  final Message message = toMessage(p, ctx, mcb);
+											                                              acknowledgeMessage(
+											                                                      message,
+											                                                      ctx,
+											                                                      source::publish,
+											                                                      bundleContext,
+											                                                      logger);
+											                                      } catch (final Exception e) {
+											                                           source.error(e);
+											                                      } finally {
+											                                           mcbFactory.ungetService(mcb);
+											                                      }
+										                                	  } catch (final Exception ex) {
+										                                		  logger.error("Exception occurred while processing message", ex);
+										                                		  source.error(ex);
+										                                	  }
+										                                   })
+										                                  .send();
+			future.thenAccept(ack -> {
+                	  if (isSubscriptionAcknowledged(ack)) {
+                		  subscription.setAcknowledged(true);
+                          logger.debug("New subscription request for '{}' processed successfully - {} > ID: {}", subChannel, ack, subscription.id);
+                      } else {
+                          logger.error("New subscription request for '{}' failed - {} > ID: {}", subChannel, ack, subscription.id);
+                      }
+            });
             stream.onClose(() -> {
             	logger.debug("Removing subscription '{}'", subscription.id);
             	subscriptionRegistry.removeSubscription(subChannel, subscription.id);
             });
+            future.get(config.timeoutInMillis(), MILLISECONDS);
             return SubscriptionAck.of(stream, subscription.id);
+        } catch (final ExecutionException e) {
+            logger.error("Error while subscribing to {}", subChannel, e);
+            throw new RuntimeException(e.getCause());
         } catch (final Exception e) {
             logger.error("Error while subscribing to {}", subChannel, e);
-            throw e;
+            throw new RuntimeException(e);
         }
     }
 

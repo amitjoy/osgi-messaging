@@ -29,6 +29,7 @@ import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adaptTo;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getCorrelationId;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getQoS;
 import static java.util.Collections.emptyMap;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_DELIVERY;
 import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_ORDERING;
 import static org.osgi.service.messaging.Features.EXTENSION_LAST_WILL;
@@ -37,6 +38,7 @@ import static org.osgi.service.messaging.Features.EXTENSION_QOS;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -81,6 +83,13 @@ import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
 )
 //@formatter:on
 public final class MessagePublisherProvider implements MessagePublisher {
+
+	@interface AwaitConfig {
+		long timeoutInMillis() default 30_000L;
+	}
+
+	@Activate
+	private AwaitConfig config;
 
 	@Reference(service = LoggerFactory.class)
 	private Logger logger;
@@ -197,19 +206,29 @@ public final class MessagePublisherProvider implements MessagePublisher {
                 logger.info("New publish request to udpate LWT has been sent successfully - '{}'", will);
                 return;
             }
+            final CompletableFuture<Void> resultFuture = new CompletableFuture<>();
             publishRequest.send()
                           .whenComplete((result, throwable) -> {
                               if (throwable != null) {
+                            	  resultFuture.completeExceptionally(throwable);
                                   logger.error("Error occurred while publishing message", throwable);
                               } else if (isPublishSuccessful(result)) {
+                            	  resultFuture.complete(null);
 							      logger.trace("New publish request for '{}' has been processed successfully", ch);
 							  } else {
-							      logger.error("New publish request for '{}' failed - {}", ch, result.getError().get());
+								  final Throwable t = result.getError().get();
+								  resultFuture.completeExceptionally(t);
+								  logger.error("New publish request for '{}' failed - {}", ch, t);
 							  }
                           });
+            resultFuture.get(config.timeoutInMillis(), MILLISECONDS);
             // @formatter:on
+		} catch (final ExecutionException e) {
+			logger.error("Error while publishing data to {}", channel, e);
+			throw new RuntimeException(e.getCause());
 		} catch (final Exception e) {
-			logger.error("Error while publishing data", e);
+			logger.error("Error while publishing data to {}", channel, e);
+			throw new RuntimeException(e);
 		}
 	}
 
