@@ -284,9 +284,11 @@ public final class MqttCommand {
         table.addRow("Clean Start", String.valueOf(config.cleanStart()));
         table.addRow("Initial Delay", String.valueOf(config.initialDelay()));
         table.addRow("Max Delay", String.valueOf(config.maxDelay()));
+        table.addRow("Keep Interval", String.valueOf(config.keepAliveInterval()));
         table.addRow("Session Expiry Interval", String.valueOf(config.sessionExpiryInterval()));
         table.addRow("Simple Authentication", String.valueOf(config.simpleAuth()));
         table.addRow("Use static credentials specified in username and password configurations", String.valueOf(config.staticAuthCred()));
+        table.addRow("Simple Authentication Credential Filter", String.valueOf(config.simpleAuthCredFilter()));
         table.addRow("SSL Configuration Cipher Suites", converter.convert(config.cipherSuites()).to(String.class));
         table.addRow("SSL Configuration Protocols", converter.convert(config.protocols()).to(String.class));
         table.addRow("SSL Configuration Handshake Timeout", String.valueOf(config.sslHandshakeTimeout()));
@@ -318,7 +320,7 @@ public final class MqttCommand {
         table.addRow("QoS 2 Incoming Interceptor Service Filter", config.qos2IncomingInterceptorFilter());
         table.addRow("QoS 1 Outgoing Interceptor Service Filter", config.qos1OutgoingInterceptorFilter());
         table.addRow("QoS 2 Outgoing Interceptor Service Filter", config.qos2OutgoingInterceptorFilter());
-        table.addRow("Filter that needs to be satisfied for the client to be active", config.osgi_ds_satisfying_condition_target());
+        table.addRow("Filter to be satisfied for the client to be active", config.osgi_ds_satisfying_condition_target());
         table.addRow("Reason for the disconnection when the client component is stopped", config.disconnectionReasonDescription());
         table.addRow("Code for the disconnection when the client component is stopped", config.disconnectionReasonCode().name());
 
