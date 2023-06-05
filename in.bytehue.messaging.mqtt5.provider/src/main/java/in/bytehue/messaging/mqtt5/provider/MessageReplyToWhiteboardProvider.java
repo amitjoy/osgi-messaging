@@ -228,7 +228,9 @@ public final class MessageReplyToWhiteboardProvider {
 			final String channel, final SubscriptionAck sub, final Message msg) {
 
 		final String pubChannelProp = replyToDTO.pubChannel;
-		final String pubChannel = pubChannelProp == null ? msg.getContext().getReplyToChannel() : pubChannelProp;
+		final String pubChannel = pubChannelProp == null || pubChannelProp.isEmpty()
+				? msg.getContext().getReplyToChannel()
+				: pubChannelProp;
 
 		if (pubChannel == null) {
 			logger.warn("No reply to channel is specified for the subscription handler");
