@@ -90,7 +90,7 @@ public final class MessageClientProvider {
         String id() default "";
 
         @AttributeDefinition(name = "Server Host Address")
-        String server() default "broker.hivemq.com";
+        String server();
 
         @AttributeDefinition(name = "Custom Automatic Reconnection")
         boolean automaticReconnect() default true;
