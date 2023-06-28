@@ -21,6 +21,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.osgi.service.component.annotations.ConfigurationPolicy.REQUIRE;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -280,7 +281,7 @@ public final class MqttCommand {
         table.setHeaders("Name", "Value");
 
         table.addRow("Client ID", config.id());
-        table.addRow("Automatic Reconnect", String.valueOf(config.automaticReconnect()));
+        table.addRow("Automatic Reconnect Using Default Config", String.valueOf(config.automaticReconnectWithDefaultConfig()));
         table.addRow("Clean Start", String.valueOf(config.cleanStart()));
         table.addRow("Initial Delay", String.valueOf(config.initialDelay()));
         table.addRow("Max Delay", String.valueOf(config.maxDelay()));
@@ -314,8 +315,8 @@ public final class MqttCommand {
         table.addRow("Enhanced Authentication", String.valueOf(config.useEnhancedAuthentication()));
         table.addRow("Enhanced Authentication Service Filter", config.enhancedAuthTargetFilter());
         table.addRow("Server Reauthentication", String.valueOf(config.useServerReauth()));
-        table.addRow("Connected Listener Service Filter", config.connectedListenerFilter());
-        table.addRow("Disconnected Listener Service Filter", config.disconnectedListenerFilter());
+        table.addRow("Connected Listener Service Filters", Arrays.asList(config.connectedListenerFilters()).toString());
+        table.addRow("Disconnected Listener Service Filters", Arrays.asList(config.disconnectedListenerFilters()).toString());
         table.addRow("QoS 1 Incoming Interceptor Service Filter", config.qos1IncomingInterceptorFilter());
         table.addRow("QoS 2 Incoming Interceptor Service Filter", config.qos2IncomingInterceptorFilter());
         table.addRow("QoS 1 Outgoing Interceptor Service Filter", config.qos1OutgoingInterceptorFilter());

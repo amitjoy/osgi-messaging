@@ -93,7 +93,7 @@ public final class MessageClientProvider {
         String server();
 
         @AttributeDefinition(name = "Custom Automatic Reconnection")
-        boolean automaticReconnect() default true;
+        boolean automaticReconnectWithDefaultConfig() default true;
 
         @AttributeDefinition(name = "Resume Previously Established Session")
         boolean cleanStart() default false;
@@ -206,11 +206,11 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "Server Reauthentication")
         boolean useServerReauth() default false;
 
-        @AttributeDefinition(name = "Connected Listener Service Filter")
-        String connectedListenerFilter() default "";
+        @AttributeDefinition(name = "Connected Listener Service Filters separated by comma")
+        String[] connectedListenerFilters() default {};
 
-        @AttributeDefinition(name = "Disconnected Listener Service Filter")
-        String disconnectedListenerFilter() default "";
+        @AttributeDefinition(name = "Disconnected Listener Service Filters separated by comma")
+        String[] disconnectedListenerFilters() default {};
 
         @AttributeDefinition(name = "QoS 1 Incoming Interceptor Service Filter")
         String qos1IncomingInterceptorFilter() default "";
@@ -330,7 +330,7 @@ public final class MessageClientProvider {
         clientBuilder.addConnectedListener(this::registerReadyService);
         clientBuilder.addDisconnectedListener(this::unregisterReadyService);
 
-        if (config.automaticReconnect()) {
+        if (config.automaticReconnectWithDefaultConfig()) {
             logger.debug("Applying Custom Automatic Reconnect Configuration");
             clientBuilder.automaticReconnect()
                              .initialDelay(config.initialDelay(), SECONDS)
@@ -437,25 +437,39 @@ public final class MessageClientProvider {
             logger.debug("Applying Server Reauthentication Configuration");
             advancedConfig.allowServerReAuth(config.useServerReauth());
         }
-        if (!config.connectedListenerFilter().isEmpty()) {
+        if (config.connectedListenerFilters().length != 0) {
             logger.debug("Applying Connected Listener Configuration");
-            final Optional<MqttClientConnectedListener> listener =
-                    getOptionalService(
-                            MqttClientConnectedListener.class,
-                            config.connectedListenerFilter(),
-                            bundleContext,
-                            logger);
-            listener.ifPresent(clientBuilder::addConnectedListener);
+            final String[] filters = config.connectedListenerFilters();
+            for (final String filter : filters) {
+            	if (filter.trim().isEmpty()) {
+            		logger.warn("Connected listener filter is empty");
+            		continue;
+            	}
+            	final Optional<MqttClientConnectedListener> listener =
+                        getOptionalService(
+                                MqttClientConnectedListener.class,
+                                filter,
+                                bundleContext,
+                                logger);
+            	listener.ifPresent(clientBuilder::addConnectedListener);
+            }
         }
-        if (!config.disconnectedListenerFilter().isEmpty()) {
+        if (config.disconnectedListenerFilters().length != 0) {
             logger.debug("Applying Disconnected Listener Configuration");
-            final Optional<MqttClientDisconnectedListener> listener =
-                    getOptionalService(
-                            MqttClientDisconnectedListener.class,
-                            config.disconnectedListenerFilter(),
-                            bundleContext,
-                            logger);
-            listener.ifPresent(clientBuilder::addDisconnectedListener);
+            final String[] filters = config.disconnectedListenerFilters();
+            for (final String filter : filters) {
+            	if (filter.trim().isEmpty()) {
+            		logger.warn("Disconnected listener filter is empty");
+            		continue;
+            	}
+            	final Optional<MqttClientDisconnectedListener> listener =
+                        getOptionalService(
+                        		MqttClientDisconnectedListener.class,
+                                filter,
+                                bundleContext,
+                                logger);
+            	listener.ifPresent(clientBuilder::addDisconnectedListener);
+            }
         }
         if (!config.qos1IncomingInterceptorFilter().isEmpty()) {
             logger.debug("Applying Incoming and Outgoing Interceptor Configuration");
