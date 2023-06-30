@@ -206,10 +206,10 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "Server Reauthentication")
         boolean useServerReauth() default false;
 
-        @AttributeDefinition(name = "Connected Listener Service Filters separated by comma")
+        @AttributeDefinition(name = "Connected Listener Service Filters")
         String[] connectedListenerFilters() default {};
 
-        @AttributeDefinition(name = "Disconnected Listener Service Filters separated by comma")
+        @AttributeDefinition(name = "Disconnected Listener Service Filters")
         String[] disconnectedListenerFilters() default {};
 
         @AttributeDefinition(name = "QoS 1 Incoming Interceptor Service Filter")
