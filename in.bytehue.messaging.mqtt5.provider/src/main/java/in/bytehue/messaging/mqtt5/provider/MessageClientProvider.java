@@ -591,7 +591,7 @@ public final class MessageClientProvider {
         final Dictionary<String, Object> properties = new Hashtable<>();
         properties.put(MQTT_CONNECTION_READY_SERVICE_PROPERTY, "true");
 
-        readyServiceReg = bundleContext.registerService(Object.class, new Object() {}, properties);
+        readyServiceReg = bundleContext.registerService(Object.class, new Object(), properties);
     }
 
     private synchronized void unregisterReadyService(final MqttClientDisconnectedContext context) {
