@@ -451,7 +451,10 @@ public final class MessageClientProvider {
                                 filter,
                                 bundleContext,
                                 logger);
-            	listener.ifPresent(clientBuilder::addConnectedListener);
+            	listener.ifPresent(l -> {
+            		logger.debug("Adding Custom MQTT Connected Listener - {}", l.getClass().getSimpleName());
+            		clientBuilder.addConnectedListener(l);
+            	});
             }
         }
         if (config.disconnectedListenerFilters().length != 0) {
