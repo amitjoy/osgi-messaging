@@ -471,7 +471,10 @@ public final class MessageClientProvider {
                                 filter,
                                 bundleContext,
                                 logger);
-            	listener.ifPresent(clientBuilder::addDisconnectedListener);
+            	listener.ifPresent(l -> {
+            		logger.debug("Adding Custom MQTT Disconnected Listener - {}", l.getClass().getSimpleName());
+            		clientBuilder.addDisconnectedListener(l);
+            	});
             }
         }
         if (!config.qos1IncomingInterceptorFilter().isEmpty()) {
