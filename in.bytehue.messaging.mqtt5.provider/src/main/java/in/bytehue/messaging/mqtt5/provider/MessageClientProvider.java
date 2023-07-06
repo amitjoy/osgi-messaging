@@ -593,7 +593,7 @@ public final class MessageClientProvider {
 		return id;
     }
 
-    private void registerReadyService(final MqttClientConnectedContext context) {
+    private synchronized void registerReadyService(final MqttClientConnectedContext context) {
         final Dictionary<String, Object> properties = new Hashtable<>();
         properties.put(MQTT_CONNECTION_READY_SERVICE_PROPERTY, "true");
 
