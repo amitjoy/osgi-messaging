@@ -57,7 +57,7 @@ io.netty:netty-transport-native-unix-common:4.1.94.Final
 io.netty:netty-transport:4.1.94.Final
 io.reactivex.rxjava2:rxjava:2.2.21
 org.apache.servicemix.bundles:org.apache.servicemix.bundles.javax-inject:1_3
-org.jctools:jctools-core:3.3.0
+org.jctools:jctools-core:4.0.1
 org.reactivestreams:reactive-streams:1.0.4
 
 # Test Dependencies
