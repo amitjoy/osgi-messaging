@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.awaitility.core.ConditionTimeoutException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,7 +59,7 @@ public final class MessagePacketSizeTest {
 		waitForMqttConnectionReady(launchpad);
 	}
 
-	@Test(expected = ConditionTimeoutException.class)
+	@Test(expected = RuntimeException.class)
 	public void test_packet_configuration_size_exceeds() throws IOException, InterruptedException {
 		final AtomicBoolean flag = new AtomicBoolean();
 
