@@ -102,7 +102,6 @@ public final class MqttCommand {
         final String subscriptions = prepareSubscriptions(runtimeInfo.subscriptions);
         final String replyToSubscriptions = prepareReplyToSubscriptions(runtimeInfo.replyToSubscriptions);
 
-
         output.append(table.print())
               .append(System.lineSeparator())
               .append(System.lineSeparator())

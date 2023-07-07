@@ -120,7 +120,7 @@ public final class MessageSubscriptionRegistry {
 				final ExtendedSubscription sub = e.getValue();
 				if (sub.isReplyToSub && sub.isAcknowledged) {
 					if (sub.pubChannels.isEmpty()) {
-						// true for ReplyToSubscrriptionHandlers
+						// true for ReplyToSubscriptionHandlers
 						final ReplyToSubscriptionDTO replyToSub = getReplyToSubscriptionDTO(null, sub.subChannel,
 								sub.handlerReference);
 						replyToSubscriptions.add(replyToSub);

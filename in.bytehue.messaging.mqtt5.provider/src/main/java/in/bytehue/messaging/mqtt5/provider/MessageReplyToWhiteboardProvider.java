@@ -17,6 +17,7 @@ package in.bytehue.messaging.mqtt5.provider;
 
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.provider.MessageReplyToWhiteboardProvider.PID;
 import static in.bytehue.messaging.mqtt5.provider.MessageReplyToWhiteboardProvider.ReplyToSubDTO.Type.REPLY_TO_MANY_SUB;
 import static in.bytehue.messaging.mqtt5.provider.MessageReplyToWhiteboardProvider.ReplyToSubDTO.Type.REPLY_TO_SINGLE_SUB;
 import static in.bytehue.messaging.mqtt5.provider.MessageReplyToWhiteboardProvider.ReplyToSubDTO.Type.REPLY_TO_SUB;
@@ -45,6 +46,7 @@ import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.log.Logger;
 import org.osgi.service.log.LoggerFactory;
@@ -62,9 +64,15 @@ import in.bytehue.messaging.mqtt5.provider.helper.FilterParser;
 import in.bytehue.messaging.mqtt5.provider.helper.FilterParser.Expression;
 import in.bytehue.messaging.mqtt5.provider.helper.SubscriptionAck;
 
-@Component
+@Component(configurationPid = PID)
 @MessagingFeature(name = MESSAGING_ID, protocol = MESSAGING_PROTOCOL)
 public final class MessageReplyToWhiteboardProvider {
+
+	public static final String PID = "in.bytehue.messaging.whiteboard";
+
+	@interface Config {
+		boolean storeReplyToChannelInfoIfReceivedInMessage() default true;
+	}
 
 	@Reference(service = LoggerFactory.class)
 	private Logger logger;
@@ -84,10 +92,12 @@ public final class MessageReplyToWhiteboardProvider {
 	@Reference
 	private ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
 
+	private Config config;
 	private final List<ReplyToSubDTO> subscriptions = new CopyOnWriteArrayList<>();
 
 	@Activate
-	void activate() {
+	void activate(final Config config) {
+		this.config = config;
 		subscriptions.stream().filter(sub -> !sub.isProcessed()).forEach(sub -> {
 			switch (sub.type) {
 			case REPLY_TO_SUB:
@@ -107,6 +117,11 @@ public final class MessageReplyToWhiteboardProvider {
 	void deactivate() {
 		subscriptions.stream().forEach(sub -> sub.subAcks.stream().forEach(s -> s.stream().close()));
 		subscriptions.clear();
+	}
+
+	@Modified
+	void updated(final Config config) {
+		this.config = config;
 	}
 
 	@Reference(policy = DYNAMIC, cardinality = MULTIPLE)
@@ -236,10 +251,11 @@ public final class MessageReplyToWhiteboardProvider {
 			logger.warn("No reply to channel is specified for the subscription handler");
 			return;
 		}
-		// update the subscription
-		final ExtendedSubscription subscription = registry.getSubscription(channel, sub.id());
-		subscription.updateReplyToHandlerSubscription(pubChannel, reference);
-
+		if (config.storeReplyToChannelInfoIfReceivedInMessage()) {
+			// update the subscription
+			final ExtendedSubscription subscription = registry.getSubscription(channel, sub.id());
+			subscription.updateReplyToHandlerSubscription(pubChannel, reference);
+		}
 		publisher.publish(msg, pubChannel);
 	}
 
