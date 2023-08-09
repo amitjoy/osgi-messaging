@@ -23,8 +23,6 @@ import static in.bytehue.messaging.mqtt5.provider.MessageReplyToWhiteboardProvid
 import static in.bytehue.messaging.mqtt5.provider.MessageReplyToWhiteboardProvider.ReplyToSubDTO.Type.REPLY_TO_SUB;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adaptTo;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.prepareExceptionAsMessage;
-import static org.osgi.service.component.annotations.ReferenceCardinality.MULTIPLE;
-import static org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC;
 import static org.osgi.service.messaging.Features.REPLY_TO;
 import static org.osgi.service.messaging.MessageConstants.MESSAGING_FEATURE_PROPERTY;
 import static org.osgi.service.messaging.MessageConstants.MESSAGING_NAME_PROPERTY;
@@ -41,6 +39,7 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Stream;
 
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
@@ -58,6 +57,7 @@ import org.osgi.service.messaging.replyto.ReplyToManySubscriptionHandler;
 import org.osgi.service.messaging.replyto.ReplyToSingleSubscriptionHandler;
 import org.osgi.service.messaging.replyto.ReplyToSubscriptionHandler;
 import org.osgi.util.pushstream.PushStream;
+import org.osgi.util.tracker.ServiceTracker;
 
 import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionRegistry.ExtendedSubscription;
 import in.bytehue.messaging.mqtt5.provider.helper.FilterParser;
@@ -95,8 +95,12 @@ public final class MessageReplyToWhiteboardProvider {
 	private Config config;
 	private final List<ReplyToSubDTO> subscriptions = new CopyOnWriteArrayList<>();
 
+	private ServiceTracker<ReplyToSingleSubscriptionHandler, ReplyToSingleSubscriptionHandler> tracker1;
+	private ServiceTracker<ReplyToSubscriptionHandler, ReplyToSubscriptionHandler> tracker2;
+	private ServiceTracker<ReplyToManySubscriptionHandler, ReplyToManySubscriptionHandler> tracker3;
+
 	@Activate
-	void activate(final Config config) {
+	void activate(final Config config, final BundleContext context) {
 		this.config = config;
 		subscriptions.stream().filter(sub -> !sub.isProcessed()).forEach(sub -> {
 			switch (sub.type) {
@@ -111,71 +115,106 @@ public final class MessageReplyToWhiteboardProvider {
 				break;
 			}
 		});
+		tracker1 = new ServiceTracker<ReplyToSingleSubscriptionHandler, ReplyToSingleSubscriptionHandler>(context,
+				ReplyToSingleSubscriptionHandler.class, null) {
+			@Override
+			public synchronized ReplyToSingleSubscriptionHandler addingService(
+					final ServiceReference<ReplyToSingleSubscriptionHandler> reference) {
+				final ReplyToSingleSubscriptionHandler handler = super.addingService(reference);
+
+				final ReplyToSubDTO sub = new ReplyToSubDTO(handler, REPLY_TO_SINGLE_SUB, reference);
+				subscriptions.add(sub);
+
+				processReplyToSingleSubscriptionHandler(sub);
+				return handler;
+			}
+
+			@Override
+			public synchronized void modifiedService(final ServiceReference<ReplyToSingleSubscriptionHandler> reference,
+					final ReplyToSingleSubscriptionHandler service) {
+				removedService(reference, service);
+				addingService(reference);
+			}
+
+			@Override
+			public synchronized void removedService(final ServiceReference<ReplyToSingleSubscriptionHandler> reference,
+					final ReplyToSingleSubscriptionHandler service) {
+				removeSubscription(reference);
+			}
+		};
+		tracker2 = new ServiceTracker<ReplyToSubscriptionHandler, ReplyToSubscriptionHandler>(context,
+				ReplyToSubscriptionHandler.class, null) {
+			@Override
+			public synchronized ReplyToSubscriptionHandler addingService(
+					final ServiceReference<ReplyToSubscriptionHandler> reference) {
+				final ReplyToSubscriptionHandler handler = super.addingService(reference);
+
+				final ReplyToSubDTO sub = new ReplyToSubDTO(handler, REPLY_TO_SUB, reference);
+				subscriptions.add(sub);
+
+				processReplyToSubscriptionHandler(sub);
+				return handler;
+			}
+
+			@Override
+			public synchronized void modifiedService(final ServiceReference<ReplyToSubscriptionHandler> reference,
+					final ReplyToSubscriptionHandler service) {
+				removedService(reference, service);
+				addingService(reference);
+			}
+
+			@Override
+			public synchronized void removedService(final ServiceReference<ReplyToSubscriptionHandler> reference,
+					final ReplyToSubscriptionHandler service) {
+				removeSubscription(reference);
+			}
+		};
+		tracker3 = new ServiceTracker<ReplyToManySubscriptionHandler, ReplyToManySubscriptionHandler>(context,
+				ReplyToManySubscriptionHandler.class, null) {
+			@Override
+			public synchronized ReplyToManySubscriptionHandler addingService(
+					final ServiceReference<ReplyToManySubscriptionHandler> reference) {
+				final ReplyToManySubscriptionHandler handler = super.addingService(reference);
+
+				final ReplyToSubDTO sub = new ReplyToSubDTO(handler, REPLY_TO_MANY_SUB, reference);
+				subscriptions.add(sub);
+
+				processReplyToManySubscriptionHandler(sub);
+				return handler;
+			}
+
+			@Override
+			public synchronized void modifiedService(final ServiceReference<ReplyToManySubscriptionHandler> reference,
+					final ReplyToManySubscriptionHandler service) {
+				removedService(reference, service);
+				addingService(reference);
+			}
+
+			@Override
+			public synchronized void removedService(final ServiceReference<ReplyToManySubscriptionHandler> reference,
+					final ReplyToManySubscriptionHandler service) {
+				removeSubscription(reference);
+			}
+		};
+
+		tracker1.open();
+		tracker2.open();
+		tracker3.open();
 	}
 
 	@Deactivate
 	void deactivate() {
 		subscriptions.stream().forEach(sub -> sub.subAcks.stream().forEach(s -> s.stream().close()));
 		subscriptions.clear();
+
+		tracker1.close();
+		tracker2.close();
+		tracker3.close();
 	}
 
 	@Modified
 	void updated(final Config config) {
 		this.config = config;
-	}
-
-	@Reference(policy = DYNAMIC, cardinality = MULTIPLE)
-	synchronized void addReplyToSingleSubscriptionHandler(final ReplyToSingleSubscriptionHandler handler,
-			final ServiceReference<?> reference) {
-
-		final ReplyToSubDTO sub = new ReplyToSubDTO(handler, REPLY_TO_SINGLE_SUB, reference);
-		subscriptions.add(sub);
-
-		if (converter == null || subscriber == null) {
-			// may happen that the required services ain't injected yet
-			return;
-		}
-		processReplyToSingleSubscriptionHandler(sub);
-	}
-
-	synchronized void removeReplyToSingleSubscriptionHandler(final ServiceReference<?> reference) {
-		removeSubscription(reference);
-	}
-
-	@Reference(policy = DYNAMIC, cardinality = MULTIPLE)
-	synchronized void addReplyToSubscriptionHandler(final ReplyToSubscriptionHandler handler,
-			final ServiceReference<?> reference) {
-
-		final ReplyToSubDTO sub = new ReplyToSubDTO(handler, REPLY_TO_SUB, reference);
-		subscriptions.add(sub);
-
-		if (converter == null || subscriber == null) {
-			// may happen that the required services ain't injected yet
-			return;
-		}
-		processReplyToSubscriptionHandler(sub);
-	}
-
-	synchronized void removeReplyToSubscriptionHandler(final ServiceReference<?> reference) {
-		removeSubscription(reference);
-	}
-
-	@Reference(policy = DYNAMIC, cardinality = MULTIPLE)
-	synchronized void addReplyToManySubscriptionHandler(final ReplyToManySubscriptionHandler handler,
-			final ServiceReference<?> reference) {
-
-		final ReplyToSubDTO sub = new ReplyToSubDTO(handler, REPLY_TO_MANY_SUB, reference);
-		subscriptions.add(sub);
-
-		if (converter == null || subscriber == null) {
-			// may happen that the required services ain't injected yet
-			return;
-		}
-		processReplyToManySubscriptionHandler(sub);
-	}
-
-	synchronized void removeReplyToManySubscriptionHandler(final ServiceReference<?> reference) {
-		removeSubscription(reference);
 	}
 
 	private void processReplyToSingleSubscriptionHandler(final ReplyToSubDTO sub) {
