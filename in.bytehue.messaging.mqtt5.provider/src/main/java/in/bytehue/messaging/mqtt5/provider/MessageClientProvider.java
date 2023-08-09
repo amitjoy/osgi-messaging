@@ -92,6 +92,10 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "Server Host Address")
         String server();
 
+        @AttributeDefinition(name = "MQTT Topic Prefix", description = "The prefix will be added to all the topics automatically if set."
+        		+ " It should not contain trailing slash")
+        String topicPrefix() default "";
+
         @AttributeDefinition(name = "Custom Automatic Reconnection")
         boolean automaticReconnectWithDefaultConfig() default true;
 
@@ -243,7 +247,7 @@ public final class MessageClientProvider {
     @Activate
     private BundleContext bundleContext;
 
-    private Config config;
+    public volatile Config config;
     private Mqtt5ClientBuilder clientBuilder;
     private ServiceRegistration<Object> readyServiceReg;
 
