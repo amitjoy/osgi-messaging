@@ -26,6 +26,7 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RECE
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.acknowledgeMessage;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adaptTo;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.addTopicPrefix;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getQoS;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.toMessage;
 import static java.util.Objects.requireNonNull;
@@ -143,16 +144,22 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         final PushStreamProvider provider = new PushStreamProvider();
         final SimplePushEventSource<Message> source = acquirePushEventSource(provider);
         final PushStream<Message> stream = provider.createStream(source); //NOSONAR
+
+        // add topic prefix if available
+        final String prefix = messagingClient.config.topicPrefix();
+        final String sChannel = addTopicPrefix(subChannel, prefix);
+        final String pChannel = addTopicPrefix(pubChannel, prefix);
+
         try {
             final MessageContextBuilderProvider builder = mcbFactory.getService();
             try {
                 if (context == null) {
-                    context = builder.channel(subChannel).buildContext();
+                    context = builder.channel(sChannel).buildContext();
                 }
             } finally {
                 mcbFactory.ungetService(builder);
             }
-            requireNonNull(subChannel, "Channel cannot be null");
+            requireNonNull(sChannel, "Channel cannot be null");
 
             final int qos;
             final boolean receiveLocal;
@@ -174,10 +181,10 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
                 retainAsPublished = false;
             }
 
-            final ExtendedSubscription subscription = subscriptionRegistry.addSubscription(subChannel, pubChannel, source::close, isReplyToSub);
+            final ExtendedSubscription subscription = subscriptionRegistry.addSubscription(sChannel, pChannel, source::close, isReplyToSub);
             // @formatter:off
 			final CompletableFuture<Mqtt5SubAck> future = messagingClient.client.subscribeWith()
-										                                  .topicFilter(subChannel)
+										                                  .topicFilter(sChannel)
 										                                  .qos(MqttQos.fromCode(qos))
 										                                  .noLocal(receiveLocal)
 										                                  .retainAsPublished(retainAsPublished)
@@ -206,22 +213,22 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 			future.thenAccept(ack -> {
                 	  if (isSubscriptionAcknowledged(ack)) {
                 		  subscription.setAcknowledged(true);
-                          logger.debug("New subscription request for '{}' processed successfully - {} > ID: {}", subChannel, ack, subscription.id);
+                          logger.debug("New subscription request for '{}' processed successfully - {} > ID: {}", sChannel, ack, subscription.id);
                       } else {
-                          logger.error("New subscription request for '{}' failed - {} > ID: {}", subChannel, ack, subscription.id);
+                          logger.error("New subscription request for '{}' failed - {} > ID: {}", sChannel, ack, subscription.id);
                       }
             });
             stream.onClose(() -> {
             	logger.debug("Removing subscription '{}'", subscription.id);
-            	subscriptionRegistry.removeSubscription(subChannel, subscription.id);
+            	subscriptionRegistry.removeSubscription(sChannel, subscription.id);
             });
             future.get(config.timeoutInMillis(), MILLISECONDS);
             return SubscriptionAck.of(stream, subscription.id);
         } catch (final ExecutionException e) {
-            logger.error("Error while subscribing to {}", subChannel, e);
+            logger.error("Error while subscribing to {}", sChannel, e);
             throw new RuntimeException(e.getCause());
         } catch (final Exception e) {
-            logger.error("Error while subscribing to {}", subChannel, e);
+            logger.error("Error while subscribing to {}", sChannel, e);
             throw new RuntimeException(e);
         }
     }

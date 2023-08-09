@@ -27,6 +27,7 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETA
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adapt;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adaptTo;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.addTopicPrefix;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getCorrelationId;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getQoS;
 import static java.util.Collections.emptyMap;
@@ -133,6 +134,10 @@ public final class MessagePublisherProvider implements MessagePublisher {
 				logger.warn("Cannot publish the message to '{}' since the client is disconnected", channel);
 				return;
 			}
+			// add topic prefix if available
+			final String prefix = messagingClient.config.topicPrefix();
+			channel = addTopicPrefix(channel, prefix);
+
 			final String ch = channel; // needed for lambda as it needs to be effectively final :(
 			final Map<String, Object> extensions = context.getExtensions();
 

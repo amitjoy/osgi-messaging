@@ -361,6 +361,16 @@ public final class MessageHelper {
     }
     // @formatter:on
 
+	public static String addTopicPrefix(final String topic, final String prefix) {
+		if (topic == null || topic.trim().isEmpty()) {
+			return "";
+		}
+		if (prefix == null || prefix.trim().isEmpty()) {
+			return topic;
+		}
+		return prefix + "/" + topic;
+	}
+
 	public static <A, B> B setIfNotNull(final A a, final Function<A, B> function) {
 		return a == null ? null : function.apply(a);
 	}
