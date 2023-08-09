@@ -45,7 +45,7 @@ public final class MessageClientConditionTest {
 	@Service
 	private ConfigurationAdmin configAdmin;
 
-	static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
+	static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc").gogo();
 
 	@Before
 	public void setup() throws InterruptedException {
@@ -62,6 +62,7 @@ public final class MessageClientConditionTest {
 		final Configuration config = configAdmin.getConfiguration(CLIENT, "?");
 
 		final Dictionary<String, Object> properties = new Hashtable<>();
+		properties.put("server", "aaa");
 		properties.put("osgi.ds.satisfying.condition.target", "(osgi.condition.id=my_condition)");
 
 		config.update(properties);
@@ -74,6 +75,7 @@ public final class MessageClientConditionTest {
 		final Configuration config = configAdmin.getConfiguration(CLIENT, "?");
 
 		final Dictionary<String, Object> properties = new Hashtable<>();
+		properties.put("server", "aaa");
 		properties.put("osgi.ds.satisfying.condition.target", "(osgi.condition.id=my_condition)");
 
 		config.update(properties);
