@@ -43,6 +43,7 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
@@ -77,7 +78,7 @@ import in.bytehue.messaging.mqtt5.provider.MessageClientProvider.Config;
 
 @ProvideMessagingFeature
 @Designate(ocd = Config.class)
-@Component(service = MessageClientProvider.class, configurationPid = CLIENT)
+@Component(service = MessageClientProvider.class, configurationPid = CLIENT, configurationPolicy = ConfigurationPolicy.REQUIRE)
 public final class MessageClientProvider {
 
 	//@formatter:off
