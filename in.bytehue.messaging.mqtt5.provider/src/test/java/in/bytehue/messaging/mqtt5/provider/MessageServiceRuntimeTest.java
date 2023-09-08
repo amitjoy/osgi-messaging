@@ -281,7 +281,8 @@ public final class MessageServiceRuntimeTest {
 
 		assertThat(runtimeDTO.subscriptions).isEmpty();
 		assertThat(runtimeDTO.replyToSubscriptions).hasSize(1);
-		assertThat(runtimeDTO.replyToSubscriptions[0].responseChannel).isNull();
+		assertThat(runtimeDTO.replyToSubscriptions[0].responseChannel).isNotNull();
+		assertThat(runtimeDTO.replyToSubscriptions[0].responseChannel.extension).isNull();
 		assertThat(runtimeDTO.replyToSubscriptions[0].requestChannel).isNotNull();
 		assertThat(runtimeDTO.replyToSubscriptions[0].requestChannel.name).isEqualTo(channel);
 		assertThat(runtimeDTO.replyToSubscriptions[0].serviceDTO).isNotNull();
