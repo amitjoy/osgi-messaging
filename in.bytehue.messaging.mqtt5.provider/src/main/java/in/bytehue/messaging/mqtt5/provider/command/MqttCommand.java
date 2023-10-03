@@ -18,10 +18,12 @@ package in.bytehue.messaging.mqtt5.provider.command;
 import static in.bytehue.messaging.mqtt5.provider.command.MqttCommand.PID;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.stackTraceToString;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.requireNonNull;
 import static org.osgi.service.component.annotations.ConfigurationPolicy.REQUIRE;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,6 +42,7 @@ import org.osgi.service.messaging.runtime.MessageServiceRuntime;
 import org.osgi.util.converter.Converter;
 import org.osgi.util.converter.Converters;
 
+import in.bytehue.messaging.mqtt5.api.MqttCommandExtension;
 import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
 import in.bytehue.messaging.mqtt5.provider.MessageClientProvider;
 import in.bytehue.messaging.mqtt5.provider.MessageClientProvider.Config;
@@ -75,6 +78,9 @@ public final class MqttCommand {
     @Reference
     private ComponentServiceObjects<MqttMessageContextBuilder> mcbFactory;
 
+    @Reference
+    private Collection<MqttCommandExtension> extensions;
+
     @Descriptor("Returns the current runtime information of the MQTT client")
     public String runtime(
             @Descriptor("Shows full MQTT configuration ")
@@ -98,6 +104,16 @@ public final class MqttCommand {
         table.addRow("Provider", runtimeInfo.providerName);
         table.addRow("Supported Protocols", converter.convert(runtimeInfo.protocols).to(String.class));
         table.addRow("Instance ID", runtimeInfo.instanceId);
+
+        if (extensions != null) {
+        	extensions.forEach(p -> {
+        		final String rowName = p.rowName();
+        		final String rowValue = p.rowValue();
+
+        		requireNonNull(rowName, "Row name cannot be null");
+        		table.addRow(rowName, rowValue == null ? "NULL" : rowValue);
+        	});
+        }
 
         final String subscriptions = prepareSubscriptions(runtimeInfo.subscriptions);
         final String replyToSubscriptions = prepareReplyToSubscriptions(runtimeInfo.replyToSubscriptions);
