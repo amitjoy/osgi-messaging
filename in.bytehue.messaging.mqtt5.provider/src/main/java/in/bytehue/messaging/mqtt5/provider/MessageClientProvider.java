@@ -26,8 +26,7 @@ import static org.osgi.service.condition.Condition.CONDITION_ID_TRUE;
 import static org.osgi.service.metatype.annotations.AttributeType.PASSWORD;
 
 import java.util.Arrays;
-import java.util.Dictionary;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -40,6 +39,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -599,10 +599,10 @@ public final class MessageClientProvider {
     }
 
     private synchronized void registerReadyService(final MqttClientConnectedContext context) {
-        final Dictionary<String, Object> properties = new Hashtable<>();
+        final Map<String, Object> properties = new HashMap<>();
         properties.put(MQTT_CONNECTION_READY_SERVICE_PROPERTY, "true");
 
-        readyServiceReg = bundleContext.registerService(Object.class, new Object(), properties);
+        readyServiceReg = bundleContext.registerService(Object.class, new Object(), FrameworkUtil.asDictionary(properties));
     }
 
     private synchronized void unregisterReadyService(final MqttClientDisconnectedContext context) {
