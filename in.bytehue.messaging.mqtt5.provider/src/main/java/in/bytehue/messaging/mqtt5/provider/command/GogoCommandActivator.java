@@ -71,7 +71,7 @@ public final class GogoCommandActivator {
 			final Configuration configuration = configAdmin.getConfiguration(PID, "?");
 			configuration.updateIfDifferent(new Hashtable<>());
 		} catch (final IOException e) {
-			// ignore due to location check as it's never gonna happen
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -81,7 +81,7 @@ public final class GogoCommandActivator {
 			final Configuration configuration = configAdmin.getConfiguration(PID, "?");
 			configuration.delete();
 		} catch (final IOException e) {
-			// ignore due to location check as it's never gonna happen
+			throw new RuntimeException(e);
 		}
 	}
 
