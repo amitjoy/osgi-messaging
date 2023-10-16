@@ -331,7 +331,7 @@ public final class MessageHelper {
             final long delayInterval) {
 
         requireNonNull(channel, "Last will topic cannot be null");
-        requireNonNull(userProperties, "User Properties cannot be null");
+        requireNonNull(userProperties, "User properties cannot be null");
 
         final MqttTopicImpl topic = MqttTopicImpl.of(channel);
         final MqttQos qosInstance = MqttQos.fromCode(qos);
