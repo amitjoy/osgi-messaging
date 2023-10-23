@@ -31,9 +31,6 @@ import aQute.launchpad.Launchpad;
 
 public final class TestHelper {
 
-	/**
-	 * Non-instantiable
-	 */
 	private TestHelper() {
 		throw new IllegalAccessError("Non-Instantiable");
 	}
