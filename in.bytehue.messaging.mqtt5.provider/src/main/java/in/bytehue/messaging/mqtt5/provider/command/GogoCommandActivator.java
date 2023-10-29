@@ -62,7 +62,7 @@ public final class GogoCommandActivator {
                      .map(wire -> (String) wire.getCapability()
                                                .getAttributes()
                                                .get(PACKAGE_NAMESPACE))
-                     .anyMatch(pkg -> GOGO_PACKAGE.equals(pkg));
+                     .anyMatch(GOGO_PACKAGE::equals);
         // @formatter:on
 	}
 
