@@ -95,7 +95,7 @@ public final class MessageReplyToManyHandlerTest {
 		final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
 
 		final String channelKey = "osgi.messaging.replyToSubscription.channel";
-		final String[] channelValue = new String[] { channel };
+		final String[] channelValue = { channel };
 
 		final String replyToChannelKey = "osgi.messaging.replyToSubscription.replyChannel";
 		final String replyToChannelValue = replyToChannel;
@@ -152,7 +152,7 @@ public final class MessageReplyToManyHandlerTest {
 		final String targetValue = "(&(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
 
 		final String channelKey = "osgi.messaging.replyToSubscription.channel";
-		final String[] channelValue = new String[] { channel };
+		final String[] channelValue = { channel };
 
 		final String replyToChannelKey = "osgi.messaging.replyToSubscription.replyChannel";
 		final String replyToChannelValue = replyToChannel;
@@ -207,7 +207,7 @@ public final class MessageReplyToManyHandlerTest {
 		final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.feature=replyTo))";
 
 		final String channelKey = "osgi.messaging.replyToSubscription.channel";
-		final String[] channelValue = new String[] { channel };
+		final String[] channelValue = { channel };
 
 		final String replyToChannelKey = "osgi.messaging.replyToSubscription.replyChannel";
 		final String replyToChannelValue = replyToChannel;
@@ -259,10 +259,10 @@ public final class MessageReplyToManyHandlerTest {
 			return provider.createStream(source);
 		};
 		final String targetKey = "osgi.messaging.replyToSubscription.target";
-		final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter))";
+		final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
 
 		final String channelKey = "osgi.messaging.replyToSubscription.channel";
-		final String[] channelValue = new String[] { channel };
+		final String[] channelValue = { channel };
 
 		final String replyToChannelKey = "osgi.messaging.replyToSubscription.replyChannel";
 		final String replyToChannelValue = replyToChannel;
@@ -317,7 +317,7 @@ public final class MessageReplyToManyHandlerTest {
 		final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=abc))";
 
 		final String channelKey = "osgi.messaging.replyToSubscription.channel";
-		final String[] channelValue = new String[] { channel };
+		final String[] channelValue = { channel };
 
 		final String replyToChannelKey = "osgi.messaging.replyToSubscription.replyChannel";
 		final String replyToChannelValue = replyToChannel;
@@ -372,7 +372,7 @@ public final class MessageReplyToManyHandlerTest {
 		final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=blahblah)(osgi.messaging.feature=replyTo))";
 
 		final String channelKey = "osgi.messaging.replyToSubscription.channel";
-		final String[] channelValue = new String[] { channel };
+		final String[] channelValue = { channel };
 
 		final String replyToChannelKey = "osgi.messaging.replyToSubscription.replyChannel";
 		final String replyToChannelValue = replyToChannel;
@@ -427,7 +427,7 @@ public final class MessageReplyToManyHandlerTest {
 		final String targetValue = "(&(osgi.messaging.protocol=amqp)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
 
 		final String channelKey = "osgi.messaging.replyToSubscription.channel";
-		final String[] channelValue = new String[] { channel };
+		final String[] channelValue = { channel };
 
 		final String replyToChannelKey = "osgi.messaging.replyToSubscription.replyChannel";
 		final String replyToChannelValue = replyToChannel;
@@ -479,7 +479,7 @@ public final class MessageReplyToManyHandlerTest {
 			return provider.createStream(source);
 		};
 		final String channelKey = "osgi.messaging.replyToSubscription.channel";
-		final String[] channelValue = new String[] { channel };
+		final String[] channelValue = { channel };
 
 		final String replyToChannelKey = "osgi.messaging.replyToSubscription.replyChannel";
 		final String replyToChannelValue = replyToChannel;
@@ -586,7 +586,7 @@ public final class MessageReplyToManyHandlerTest {
 		final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
 
 		final String channelKey = "osgi.messaging.replyToSubscription.channel";
-		final String[] channelValue = new String[] { channel };
+		final String[] channelValue = { channel };
 
 		launchpad.register(ReplyToManySubscriptionHandler.class, handler, targetKey, targetValue, channelKey,
 				channelValue);
