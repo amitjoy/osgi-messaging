@@ -73,6 +73,7 @@ import com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos2.Mqtt5OutgoingQos2I
 import com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism;
 import com.hivemq.client.mqtt.mqtt5.message.connect.Mqtt5ConnectBuilder.Send;
 import com.hivemq.client.mqtt.mqtt5.message.connect.connack.Mqtt5ConnAck;
+import com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectBuilder.SendVoid;
 import com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode;
 
 import in.bytehue.messaging.mqtt5.provider.MessageClientProvider.Config;
@@ -118,6 +119,12 @@ public final class MessageClientProvider {
 
         @AttributeDefinition(name = "Keep Session State (In seconds)")
         long sessionExpiryInterval() default 30L;
+
+        @AttributeDefinition(name = "Flag to enable/disable session expiry interval for disconnection")
+        boolean useSessionExpiryIntervalForDisconnect() default true;
+
+        @AttributeDefinition(name = "Keep Session State after disconnection (In seconds)")
+        long sessionExpiryIntervalForDisconnect() default 0L;
 
         @AttributeDefinition(name = "Server Port", min = "1", max = "65535")
         int port() default 1883;
@@ -323,11 +330,19 @@ public final class MessageClientProvider {
     		reasonDescription = config.disconnectionReasonDescription();
     	}
     	// blocking disconnection ensures that we gracefully disconnect the established connection
-    	client.toBlocking()
+		final SendVoid disconnectParams = client.toBlocking()
     	      .disconnectWith()
     	          .reasonCode(reasonCode)
-                  .reasonString(reasonDescription)
-    	      .send();
+                  .reasonString(reasonDescription);
+
+		if (config.useSessionExpiryIntervalForDisconnect()) {
+			logger.debug("Applying Session Expiry Interval for Disconnect: {}", config.sessionExpiryIntervalForDisconnect());
+			disconnectParams.sessionExpiryInterval(config.sessionExpiryIntervalForDisconnect());
+		} else {
+			logger.debug("Session Expiry Interval for Disconnect is not enabled");
+			disconnectParams.noSessionExpiry();
+		}
+		disconnectParams.send();
 	}
 
     private void connect() {
