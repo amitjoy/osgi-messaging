@@ -250,8 +250,6 @@ public final class MessageClientProvider {
         Mqtt5DisconnectReasonCode disconnectionReasonCode() default NORMAL_DISCONNECTION;
     }
 
-    private static final long SESSION_EXPIRY_ON_LAST_WILL_UPDATE_DISCONNECT = 600L;
-
     public volatile Mqtt5AsyncClient client;
 
     @Reference(service = LoggerFactory.class)
@@ -290,7 +288,7 @@ public final class MessageClientProvider {
         client.disconnectWith()
                   .reasonCode(NORMAL_DISCONNECTION)
                   .reasonString("Updated Last will and Testament (LWT) dynamically using publish request message")
-                  .sessionExpiryInterval(SESSION_EXPIRY_ON_LAST_WILL_UPDATE_DISCONNECT)
+                  .noSessionExpiry()
               .send()
               .thenAccept(v -> {
                   initLastWill(lastWillMessage);
