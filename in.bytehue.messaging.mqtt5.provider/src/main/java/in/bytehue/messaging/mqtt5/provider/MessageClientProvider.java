@@ -109,7 +109,7 @@ public final class MessageClientProvider {
         long initialDelay() default 10L;
 
         @AttributeDefinition(name = "Max Delay if Custom Automatic Reconnection is enabled")
-        long maxDelay() default 30L;
+        long maxDelay() default 600L;
 
         @AttributeDefinition(name = "Keep Alive Interval", min = "0", max = "65535")
         int keepAliveInterval() default 300;
