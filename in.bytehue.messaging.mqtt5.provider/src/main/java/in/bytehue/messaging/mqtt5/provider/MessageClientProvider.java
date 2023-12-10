@@ -112,7 +112,7 @@ public final class MessageClientProvider {
         long maxDelay() default 600L;
 
         @AttributeDefinition(name = "Keep Alive Interval", min = "0", max = "65535")
-        int keepAliveInterval() default 300;
+        int keepAliveInterval() default 200;
 
         @AttributeDefinition(name = "Flag to enable/disable session expiry interval")
         boolean useSessionExpiryInterval() default false;
