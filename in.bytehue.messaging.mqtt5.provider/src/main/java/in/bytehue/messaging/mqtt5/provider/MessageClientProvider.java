@@ -71,7 +71,9 @@ import com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos1.Mqtt5OutgoingQos1I
 import com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos2.Mqtt5IncomingQos2Interceptor;
 import com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos2.Mqtt5OutgoingQos2Interceptor;
 import com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism;
+import com.hivemq.client.mqtt.mqtt5.message.connect.Mqtt5ConnectBuilder.Send;
 import com.hivemq.client.mqtt.mqtt5.message.connect.connack.Mqtt5ConnAck;
+import com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectBuilder.SendVoid;
 import com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode;
 
 import in.bytehue.messaging.mqtt5.provider.MessageClientProvider.Config;
@@ -107,13 +109,22 @@ public final class MessageClientProvider {
         long initialDelay() default 10L;
 
         @AttributeDefinition(name = "Max Delay if Custom Automatic Reconnection is enabled")
-        long maxDelay() default 30L;
+        long maxDelay() default 600L;
 
         @AttributeDefinition(name = "Keep Alive Interval", min = "0", max = "65535")
-        int keepAliveInterval() default 300;
+        int keepAliveInterval() default 200;
 
-        @AttributeDefinition(name = "Keep Session State")
+        @AttributeDefinition(name = "Flag to enable/disable session expiry interval")
+        boolean useSessionExpiryInterval() default false;
+
+        @AttributeDefinition(name = "Keep Session State (In seconds)")
         long sessionExpiryInterval() default 30L;
+
+        @AttributeDefinition(name = "Flag to enable/disable session expiry interval for disconnection")
+        boolean useSessionExpiryIntervalForDisconnect() default true;
+
+        @AttributeDefinition(name = "Keep Session State after disconnection (In seconds)")
+        long sessionExpiryIntervalForDisconnect() default 0L;
 
         @AttributeDefinition(name = "Server Port", min = "1", max = "65535")
         int port() default 1883;
@@ -239,8 +250,6 @@ public final class MessageClientProvider {
         Mqtt5DisconnectReasonCode disconnectionReasonCode() default NORMAL_DISCONNECTION;
     }
 
-    private static final long SESSION_EXPIRY_ON_LAST_WILL_UPDATE_DISCONNECT = 600L;
-
     public volatile Mqtt5AsyncClient client;
 
     @Reference(service = LoggerFactory.class)
@@ -279,7 +288,7 @@ public final class MessageClientProvider {
         client.disconnectWith()
                   .reasonCode(NORMAL_DISCONNECTION)
                   .reasonString("Updated Last will and Testament (LWT) dynamically using publish request message")
-                  .sessionExpiryInterval(SESSION_EXPIRY_ON_LAST_WILL_UPDATE_DISCONNECT)
+                  .noSessionExpiry()
               .send()
               .thenAccept(v -> {
                   initLastWill(lastWillMessage);
@@ -319,11 +328,19 @@ public final class MessageClientProvider {
     		reasonDescription = config.disconnectionReasonDescription();
     	}
     	// blocking disconnection ensures that we gracefully disconnect the established connection
-    	client.toBlocking()
+		final SendVoid disconnectParams = client.toBlocking()
     	      .disconnectWith()
     	          .reasonCode(reasonCode)
-                  .reasonString(reasonDescription)
-    	      .send();
+                  .reasonString(reasonDescription);
+
+		if (config.useSessionExpiryIntervalForDisconnect()) {
+			logger.debug("Applying Session Expiry Interval for Disconnect: {}", config.sessionExpiryIntervalForDisconnect());
+			disconnectParams.sessionExpiryInterval(config.sessionExpiryIntervalForDisconnect());
+		} else {
+			logger.debug("Session Expiry Interval for Disconnect is not enabled");
+			disconnectParams.noSessionExpiry();
+		}
+		disconnectParams.send();
 	}
 
     private void connect() {
@@ -519,12 +536,21 @@ public final class MessageClientProvider {
         advancedConfig.applyAdvancedConfig();
         client = clientBuilder.buildAsync();
 
-        final CompletableFuture<Mqtt5ConnAck> ack =
-                client.toAsync()
-                      .connectWith()
-                           .cleanStart(config.cleanStart())
-                           .sessionExpiryInterval(config.sessionExpiryInterval())
-                           .keepAlive(config.keepAliveInterval())
+		final Send<CompletableFuture<Mqtt5ConnAck>> connectionParams = client.toAsync()
+		      .connectWith()
+		           .cleanStart(config.cleanStart())
+		           .keepAlive(config.keepAliveInterval());
+
+		if (config.useSessionExpiryInterval()) {
+			logger.debug("Applying Session Expiry Interval: {}", config.sessionExpiryInterval());
+			connectionParams.sessionExpiryInterval(config.sessionExpiryInterval());
+		} else {
+			logger.debug("Session Expiry Interval is not enabled");
+			connectionParams.noSessionExpiry();
+		}
+
+		final CompletableFuture<Mqtt5ConnAck> ack =
+                connectionParams
                        .restrictions()
                            .receiveMaximum(config.receiveMaximum())
                            .sendMaximum(config.sendMaximum())
