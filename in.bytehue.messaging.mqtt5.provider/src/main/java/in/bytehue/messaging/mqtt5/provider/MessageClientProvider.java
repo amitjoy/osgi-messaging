@@ -118,13 +118,13 @@ public final class MessageClientProvider {
         boolean useSessionExpiry() default false;
 
         @AttributeDefinition(name = "Keep Session State (In seconds)")
-        long sessionExpiryInterval() default 30L;
+        int sessionExpiryInterval() default 30;
 
         @AttributeDefinition(name = "Flag to enable/disable session expiry for disconnection")
         boolean useSessionExpiryForDisconnect() default true;
 
         @AttributeDefinition(name = "Keep Session State after disconnection (In seconds)")
-        long sessionExpiryIntervalForDisconnect() default 0L;
+        int sessionExpiryIntervalForDisconnect() default 0;
 
         @AttributeDefinition(name = "Server Port", min = "1", max = "65535")
         int port() default 1883;
