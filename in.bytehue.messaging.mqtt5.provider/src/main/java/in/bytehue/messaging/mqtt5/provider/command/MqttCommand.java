@@ -301,7 +301,10 @@ public final class MqttCommand {
         table.addRow("Initial Delay", String.valueOf(config.initialDelay()));
         table.addRow("Max Delay", String.valueOf(config.maxDelay()));
         table.addRow("Keep Interval", String.valueOf(config.keepAliveInterval()));
+        table.addRow("Use Session Expiry", String.valueOf(config.useSessionExpiry()));
         table.addRow("Session Expiry Interval", String.valueOf(config.sessionExpiryInterval()));
+        table.addRow("Use Session Expiry for Disconnect", String.valueOf(config.useSessionExpiryForDisconnect()));
+        table.addRow("Session Expiry Interval for Disconnect", String.valueOf(config.sessionExpiryIntervalForDisconnect()));
         table.addRow("Simple Authentication", String.valueOf(config.simpleAuth()));
         table.addRow("Use static credentials specified in username and password configurations", String.valueOf(config.staticAuthCred()));
         table.addRow("Simple Authentication Credential Filter", String.valueOf(config.simpleAuthCredFilter()));
