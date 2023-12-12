@@ -333,11 +333,11 @@ public final class MessageClientProvider {
     	          .reasonCode(reasonCode)
                   .reasonString(reasonDescription);
 
-		if (config.useSessionExpiryIntervalForDisconnect()) {
+		if (config.useSessionExpiryForDisconnect()) {
 			logger.debug("Applying Session Expiry Interval for Disconnect: {}", config.sessionExpiryIntervalForDisconnect());
 			disconnectParams.sessionExpiryInterval(config.sessionExpiryIntervalForDisconnect());
 		} else {
-			logger.debug("Session Expiry Interval for Disconnect is not enabled");
+			logger.debug("Session Expiry for Disconnect is not enabled");
 			disconnectParams.noSessionExpiry();
 		}
 		disconnectParams.send();
@@ -541,11 +541,11 @@ public final class MessageClientProvider {
 		           .cleanStart(config.cleanStart())
 		           .keepAlive(config.keepAliveInterval());
 
-		if (config.useSessionExpiryInterval()) {
+		if (config.useSessionExpiry()) {
 			logger.debug("Applying Session Expiry Interval: {}", config.sessionExpiryInterval());
 			connectionParams.sessionExpiryInterval(config.sessionExpiryInterval());
 		} else {
-			logger.debug("Session Expiry Interval is not enabled");
+			logger.debug("Session Expiry is not enabled");
 			connectionParams.noSessionExpiry();
 		}
 
