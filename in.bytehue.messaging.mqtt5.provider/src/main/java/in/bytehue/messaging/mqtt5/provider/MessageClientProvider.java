@@ -114,14 +114,14 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "Keep Alive Interval", min = "0", max = "65535")
         int keepAliveInterval() default 200;
 
-        @AttributeDefinition(name = "Flag to enable/disable session expiry interval")
-        boolean useSessionExpiryInterval() default false;
+        @AttributeDefinition(name = "Flag to enable/disable session expiry")
+        boolean useSessionExpiry() default false;
 
         @AttributeDefinition(name = "Keep Session State (In seconds)")
         long sessionExpiryInterval() default 30L;
 
-        @AttributeDefinition(name = "Flag to enable/disable session expiry interval for disconnection")
-        boolean useSessionExpiryIntervalForDisconnect() default true;
+        @AttributeDefinition(name = "Flag to enable/disable session expiry for disconnection")
+        boolean useSessionExpiryForDisconnect() default true;
 
         @AttributeDefinition(name = "Keep Session State after disconnection (In seconds)")
         long sessionExpiryIntervalForDisconnect() default 0L;
