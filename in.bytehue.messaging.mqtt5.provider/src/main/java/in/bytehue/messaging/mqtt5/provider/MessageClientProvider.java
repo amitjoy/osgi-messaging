@@ -86,7 +86,8 @@ public final class MessageClientProvider {
 	//@formatter:off
     @ObjectClassDefinition(
             name = "MQTT 5.0 Messaging Client Configuration",
-            description = "This configuration is used to configure the MQTT 5.0 messaging connection")
+            description = "This configuration is used to configure the MQTT 5.0 messaging connection. "
+            		    + "Note that, all time-based configurations are in seconds.")
 
     public @interface Config {
         @AttributeDefinition(name = "Client Identifier")
@@ -102,7 +103,7 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "Custom Automatic Reconnection")
         boolean automaticReconnectWithDefaultConfig() default true;
 
-        @AttributeDefinition(name = "Resume Previously Established Session")
+        @AttributeDefinition(name = "Always create new session after the client is connected")
         boolean cleanStart() default false;
 
         @AttributeDefinition(name = "Initial Delay if Custom Automatic Reconnection is enabled")
@@ -117,13 +118,13 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "Flag to enable/disable session expiry")
         boolean useSessionExpiry() default false;
 
-        @AttributeDefinition(name = "Keep Session State (In seconds)")
+        @AttributeDefinition(name = "Keep Session State")
         int sessionExpiryInterval() default 30;
 
         @AttributeDefinition(name = "Flag to enable/disable session expiry for disconnection")
         boolean useSessionExpiryForDisconnect() default true;
 
-        @AttributeDefinition(name = "Keep Session State after disconnection (In seconds)")
+        @AttributeDefinition(name = "Keep Session State after disconnection")
         int sessionExpiryIntervalForDisconnect() default 0;
 
         @AttributeDefinition(name = "Server Port", min = "1", max = "65535")
