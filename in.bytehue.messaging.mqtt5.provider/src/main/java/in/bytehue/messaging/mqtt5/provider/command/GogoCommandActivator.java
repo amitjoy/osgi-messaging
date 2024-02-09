@@ -15,42 +15,37 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider.command;
 
-import static in.bytehue.messaging.mqtt5.provider.command.MqttCommand.PID;
 import static org.osgi.framework.namespace.PackageNamespace.PACKAGE_NAMESPACE;
+import static org.osgi.service.condition.Condition.CONDITION_ID;
+import static org.osgi.service.condition.Condition.INSTANCE;
 
-import java.io.IOException;
-import java.util.Hashtable;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.wiring.BundleWiring;
-import org.osgi.service.cm.Configuration;
-import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.condition.Condition;
 
 @Component
 public final class GogoCommandActivator {
 
+	private static final String CONDITION_VALUE = "gogo-available";
 	private static final String GOGO_PACKAGE = "org.apache.felix.service.command";
 
 	private final BundleContext bundleContext;
-	private final ConfigurationAdmin configAdmin;
+	private final AtomicReference<ServiceRegistration<Condition>> ref = new AtomicReference<>();
 
 	@Activate
-	public GogoCommandActivator(
-	// @formatter:off
-            final BundleContext bundleContext,
-            @Reference
-            final ConfigurationAdmin configAdmin
-    // @formatter:on
-	) {
-		this.configAdmin = configAdmin;
+	public GogoCommandActivator(final BundleContext bundleContext) {
 		this.bundleContext = bundleContext;
-
 		if (isGogoPackageImported()) {
-			createGogoCommandConfig();
+			registerCondition();
 		}
 	}
 
@@ -66,23 +61,23 @@ public final class GogoCommandActivator {
         // @formatter:on
 	}
 
-	private void createGogoCommandConfig() {
-		try {
-			final Configuration configuration = configAdmin.getConfiguration(PID, "?");
-			configuration.updateIfDifferent(new Hashtable<>());
-		} catch (final IOException e) {
-			throw new RuntimeException(e);
-		}
+	private void registerCondition() {
+		final Map<String, Object> properties = new HashMap<>();
+		properties.put(CONDITION_ID, CONDITION_VALUE);
+
+		final ServiceRegistration<Condition> reg = bundleContext.registerService(Condition.class, INSTANCE,
+				FrameworkUtil.asDictionary(properties));
+		ref.set(reg);
 	}
 
 	@Deactivate
-	private void deleteGogoCommandConfig() {
-		try {
-			final Configuration configuration = configAdmin.getConfiguration(PID, "?");
-			configuration.delete();
-		} catch (final IOException e) {
-			throw new RuntimeException(e);
-		}
+	private void deregisterCondition() {
+		ref.getAndUpdate(reg -> {
+			if (reg != null) {
+				reg.unregister();
+			}
+			return null;
+		});
 	}
 
 }

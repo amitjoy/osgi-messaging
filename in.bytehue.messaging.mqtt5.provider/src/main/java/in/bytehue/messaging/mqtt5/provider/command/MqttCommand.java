@@ -15,11 +15,10 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider.command;
 
-import static in.bytehue.messaging.mqtt5.provider.command.MqttCommand.PID;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.stackTraceToString;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
-import static org.osgi.service.component.annotations.ConfigurationPolicy.REQUIRE;
+import static org.osgi.service.condition.Condition.CONDITION_ID;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -32,6 +31,7 @@ import org.apache.felix.service.command.Parameter;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.propertytypes.SatisfyingConditionTarget;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.dto.ChannelDTO;
@@ -53,12 +53,9 @@ import in.bytehue.messaging.mqtt5.provider.helper.Table;
 
 // @formatter:off
 @Descriptor("MQTT 5 Messaging")
+@Component(immediate = true, service = MqttCommand.class)
+@SatisfyingConditionTarget("(" + CONDITION_ID +"=gogo-available)")
 @FelixGogoCommand(scope = "mqtt", function = { "pub", "sub", "runtime" })
-@Component(
-        immediate = true,
-        configurationPid = PID,
-        configurationPolicy = REQUIRE,
-        service = MqttCommand.class)
 public final class MqttCommand {
 
     public static final String PID = "in.bytehue.messaging.mqtt.command";
