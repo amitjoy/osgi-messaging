@@ -106,10 +106,10 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "Always create new session after the client is connected")
         boolean cleanStart() default false;
 
-        @AttributeDefinition(name = "Initial Delay if Custom Automatic Reconnection is enabled")
+        @AttributeDefinition(name = "Initial Delay if Custom Automatic Reconnection is enabled", min = "0")
         long initialDelay() default 10L;
 
-        @AttributeDefinition(name = "Max Delay if Custom Automatic Reconnection is enabled")
+        @AttributeDefinition(name = "Max Delay if Custom Automatic Reconnection is enabled", min = "0")
         long maxDelay() default 600L;
 
         @AttributeDefinition(name = "Keep Alive Interval", min = "0", max = "65535")
@@ -154,7 +154,7 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "SSL Configuration Protocols")
         String[] protocols() default {};
 
-        @AttributeDefinition(name = "SSL Configuration Handshake Timeout")
+        @AttributeDefinition(name = "SSL Configuration Handshake Timeout", min = "0")
         long sslHandshakeTimeout() default 10L;
 
         @AttributeDefinition(name = "SSL Configuration Key Manager Factory Service Target Filter")
@@ -178,10 +178,10 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "Last Will Content Type")
         String lastWillContentType() default "";
 
-        @AttributeDefinition(name = "Last Will Message Expiry Interval")
+        @AttributeDefinition(name = "Last Will Message Expiry Interval", min = "0")
         long lastWillMessageExpiryInterval() default 120L;
 
-        @AttributeDefinition(name = "Last Will Delay Interval")
+        @AttributeDefinition(name = "Last Will Delay Interval", min = "0")
         long lastWillDelayInterval() default 30L;
 
         @AttributeDefinition(name = "Maximum Concurrent Messages to be received")
