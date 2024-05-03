@@ -190,10 +190,10 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "Maximum Concurrent Messages to be sent", min = "0")
         int sendMaximum() default 10;
 
-        @AttributeDefinition(name = "Maximum Packet Size for receiving")
+        @AttributeDefinition(name = "Maximum Packet Size for receiving", min = "10")
         int maximumPacketSize() default 10_240; // 10KB
 
-        @AttributeDefinition(name = "Maximum Packet Size for sending")
+        @AttributeDefinition(name = "Maximum Packet Size for sending", min = "10")
         int sendMaximumPacketSize() default 10_240; // 10KB
 
         @AttributeDefinition(name = "Maximum Topic Aliases")
