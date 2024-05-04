@@ -196,7 +196,7 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "Maximum Packet Size for sending", min = "10")
         int sendMaximumPacketSize() default 10_240; // 10KB
 
-        @AttributeDefinition(name = "Maximum Topic Aliases")
+        @AttributeDefinition(name = "Maximum Topic Aliases", min = "0")
         int topicAliasMaximum() default 0;
 
         @AttributeDefinition(name = "MQTT over Web Socket")
