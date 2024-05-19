@@ -241,13 +241,13 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "QoS 2 Outgoing Interceptor Service Filter")
         String qos2OutgoingInterceptorFilter() default "";
 
-        @AttributeDefinition(name = "Filter to be satisfied for the client to be active")
+        @AttributeDefinition(name = "Filter to be satisfied for the messaging client to be active")
         String osgi_ds_satisfying_condition_target() default "(" + CONDITION_ID + "=" + CONDITION_ID_TRUE + ")";
 
-        @AttributeDefinition(name = "Reason for the disconnection when the component is stopped")
+        @AttributeDefinition(name = "Reason for the disconnection when the component is stopped gracefully")
         String disconnectionReasonDescription() default "OSGi Component Deactivated";
 
-        @AttributeDefinition(name = "Code for the disconnection when the component is stopped")
+        @AttributeDefinition(name = "Code for the disconnection when the component is stopped gracefully")
         Mqtt5DisconnectReasonCode disconnectionReasonCode() default NORMAL_DISCONNECTION;
     }
 
