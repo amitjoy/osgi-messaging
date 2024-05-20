@@ -319,6 +319,7 @@ public final class MessageClientProvider {
 	}
 
     private void disconnect(final boolean isNormalDisconnection) {
+    	logger.info("Performing disconection");
     	Mqtt5DisconnectReasonCode reasonCode;
     	String reasonDescription;
     	if (isNormalDisconnection) {
