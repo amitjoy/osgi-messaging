@@ -125,10 +125,6 @@ public final class ThreadFactoryBuilder {
 	}
 
 	private static ThreadGroup getThreadGroupToBeUsed() {
-		final SecurityManager securityManager = System.getSecurityManager();
-		if (securityManager != null) {
-			return securityManager.getThreadGroup();
-		}
 		return Thread.currentThread().getThreadGroup();
 	}
 
