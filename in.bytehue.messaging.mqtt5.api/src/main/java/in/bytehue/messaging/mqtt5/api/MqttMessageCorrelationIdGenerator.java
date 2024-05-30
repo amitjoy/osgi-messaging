@@ -2,14 +2,14 @@
  * Copyright 2020-2024 Amit Kumar Mondal
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License.  You may obtain a copy
+ * use this file except in compliance with the License. You may obtain a copy
  * of the License at
  * 
  *   http://www.apache.org/licenses/LICENSE-2.0
  * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations under
  * the License.
  ******************************************************************************/
@@ -19,33 +19,36 @@ import org.osgi.annotation.versioning.ConsumerType;
 import org.osgi.service.messaging.MessageContext;
 
 /**
- * {@link MqttMessageCorrelationIdGenerator} is primarily used to provide the
- * functionality for generating correlation identifiers required for reply-to
- * channels. User can either provide the identifiers by setting them directly
- * through {@link MessageContext} or let them be generated automatically. Users
- * can provide multiple implementations of this service and configure the
- * {@link MessageContext} using {@link MqttMessageContextBuilder} where one set
- * the service filter.
+ * The {@link MqttMessageCorrelationIdGenerator} interface is designed for
+ * generating unique correlation identifiers required for reply-to channels in
+ * MQTT messaging.
  *
  * <p>
- * This is actually useful where you can introduce multiple reply-to channels
- * and the correlation identifiers can be generated in a unique way to identify
- * them properly.
+ * Users can either provide their own correlation identifiers by setting them
+ * directly through {@link MessageContext}, or allow them to be generated
+ * automatically. Multiple implementations of this service can be provided, and
+ * the {@link MqttMessageContextBuilder} can be configured to use a specific
+ * implementation by setting the appropriate service filter.
+ * </p>
+ *
+ * <p>
+ * This functionality is particularly useful for managing multiple reply-to
+ * channels, ensuring that each correlation identifier is uniquely generated
+ * to properly identify the associated channels.
+ * </p>
  *
  * @see MessageContext
- * @See MqttMessageContextBuilder
- *
+ * @see MqttMessageContextBuilder
  * @since 1.0
  */
 @ConsumerType
 @FunctionalInterface
 public interface MqttMessageCorrelationIdGenerator {
 
-	/**
-	 * Returns the generated identifier (cannot be (@code null))
-	 *
-	 * @return the generated identifier
-	 */
-	String generate();
-
+    /**
+     * Generates and returns a unique identifier.
+     *
+     * @return the generated identifier, never {@code null}
+     */
+    String generate();
 }
