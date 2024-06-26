@@ -2,14 +2,14 @@
  * Copyright 2020-2024 Amit Kumar Mondal
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License.  You may obtain a copy
+ * use this file except in compliance with the License. You may obtain a copy
  * of the License at
  *
  *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations under
  * the License.
  ******************************************************************************/
@@ -50,7 +50,6 @@ public final class RemoteResourceHelper {
 	public static class MqttException extends RuntimeException {
 
 		private static final long serialVersionUID = 4877572873981748364L;
-
 		public final int code;
 
 		public MqttException(final int code, final String message) {
@@ -64,7 +63,7 @@ public final class RemoteResourceHelper {
 			final Configuration configuration = configurationAdmin.getConfiguration(CLIENT, "?");
 			final Dictionary<String, Object> properties = configuration.getProperties();
 			if (properties == null || properties.get("id") == null) {
-				// check for framework property if available
+				// Check for framework property if available
 				final String id = bundleContext.getProperty(CLIENT_ID_FRAMEWORK_PROPERTY);
 				requireNonNull(id, "No MQTT Client ID has been assigned");
 				return id;
@@ -72,7 +71,7 @@ public final class RemoteResourceHelper {
 				return String.valueOf(properties.get("id"));
 			}
 		} catch (final IOException e) {
-			// not gonna happen at all
+			// This exception should not occur under normal circumstances
 		}
 		return "+";
 	}
@@ -82,5 +81,4 @@ public final class RemoteResourceHelper {
 		exception.printStackTrace(new PrintWriter(sw));
 		return sw.toString();
 	}
-
 }
