@@ -72,8 +72,8 @@ public final class RemoteResourceHelper {
 			}
 		} catch (final IOException e) {
 			// This exception should not occur under normal circumstances
+			return "+";
 		}
-		return "+";
 	}
 
 	public static String exceptionToString(final Exception exception) {
