@@ -66,7 +66,7 @@ Export-Package                 : \
 Import-Package                 : \
 	!com.aayushatharva.brotli4j*,\
 	!com.aayushatharva.brotli4j,\
-	!com.github.luben.zstd,\
+	!com.github.luben.zstd.*,\
 	!com.google.protobuf,\
 	!com.google.protobuf.nano,\
 	!com.jcraft.jzlib,\
