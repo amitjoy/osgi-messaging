@@ -42,6 +42,8 @@ import org.osgi.service.messaging.runtime.MessageServiceRuntime;
 import org.osgi.util.converter.Converter;
 import org.osgi.util.converter.Converters;
 
+import com.hivemq.client.mqtt.MqttClientState;
+
 import in.bytehue.messaging.mqtt5.api.MqttCommandExtension;
 import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
 import in.bytehue.messaging.mqtt5.provider.MessageClientProvider;
@@ -97,7 +99,7 @@ public final class MqttCommand {
         table.addRow("Connection URI", runtimeInfo.connectionURI);
         table.addRow("Connection Port", String.valueOf(client.config().port()));
         table.addRow("Connection SSL",  String.valueOf(client.config().useSSL()));
-        table.addRow("Connection State", client.client.getState().toString());
+        table.addRow("Connection State", getState());
         table.addRow("Provider", runtimeInfo.providerName);
         table.addRow("Supported Protocols", converter.convert(runtimeInfo.protocols).to(String.class));
         table.addRow("Instance ID", runtimeInfo.instanceId);
@@ -137,7 +139,12 @@ public final class MqttCommand {
         return output.toString();
     }
 
-    @Descriptor("Subscribes to specific topic/filter with the input context")
+    private String getState() {
+		MqttClientState state = client.client.getState();
+		return state.isConnected() ? "CONNECTED" : "DISCONNECTED";
+    }
+
+	@Descriptor("Subscribes to specific topic/filter with the input context")
     public String sub(
 
             @Descriptor("Topic/Filter")
