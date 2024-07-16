@@ -54,10 +54,8 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-import com.hivemq.client.internal.mqtt.message.publish.MqttWillPublish;
 import com.hivemq.client.mqtt.datatypes.MqttClientIdentifier;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
-import com.hivemq.client.mqtt.datatypes.MqttUtf8String;
 import com.hivemq.client.mqtt.lifecycle.MqttClientConnectedContext;
 import com.hivemq.client.mqtt.lifecycle.MqttClientConnectedListener;
 import com.hivemq.client.mqtt.lifecycle.MqttClientDisconnectedContext;
@@ -259,7 +257,6 @@ public final class MessageClientProvider {
     private BundleContext bundleContext;
 
     public volatile Config config;
-    private Mqtt5ClientBuilder clientBuilder;
     private ServiceRegistration<Object> readyServiceReg;
 
 	@Activate
@@ -283,34 +280,8 @@ public final class MessageClientProvider {
         return config;
     }
 
-    public void updateLWT(final MqttWillPublish lastWillMessage) {
-        // disconnect but keep the previous session alive for 10 minutes before reconnection
-        // previous session is stored to not remove any previous subscriptions
-        client.disconnectWith()
-                  .reasonCode(NORMAL_DISCONNECTION)
-                  .reasonString("Updated Last will and Testament (LWT) dynamically using publish request message")
-                  .noSessionExpiry()
-              .send()
-              .thenAccept(v -> {
-                  initLastWill(lastWillMessage);
-                  connect();
-              });
-    }
-
     private void init(final Config config) {
 		this.config = config;
-        final String clientId = getClientID(bundleContext);
-
-        clientBuilder = Mqtt5Client.builder()
-                                   .identifier(MqttClientIdentifier.of(clientId))
-                                   .serverHost(config.server())
-                                   .serverPort(config.port());
-
-        // last will can be configured in two different ways =>
-        // 1. using initial configuration
-        // 2. client can send a special publish request which will be used as will message
-        // In case of the second scenario, a reconnection happens
-        initLastWill(null);
         try {
             connect();
         } catch (final Exception e) {
@@ -346,7 +317,13 @@ public final class MessageClientProvider {
 	}
 
     private void connect() {
+    	final String clientId = getClientID(bundleContext);
+    	final Mqtt5ClientBuilder clientBuilder = Mqtt5Client.builder()
+                .identifier(MqttClientIdentifier.of(clientId))
+                .serverHost(config.server())
+                .serverPort(config.port());
         final Nested<? extends Mqtt5ClientBuilder> advancedConfig = clientBuilder.advancedConfig();
+        initLastWill(clientBuilder);
 
         logger.debug(
                 "Adding highest priority connection listeners for (de)/registering MQTT connection ready OSGi service");
@@ -572,7 +549,7 @@ public final class MessageClientProvider {
         });
     }
 
-    private void initLastWill(final MqttWillPublish publish) {
+    private void initLastWill(Mqtt5ClientBuilder clientBuilder) {
         String topic = null;
         MqttQos qos = null;
         byte[] payload = null;
@@ -580,21 +557,12 @@ public final class MessageClientProvider {
         long messageExpiryInterval = 0;
         long delayInterval = 0;
 
-        if (publish == null) {
-            topic = config.lastWillTopic();
-            qos = MqttQos.fromCode(config.lastWillQoS());
-            payload = config.lastWillPayLoad().getBytes();
-            contentType = config.lastWillContentType();
-            messageExpiryInterval = config.lastWillMessageExpiryInterval();
-            delayInterval = config.lastWillDelayInterval();
-        } else {
-            topic = publish.getTopic().toString();
-            qos = publish.getQos();
-            payload = publish.getPayloadAsBytes();
-            contentType = publish.getContentType().map(MqttUtf8String::toString).orElse(null);
-            messageExpiryInterval = publish.getRawMessageExpiryInterval();
-            delayInterval = publish.getDelayInterval();
-        }
+        topic = config.lastWillTopic();
+        qos = MqttQos.fromCode(config.lastWillQoS());
+        payload = config.lastWillPayLoad().getBytes();
+        contentType = config.lastWillContentType();
+        messageExpiryInterval = config.lastWillMessageExpiryInterval();
+        delayInterval = config.lastWillDelayInterval();
 
         if (!topic.isEmpty()) {
             logger.debug("Applying Last Will and Testament Configuration");

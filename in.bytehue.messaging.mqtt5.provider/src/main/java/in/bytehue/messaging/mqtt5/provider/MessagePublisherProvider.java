@@ -21,7 +21,6 @@ import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatInd
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.PUBLISHER;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.LAST_WILL_DELAY_INTERVAL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.MESSAGE_EXPIRY_INTERVAL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
@@ -34,7 +33,6 @@ import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_DELIVERY;
 import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_ORDERING;
-import static org.osgi.service.messaging.Features.EXTENSION_LAST_WILL;
 import static org.osgi.service.messaging.Features.EXTENSION_QOS;
 
 import java.nio.ByteBuffer;
@@ -54,7 +52,6 @@ import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
 import org.osgi.util.converter.TypeReference;
 
-import com.hivemq.client.internal.mqtt.message.publish.MqttWillPublish;
 import com.hivemq.client.mqtt.MqttClientState;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserProperties;
@@ -62,8 +59,6 @@ import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserPropertiesBuilder;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatIndicator;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishBuilder.Send.Complete;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishResult;
-
-import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
 
 //@formatter:off
 @MessagingFeature(
@@ -156,9 +151,6 @@ public final class MessagePublisherProvider implements MessagePublisher {
 
 			final String contentEncoding = context.getContentEncoding();
 
-			final Object lastWillDelay = extensions.getOrDefault(LAST_WILL_DELAY_INTERVAL, 0L);
-			final long lastWillDelayInterval = adaptTo(lastWillDelay, long.class, converter);
-
 			Mqtt5PayloadFormatIndicator payloadFormat = null;
 			if ("UTF-8".equalsIgnoreCase(contentEncoding)) {
 				payloadFormat = UTF_8;
@@ -193,26 +185,6 @@ public final class MessagePublisherProvider implements MessagePublisher {
                 publishRequest.messageExpiryInterval(messageExpiryInterval);
             }
 
-            // check if it is a LWT publish request
-            final boolean isLwtPublishReq = extensions.containsKey(EXTENSION_LAST_WILL);
-            if (isLwtPublishReq) {
-                final MqttWillPublish will =
-                        MessageHelper.toLWT(
-                                            channel,
-                                            content,
-                                            qos,
-                                            retain,
-                                            messageExpiryInterval,
-                                            contentEncoding,
-                                            contentType,
-                                            replyToChannel,
-                                            correlationId,
-                                            userProperties,
-                                            lastWillDelayInterval);
-                messagingClient.updateLWT(will);
-                logger.info("New publish request to udpate LWT has been sent successfully - '{}'", will);
-                return;
-            }
             final CompletableFuture<Void> resultFuture = new CompletableFuture<>();
             publishRequest.send()
                           .whenComplete((result, throwable) -> {
