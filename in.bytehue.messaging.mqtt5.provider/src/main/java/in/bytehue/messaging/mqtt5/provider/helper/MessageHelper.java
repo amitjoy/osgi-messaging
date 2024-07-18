@@ -35,6 +35,7 @@ import static org.osgi.service.messaging.acknowledge.AcknowledgeType.REJECTED;
 
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -80,6 +81,42 @@ public final class MessageHelper {
 	private MessageHelper() {
 		throw new IllegalAccessError("Non-instantiable");
 	}
+	
+	public static Object getServiceWithoutType(final String clazz, final String filter, final BundleContext context) {
+	    try {
+	        ServiceReference<?>[] references = context.getServiceReferences(clazz, filter);
+	        if (references == null || references.length == 0) {
+	            throw new RuntimeException("'" + clazz + "' service instance cannot be found");
+	        }
+
+	        final ToLongFunction<ServiceReference<?>> srFunc = 
+	            sr -> Optional.ofNullable(((ServiceReference<?>) sr).getProperty(SERVICE_RANKING))
+	                          .filter(Number.class::isInstance)
+	                          .map(Number.class::cast)
+	                          .map(Number::longValue)
+	                          .orElse(0L);
+
+	        return Arrays.stream(references)
+	                     .max(comparingLong(srFunc))  // Finds the reference with the highest ranking
+	                     .map(context::getService)
+	                     .orElseThrow(() -> new RuntimeException("'" + clazz + "' service instance cannot be found"));
+	    } catch (Exception e) {
+	        throw new RuntimeException("Service '" + clazz + "' cannot be retrieved", e);
+	    }
+	}
+
+	public static Optional<Object> getOptionalServiceWithoutType(final String clazz, String filter, final BundleContext context, final Logger logger) {
+        try {
+            if (filter.trim().isEmpty()) {
+            	filter = null;
+            }
+            final Object service = getServiceWithoutType(clazz, filter, context);
+            return Optional.ofNullable(service);
+        } catch (final Exception e) {
+            logger.warn("Service '{}' cannot be retrieved", clazz);
+            return Optional.empty();
+        }
+    }
 
 	public static <T> T getService(final Class<T> clazz, final String filter, final BundleContext context) {
 		try {

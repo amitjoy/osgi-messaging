@@ -20,6 +20,7 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.CLIENT_ID_FRAM
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CONNECTION_READY_SERVICE_PROPERTY;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.CLIENT;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalService;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalServiceWithoutType;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.osgi.service.condition.Condition.CONDITION_ID;
 import static org.osgi.service.condition.Condition.CONDITION_ID_TRUE;
@@ -32,6 +33,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
 import javax.net.ssl.HostnameVerifier;
@@ -54,6 +60,7 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
+import com.hivemq.client.internal.netty.NettyEventLoopProvider;
 import com.hivemq.client.mqtt.datatypes.MqttClientIdentifier;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.lifecycle.MqttClientConnectedContext;
@@ -75,6 +82,7 @@ import com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectBuilder.Se
 import com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode;
 
 import in.bytehue.messaging.mqtt5.provider.MessageClientProvider.Config;
+import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 
 @ProvideMessagingFeature
 @Designate(ocd = Config.class)
@@ -142,6 +150,27 @@ public final class MessageClientProvider {
 
         @AttributeDefinition(name = "Simple Authentication Password", type = PASSWORD)
         String password() default "";
+
+        @AttributeDefinition(name = "Custom Executor Configuration")
+        boolean useCustomExecutor() default false;
+
+        @AttributeDefinition(name = "Custom Executor Number of Threads")
+        int numberOfThreads() default 5;
+
+        @AttributeDefinition(name = "Custom Executor Prefix of the thread name")
+        String threadNamePrefix() default "osgi-mqtt";
+
+        @AttributeDefinition(name = "Custom Executor Suffix of the thread name (supports only {@code %d} format specifier)")
+        String threadNameSuffix() default "-%d";
+
+        @AttributeDefinition(name = "Flag to set if the threads will be daemon threads")
+        boolean isDaemon() default true;
+
+        @AttributeDefinition(name = "Custom Thread Executor Service Class Name (Note that, the service should be an instance of Java Executor)")
+        String executorTargetClass() default "";
+
+        @AttributeDefinition(name = "Custom Thread Executor Service Target Filter")
+        String executorTargetFilter() default "";
 
         @AttributeDefinition(name = "SSL Configuration")
         boolean useSSL() default false;
@@ -257,6 +286,7 @@ public final class MessageClientProvider {
     private BundleContext bundleContext;
 
     public volatile Config config;
+    private ScheduledExecutorService customExecutor;
     private ServiceRegistration<Object> readyServiceReg;
 
 	@Activate
@@ -281,6 +311,7 @@ public final class MessageClientProvider {
     }
 
     private void init(final Config config) {
+    	logger.info("Performing connection");
 		this.config = config;
         try {
             connect();
@@ -290,7 +321,7 @@ public final class MessageClientProvider {
 	}
 
     private void disconnect(final boolean isNormalDisconnection) {
-    	logger.info("Performing disconection");
+    	logger.info("Performing disconnection");
     	Mqtt5DisconnectReasonCode reasonCode;
     	String reasonDescription;
     	if (isNormalDisconnection) {
@@ -314,6 +345,12 @@ public final class MessageClientProvider {
 			disconnectParams.noSessionExpiry();
 		}
 		disconnectParams.send();
+		// shutdown the custom executor if used
+		if (customExecutor != null) {
+	        customExecutor.shutdownNow();
+	        NettyEventLoopProvider.INSTANCE.releaseEventLoop(customExecutor);
+    		customExecutor = null;
+    	}
 	}
 
     private void connect() {
@@ -423,6 +460,36 @@ public final class MessageClientProvider {
                                              logger)
                                      .orElse(null))
                              .applySslConfig();
+        }
+        if (config.useCustomExecutor()) {
+        	logger.debug("Applying Custom Executor Configuration");
+        	final String clazz = config.executorTargetClass().trim();
+        	if (clazz.isEmpty()) {
+        		logger.debug("Applying Executor as Non-Service Configuration");
+                final ThreadFactory threadFactory =
+                        new ThreadFactoryBuilder()
+                                .setThreadFactoryName(config.threadNamePrefix())
+                                .setThreadNameFormat(config.threadNameSuffix())
+                                .setDaemon(config.isDaemon())
+                                .build();
+                customExecutor = Executors.newScheduledThreadPool(config.numberOfThreads(), threadFactory);
+                ((ScheduledThreadPoolExecutor) customExecutor).setRemoveOnCancelPolicy(true);
+                clientBuilder.executorConfig()
+	                         .nettyExecutor(customExecutor)
+                             .applyExecutorConfig();
+        	} else {
+        		logger.debug("Applying Executor as Service Configuration");
+        		String filter = config.executorTargetFilter().trim();
+        		Optional<Object> service = 
+        				getOptionalServiceWithoutType(
+        				            clazz,
+        				            filter,
+        				            bundleContext,
+        				            logger);
+        		service.ifPresent(executor -> clientBuilder.executorConfig()
+                                                           .nettyExecutor((Executor) executor)
+                                                           .applyExecutorConfig());
+        	}
         }
         if (config.useEnhancedAuthentication()) {
             logger.debug("Applying Enhanced Authentication Configuration");
