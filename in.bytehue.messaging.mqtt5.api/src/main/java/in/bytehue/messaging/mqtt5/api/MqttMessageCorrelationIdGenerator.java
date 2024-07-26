@@ -19,23 +19,32 @@ import org.osgi.annotation.versioning.ConsumerType;
 import org.osgi.service.messaging.MessageContext;
 
 /**
- * The {@link MqttMessageCorrelationIdGenerator} interface is designed for
- * generating unique correlation identifiers required for reply-to channels in
- * MQTT messaging.
+ * The {@link MqttMessageCorrelationIdGenerator} interface defines a strategy for
+ * generating unique correlation identifiers that are used to manage reply-to channels 
+ * in MQTT messaging scenarios.
  *
  * <p>
- * Users can either provide their own correlation identifiers by setting them
- * directly through {@link MessageContext}, or allow them to be generated
- * automatically. Multiple implementations of this service can be provided, and
- * the {@link MqttMessageContextBuilder} can be configured to use a specific
- * implementation by setting the appropriate service filter.
+ * Users can implement this interface to provide custom correlation identifier generation
+ * logic, or rely on existing implementations that adhere to this contract.
+ * Implementations can be explicitly specified via the {@link MqttMessageContextBuilder} 
+ * using an appropriate service filter.
  * </p>
  *
  * <p>
- * This functionality is particularly useful for managing multiple reply-to
- * channels, ensuring that each correlation identifier is uniquely generated
- * to properly identify the associated channels.
+ * This is particularly useful when multiple reply-to channels are managed, requiring each 
+ * correlation identifier to be unique to properly map responses to their originating requests.
  * </p>
+ *
+ * <p>
+ * Example usage:
+ * </p>
+ *
+ * <pre>
+ * {@code
+ * MqttMessageCorrelationIdGenerator generator = () -> UUID.randomUUID().toString();
+ * String correlationId = generator.generate();
+ * }
+ * </pre>
  *
  * @see MessageContext
  * @see MqttMessageContextBuilder
@@ -46,9 +55,9 @@ import org.osgi.service.messaging.MessageContext;
 public interface MqttMessageCorrelationIdGenerator {
 
     /**
-     * Generates and returns a unique identifier.
-     *
-     * @return the generated identifier, never {@code null}
+     * Generates a unique correlation identifier for use in MQTT messaging.
+     * 
+     * @return a unique identifier, never {@code null}
      */
     String generate();
 }
