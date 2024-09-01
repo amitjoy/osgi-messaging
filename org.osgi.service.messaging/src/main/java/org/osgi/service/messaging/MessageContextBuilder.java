@@ -7,112 +7,109 @@ import java.util.function.Function;
 import org.osgi.annotation.versioning.ProviderType;
 
 /**
- * Builder for building a {@link Message} or {@link MessageContext} to configure
- * publish or subscription properties
+ * Builder for creating a {@link Message} or {@link MessageContext} and configuring
+ * publish or subscription properties.
  */
 @ProviderType
 public interface MessageContextBuilder extends MessageContextProvider {
 
 	/**
-	 * Sets the provided {@link MessageContext} instance. If this context is set,
-	 * calling message context builder functions on this builder will no override
-	 * the values from the given context.
+	 * Sets the specified {@link MessageContext} instance. If this context is set,
+	 * subsequent method calls on this builder will not override the values from
+	 * the provided context.
 	 *
-	 * @param context an existing context
-	 * @return the {@link MessageContextBuilder} instance
+	 * @param context an existing message context
+	 * @return the current {@link MessageContextBuilder} instance
 	 */
 	MessageContextBuilder withContext(MessageContext context);
 
 	/**
-	 * Adds the content to the message
+	 * Adds the content to the message.
 	 *
-	 * @param byteBuffer the content
-	 * @return the {@link MessageContextBuilder} instance
+	 * @param byteBuffer the content as a ByteBuffer
+	 * @return the current {@link MessageContextBuilder} instance
 	 */
 	MessageContextBuilder content(ByteBuffer byteBuffer);
 
 	/**
-	 * Adds typed content to the message and maps it using the provided mapping
-	 * function
+	 * Adds typed content to the message and maps it using the provided function.
 	 *
-	 * @param <T>           the content type
+	 * @param <T>           the type of the content
 	 * @param object        the input object
-	 * @param contentMapper a mapping function to map T into the {@link ByteBuffer}
-	 * @return the {@link MessageContextBuilder} instance
+	 * @param contentMapper a function to map the content type T into a {@link ByteBuffer}
+	 * @return the current {@link MessageContextBuilder} instance
 	 */
 	<T> MessageContextBuilder content(T object, Function<T, ByteBuffer> contentMapper);
 
 	/**
-	 * Defines a reply to address when submitting a reply-to request. So the
-	 * receiver will know, where to send the reply.
+	 * Sets a reply-to address for the message, which indicates where replies 
+	 * should be sent.
 	 *
-	 * @param replyToAddress the reply address
-	 * @return the {@link MessageContextBuilder} instance
+	 * @param replyToAddress the address to send replies to
+	 * @return the current {@link MessageContextBuilder} instance
 	 */
 	MessageContextBuilder replyTo(String replyToAddress);
 
 	/**
-	 * Defines a correlation id that is usually used for reply-to requests.
+	 * Sets a correlation ID, typically used for reply-to requests, to associate
+	 * a response with its corresponding request.
 	 *
-	 * The correlation id is an identifier to assign a response to its corresponding
-	 * request.
+	 * This can be useful when the underlying system does not automatically
+	 * generate correlation IDs.
 	 *
-	 * This options can be used when the underlying system doesn't provide the
-	 * generation of these correlation ids
-	 *
-	 * @param correlationId the correlationId
-	 * @return the {@link MessageContextBuilder} instance
+	 * @param correlationId the correlation identifier
+	 * @return the current {@link MessageContextBuilder} instance
 	 */
 	MessageContextBuilder correlationId(String correlationId);
 
 	/**
-	 * Defines a content encoding
+	 * Specifies the content encoding to be used.
 	 *
-	 * @param content the content encoding
-	 * @return the {@link MessageContextBuilder} instance
+	 * @param contentEncoding the encoding of the content
+	 * @return the current {@link MessageContextBuilder} instance
 	 */
 	MessageContextBuilder contentEncoding(String contentEncoding);
 
 	/**
-	 * Defines a content-type like the content mime-type.
+	 * Specifies the content type, such as the MIME type of the content.
 	 *
-	 * @param contentType the content type
-	 * @return the {@link MessageContextBuilder} instance
+	 * @param contentType the type of the content
+	 * @return the current {@link MessageContextBuilder} instance
 	 */
 	MessageContextBuilder contentType(String contentType);
 
 	/**
-	 * Defines a channel name and a routing key
+	 * Defines a channel name and a routing key for message delivery.
 	 *
-	 * @param channelName      the channel name
-	 * @param channelExtension the special key for routing a message
-	 * @return the {@link MessageContextBuilder} instance
+	 * @param channelName      the name of the channel
+	 * @param channelExtension a key for routing the message
+	 * @return the current {@link MessageContextBuilder} instance
 	 */
 	MessageContextBuilder channel(String channelName, String channelExtension);
 
 	/**
-	 * Defines a channel name that can be a topic or queue name
+	 * Sets the channel name, which can be a topic or queue name.
 	 *
-	 * @param channelName the channel name
-	 * @return the {@link MessageContextBuilder} instance
+	 * @param channelName the name of the channel
+	 * @return the current {@link MessageContextBuilder} instance
 	 */
 	MessageContextBuilder channel(String channelName);
 
 	/**
-	 * Adds an options entry with the given key and the given value
+	 * Adds an extension entry with the specified key and value to the message context.
 	 *
-	 * @param key   the option/property key
-	 * @param value the option value
-	 * @return the {@link MessageContextBuilder} instance
+	 * @param key   the key of the extension
+	 * @param value the value of the extension
+	 * @return the current {@link MessageContextBuilder} instance
 	 */
 	MessageContextBuilder extensionEntry(String key, Object value);
 
 	/**
-	 * Appends the given options to the context options
+	 * Appends the given map of extensions to the existing context options.
 	 *
-	 * @param options the options map to be added to the options
-	 * @return the {@link MessageContextBuilder} instance
+	 * @param extensions a map containing extension keys and their corresponding values
+	 * @return the current {@link MessageContextBuilder} instance
 	 */
-	MessageContextBuilder extensions(Map<String, Object> extension);
+	MessageContextBuilder extensions(Map<String, Object> extensions);
 
 }
