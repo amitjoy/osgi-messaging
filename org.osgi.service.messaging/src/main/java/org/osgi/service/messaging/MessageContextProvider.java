@@ -1,22 +1,23 @@
 package org.osgi.service.messaging;
 
 /**
- * Interface to provide builder methods to create a {@link Message} or a
- * {@link MessageContext} instance
+ * Interface that provides builder methods for creating a {@link Message} 
+ * or a {@link MessageContext} instance.
  */
 public interface MessageContextProvider {
 
 	/**
-	 * Builds the message context
+	 * Creates and returns a new {@link MessageContext} instance.
 	 *
-	 * @return the message context instance
+	 * @return a new message context instance
 	 */
 	MessageContext buildContext();
 
 	/**
-	 * Builds the message with a containing context
+	 * Creates and returns a new {@link Message} instance that contains 
+	 * the current context.
 	 *
-	 * @return the message instance
+	 * @return a new message instance
 	 */
 	Message buildMessage();
 
