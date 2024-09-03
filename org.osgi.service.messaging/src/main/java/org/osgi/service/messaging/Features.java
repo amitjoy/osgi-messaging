@@ -1,5 +1,15 @@
 package org.osgi.service.messaging;
 
+/**
+ * Interface defining constants for various features and extensions
+ * of the Messaging specification.
+ *
+ * These constants represent the names of specific features and extensions 
+ * that can be utilized within the messaging framework, providing a standard 
+ * way to refer to them in code.
+ *
+ * @since 1.0
+ */
 public interface Features {
 
 	/**
