@@ -16,27 +16,38 @@
 package in.bytehue.messaging.mqtt5.example2;
 
 import java.nio.ByteBuffer;
-
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContextBuilder;
 import org.osgi.service.messaging.propertytypes.ReplyToSubscription;
 import org.osgi.service.messaging.replyto.ReplyToSingleSubscriptionHandler;
 
-// @formatter:off
+/**
+ * An OSGi component that handles single reply-to subscriptions for MQTT5 protocol messages.
+ * It listens on the specified channels and sends responses using the defined configuration.
+ */
 @Component
-@ReplyToSubscription(target =
-    "(&(osgi.messaging.protocol=mqtt5)"
-    + "(osgi.messaging.name=mqtt5-hivemq-adapter)"
-    + "(osgi.messaging.feature=replyTo)))",
+@ReplyToSubscription(
+    target = "(&(osgi.messaging.protocol=mqtt5)" +
+             "(osgi.messaging.name=mqtt5-hivemq-adapter)" +
+             "(osgi.messaging.feature=replyTo))",
     channel = "channel_bar",
-    replyChannel = "channel_foo")
-// @formatter:on
+    replyChannel = "channel_foo"
+)
 public final class MyReplyToSingleSubscriptionHandler implements ReplyToSingleSubscriptionHandler {
 
-	@Override
-	public Message handleResponse(final Message requestMessage, final MessageContextBuilder responseBuilder) {
-		return responseBuilder.content(ByteBuffer.wrap("Message from Handler".getBytes())).buildMessage();
-	}
-
+    /**
+     * Handles incoming messages and constructs a response message.
+     *
+     * @param requestMessage  The received message that needs a reply.
+     * @param responseBuilder A builder for creating the response message context.
+     * @return The constructed response message.
+     */
+    @Override
+    public Message handleResponse(final Message requestMessage, final MessageContextBuilder responseBuilder) {
+        // Construct and return a response message with the specified content.
+        return responseBuilder
+                .content(ByteBuffer.wrap("Message from Handler".getBytes()))
+                .buildMessage();
+    }
 }
