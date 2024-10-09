@@ -29,11 +29,11 @@ import in.bytehue.messaging.mqtt5.remote.propertytypes.MqttApplicationId;
 public final class MyApplication implements MqttApplication {
 
 	@Override
-	public Message doGET( //
-			final String resource, //
-			final Message requestMessage, //
+	public Message doGET(
+			// @formatter:off
+			final String resource,
+			final Message requestMessage,
 			final MqttMessageContextBuilder messageBuilder) throws Exception {
-
 		return messageBuilder.content(ByteBuffer.wrap("AMIT".getBytes())).buildMessage();
 	}
 
