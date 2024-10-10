@@ -193,6 +193,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 										                                		  final MessageContextBuilderProvider mcb = mcbFactory.getService();
 											                                	  try {
 											                                		  final Message message = toMessage(p, ctx, mcb);
+											                                		  logger.trace("Successful Subscription Response: {} ", message);
 											                                              acknowledgeMessage(
 											                                                      message,
 											                                                      ctx,
