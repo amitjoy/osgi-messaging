@@ -221,11 +221,15 @@ public final class MessageReplyToWhiteboardProvider {
 		final ReplyToDTO replyToDTO = new ReplyToDTO(sub.reference);
 
 		Stream.of(replyToDTO.subChannels).forEach(c -> {
-			final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel);
-			sub.addAck(ack);
+			try {
+				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel);
+				sub.addAck(ack);
 
-			ack.stream().map(m -> handleResponse(m, (ReplyToSingleSubscriptionHandler) sub.handler))
-					.forEach(m -> handleMessageReceive(sub.reference, replyToDTO, c, ack, m));
+				ack.stream().map(m -> handleResponse(m, (ReplyToSingleSubscriptionHandler) sub.handler))
+						.forEach(m -> handleMessageReceive(sub.reference, replyToDTO, c, ack, m));
+			} catch (Exception e) {
+				logger.error("Cannot process reply-to single subscription: {}", c, e);
+			}
 		});
 	}
 
@@ -233,10 +237,14 @@ public final class MessageReplyToWhiteboardProvider {
 		final ReplyToDTO replyToDTO = new ReplyToDTO(sub.reference);
 
 		Stream.of(replyToDTO.subChannels).forEach(c -> {
-			final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel);
-			sub.addAck(ack);
+			try {
+				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel);
+				sub.addAck(ack);
 
-			ack.stream().forEach(((ReplyToSubscriptionHandler) sub.handler)::handleResponse);
+				ack.stream().forEach(((ReplyToSubscriptionHandler) sub.handler)::handleResponse);
+			} catch (Exception e) {
+				logger.error("Cannot process reply-to subscription: {}", c, e);
+			}
 		});
 	}
 
@@ -244,11 +252,15 @@ public final class MessageReplyToWhiteboardProvider {
 		final ReplyToDTO replyToDTO = new ReplyToDTO(sub.reference);
 
 		Stream.of(replyToDTO.subChannels).forEach(c -> {
-			final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel);
-			sub.addAck(ack);
+			try {
+				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel);
+				sub.addAck(ack);
 
-			ack.stream().forEach(m -> handleResponses(m, (ReplyToManySubscriptionHandler) sub.handler)
-					.forEach(msg -> handleMessageReceive(sub.reference, replyToDTO, c, ack, msg)));
+				ack.stream().forEach(m -> handleResponses(m, (ReplyToManySubscriptionHandler) sub.handler)
+						.forEach(msg -> handleMessageReceive(sub.reference, replyToDTO, c, ack, msg)));
+			} catch (Exception e) {
+				logger.error("Cannot process reply-to many subscription: {}", c, e);
+			}
 		});
 	}
 
