@@ -125,7 +125,7 @@ public final class MessageReplyToWhiteboardProvider {
 				final ReplyToSubDTO sub = new ReplyToSubDTO(handler, REPLY_TO_SINGLE_SUB, reference);
 				subscriptions.add(sub);
 
-				processReplyToSingleSubscriptionHandler(sub);
+				new Thread(() -> processReplyToSingleSubscriptionHandler(sub)).start();
 				return handler;
 			}
 
@@ -152,7 +152,7 @@ public final class MessageReplyToWhiteboardProvider {
 				final ReplyToSubDTO sub = new ReplyToSubDTO(handler, REPLY_TO_SUB, reference);
 				subscriptions.add(sub);
 
-				processReplyToSubscriptionHandler(sub);
+				new Thread(() -> processReplyToSubscriptionHandler(sub)).start();
 				return handler;
 			}
 
@@ -179,7 +179,7 @@ public final class MessageReplyToWhiteboardProvider {
 				final ReplyToSubDTO sub = new ReplyToSubDTO(handler, REPLY_TO_MANY_SUB, reference);
 				subscriptions.add(sub);
 
-				processReplyToManySubscriptionHandler(sub);
+				new Thread(() -> processReplyToManySubscriptionHandler(sub)).start();
 				return handler;
 			}
 
