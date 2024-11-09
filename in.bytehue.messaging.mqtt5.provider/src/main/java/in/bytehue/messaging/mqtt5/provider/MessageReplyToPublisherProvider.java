@@ -124,8 +124,15 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 		final Deferred<Message> deferred = promiseFactory.deferred();
 		final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
 
+		SubscriptionAck sub = null;
+		try {
+			sub = subscriber.replyToSubscribe(dto.subChannel, dto.pubChannel);
+		} catch (Exception e) {
+			deferred.fail(e);
+			return deferred.getPromise();
+		}
 		// subscribe to the channel first
-		final PushStream<Message> stream = subscriber.replyToSubscribe(dto.subChannel, dto.pubChannel).stream()
+		final PushStream<Message> stream = sub.stream()
 				.filter(responseMessage -> matchCorrelationId(requestMessage, responseMessage)).buffer();
 
 		// resolve the promise on first response matching the specified correlation ID
