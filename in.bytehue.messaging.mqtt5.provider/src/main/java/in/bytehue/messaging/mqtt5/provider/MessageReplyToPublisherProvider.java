@@ -48,8 +48,11 @@ import org.osgi.util.promise.Deferred;
 import org.osgi.util.promise.Promise;
 import org.osgi.util.promise.PromiseFactory;
 import org.osgi.util.pushstream.PushStream;
+import org.osgi.util.pushstream.PushStreamProvider;
+import org.osgi.util.pushstream.SimplePushEventSource;
 
 import in.bytehue.messaging.mqtt5.provider.MessageReplyToPublisherProvider.Config;
+import in.bytehue.messaging.mqtt5.provider.helper.SubscriptionAck;
 import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 
 //@formatter:off
@@ -156,9 +159,17 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 	@Override
 	public PushStream<Message> publishWithReplyMany(final Message requestMessage, final MessageContext replyToContext) {
 		final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
-
+		SubscriptionAck sub = null;
+		try {
+			sub = subscriber.replyToSubscribe(dto.subChannel, dto.pubChannel);
+		} catch (Exception e) {
+	        final PushStreamProvider psp = new PushStreamProvider();
+	        final SimplePushEventSource<Message> eventSource = psp.createSimpleEventSource(Message.class);
+	        eventSource.endOfStream();
+	        return psp.createStream(eventSource);
+		}
 		// subscribe to the channel first
-		final PushStream<Message> stream = subscriber.replyToSubscribe(dto.subChannel, dto.pubChannel).stream()
+		final PushStream<Message> stream = sub.stream()
 				.filter(responseMessage -> matchCorrelationId(requestMessage, responseMessage));
 
 		// publish the request to the channel
