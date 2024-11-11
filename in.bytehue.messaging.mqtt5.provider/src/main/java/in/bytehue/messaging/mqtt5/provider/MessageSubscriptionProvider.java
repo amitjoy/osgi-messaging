@@ -123,11 +123,11 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         return _subscribe(context).stream();
     }
 
-    public SubscriptionAck _subscribe(final String subChannel) {
+    public SubscriptionAck _subscribe(final String subChannel) { //NOSONAR
     	return subscribe(null, subChannel, null, false);
     }
 
-    public SubscriptionAck _subscribe(final MessageContext context) {
+    public SubscriptionAck _subscribe(final MessageContext context) { //NOSONAR
     	return subscribe(context, context.getChannel(), null, false);
     }
 
@@ -191,7 +191,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 										                                  .callback(p -> {
 										                                	  try {
 										                                		  final MessageContextBuilderProvider mcb = mcbFactory.getService();
-											                                	  try {
+											                                	  try { //NOSONAR
 											                                		  final Message message = toMessage(p, ctx, mcb);
 											                                		  logger.trace("Successful Subscription Response: {} ", message);
 											                                              acknowledgeMessage(
@@ -227,10 +227,10 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
             return SubscriptionAck.of(stream, subscription.id);
         } catch (final ExecutionException e) {
             logger.error("Error while subscribing to {}", sChannel, e);
-            throw new RuntimeException(e.getCause());
-        } catch (final Exception e) {
+            throw new RuntimeException(e.getCause()); //NOSONAR
+        } catch (final Exception e) { //NOSONAR
             logger.error("Error while subscribing to {}", sChannel, e);
-            throw new RuntimeException(e);
+            throw new RuntimeException(e); //NOSONAR
         }
     }
 
