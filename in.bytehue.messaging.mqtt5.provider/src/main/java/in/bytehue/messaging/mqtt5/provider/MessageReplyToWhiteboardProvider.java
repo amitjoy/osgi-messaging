@@ -75,8 +75,10 @@ import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 public final class MessageReplyToWhiteboardProvider {
 
 	public static final String PID = "in.bytehue.messaging.whiteboard";
-	public static final String THREAD_NAME_PREFIX = "reply-to-handler";
-	public static final String THREAD_NAME_SUFFIX = "-%d";
+
+	private static final String THREAD_NAME_PREFIX = "reply-to-handler";
+	private static final String THREAD_NAME_SUFFIX = "-%d";
+
 
 	@interface Config {
 		boolean storeReplyToChannelInfoIfReceivedInMessage() default true;
