@@ -23,6 +23,7 @@ import static in.bytehue.messaging.mqtt5.provider.MessageReplyToWhiteboardProvid
 import static in.bytehue.messaging.mqtt5.provider.MessageReplyToWhiteboardProvider.ReplyToSubDTO.Type.REPLY_TO_SUB;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adaptTo;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.prepareExceptionAsMessage;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.osgi.service.messaging.Features.REPLY_TO;
 import static org.osgi.service.messaging.MessageConstants.MESSAGING_FEATURE_PROPERTY;
 import static org.osgi.service.messaging.MessageConstants.MESSAGING_NAME_PROPERTY;
@@ -41,7 +42,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.osgi.framework.BundleContext;
@@ -79,6 +79,9 @@ public final class MessageReplyToWhiteboardProvider {
 	private static final String THREAD_NAME_PREFIX = "reply-to-handler";
 	private static final String THREAD_NAME_SUFFIX = "-%d";
 
+	private static final int CORE_POOL_SIZE = 0; // 0 for cached behavior
+	private static final int MAX_POOL_SIZE = 3;
+	private static final long IDLE_TIME = 60L;
 
 	@interface Config {
 		boolean storeReplyToChannelInfoIfReceivedInMessage() default true;
@@ -113,6 +116,7 @@ public final class MessageReplyToWhiteboardProvider {
 	@Activate
 	void activate(final Config config, final BundleContext context) {
 		this.config = config;
+		// @formatter:off
 		final ThreadFactory threadFactory =
                 new ThreadFactoryBuilder()
                         .setThreadFactoryName(THREAD_NAME_PREFIX)
@@ -120,14 +124,14 @@ public final class MessageReplyToWhiteboardProvider {
                         .setDaemon(true)
                         .build();
 		executorService = new ThreadPoolExecutor(
-	            0, // core pool size (0 for cached behavior)
-	            3, // maximum pool size
-	            60L, // thread idle time before termination
-	            TimeUnit.SECONDS,
+	            CORE_POOL_SIZE,
+	            MAX_POOL_SIZE,
+	            IDLE_TIME,
+	            SECONDS,
 	            new LinkedBlockingQueue<>(),
 	            threadFactory
 	    );
-
+		// @formatter:on
 		subscriptions.stream().filter(sub -> !sub.isProcessed()).forEach(sub -> {
 			switch (sub.type) {
 			case REPLY_TO_SUB:
@@ -236,7 +240,7 @@ public final class MessageReplyToWhiteboardProvider {
 		tracker1.close();
 		tracker2.close();
 		tracker3.close();
-		
+
 		executorService.shutdownNow();
 	}
 
