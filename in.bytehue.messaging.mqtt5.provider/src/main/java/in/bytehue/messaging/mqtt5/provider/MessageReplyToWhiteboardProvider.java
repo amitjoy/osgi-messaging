@@ -61,6 +61,8 @@ import org.osgi.service.messaging.propertytypes.MessagingFeature;
 import org.osgi.service.messaging.replyto.ReplyToManySubscriptionHandler;
 import org.osgi.service.messaging.replyto.ReplyToSingleSubscriptionHandler;
 import org.osgi.service.messaging.replyto.ReplyToSubscriptionHandler;
+import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.osgi.util.pushstream.PushStream;
 import org.osgi.util.tracker.ServiceTracker;
 
@@ -76,15 +78,31 @@ public final class MessageReplyToWhiteboardProvider {
 
 	public static final String PID = "in.bytehue.messaging.whiteboard";
 
-	private static final String THREAD_NAME_PREFIX = "reply-to-handler";
-	private static final String THREAD_NAME_SUFFIX = "-%d";
-
-	private static final int CORE_POOL_SIZE = 0; // 0 for cached behavior
-	private static final int MAX_POOL_SIZE = 3;
-	private static final long IDLE_TIME = 60L;
-
+	@ObjectClassDefinition(
+            name = "MQTT 5.0 Reply-To Whiteboard Configuration",
+            description = "This configuration is used to configure the MQTT 5.0 messaging reply-to whiteboard. "
+            		    + "Note that, all time-based configurations are in seconds.")
 	@interface Config {
+		@AttributeDefinition(name = "Flag denoting to store the channel info if the channel is specified in the received message")
 		boolean storeReplyToChannelInfoIfReceivedInMessage() default true;
+
+		@AttributeDefinition(name = "Prefix of the threads' names in the pool")
+        String threadNamePrefix() default "reply-to-handler";
+
+        @AttributeDefinition(name = "Suffix of the threads' names in the pool (supports only {@code %d} format specifier)")
+        String threadNameSuffix() default "-%d";
+
+        @AttributeDefinition(name = "Flag to set if the threads will be daemon threads")
+        boolean isDaemon() default true;
+
+        @AttributeDefinition(name = "Core Pool Size (O set as default for cached behaviour)")
+        int corePoolSize() default 0;
+
+        @AttributeDefinition(name = "Maximum Pool Size")
+        int maxPoolSize() default 3;
+
+        @AttributeDefinition(name = "Idle time for threads before interrupted")
+        long idleTime() default 60L;
 	}
 
 	@Reference(service = LoggerFactory.class)
@@ -119,14 +137,14 @@ public final class MessageReplyToWhiteboardProvider {
 		// @formatter:off
 		final ThreadFactory threadFactory =
                 new ThreadFactoryBuilder()
-                        .setThreadFactoryName(THREAD_NAME_PREFIX)
-                        .setThreadNameFormat(THREAD_NAME_SUFFIX)
-                        .setDaemon(true)
+                        .setThreadFactoryName(config.threadNamePrefix())
+                        .setThreadNameFormat(config.threadNameSuffix())
+                        .setDaemon(config.isDaemon())
                         .build();
 		executorService = new ThreadPoolExecutor(
-	            CORE_POOL_SIZE,
-	            MAX_POOL_SIZE,
-	            IDLE_TIME,
+	            config.corePoolSize(),
+	            config.maxPoolSize(),
+	            config.idleTime(),
 	            SECONDS,
 	            new LinkedBlockingQueue<>(),
 	            threadFactory
