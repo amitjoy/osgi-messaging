@@ -167,7 +167,9 @@ public final class MessagePublisherProvider implements MessagePublisher {
             final Mqtt5UserPropertiesBuilder propsBuilder = Mqtt5UserProperties.builder();
             userProperties.forEach(propsBuilder::add);
 
-            final Complete<CompletableFuture<Mqtt5PublishResult>> publishRequest =
+            
+			final Mqtt5UserProperties userProps = propsBuilder.build();
+			final Complete<CompletableFuture<Mqtt5PublishResult>> publishRequest =
                     messagingClient.client.publishWith()
                                               .topic(channel)
                                               .payloadFormatIndicator(payloadFormat)
@@ -177,7 +179,7 @@ public final class MessagePublisherProvider implements MessagePublisher {
                                               .retain(retain)
                                               .responseTopic(replyToChannel)
                                               .correlationData(correlationId.getBytes())
-                                              .userProperties(propsBuilder.build());
+                                              .userProperties(userProps);
 
             if (messageExpiryInterval == null || messageExpiryInterval == 0) {
                 publishRequest.noMessageExpiry();
@@ -185,6 +187,25 @@ public final class MessagePublisherProvider implements MessagePublisher {
                 publishRequest.messageExpiryInterval(messageExpiryInterval);
             }
 
+            logger.debug(
+            	    "Publish Request:\n" +
+            	    "  Channel           : {}\n" +
+            	    "  Payload Format    : {}\n" +
+            	    "  Content Type      : {}\n" +
+            	    "  QoS              : {}\n" +
+            	    "  Retain           : {}\n" +
+            	    "  Reply-To Channel  : {}\n" +
+            	    "  Correlation ID   : {}\n" +
+            	    "  User Properties  : {}",
+            	    channel,
+            	    payloadFormat,
+            	    contentType,
+            	    MqttQos.fromCode(qos),
+            	    retain,
+            	    replyToChannel,
+            	    correlationId,
+            	    userProps
+            	);
             final CompletableFuture<Void> resultFuture = new CompletableFuture<>();
             publishRequest.send()
                           .whenComplete((result, throwable) -> {
@@ -193,8 +214,8 @@ public final class MessagePublisherProvider implements MessagePublisher {
                                   logger.error("Error occurred while publishing message", throwable);
                               } else if (isPublishSuccessful(result)) {
                             	  resultFuture.complete(null);
-                            	  logger.trace("Successful Publish Request: {} ", result);
-							      logger.trace("New publish request for '{}' has been processed successfully", ch);
+                            	  logger.debug("Successful Publish Request: {} ", result);
+							      logger.debug("New publish request for '{}' has been processed successfully", ch);
 							  } else {
 								  final Throwable t = result.getError().get();
 								  resultFuture.completeExceptionally(t);
