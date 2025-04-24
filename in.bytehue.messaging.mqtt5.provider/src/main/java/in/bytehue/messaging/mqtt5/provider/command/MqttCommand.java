@@ -78,7 +78,7 @@ public final class MqttCommand {
     private ComponentServiceObjects<MqttMessageContextBuilder> mcbFactory;
 
     @Reference
-    private Collection<MqttCommandExtension> extensions;
+    private volatile Collection<MqttCommandExtension> extensions;
 
     @Descriptor("Returns the current runtime information of the MQTT client")
     public String runtime(
