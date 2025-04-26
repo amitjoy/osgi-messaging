@@ -250,44 +250,54 @@ public final class MessageServiceRuntimeTest {
 
 	@Test
 	public void test_reply_to_subscription() throws Exception {
-		final AtomicBoolean flag = new AtomicBoolean();
+	    final AtomicBoolean flag = new AtomicBoolean();
 
-		final String channel = "ab/ba";
-		final String payload = "abc";
-		final String contentType = "text/plain";
+	    final String channel = "ab/ba/replyto";
+	    final String payload = "abc";
+	    final String contentType = "text/plain";
 
-		final ReplyToSubscriptionHandler handler = m -> {
-			flag.set(true);
-		};
-		final String targetKey = "osgi.messaging.replyToSubscription.target";
-		final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
+	    final String dummyReplyToChannel = "dummy/reply/topic";
 
-		final String channelKey = "osgi.messaging.replyToSubscription.channel";
-		final String[] channelValue = { channel };
+	    final ReplyToSubscriptionHandler handler = m -> {
+	        flag.set(true);
+	    };
+	    final String targetKey = "osgi.messaging.replyToSubscription.target";
+	    final String targetValue = "(&(osgi.messaging.protocol=mqtt5)(osgi.messaging.name=mqtt5-hivemq-adapter)(osgi.messaging.feature=replyTo))";
 
-		launchpad.register(ReplyToSubscriptionHandler.class, handler, targetKey, targetValue, channelKey, channelValue);
+	    final String channelKey = "osgi.messaging.replyToSubscription.channel";
+	    final String[] channelValue = { channel };
 
-		// @formatter:off
-        final Message message = mcb.channel(channel)
-                                   .contentType(contentType)
-                                   .content(ByteBuffer.wrap(payload.getBytes()))
-                                   .buildMessage();
-        // @formatter:on
+	    final String replyToChannelKey = "osgi.messaging.replyToSubscription.replyChannel";
+	    final String replyToChannelValue = dummyReplyToChannel;
 
-		publisher.publish(message);
-		waitForRequestProcessing(flag);
+	    launchpad.register(ReplyToSubscriptionHandler.class, handler,
+	            targetKey, targetValue,
+	            channelKey, channelValue,
+	            replyToChannelKey, replyToChannelValue);
 
-		final MessagingRuntimeDTO runtimeDTO = runtime.getRuntimeDTO();
+	    // @formatter:off
+	    final Message message = mcb.channel(channel)
+	                               .contentType(contentType)
+	                               .content(ByteBuffer.wrap(payload.getBytes()))
+	                               .buildMessage();
+	    // @formatter:on
 
-		assertThat(runtimeDTO.subscriptions).isEmpty();
-		assertThat(runtimeDTO.replyToSubscriptions).hasSize(1);
-		assertThat(runtimeDTO.replyToSubscriptions[0].responseChannel).isNotNull();
-		assertThat(runtimeDTO.replyToSubscriptions[0].responseChannel.extension).isNull();
-		assertThat(runtimeDTO.replyToSubscriptions[0].requestChannel).isNotNull();
-		assertThat(runtimeDTO.replyToSubscriptions[0].requestChannel.name).isEqualTo(channel);
-		assertThat(runtimeDTO.replyToSubscriptions[0].serviceDTO).isNotNull();
-		assertThat(runtimeDTO.replyToSubscriptions[0].generateCorrelationId).isFalse();
-		assertThat(runtimeDTO.replyToSubscriptions[0].generateReplyChannel).isFalse();
+	    TimeUnit.SECONDS.sleep(10);
+	    publisher.publish(message);
+	    waitForRequestProcessing(flag);
+
+	    final MessagingRuntimeDTO runtimeDTO = runtime.getRuntimeDTO();
+
+	    assertThat(runtimeDTO.subscriptions).isEmpty();
+	    assertThat(runtimeDTO.replyToSubscriptions).hasSize(1);
+	    assertThat(runtimeDTO.replyToSubscriptions[0].responseChannel).isNotNull();
+	    assertThat(runtimeDTO.replyToSubscriptions[0].responseChannel.name).isEqualTo(dummyReplyToChannel);
+	    assertThat(runtimeDTO.replyToSubscriptions[0].responseChannel.extension).isNull();
+	    assertThat(runtimeDTO.replyToSubscriptions[0].requestChannel).isNotNull();
+	    assertThat(runtimeDTO.replyToSubscriptions[0].requestChannel.name).isEqualTo(channel);
+	    assertThat(runtimeDTO.replyToSubscriptions[0].serviceDTO).isNotNull();
+	    assertThat(runtimeDTO.replyToSubscriptions[0].generateCorrelationId).isFalse();
+	    assertThat(runtimeDTO.replyToSubscriptions[0].generateReplyChannel).isFalse();
 	}
 
 	@Test
