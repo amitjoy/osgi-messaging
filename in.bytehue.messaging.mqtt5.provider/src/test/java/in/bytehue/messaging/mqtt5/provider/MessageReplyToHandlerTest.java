@@ -19,6 +19,7 @@ import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForMqttConnecti
 import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForRequestProcessing;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Before;
@@ -83,6 +84,7 @@ public final class MessageReplyToHandlerTest {
                                    .buildMessage();
         // @formatter:on
 
+        TimeUnit.SECONDS.sleep(10);
 		publisher.publish(message);
 		waitForRequestProcessing(flag);
 	}
