@@ -304,7 +304,7 @@ public final class MqttCommand {
         table.addRow("Clean Start", String.valueOf(config.cleanStart()));
         table.addRow("Initial Delay", String.valueOf(config.initialDelay()));
         table.addRow("Max Delay", String.valueOf(config.maxDelay()));
-        table.addRow("Keep Interval", String.valueOf(config.keepAliveInterval()));
+        table.addRow("Keep Alive Interval", String.valueOf(config.keepAliveInterval()));
         table.addRow("Use Session Expiry", String.valueOf(config.useSessionExpiry()));
         table.addRow("Session Expiry Interval", String.valueOf(config.sessionExpiryInterval()));
         table.addRow("Use Session Expiry for Disconnect", String.valueOf(config.useSessionExpiryForDisconnect()));
