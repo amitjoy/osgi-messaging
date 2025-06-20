@@ -22,6 +22,7 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationP
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalService;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalServiceWithoutType;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.osgi.service.component.annotations.ConfigurationPolicy.REQUIRE;
 import static org.osgi.service.condition.Condition.CONDITION_ID;
 import static org.osgi.service.condition.Condition.CONDITION_ID_TRUE;
 import static org.osgi.service.metatype.annotations.AttributeType.PASSWORD;
@@ -49,7 +50,6 @@ import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
@@ -86,7 +86,7 @@ import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 
 @ProvideMessagingFeature
 @Designate(ocd = Config.class)
-@Component(service = MessageClientProvider.class, configurationPid = CLIENT, configurationPolicy = ConfigurationPolicy.REQUIRE)
+@Component(service = MessageClientProvider.class, configurationPid = CLIENT, configurationPolicy = REQUIRE)
 public final class MessageClientProvider {
 
 	//@formatter:off
