@@ -15,7 +15,6 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
-import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish.DEFAULT_QOS;
 import static com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode.GRANTED_QOS_0;
 import static com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode.GRANTED_QOS_1;
 import static com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode.GRANTED_QOS_2;
@@ -52,6 +51,9 @@ import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageSubscription;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
+import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.Designate;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.osgi.util.pushstream.PushStream;
 import org.osgi.util.pushstream.PushStreamProvider;
 import org.osgi.util.pushstream.SimplePushEventSource;
@@ -60,6 +62,7 @@ import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAck;
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode;
 
+import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionProvider.SubscriberConfig;
 import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionRegistry.ExtendedSubscription;
 import in.bytehue.messaging.mqtt5.provider.helper.InterruptSafe;
 import in.bytehue.messaging.mqtt5.provider.helper.SubscriptionAck;
@@ -75,6 +78,7 @@ import in.bytehue.messaging.mqtt5.provider.helper.SubscriptionAck;
                     RECEIVE_LOCAL
                   }
 )
+@Designate(ocd = SubscriberConfig.class)
 @Component(service = {
                        MessageSubscription.class,
                        MessageSubscriptionProvider.class
@@ -83,12 +87,19 @@ import in.bytehue.messaging.mqtt5.provider.helper.SubscriptionAck;
 )
 public final class MessageSubscriptionProvider implements MessageSubscription {
 
-	@interface AwaitConfig {
+	@ObjectClassDefinition(
+            name = "MQTT 5.0 Messaging Subscriber Configuration",
+            description = "This configuration is used to configure the MQTT 5.0 messaging subscriber")
+	@interface SubscriberConfig {
+		@AttributeDefinition(name = "Default timeout for synchronously subscribing to the broker", min = "5000")
 		long timeoutInMillis() default 30_000L;
+
+		@AttributeDefinition(name = "Default QoS for subscriptions unless specified", min = "0", max = "2")
+        int qos() default 0; 
 	}
 
 	@Activate
-	private AwaitConfig config;
+	private SubscriberConfig config;
 
     @Activate
     private BundleContext bundleContext;
@@ -107,7 +118,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 
     @Reference
     private ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
-
+    
     @Deactivate
     void stop() {
         subscriptionRegistry.clearAllSubscriptions();
@@ -176,7 +187,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
                 final Object isRetainAsPublished = extensions.getOrDefault(RETAIN, false);
                 retainAsPublished = adaptTo(isRetainAsPublished, boolean.class, converter);
             } else {
-                qos = DEFAULT_QOS.getCode();
+                qos = config.qos();
                 receiveLocal = true;
                 retainAsPublished = false;
             }
