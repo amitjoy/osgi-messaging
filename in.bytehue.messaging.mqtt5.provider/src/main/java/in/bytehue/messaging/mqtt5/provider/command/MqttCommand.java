@@ -299,41 +299,71 @@ public final class MqttCommand {
         table.setShowVerticalLines(true);
         table.setHeaders("Name", "Value");
 
+        // General Connection
+        table.addRow("Server Host Address", config.server());
+        table.addRow("Server Port", String.valueOf(config.port()));
         table.addRow("Client ID", config.id());
+        table.addRow("MQTT Topic Prefix", config.topicPrefix());
+
+        // Reconnection and Session
         table.addRow("Automatic Reconnect Using Default Config", String.valueOf(config.automaticReconnectWithDefaultConfig()));
-        table.addRow("Clean Start", String.valueOf(config.cleanStart()));
         table.addRow("Initial Delay", String.valueOf(config.initialDelay()));
         table.addRow("Max Delay", String.valueOf(config.maxDelay()));
+        table.addRow("Clean Start", String.valueOf(config.cleanStart()));
         table.addRow("Keep Alive Interval", String.valueOf(config.keepAliveInterval()));
         table.addRow("Use Session Expiry", String.valueOf(config.useSessionExpiry()));
         table.addRow("Session Expiry Interval", String.valueOf(config.sessionExpiryInterval()));
         table.addRow("Use Session Expiry for Disconnect", String.valueOf(config.useSessionExpiryForDisconnect()));
         table.addRow("Session Expiry Interval for Disconnect", String.valueOf(config.sessionExpiryIntervalForDisconnect()));
+
+        // Simple Authentication
         table.addRow("Simple Authentication", String.valueOf(config.simpleAuth()));
         table.addRow("Use static credentials specified in username and password configurations", String.valueOf(config.staticAuthCred()));
+        table.addRow("Simple Authentication Username", config.username());
+        table.addRow("Simple Authentication Password", config.password()); // Security Warning: Avoid logging passwords
         table.addRow("Simple Authentication Credential Filter", String.valueOf(config.simpleAuthCredFilter()));
+
+        // Custom Executor
+        table.addRow("Custom Executor Configuration", String.valueOf(config.useCustomExecutor()));
+        table.addRow("Custom Executor Number of Threads", String.valueOf(config.numberOfThreads()));
+        table.addRow("Custom Executor Prefix of the thread name", config.threadNamePrefix());
+        table.addRow("Custom Executor Suffix of the thread name", config.threadNameSuffix());
+        table.addRow("Flag to set if the threads will be daemon threads", String.valueOf(config.isDaemon()));
+        table.addRow("Custom Thread Executor Service Class Name", config.executorTargetClass());
+        table.addRow("Custom Thread Executor Service Target Filter", config.executorTargetFilter());
+
+        // SSL
+        table.addRow("SSL Configuration", String.valueOf(config.useSSL()));
         table.addRow("SSL Configuration Cipher Suites", converter.convert(config.cipherSuites()).to(String.class));
         table.addRow("SSL Configuration Protocols", converter.convert(config.protocols()).to(String.class));
         table.addRow("SSL Configuration Handshake Timeout", String.valueOf(config.sslHandshakeTimeout()));
         table.addRow("SSL Configuration Key Manager Factory Service Target Filter", config.keyManagerFactoryTargetFilter());
         table.addRow("SSL Configuration Trust Manager Factory Service Target Filter", config.trustManagerFactoryTargetFilter());
         table.addRow("SSL Configuration Hostname Verifier Service Target Filter", config.hostNameVerifierTargetFilter());
+
+        // Last Will
         table.addRow("Last Will Topic", config.lastWillTopic());
         table.addRow("Last Will QoS", String.valueOf(config.lastWillQoS()));
         table.addRow("Last Will Payload", config.lastWillPayLoad());
         table.addRow("Last Will Content Type", config.lastWillContentType());
         table.addRow("Last Will Message Expiry Interval", String.valueOf(config.lastWillMessageExpiryInterval()));
         table.addRow("Last Will Delay Interval",  String.valueOf(config.lastWillDelayInterval()));
+
+        // Packet/Message Size
         table.addRow("Maximum Concurrent Messages to be received", String.valueOf(config.receiveMaximum()));
         table.addRow("Maximum Concurrent Messages to be sent", String.valueOf(config.sendMaximum()));
         table.addRow("Maximum Packet Size for receiving", String.valueOf(config.maximumPacketSize()));
         table.addRow("Maximum Packet Size for sending", String.valueOf(config.sendMaximumPacketSize()));
         table.addRow("Maximum Topic Aliases", String.valueOf(config.topicAliasMaximum()));
+
+        // WebSocket
         table.addRow("MQTT over Web Socket", String.valueOf(config.useWebSocket()));
-        table.addRow("Web Socket Query String", config.queryString());
         table.addRow("Web Socket Server Path", config.serverPath());
         table.addRow("Web Socket Sub Protocol", config.subProtocol());
+        table.addRow("Web Socket Query String", config.queryString());
         table.addRow("Web Socket Handshake Timeout", String.valueOf(config.webSocketHandshakeTimeout()));
+
+        // Advanced Auth and Interceptors
         table.addRow("Enhanced Authentication", String.valueOf(config.useEnhancedAuthentication()));
         table.addRow("Enhanced Authentication Service Filter", config.enhancedAuthTargetFilter());
         table.addRow("Server Reauthentication", String.valueOf(config.useServerReauth()));
@@ -343,12 +373,13 @@ public final class MqttCommand {
         table.addRow("QoS 2 Incoming Interceptor Service Filter", config.qos2IncomingInterceptorFilter());
         table.addRow("QoS 1 Outgoing Interceptor Service Filter", config.qos1OutgoingInterceptorFilter());
         table.addRow("QoS 2 Outgoing Interceptor Service Filter", config.qos2OutgoingInterceptorFilter());
+
+        // Component Lifecycle
         table.addRow("Filter to be satisfied for the client to be active", config.osgi_ds_satisfying_condition_target());
         table.addRow("Reason for the disconnection when the client component is stopped", config.disconnectionReasonDescription());
         table.addRow("Code for the disconnection when the client component is stopped", config.disconnectionReasonCode().name());
 
         return table.print();
-
     }
 
     private Map<String, String> initUserProperties(final String userProperties) {
