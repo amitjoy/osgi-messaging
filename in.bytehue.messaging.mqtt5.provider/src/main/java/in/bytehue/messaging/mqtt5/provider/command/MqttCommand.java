@@ -60,8 +60,6 @@ import in.bytehue.messaging.mqtt5.provider.helper.Table;
 @FelixGogoCommand(scope = "mqtt", function = { "pub", "sub", "runtime" })
 public final class MqttCommand {
 
-    public static final String PID = "in.bytehue.messaging.mqtt.command";
-
     @Reference
     private MessageClientProvider client;
 
