@@ -14,5 +14,8 @@ public class SubscriptionDTO extends DTO {
 
 	/** DTO that describes the channel for this subscription */
 	public ChannelDTO channel;
+	
+	/** DTO that describes the quality of service for the subscription */
+	public int qos;
 
 }
