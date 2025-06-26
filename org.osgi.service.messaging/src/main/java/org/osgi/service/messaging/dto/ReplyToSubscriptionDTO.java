@@ -31,5 +31,8 @@ public class ReplyToSubscriptionDTO extends DTO {
 
 	/** Flag that shows, if reply channel generation is active or not */
 	public boolean generateReplyChannel;
+	
+	/** DTO that describes the quality of service for the subscription */
+	public int qos;
 
 }
