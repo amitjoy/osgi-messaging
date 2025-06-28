@@ -59,9 +59,9 @@ public final class MessageSubscriptionRegistry {
 	// there can be multiple subscriptions for a single topic
 	private final Map<String, Map<String, ExtendedSubscription>> subscriptions = new ConcurrentHashMap<>();
 
-	public synchronized ExtendedSubscription addSubscription(final String subChannel, final String pubChannel,
+	public synchronized ExtendedSubscription addSubscription(final String subChannel, final String pubChannel, int qos,
 			final Runnable connectedStreamCloser, final boolean isReplyToSub) {
-		final ExtendedSubscription sub = new ExtendedSubscription(subChannel, pubChannel, connectedStreamCloser,
+		final ExtendedSubscription sub = new ExtendedSubscription(subChannel, pubChannel, qos, connectedStreamCloser,
 				isReplyToSub);
 		subscriptions.computeIfAbsent(subChannel, c -> new ConcurrentHashMap<>()).put(sub.id, sub);
 		return sub;
@@ -108,8 +108,16 @@ public final class MessageSubscriptionRegistry {
 	}
 
 	public synchronized SubscriptionDTO[] getSubscriptionDTOs() {
-		final List<ChannelDTO> subChannels = getSubscriptionChannelDTOs();
-		return subChannels.stream().map(this::getSubscriptionDTO).toArray(SubscriptionDTO[]::new);
+		final List<SubscriptionDTO> subscriptionDTOs = new ArrayList<>();
+		for (final Entry<String, Map<String, ExtendedSubscription>> entry : subscriptions.entrySet()) {
+			for (final Entry<String, ExtendedSubscription> e : entry.getValue().entrySet()) {
+				final ExtendedSubscription sub = e.getValue();
+				if (!sub.isReplyToSub && sub.isAcknowledged) {
+					subscriptionDTOs.add(getSubscriptionDTO(sub));
+				}
+			}
+		}
+		return subscriptionDTOs.toArray(new SubscriptionDTO[0]);
 	}
 
 	public synchronized ReplyToSubscriptionDTO[] getReplyToSubscriptionDTOs() {
@@ -121,13 +129,11 @@ public final class MessageSubscriptionRegistry {
 				if (sub.isReplyToSub && sub.isAcknowledged) {
 					if (sub.pubChannels.isEmpty()) {
 						// true for ReplyToSubscriptionHandlers
-						final ReplyToSubscriptionDTO replyToSub = getReplyToSubscriptionDTO(null, sub.subChannel,
-								sub.handlerReference);
+						final ReplyToSubscriptionDTO replyToSub = getReplyToSubscriptionDTO(sub, null);
 						replyToSubscriptions.add(replyToSub);
 					} else {
 						for (final Entry<String, ChannelDTO> pubEntry : sub.pubChannels.entrySet()) {
-							final ReplyToSubscriptionDTO replyToSub = getReplyToSubscriptionDTO(pubEntry.getValue(),
-									sub.subChannel, sub.handlerReference);
+							final ReplyToSubscriptionDTO replyToSub = getReplyToSubscriptionDTO(sub, pubEntry.getValue());
 							replyToSubscriptions.add(replyToSub);
 						}
 					}
@@ -137,39 +143,27 @@ public final class MessageSubscriptionRegistry {
 		return replyToSubscriptions.toArray(new ReplyToSubscriptionDTO[0]);
 	}
 
-	private List<ChannelDTO> getSubscriptionChannelDTOs() {
-		final List<ChannelDTO> channels = new ArrayList<>();
-		for (final Entry<String, Map<String, ExtendedSubscription>> entry : subscriptions.entrySet()) {
-			for (final Entry<String, ExtendedSubscription> e : entry.getValue().entrySet()) {
-				final ExtendedSubscription sub = e.getValue();
-				if (!sub.isReplyToSub && sub.isAcknowledged) {
-					channels.add(sub.subChannel);
-				}
-			}
-		}
-		return channels;
-	}
-
-	private SubscriptionDTO getSubscriptionDTO(final ChannelDTO channelDTO) {
+	private SubscriptionDTO getSubscriptionDTO(final ExtendedSubscription sub) {
 		final SubscriptionDTO subscriptionDTO = new SubscriptionDTO();
 
-		subscriptionDTO.serviceDTO = toServiceReferenceDTO(MessageSubscriptionProvider.class, bundleContext);
-		subscriptionDTO.channel = channelDTO;
+	    subscriptionDTO.serviceDTO = toServiceReferenceDTO(MessageSubscriptionProvider.class, bundleContext);
+	    subscriptionDTO.channel = sub.subChannel;
+	    subscriptionDTO.qos = sub.qos;
 
-		return subscriptionDTO;
+	    return subscriptionDTO;
 	}
 
-	private ReplyToSubscriptionDTO getReplyToSubscriptionDTO(final ChannelDTO pubDTO, final ChannelDTO subDTO,
-			final ServiceReferenceDTO handlerReference) {
+	private ReplyToSubscriptionDTO getReplyToSubscriptionDTO(ExtendedSubscription sub, final ChannelDTO pubDTO) {
 
 		final ReplyToSubscriptionDTO subscriptionDTO = new ReplyToSubscriptionDTO();
 
-		subscriptionDTO.requestChannel = subDTO;
+		subscriptionDTO.requestChannel = sub.subChannel;
 		subscriptionDTO.responseChannel = pubDTO;
-		subscriptionDTO.handlerService = handlerReference;
+		subscriptionDTO.handlerService = sub.handlerReference;
 		subscriptionDTO.serviceDTO = toServiceReferenceDTO(MessageSubscriptionProvider.class, bundleContext);
 		subscriptionDTO.generateCorrelationId = false;
 		subscriptionDTO.generateReplyChannel = false;
+		subscriptionDTO.qos = sub.qos;
 
 		return subscriptionDTO;
 	}
@@ -182,6 +176,7 @@ public final class MessageSubscriptionRegistry {
 
 	static class ExtendedSubscription {
 
+		int qos;
 		String id;
 		volatile boolean isAcknowledged;
 		volatile boolean isReplyToSub;
@@ -190,9 +185,10 @@ public final class MessageSubscriptionRegistry {
 		ServiceReferenceDTO handlerReference;
 		Map<String, ChannelDTO> pubChannels = new ConcurrentHashMap<>();
 
-		private ExtendedSubscription(final String subChannel, final String pubChannel,
+		private ExtendedSubscription(final String subChannel, final String pubChannel, int qos,
 				final Runnable connectedStreamCloser, final boolean isReplyToSub) {
 			id = UUID.randomUUID().toString();
+			this.qos = qos;
 			this.connectedStreamCloser = connectedStreamCloser;
 			this.subChannel = createChannelDTO(subChannel);
 			this.isReplyToSub = isReplyToSub;
