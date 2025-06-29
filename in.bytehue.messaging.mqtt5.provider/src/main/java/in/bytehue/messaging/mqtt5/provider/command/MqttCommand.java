@@ -268,10 +268,11 @@ public final class MqttCommand {
 
         table.setShowVerticalLines(true);
         table.setHeaders("Channel Name");
+        table.setHeaders("Subscription QoS");
 
         for (final SubscriptionDTO subscription : subscriptions) {
             final ChannelDTO channel = subscription.channel;
-            table.addRow(channel.name);
+            table.addRow(channel.name, String.valueOf(subscription.qos));
         }
         return table.print();
     }
@@ -281,12 +282,13 @@ public final class MqttCommand {
 
         table.setShowVerticalLines(true);
         table.setHeaders("Request Channel", "Response Channel");
+        table.setHeaders("Subscription QoS");
 
         for (final ReplyToSubscriptionDTO subscription : replyToSubscriptions) {
             final ChannelDTO reqChannel = subscription.requestChannel;
             final ChannelDTO resChannel = subscription.responseChannel;
 
-            table.addRow(reqChannel.name, resChannel.name);
+            table.addRow(reqChannel.name, resChannel.name, String.valueOf(subscription.qos));
         }
         return table.print();
     }
