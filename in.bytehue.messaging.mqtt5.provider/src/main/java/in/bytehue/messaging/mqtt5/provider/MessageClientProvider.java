@@ -89,34 +89,43 @@ import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 @Component(service = MessageClientProvider.class, configurationPid = CLIENT, configurationPolicy = REQUIRE)
 public final class MessageClientProvider {
 
-	//@formatter:off
-    @ObjectClassDefinition(
+	@ObjectClassDefinition(
             name = "MQTT 5.0 Messaging Client Configuration",
             description = "This configuration is used to configure the MQTT 5.0 messaging connection. "
-            		    + "Note that, all time-based configurations are in seconds.")
-
+                        + "Note that, all time-based configurations are in seconds.")
     public @interface Config {
-        @AttributeDefinition(name = "Client Identifier")
-        String id() default "";
+
+        // @formatter:off
+
+        //---------- General Connection ----------//
 
         @AttributeDefinition(name = "Server Host Address")
         String server();
 
-        @AttributeDefinition(name = "MQTT Topic Prefix", description = "The prefix will be added to all the topics automatically if set."
-        		+ " It should not contain trailing slash")
+        @AttributeDefinition(name = "Server Port", min = "1", max = "65535")
+        int port() default 1883;
+
+        @AttributeDefinition(name = "Client Identifier")
+        String id() default "";
+
+        @AttributeDefinition(name = "MQTT Topic Prefix",
+                             description = "The prefix will be added to all the topics automatically if set. "
+                                         + "It should not contain trailing slash")
         String topicPrefix() default "";
+
+        //---------- Reconnection and Session ----------//
 
         @AttributeDefinition(name = "Custom Automatic Reconnection")
         boolean automaticReconnectWithDefaultConfig() default true;
-
-        @AttributeDefinition(name = "Always create new session after the client is connected")
-        boolean cleanStart() default false;
 
         @AttributeDefinition(name = "Initial Delay if Custom Automatic Reconnection is enabled", min = "0")
         long initialDelay() default 10L;
 
         @AttributeDefinition(name = "Max Delay if Custom Automatic Reconnection is enabled", min = "0")
         long maxDelay() default 600L;
+
+        @AttributeDefinition(name = "Always create new session after the client is connected")
+        boolean cleanStart() default false;
 
         @AttributeDefinition(name = "Keep Alive Interval", min = "0", max = "65535")
         int keepAliveInterval() default 60;
@@ -133,8 +142,7 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "Keep Session State after disconnection", min = "0")
         int sessionExpiryIntervalForDisconnect() default 0;
 
-        @AttributeDefinition(name = "Server Port", min = "1", max = "65535")
-        int port() default 1883;
+        //---------- Simple Authentication ----------//
 
         @AttributeDefinition(name = "Simple Authentication")
         boolean simpleAuth() default false;
@@ -142,14 +150,16 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "Configuration to use static credentials specified in username and password configurations")
         boolean staticAuthCred() default true;
 
-        @AttributeDefinition(name = "Simple Authentication Service Filter")
-        String simpleAuthCredFilter() default "";
-
         @AttributeDefinition(name = "Simple Authentication Username")
         String username() default "";
 
         @AttributeDefinition(name = "Simple Authentication Password", type = PASSWORD)
         String password() default "";
+
+        @AttributeDefinition(name = "Simple Authentication Service Filter")
+        String simpleAuthCredFilter() default "";
+
+        //---------- Custom Executor ----------//
 
         @AttributeDefinition(name = "Custom Executor Configuration")
         boolean useCustomExecutor() default false;
@@ -172,6 +182,8 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "Custom Thread Executor Service Target Filter")
         String executorTargetFilter() default "";
 
+        //---------- SSL ----------//
+
         @AttributeDefinition(name = "SSL Configuration")
         boolean useSSL() default false;
 
@@ -193,6 +205,8 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "SSL Configuration Host Name Verifier Service Target Filter")
         String hostNameVerifierTargetFilter() default "";
 
+        //---------- Last Will ----------//
+
         @AttributeDefinition(name = "Last Will Topic")
         String lastWillTopic() default "";
 
@@ -211,6 +225,8 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "Last Will Delay Interval", min = "0")
         long lastWillDelayInterval() default 30L;
 
+        //---------- Packet/Message Size ----------//
+
         @AttributeDefinition(name = "Maximum Concurrent Messages to be received", min = "1")
         int receiveMaximum() default 10;
 
@@ -226,11 +242,10 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "Maximum Topic Aliases", min = "0")
         int topicAliasMaximum() default 0;
 
+        //---------- WebSocket ----------//
+
         @AttributeDefinition(name = "MQTT over Web Socket")
         boolean useWebSocket() default false;
-
-        @AttributeDefinition(name = "Web Socket Query String")
-        String queryString() default "";
 
         @AttributeDefinition(name = "Web Socket Server Path")
         String serverPath() default "";
@@ -238,8 +253,13 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "Web Socket Sub Protocol")
         String subProtocol() default "mqtt";
 
+        @AttributeDefinition(name = "Web Socket Query String")
+        String queryString() default "";
+
         @AttributeDefinition(name = "Web Socket Handshake Timeout")
         long webSocketHandshakeTimeout() default 10L;
+
+        //---------- Advanced Auth and Interceptors ----------//
 
         @AttributeDefinition(name = "Enhanced Authentication")
         boolean useEnhancedAuthentication() default false;
@@ -268,6 +288,8 @@ public final class MessageClientProvider {
         @AttributeDefinition(name = "QoS 2 Outgoing Interceptor Service Filter")
         String qos2OutgoingInterceptorFilter() default "";
 
+        //---------- Component Lifecycle ----------//
+
         @AttributeDefinition(name = "Filter to be satisfied for the messaging client to be active")
         String osgi_ds_satisfying_condition_target() default "(" + CONDITION_ID + "=" + CONDITION_ID_TRUE + ")";
 
@@ -276,6 +298,8 @@ public final class MessageClientProvider {
 
         @AttributeDefinition(name = "Code for the disconnection when the component is stopped gracefully")
         Mqtt5DisconnectReasonCode disconnectionReasonCode() default NORMAL_DISCONNECTION;
+
+        // @formatter:on
     }
 
     public volatile Mqtt5AsyncClient client;
