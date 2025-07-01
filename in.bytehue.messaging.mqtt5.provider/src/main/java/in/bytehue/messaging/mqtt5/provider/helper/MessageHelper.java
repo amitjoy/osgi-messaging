@@ -349,6 +349,8 @@ public final class MessageHelper {
 		final boolean isGuaranteedDelivery = adaptTo(isGuranteedOrderingProp, boolean.class, converter);
 		final boolean isGuranteedOrdering = adaptTo(isGuaranteedDeliveryProp, boolean.class, converter);
 
+		// In MQTT, there is no concept of guaranteed ordering though, that's why, QoS 2 is set to guarantee
+		// the delivery of the message
 		if (isGuaranteedDelivery || isGuranteedOrdering) {
 			return EXACTLY_ONCE.getCode();
 		}
