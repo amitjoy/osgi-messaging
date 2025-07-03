@@ -39,6 +39,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 import javax.net.ssl.HostnameVerifier;
@@ -313,6 +314,9 @@ public final class MessageClientProvider {
     private ScheduledExecutorService customExecutor;
     private ServiceRegistration<Object> readyServiceReg;
 
+    private String lastDisconnectReason;
+    private AtomicLong connectedTimestamp = new AtomicLong(-1L);
+
 	@Activate
     void activate(final Config config, final Map<String, Object> properties) {
     	init(config);
@@ -332,6 +336,14 @@ public final class MessageClientProvider {
 
     public synchronized Config config() {
         return config;
+    }
+    
+    public long getConnectedTimestamp() {
+        return connectedTimestamp.get();
+    }
+
+    public String getLastDisconnectReason() {
+        return lastDisconnectReason;
     }
 
     private void init(final Config config) {
@@ -391,7 +403,13 @@ public final class MessageClientProvider {
 
         clientBuilder.addConnectedListener(this::registerReadyService);
         clientBuilder.addDisconnectedListener(this::unregisterReadyService);
-
+        
+        clientBuilder.addConnectedListener(context -> connectedTimestamp.set(System.currentTimeMillis()));
+        clientBuilder.addDisconnectedListener(context -> {
+        	connectedTimestamp.set(-1);
+        	lastDisconnectReason = context.getCause().getMessage();
+        });
+        
         if (config.automaticReconnectWithDefaultConfig()) {
             logger.debug("Applying Custom Automatic Reconnect Configuration");
             clientBuilder.automaticReconnect()

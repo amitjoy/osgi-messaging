@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.felix.service.command.Descriptor;
 import org.apache.felix.service.command.Parameter;
@@ -98,6 +99,14 @@ public final class MqttCommand {
         table.addRow("Connection Port", String.valueOf(client.config().port()));
         table.addRow("Connection SSL",  String.valueOf(client.config().useSSL()));
         table.addRow("Connection State", getState());
+        
+        long uptimeMillis = client.getConnectedTimestamp() > 0 ? System.currentTimeMillis() - client.getConnectedTimestamp() : 0;
+        table.addRow("Connection Uptime", formatUptime(uptimeMillis));
+
+        if (client.getConnectedTimestamp() == -1) {
+            table.addRow("Last Disconnect Reason", client.getLastDisconnectReason());
+        }
+        
         table.addRow("Provider", runtimeInfo.providerName);
         table.addRow("Supported Protocols", converter.convert(runtimeInfo.protocols).to(String.class));
         table.addRow("Instance ID", runtimeInfo.instanceId);
@@ -392,6 +401,20 @@ public final class MqttCommand {
             map.put(kv[0], kv[1]);
         }
         return map;
+    }
+
+    private String formatUptime(long millis) {
+        if (millis <= 0) {
+            return "N/A";
+        }
+        long days = TimeUnit.MILLISECONDS.toDays(millis);
+        millis -= TimeUnit.DAYS.toMillis(days);
+        long hours = TimeUnit.MILLISECONDS.toHours(millis);
+        millis -= TimeUnit.HOURS.toMillis(hours);
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(millis);
+        millis -= TimeUnit.MINUTES.toMillis(minutes);
+        long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
+        return String.format("%d days, %d hours, %d minutes, %d seconds", days, hours, minutes, seconds);
     }
 
 }
