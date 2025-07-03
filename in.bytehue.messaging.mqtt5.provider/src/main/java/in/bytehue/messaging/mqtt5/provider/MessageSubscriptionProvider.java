@@ -201,7 +201,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 			final CompletableFuture<Mqtt5SubAck> future = messagingClient.client.subscribeWith()
 										                                  .topicFilter(sChannel)
 										                                  .qos(MqttQos.fromCode(qos))
-										                                  .noLocal(receiveLocal)
+										                                  .noLocal(!receiveLocal)
 										                                  .retainAsPublished(retainAsPublished)
 										                                  .callback(p -> {
 										                                	  try {
