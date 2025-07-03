@@ -99,7 +99,7 @@ public final class MqttCommand {
         table.addRow("Connection Port", String.valueOf(client.config().port()));
         table.addRow("Connection SSL",  String.valueOf(client.config().useSSL()));
         table.addRow("Connection State", getState());
-        
+
         long uptimeMillis = client.getConnectedTimestamp() > 0 ? System.currentTimeMillis() - client.getConnectedTimestamp() : 0;
         table.addRow("Connection Uptime", formatUptime(uptimeMillis));
 
@@ -276,8 +276,7 @@ public final class MqttCommand {
         final Table table = new Table();
 
         table.setShowVerticalLines(true);
-        table.setHeaders("Channel Name");
-        table.setHeaders("Subscription QoS");
+        table.setHeaders("Channel Name", "Subscription QoS");
 
         for (final SubscriptionDTO subscription : subscriptions) {
             final ChannelDTO channel = subscription.channel;
@@ -290,8 +289,7 @@ public final class MqttCommand {
         final Table table = new Table();
 
         table.setShowVerticalLines(true);
-        table.setHeaders("Request Channel", "Response Channel");
-        table.setHeaders("Subscription QoS");
+        table.setHeaders("Request Channel", "Response Channel", "Subscription QoS");
 
         for (final ReplyToSubscriptionDTO subscription : replyToSubscriptions) {
             final ChannelDTO reqChannel = subscription.requestChannel;
