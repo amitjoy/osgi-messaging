@@ -50,6 +50,9 @@ import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
+import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.Designate;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.osgi.util.converter.TypeReference;
 
 import com.hivemq.client.mqtt.MqttClientState;
@@ -59,6 +62,8 @@ import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserPropertiesBuilder;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatIndicator;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishBuilder.Send.Complete;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishResult;
+
+import in.bytehue.messaging.mqtt5.provider.MessagePublisherProvider.PublisherConfig;
 
 //@formatter:off
 @MessagingFeature(
@@ -73,6 +78,7 @@ import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishResult;
                     EXTENSION_GUARANTEED_ORDERING
                   }
 )
+@Designate(ocd = PublisherConfig.class)
 @Component(service = {
                        MessagePublisher.class,
                        MessagePublisherProvider.class
@@ -82,12 +88,18 @@ import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishResult;
 //@formatter:on
 public final class MessagePublisherProvider implements MessagePublisher {
 
-	@interface AwaitConfig {
+	//@formatter:off
+	@ObjectClassDefinition(
+			name = "MQTT 5.0 Messaging Publisher Configuration", 
+			description = "This configuration is used to configure the MQTT 5.0 messaging publisher")
+	@interface PublisherConfig {
+		@AttributeDefinition(name = "Default timeout for synchronously publishing to the broker", min = "5000")
 		long timeoutInMillis() default 30_000L;
 	}
+	//@formatter:on
 
 	@Activate
-	private AwaitConfig config;
+	private PublisherConfig config;
 
 	@Reference(service = LoggerFactory.class)
 	private Logger logger;
