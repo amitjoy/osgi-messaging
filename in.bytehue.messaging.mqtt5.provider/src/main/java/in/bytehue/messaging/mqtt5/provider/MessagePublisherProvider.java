@@ -92,14 +92,14 @@ public final class MessagePublisherProvider implements MessagePublisher {
 	@ObjectClassDefinition(
 			name = "MQTT 5.0 Messaging Publisher Configuration", 
 			description = "This configuration is used to configure the MQTT 5.0 messaging publisher")
-	@interface PublisherConfig {
+	public @interface PublisherConfig {
 		@AttributeDefinition(name = "Default timeout for synchronously publishing to the broker", min = "5000")
 		long timeoutInMillis() default 30_000L;
 	}
 	//@formatter:on
 
 	@Activate
-	private PublisherConfig config;
+	private volatile PublisherConfig config;
 
 	@Reference(service = LoggerFactory.class)
 	private Logger logger;
@@ -127,6 +127,10 @@ public final class MessagePublisherProvider implements MessagePublisher {
 	public void publish(final Message message, final MessageContext context) {
 		publish(message, context, null);
 	}
+	
+	public synchronized PublisherConfig config() {
+        return config;
+    }
 
 	private void publish(final Message message, MessageContext context, String channel) {
 		try {

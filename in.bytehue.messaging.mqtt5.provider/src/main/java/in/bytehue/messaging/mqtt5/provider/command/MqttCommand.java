@@ -5,7 +5,7 @@
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -50,7 +50,11 @@ import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
 import in.bytehue.messaging.mqtt5.provider.MessageClientProvider;
 import in.bytehue.messaging.mqtt5.provider.MessageClientProvider.Config;
 import in.bytehue.messaging.mqtt5.provider.MessagePublisherProvider;
+import in.bytehue.messaging.mqtt5.provider.MessagePublisherProvider.PublisherConfig;
+import in.bytehue.messaging.mqtt5.provider.MessageReplyToPublisherProvider;
+import in.bytehue.messaging.mqtt5.provider.MessageReplyToPublisherProvider.ReplyToConfig;
 import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionProvider;
+import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionProvider.SubscriberConfig;
 import in.bytehue.messaging.mqtt5.provider.helper.FelixGogoCommand;
 import in.bytehue.messaging.mqtt5.provider.helper.Table;
 
@@ -74,22 +78,35 @@ public final class MqttCommand {
     private MessageSubscriptionProvider subscriber;
 
     @Reference
+    private MessageReplyToPublisherProvider replyToPublisher;
+
+    @Reference
     private ComponentServiceObjects<MqttMessageContextBuilder> mcbFactory;
 
     @Reference
     private volatile Collection<MqttCommandExtension> extensions;
 
     @Descriptor("Returns the current runtime information of the MQTT client")
-    public String runtime(
-            @Descriptor("Shows full MQTT configuration ")
-            @Parameter(absentValue = "false", presentValue = "true", names = { "-showconfig" })
-            final boolean showconfig) {
+    public String runtime() {
+        return _runtime(null);
+    }
 
+    @Descriptor("Displays specific configuration details for the MQTT client")
+    public String runtime(
+            @Descriptor("The subcommand, must be 'config'")
+            final String command,
+            @Descriptor("The type of configuration to display: client, pub, sub, or replytopub")
+            final String type) {
+        if (!"config".equals(command)) {
+            return "Usage: mqtt:runtime config <type>";
+        }
+        return _runtime(type);
+    }
+
+    private String _runtime(final String configType) {
         final Converter converter = Converters.standardConverter();
         final MessagingRuntimeDTO runtimeInfo = runtime.getRuntimeDTO();
-
         final StringBuilder output = new StringBuilder();
-
         final Table table = new Table();
 
         table.setShowVerticalLines(true);
@@ -97,28 +114,28 @@ public final class MqttCommand {
 
         table.addRow("Connection URI", runtimeInfo.connectionURI);
         table.addRow("Connection Port", String.valueOf(client.config().port()));
-        table.addRow("Connection SSL",  String.valueOf(client.config().useSSL()));
+        table.addRow("Connection SSL", String.valueOf(client.config().useSSL()));
         table.addRow("Connection State", getState());
 
-        long uptimeMillis = client.getConnectedTimestamp() > 0 ? System.currentTimeMillis() - client.getConnectedTimestamp() : 0;
+        final long uptimeMillis = client.getConnectedTimestamp() > 0 ? System.currentTimeMillis() - client.getConnectedTimestamp() : 0;
         table.addRow("Connection Uptime", formatUptime(uptimeMillis));
 
         if (client.getConnectedTimestamp() == -1) {
             table.addRow("Last Disconnect Reason", client.getLastDisconnectReason());
         }
-        
+
         table.addRow("Provider", runtimeInfo.providerName);
         table.addRow("Supported Protocols", converter.convert(runtimeInfo.protocols).to(String.class));
         table.addRow("Instance ID", runtimeInfo.instanceId);
 
         if (extensions != null) {
-        	extensions.forEach(p -> {
-        		final String rowName = p.rowName();
-        		final String rowValue = p.rowValue();
+            extensions.forEach(p -> {
+                final String rowName = p.rowName();
+                final String rowValue = p.rowValue();
 
-        		requireNonNull(rowName, "Row name cannot be null");
-        		table.addRow(rowName, rowValue == null ? "NULL" : rowValue);
-        	});
+                requireNonNull(rowName, "Row name cannot be null");
+                table.addRow(rowName, rowValue == null ? "NULL" : rowValue);
+            });
         }
 
         final String subscriptions = prepareSubscriptions(runtimeInfo.subscriptions);
@@ -136,12 +153,29 @@ public final class MqttCommand {
               .append(System.lineSeparator())
               .append(replyToSubscriptions);
 
-        if (showconfig) {
-            output.append(System.lineSeparator())
-                  .append(System.lineSeparator())
-                  .append("Configuration: ")
-                  .append(System.lineSeparator())
-                  .append(prepareConfig(client.config(), converter));
+        if (configType != null) {
+            output.append(System.lineSeparator()).append(System.lineSeparator());
+            switch (configType) {
+            case "client":
+                output.append("Client Configuration: ").append(System.lineSeparator())
+                        .append(prepareClientConfig(client.config(), converter));
+                break;
+            case "pub":
+                output.append("Publisher Configuration: ").append(System.lineSeparator())
+                        .append(preparePublisherConfig(publisher.config()));
+                break;
+            case "sub":
+                output.append("Subscriber Configuration: ").append(System.lineSeparator())
+                        .append(prepareSubscriberConfig(subscriber.config()));
+                break;
+            case "replytopub":
+                output.append("Reply-To Publisher Configuration: ").append(System.lineSeparator())
+                        .append(prepareReplyToPublisherConfig(replyToPublisher.config()));
+                break;
+            default:
+                return "Error: Unknown configuration type '" + configType + "'.\n"
+                        + "Available types: client, pub, sub, replytopub";
+            }
         }
         return output.toString();
     }
@@ -300,7 +334,7 @@ public final class MqttCommand {
         return table.print();
     }
 
-    private String prepareConfig(final Config config, final Converter converter) {
+    private String prepareClientConfig(final Config config, final Converter converter) {
         final Table table = new Table();
 
         table.setShowVerticalLines(true);
@@ -385,6 +419,43 @@ public final class MqttCommand {
         table.addRow("Filter to be satisfied for the client to be active", config.osgi_ds_satisfying_condition_target());
         table.addRow("Reason for the disconnection when the client component is stopped", config.disconnectionReasonDescription());
         table.addRow("Code for the disconnection when the client component is stopped", config.disconnectionReasonCode().name());
+
+        return table.print();
+    }
+
+    private String prepareSubscriberConfig(final SubscriberConfig config) {
+        final Table table = new Table();
+
+        table.setShowVerticalLines(true);
+        table.setHeaders("Name", "Value");
+
+        table.addRow("Default Timeout (ms)", String.valueOf(config.timeoutInMillis()));
+        table.addRow("Default QoS", String.valueOf(config.qos()));
+
+        return table.print();
+    }
+
+    private String preparePublisherConfig(final PublisherConfig config) {
+        final Table table = new Table();
+
+        table.setShowVerticalLines(true);
+        table.setHeaders("Name", "Value");
+
+        table.addRow("Default Timeout (ms)", String.valueOf(config.timeoutInMillis()));
+
+        return table.print();
+    }
+
+    private String prepareReplyToPublisherConfig(final ReplyToConfig config) {
+        final Table table = new Table();
+
+        table.setShowVerticalLines(true);
+        table.setHeaders("Name", "Value");
+
+        table.addRow("Thread Pool Size", String.valueOf(config.numThreads()));
+        table.addRow("Thread Name Prefix", config.threadNamePrefix());
+        table.addRow("Thread Name Suffix", config.threadNameSuffix());
+        table.addRow("Daemon Threads", String.valueOf(config.isDaemon()));
 
         return table.print();
     }

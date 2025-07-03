@@ -90,7 +90,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 	@ObjectClassDefinition(
             name = "MQTT 5.0 Messaging Subscriber Configuration",
             description = "This configuration is used to configure the MQTT 5.0 messaging subscriber")
-	@interface SubscriberConfig {
+	public @interface SubscriberConfig {
 		@AttributeDefinition(name = "Default timeout for synchronously subscribing to the broker", min = "5000")
 		long timeoutInMillis() default 30_000L;
 
@@ -99,7 +99,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 	}
 
 	@Activate
-	private SubscriberConfig config;
+	private volatile SubscriberConfig config;
 
     @Activate
     private BundleContext bundleContext;
@@ -122,6 +122,10 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
     @Deactivate
     void stop() {
         subscriptionRegistry.clearAllSubscriptions();
+    }
+    
+    public synchronized SubscriberConfig config() {
+        return config;
     }
 
     @Override

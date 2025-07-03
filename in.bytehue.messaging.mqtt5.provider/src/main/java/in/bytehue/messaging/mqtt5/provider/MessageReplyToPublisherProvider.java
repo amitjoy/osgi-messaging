@@ -51,14 +51,20 @@ import org.osgi.util.pushstream.PushStream;
 import org.osgi.util.pushstream.PushStreamProvider;
 import org.osgi.util.pushstream.SimplePushEventSource;
 
-import in.bytehue.messaging.mqtt5.provider.MessageReplyToPublisherProvider.Config;
+import in.bytehue.messaging.mqtt5.provider.MessageReplyToPublisherProvider.ReplyToConfig;
 import in.bytehue.messaging.mqtt5.provider.helper.SubscriptionAck;
 import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 
 //@formatter:off
-@Designate(ocd = Config.class)
+@Designate(ocd = ReplyToConfig.class)
 @ProvideMessagingReplyToManyFeature
-@Component(configurationPid = PUBLISHER_REPLYTO)
+@Component(
+		service = {
+				ReplyToPublisher.class,
+				ReplyToManyPublisher.class,
+                MessageReplyToPublisherProvider.class
+              },
+		configurationPid = PUBLISHER_REPLYTO)
 @MessagingFeature(
         name = MESSAGING_ID,
         protocol = MESSAGING_PROTOCOL,
@@ -75,7 +81,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
     @ObjectClassDefinition(
             name = "MQTT Messaging Reply-To Publisher Executor Configuration",
             description = "This configuration is used to configure the internal thread pool")
-    @interface Config {
+    public @interface ReplyToConfig {
         @AttributeDefinition(name = "Number of threads for the internal thread pool")
         int numThreads() default 20;
 
@@ -102,10 +108,12 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 	@Activate
 	private BundleContext bundleContext;
 
+	private volatile ReplyToConfig config;
 	private final PromiseFactory promiseFactory;
 
 	@Activate
-	public MessageReplyToPublisherProvider(final Config config) {
+	public MessageReplyToPublisherProvider(final ReplyToConfig config) {
+		this.config = config;
 		//@formatter:off
         final ThreadFactory threadFactory =
                 new ThreadFactoryBuilder()
@@ -115,6 +123,10 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
                         .build();
         promiseFactory = new PromiseFactory(newFixedThreadPool(config.numThreads(), threadFactory));
         //@formatter:on
+	}
+
+	public synchronized ReplyToConfig config() {
+		return this.config;
 	}
 
 	@Override
@@ -163,10 +175,10 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 		try {
 			sub = subscriber.replyToSubscribe(dto.subChannel, dto.pubChannel);
 		} catch (Exception e) {
-	        final PushStreamProvider psp = new PushStreamProvider();
-	        final SimplePushEventSource<Message> eventSource = psp.createSimpleEventSource(Message.class);
-	        eventSource.endOfStream();
-	        return psp.createStream(eventSource);
+			final PushStreamProvider psp = new PushStreamProvider();
+			final SimplePushEventSource<Message> eventSource = psp.createSimpleEventSource(Message.class);
+			eventSource.endOfStream();
+			return psp.createStream(eventSource);
 		}
 		// subscribe to the channel first
 		final PushStream<Message> stream = sub.stream()
