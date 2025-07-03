@@ -30,6 +30,7 @@ import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getQoS;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.toMessage;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.osgi.service.component.annotations.ConfigurationPolicy.REQUIRE;
 import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
 import static org.osgi.service.messaging.Features.EXTENSION_QOS;
 
@@ -83,7 +84,8 @@ import in.bytehue.messaging.mqtt5.provider.helper.SubscriptionAck;
                        MessageSubscription.class,
                        MessageSubscriptionProvider.class
                      },
-           configurationPid = SUBSCRIBER
+           configurationPid = SUBSCRIBER,
+           configurationPolicy = REQUIRE
 )
 public final class MessageSubscriptionProvider implements MessageSubscription {
 
