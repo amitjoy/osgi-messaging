@@ -95,6 +95,9 @@ public final class MessagePublisherProvider implements MessagePublisher {
 	public @interface PublisherConfig {
 		@AttributeDefinition(name = "Default timeout for synchronously publishing to the broker", min = "5000")
 		long timeoutInMillis() default 30_000L;
+		
+		@AttributeDefinition(name = "Default QoS for publishes unless specified", min = "0", max = "2")
+        int qos() default 0;
 	}
 	//@formatter:on
 
@@ -160,7 +163,12 @@ public final class MessagePublisherProvider implements MessagePublisher {
 			final Object messageExpiry = extensions.getOrDefault(MESSAGE_EXPIRY_INTERVAL, null);
 			final Long messageExpiryInterval = adaptTo(messageExpiry, Long.class, converter);
 
-			final int qos = getQoS(extensions, converter);
+			final int qos;
+			if (extensions == null || extensions.isEmpty()) {
+            	qos = config.qos();
+            } else {
+            	qos = getQoS(extensions, converter, config.qos());
+            }
 
 			final Object isRetain = extensions.getOrDefault(RETAIN, false);
 			final boolean retain = adaptTo(isRetain, boolean.class, converter);
