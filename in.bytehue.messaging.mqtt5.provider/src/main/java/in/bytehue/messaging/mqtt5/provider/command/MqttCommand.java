@@ -442,6 +442,7 @@ public final class MqttCommand {
         table.setHeaders("Name", "Value");
 
         table.addRow("Default Timeout (ms)", String.valueOf(config.timeoutInMillis()));
+        table.addRow("Default QoS", String.valueOf(config.qos()));
 
         return table.print();
     }
