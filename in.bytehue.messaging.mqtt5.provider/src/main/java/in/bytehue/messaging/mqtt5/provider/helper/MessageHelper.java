@@ -16,7 +16,6 @@
 package in.bytehue.messaging.mqtt5.provider.helper;
 
 import static com.hivemq.client.mqtt.datatypes.MqttQos.EXACTLY_ONCE;
-import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish.DEFAULT_QOS;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
 import static java.lang.System.lineSeparator;
@@ -342,7 +341,7 @@ public final class MessageHelper {
 		return result.toString();
 	}
 
-	public static int getQoS(final Map<String, Object> extensions, final Converter converter) {
+	public static int getQoS(final Map<String, Object> extensions, final Converter converter, int defaultQoS) {
 		final Object isGuaranteedDeliveryProp = extensions.getOrDefault(EXTENSION_GUARANTEED_DELIVERY, false);
 		final Object isGuranteedOrderingProp = extensions.getOrDefault(EXTENSION_GUARANTEED_ORDERING, false);
 
@@ -354,7 +353,7 @@ public final class MessageHelper {
 		if (isGuaranteedDelivery || isGuranteedOrdering) {
 			return EXACTLY_ONCE.getCode();
 		}
-		final Object dflt = extensions.getOrDefault(EXTENSION_QOS, DEFAULT_QOS.getCode());
+		final Object dflt = extensions.getOrDefault(EXTENSION_QOS, defaultQoS);
 		return adaptTo(dflt, int.class, converter);
 	}
 
