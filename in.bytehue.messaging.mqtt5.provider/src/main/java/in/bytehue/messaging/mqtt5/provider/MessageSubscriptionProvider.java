@@ -95,7 +95,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 		long timeoutInMillis() default 30_000L;
 
 		@AttributeDefinition(name = "Default QoS for subscriptions unless specified", min = "0", max = "2")
-        int qos() default 0; 
+        int qos() default 0;
 	}
 
 	@Activate
@@ -139,63 +139,83 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
     }
 
     public SubscriptionAck _subscribe(final String subChannel) { //NOSONAR
-    	return subscribe(null, subChannel, null, false);
+    	requireNonNull(subChannel, "Channel cannot be null");
+    	try {
+    		MessageContext context = null;
+            final MessageContextBuilderProvider builder = mcbFactory.getService();
+            try {
+            	context = builder.channel(subChannel).buildContext();
+            	return _subscribe(context);
+            } finally {
+                mcbFactory.ungetService(builder);
+            }
+        }
+    	catch (final Exception e) { //NOSONAR
+    		logger.error("Error while subscribing to {}", subChannel, e);
+    		throw new RuntimeException(e); //NOSONAR
+    	}
+    }
+
+    public SubscriptionAck replyToSubscribe(
+    		final String subChannel,
+    		final String pubChannel,
+    		int qos) {
+    	requireNonNull(subChannel, "Channel cannot be null");
+    	try {
+    		MessageContext context = null;
+    		final MessageContextBuilderProvider builder = mcbFactory.getService();
+    		try {
+    			context = builder.channel(subChannel)
+    					         .replyTo(pubChannel)
+    					         .extensionEntry(EXTENSION_QOS, qos)
+    					         .buildContext();
+    			return _subscribe(context);
+    		} finally {
+    			mcbFactory.ungetService(builder);
+    		}
+    	}
+    	catch (final Exception e) { //NOSONAR
+    		logger.error("Error while subscribing to {}", subChannel, e);
+    		throw new RuntimeException(e); //NOSONAR
+    	}
     }
 
     public SubscriptionAck _subscribe(final MessageContext context) { //NOSONAR
-    	return subscribe(context, context.getChannel(), null, false);
-    }
-
-    public SubscriptionAck replyToSubscribe(final String subChannel, final String pubChannel) {
-        return subscribe(null, subChannel, pubChannel, true);
-    }
-
-    private SubscriptionAck subscribe(
-    		                         MessageContext context,
-    		                         final String subChannel,
-    		                         final String pubChannel,
-    		                         final boolean isReplyToSub) {
-
         final PushStreamProvider provider = new PushStreamProvider();
         final SimplePushEventSource<Message> source = acquirePushEventSource(provider);
         final PushStream<Message> stream = provider.createStream(source); //NOSONAR
 
         // add topic prefix if available
         final String prefix = messagingClient.config.topicPrefix();
-        final String sChannel = addTopicPrefix(subChannel, prefix);
-        final String pChannel = addTopicPrefix(pubChannel, prefix);
+        final String sChannel = addTopicPrefix(context.getChannel(), prefix);
+        final String pChannel = addTopicPrefix(context.getReplyToChannel(), prefix);
 
+        requireNonNull(sChannel, "Channel cannot be null");
+        if (sChannel.isEmpty()) {
+        	throw new IllegalArgumentException("Channel cannot be empty");
+        }
         try {
-            final MessageContextBuilderProvider builder = mcbFactory.getService();
-            try {
-                if (context == null) {
-                    context = builder.channel(sChannel).buildContext();
-                }
-            } finally {
-                mcbFactory.ungetService(builder);
-            }
-            requireNonNull(sChannel, "Channel cannot be null");
-
             final int qos;
             final boolean receiveLocal;
             final boolean retainAsPublished;
             final MessageContextProvider ctx = (MessageContextProvider) context;
             final Map<String, Object> extensions = context.getExtensions();
-            
+
             if (extensions == null || extensions.isEmpty()) {
             	qos = config.qos();
             	receiveLocal = true;
                 retainAsPublished = false;
             } else {
-            	qos = getQoS(extensions, converter);
-            	
-            	final Object receiveLcl = extensions.getOrDefault(RECEIVE_LOCAL, false);
+            	qos = getQoS(extensions, converter, config.qos());
+
+            	final Object receiveLcl = extensions.getOrDefault(RECEIVE_LOCAL, true);
             	receiveLocal = adaptTo(receiveLcl, boolean.class, converter);
-            	
+
             	final Object isRetainAsPublished = extensions.getOrDefault(RETAIN, false);
             	retainAsPublished = adaptTo(isRetainAsPublished, boolean.class, converter);
             }
 
+            final boolean isReplyToSub = pChannel != null && !pChannel.trim().isEmpty();
             final ExtendedSubscription subscription = subscriptionRegistry.addSubscription(sChannel, pChannel, qos, source::close, isReplyToSub);
             // @formatter:off
 			final CompletableFuture<Mqtt5SubAck> future = messagingClient.client.subscribeWith()
