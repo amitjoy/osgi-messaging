@@ -24,6 +24,7 @@ import static in.bytehue.messaging.mqtt5.provider.MessageReplyToWhiteboardProvid
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adaptTo;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.prepareExceptionAsMessage;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.osgi.service.messaging.Features.EXTENSION_QOS;
 import static org.osgi.service.messaging.Features.REPLY_TO;
 import static org.osgi.service.messaging.MessageConstants.MESSAGING_FEATURE_PROPERTY;
 import static org.osgi.service.messaging.MessageConstants.MESSAGING_NAME_PROPERTY;
@@ -273,7 +274,7 @@ public final class MessageReplyToWhiteboardProvider {
 		Stream.of(replyToDTO.subChannels).forEach(c -> {
 			try {
 				logger.debug("Processing Reply-To Single Subscription Handler for Sub-Channel: {} and Pub-Channel: {}", c, replyToDTO.pubChannel);
-				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel);
+				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.qos);
 				sub.addAck(ack);
 
 				ack.stream().map(m -> {
@@ -292,7 +293,7 @@ public final class MessageReplyToWhiteboardProvider {
 		Stream.of(replyToDTO.subChannels).forEach(c -> {
 			try {
 				logger.debug("Processing Reply-To Subscription Handler for Sub-Channel: {} and Pub-Channel: {}", c, replyToDTO.pubChannel);
-				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel);
+				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.qos);
 				sub.addAck(ack);
 
 				ack.stream().forEach(m -> {
@@ -311,7 +312,7 @@ public final class MessageReplyToWhiteboardProvider {
 		Stream.of(replyToDTO.subChannels).forEach(c -> {
 			try {
 				logger.debug("Processing Reply-To Many Subscription Handler for Sub-Channel: {} and Pub-Channel: {}", c, replyToDTO.pubChannel);
-				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel);
+				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.qos);
 				sub.addAck(ack);
 
 				ack.stream().forEach(m -> {
@@ -376,6 +377,7 @@ public final class MessageReplyToWhiteboardProvider {
 
 	private class ReplyToDTO {
 
+		int qos;
 		boolean isConform;
 		String pubChannel;
 		String[] subChannels;
@@ -385,9 +387,11 @@ public final class MessageReplyToWhiteboardProvider {
 
 			final Object replyToSubResponse = properties.get(REPLY_TO_SUBSCRIPTION_RESPONSE_CHANNEL_PROPERTY);
 			final Object replyToSubRequest = properties.get(REPLY_TO_SUBSCRIPTION_REQUEST_CHANNEL_PROPERTY);
+			final Object propQoS = properties.get(EXTENSION_QOS);
 
 			pubChannel = adaptTo(replyToSubResponse, String.class, converter);
 			subChannels = adaptTo(replyToSubRequest, String[].class, converter);
+			qos = adaptTo(propQoS, int.class, converter);
 
 			if (subChannels == null) {
 				throw new IllegalStateException("The '" + reference
