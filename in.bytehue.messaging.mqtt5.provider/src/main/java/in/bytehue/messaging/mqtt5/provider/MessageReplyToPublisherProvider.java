@@ -5,7 +5,7 @@
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -26,10 +26,12 @@ import static org.osgi.service.messaging.Features.REPLY_TO;
 import static org.osgi.service.messaging.Features.REPLY_TO_MANY_PUBLISH;
 import static org.osgi.service.messaging.Features.REPLY_TO_MANY_SUBSCRIBE;
 
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadFactory;
 
 import org.osgi.framework.BundleContext;
+import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -37,6 +39,7 @@ import org.osgi.service.log.Logger;
 import org.osgi.service.log.LoggerFactory;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
+import org.osgi.service.messaging.MessageContextBuilder;
 import org.osgi.service.messaging.annotations.ProvideMessagingReplyToManyFeature;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
 import org.osgi.service.messaging.replyto.ReplyToManyPublisher;
@@ -105,6 +108,9 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 	@Reference
 	private MessageSubscriptionProvider subscriber;
 
+	@Reference
+	private ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
+
 	@Activate
 	private BundleContext bundleContext;
 
@@ -141,8 +147,30 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 
 		SubscriptionAck sub = null;
 		try {
-			sub = subscriber.replyToSubscribe(dto.subChannel, dto.pubChannel);
-		} catch (Exception e) {
+			// Create a new, corrected MessageContext for the subscription
+			final String replyChannel = replyToContext.getReplyToChannel();
+			if (replyChannel == null || replyChannel.trim().isEmpty()) {
+				deferred.fail(new IllegalArgumentException("Reply-to channel is missing in the message context"));
+				return deferred.getPromise();
+			}
+			final MessageContextBuilderProvider builder = mcbFactory.getService();
+			try {
+				// Use the reply-to channel as the primary channel for the subscription
+				final MessageContextBuilder mcb = builder.channel(replyChannel);
+
+				// Copy all extensions from the original context to preserve them
+				final Map<String, Object> extensions = replyToContext.getExtensions();
+				if (extensions != null) {
+					extensions.forEach(mcb::extensionEntry);
+				}
+				final MessageContext subscriptionContext = mcb.buildContext();
+
+				// Pass the new, corrected context to the subscriber
+				sub = subscriber._subscribe(subscriptionContext);
+			} finally {
+				mcbFactory.ungetService(builder);
+			}
+		} catch (final Exception e) {
 			deferred.fail(e);
 			return deferred.getPromise();
 		}
@@ -170,27 +198,50 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 
 	@Override
 	public PushStream<Message> publishWithReplyMany(final Message requestMessage, final MessageContext replyToContext) {
-		final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
-		SubscriptionAck sub = null;
-		try {
-			sub = subscriber.replyToSubscribe(dto.subChannel, dto.pubChannel);
-		} catch (Exception e) {
-			final PushStreamProvider psp = new PushStreamProvider();
-			final SimplePushEventSource<Message> eventSource = psp.createSimpleEventSource(Message.class);
-			eventSource.endOfStream();
-			return psp.createStream(eventSource);
-		}
-		// subscribe to the channel first
-		final PushStream<Message> stream = sub.stream()
-				.filter(responseMessage -> matchCorrelationId(requestMessage, responseMessage));
+	    final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
+	    SubscriptionAck sub = null;
+	    try {
+	        // Create a new, corrected MessageContext for the subscription
+	        final String replyChannel = replyToContext.getReplyToChannel();
+	        if (replyChannel == null || replyChannel.trim().isEmpty()) {
+	            throw new IllegalArgumentException("Reply-to channel is missing in the message context");
+	        }
+	        final MessageContextBuilderProvider builder = mcbFactory.getService();
+	        try {
+	            // Use the reply-to channel as the primary channel for the subscription
+	            final MessageContextBuilder mcb = builder.channel(replyChannel);
 
-		// publish the request to the channel
-		publisher.publish(requestMessage, dto.pubChannel);
-		return stream;
+	            // Copy all extensions from the original context to preserve them
+	            final Map<String, Object> extensions = replyToContext.getExtensions();
+	            if (extensions != null) {
+	                extensions.forEach(mcb::extensionEntry);
+	            }
+	            final MessageContext subscriptionContext = mcb.buildContext();
+
+	            // Pass the new, corrected context to the subscriber
+	            sub = subscriber._subscribe(subscriptionContext);
+	        } finally {
+	            mcbFactory.ungetService(builder);
+	        }
+	    } catch (final Exception e) {
+	        // If subscription fails, return an empty, closed stream
+	        final PushStreamProvider psp = new PushStreamProvider();
+	        final SimplePushEventSource<Message> eventSource = psp.createSimpleEventSource(Message.class);
+	        eventSource.error(e); // Propagate the error to the stream
+	        return psp.createStream(eventSource);
+	    }
+	    // subscribe to the channel first
+	    final PushStream<Message> stream = sub.stream()
+	            .filter(responseMessage -> matchCorrelationId(requestMessage, responseMessage));
+
+	    // publish the request to the channel
+	    publisher.publish(requestMessage, dto.pubChannel);
+	    return stream;
 	}
 
 	private class ReplyToDTO {
 		String pubChannel;
+		@SuppressWarnings("unused")
 		String subChannel;
 
 		ReplyToDTO(final Message message, final MessageContext context) {
