@@ -45,6 +45,7 @@ import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.log.Logger;
 import org.osgi.service.log.LoggerFactory;
@@ -99,7 +100,6 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         int qos() default 0;
 	}
 
-	@Activate
 	private volatile SubscriberConfig config;
 
     @Activate
@@ -119,12 +119,24 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 
     @Reference
     private ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
-    
+
+    @Activate
+    void activate(final SubscriberConfig config) {
+    	logger.info("Messaging subscriber has been activated");
+        this.config = config;
+    }
+
+    @Modified
+    void modified(final SubscriberConfig config) {
+    	logger.info("Messaging subscriber has been updated");
+        this.config = config;
+    }
+
     @Deactivate
     void stop() {
         subscriptionRegistry.clearAllSubscriptions();
     }
-    
+
     public synchronized SubscriberConfig config() {
         return config;
     }
