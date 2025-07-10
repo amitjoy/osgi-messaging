@@ -32,6 +32,7 @@ import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.dto.SubscriptionDTO;
 import org.osgi.service.messaging.replyto.ReplyToPublisher;
 import org.osgi.service.messaging.replyto.ReplyToSingleSubscriptionHandler;
+import org.osgi.util.promise.Promise;
 
 import aQute.launchpad.Launchpad;
 import aQute.launchpad.LaunchpadBuilder;
@@ -127,24 +128,39 @@ public final class MessageSubscriptionRegistryTest {
 
 	@Test
 	public void test_all_reply_to_subscriptions_for_req_res_pattern() throws Exception {
-		final String reqChannel = "a/b";
-		final String resChannel = "c/d";
-		final String payload = "abc";
-		final String contentType = "text/plain";
+	    final String reqChannel = "a/b";
+	    final String resChannel = "c/d";
+	    final String payload = "abc";
+	    final String replyPayload = "def"; // The expected reply
+	    final String contentType = "text/plain";
 
-		// @formatter:off
-        final Message message = mcb.contentType(contentType)
-        		                   .channel(resChannel)
-        		                   .replyTo(reqChannel)
-                                   .content(ByteBuffer.wrap(payload.getBytes()))
-                                   .buildMessage();
-        // @formatter:on
-		replyToPublisher.publishWithReply(message);
+	    // This simulates the other service that would handle the request and send a reply.
+	    subscriber.subscribe(reqChannel).forEach(request -> {
+	        // When a message arrives on a/b, publish a reply to its replyTo channel (c/d)
+	        final Message replyMessage = mcb.channel(request.getContext().getReplyToChannel())
+	                                        .content(ByteBuffer.wrap(replyPayload.getBytes()))
+	                                        .correlationId(request.getContext().getCorrelationId())
+	                                        .buildMessage();
+	        publisher.publish(replyMessage);
+	    });
 
-		TimeUnit.SECONDS.sleep(2);
+	    // @formatter:off
+	    final Message message = mcb.contentType(contentType)
+	                               .channel(reqChannel) // Publish to the request channel
+	                               .replyTo(resChannel) // Expect a reply on the response channel
+	                               .content(ByteBuffer.wrap(payload.getBytes()))
+	                               .buildMessage();
+	    // @formatter:on
 
-		assertThat(registry.getSubscriptionDTOs()).isEmpty();
-		assertThat(registry.getReplyToSubscriptionDTOs()).isNotNull().hasSize(1);
+	    // Call publishWithReply and wait for the Promise to complete
+	    final Promise<Message> promise = replyToPublisher.publishWithReply(message);
+	    final Message reply = promise.timeout(5000).getValue(); // Use Promise.get() to wait for the result
+
+	    assertThat(reply).isNotNull();
+	    assertThat(new String(reply.payload().array())).isEqualTo(replyPayload);
+	    // After a short delay, you can assert that the ephemeral subscription was indeed cleaned up.
+	    TimeUnit.SECONDS.sleep(2);
+	    assertThat(registry.getReplyToSubscriptionDTOs()).isEmpty();
 	}
 
 	@Test
