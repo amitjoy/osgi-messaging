@@ -1,4 +1,4 @@
--sourcepath                    : ${.}/sources 
+-sourcepath                    : ${.}/src 
 Bundle-Name                    : MQTT 5.0 Messaging Adapter
 Bundle-Description             : MQTT 5.0 implementation conforming to OSGi messaging specification. \
 								 Internally making use of HiveMQ MQTT client \
