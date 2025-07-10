@@ -46,7 +46,7 @@ public final class MessageClientConditionTest {
 	private ConfigurationAdmin configAdmin;
 
 	@SuppressWarnings("resource")
-	static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc").gogo();
+	static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
 
 	@Before
 	public void setup() throws InterruptedException {
