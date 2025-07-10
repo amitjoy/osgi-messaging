@@ -37,6 +37,7 @@ Bundle-Description             : MQTT 5.0 implementation conforming to OSGi mess
 -testpath                      : \
     assertj-core,\
     biz.aQute.launchpad,\
+    org.apache.felix.configadmin,\
     org.awaitility,\
     slf4j.api
 
