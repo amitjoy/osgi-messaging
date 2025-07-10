@@ -50,6 +50,7 @@ public final class MessageReplyToPublisherTest {
 	@Service
 	private MessageContextBuilder mcb;
 
+	@SuppressWarnings("resource")
 	static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
 
 	@Before

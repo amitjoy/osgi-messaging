@@ -53,6 +53,7 @@ public final class MessageReplyToPublisherCorrelationIdTest {
 	@Service
 	private MqttMessageContextBuilder mcb;
 
+	@SuppressWarnings("resource")
 	static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
 
 	@Before

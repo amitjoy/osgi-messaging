@@ -45,6 +45,7 @@ public final class MessageClientConditionTest {
 	@Service
 	private ConfigurationAdmin configAdmin;
 
+	@SuppressWarnings("resource")
 	static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc").gogo();
 
 	@Before

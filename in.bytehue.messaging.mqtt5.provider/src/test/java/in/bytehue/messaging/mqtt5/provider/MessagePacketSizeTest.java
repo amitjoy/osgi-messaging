@@ -52,6 +52,7 @@ public final class MessagePacketSizeTest {
 	@Service
 	private MessageContextBuilder mcb;
 
+	@SuppressWarnings("resource")
 	static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
 
 	@Before

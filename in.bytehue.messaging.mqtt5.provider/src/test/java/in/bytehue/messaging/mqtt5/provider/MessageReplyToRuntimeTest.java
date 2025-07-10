@@ -59,6 +59,7 @@ public final class MessageReplyToRuntimeTest {
 	@Service
 	private MessageServiceRuntime runtime;
 
+	@SuppressWarnings("resource")
 	static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
 
 	@Before

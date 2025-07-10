@@ -59,6 +59,7 @@ public final class MessageSubPubWithAcknowledgeTest {
 	@Service
 	private AcknowledgeMessageContextBuilder amcb;
 
+	@SuppressWarnings("resource")
 	static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
 
 	@Before

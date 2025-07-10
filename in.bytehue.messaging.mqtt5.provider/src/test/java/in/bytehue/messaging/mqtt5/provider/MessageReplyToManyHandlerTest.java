@@ -54,6 +54,7 @@ public final class MessageReplyToManyHandlerTest {
 	@Service
 	private MessageSubscription subscriber;
 
+	@SuppressWarnings("resource")
 	static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
 
 	@Before

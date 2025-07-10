@@ -61,6 +61,7 @@ public final class ServicePropertyExistenceTest {
 	@Service
 	private Launchpad launchpad;
 
+	@SuppressWarnings("resource")
 	static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
 
 	@Before
