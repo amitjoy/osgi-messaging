@@ -19,16 +19,13 @@ jobs:
     name: Build on OpenJDK Linux
     runs-on: ubuntu-latest
 
-    # --- FIX ---
     # Grant the GITHUB_TOKEN permissions to read packages.
-    # This is crucial for fetching dependencies from GitHub Packages.
     permissions:
       contents: read
       packages: read
 
     steps:
-      # --- UPDATE ---
-      # Checks out your repository's code. Updated to v4 for the latest features.
+      # Checks out your repository's code.
       - name: Git Checkout
         uses: actions/checkout@v4
 
@@ -36,15 +33,13 @@ jobs:
       - name: Gradle Wrapper Validation
         uses: gradle/wrapper-validation-action@v1
 
-      # --- UPDATE & FIX ---
-      # Sets up the specified Java version. Updated to v4.
+      # Sets up the specified Java version.
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin' # A popular and well-maintained distribution of OpenJDK
+          distribution: 'temurin'
           java-version: '8'
 
-      # --- NEW ---
       # Caches Gradle dependencies and build outputs to speed up subsequent builds.
       - name: Setup Gradle Cache
         uses: actions/cache@v4
@@ -56,10 +51,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # --- FIX ---
       # Runs the Gradle build command.
       # The GITHUB_TOKEN is passed as an environment variable for authentication with GitHub Packages.
       - name: Build with Gradle
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew build
+
+      # Uploads the test reports as an artifact.
+      # The `if: always()` condition ensures this step runs even if the build/test step fails,
+      # which is exactly when you need the reports the most.
+      - name: Upload Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: '**/target/reports/tests/test/'
