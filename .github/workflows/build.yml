@@ -1,27 +1,65 @@
-name: CI Build
-  
-on: 
-    push:
-      branches-ignore: ["release"]
-    pull_request:
+# .github/workflows/ci.yml
 
+name: CI Build
+
+# This workflow runs on pushes to any branch except 'release', and on any pull request.
+on:
+  push:
+    branches-ignore:
+      - "release"
+  pull_request:
+
+# Defines default environment variables for all jobs.
 env:
-    LC_ALL:       en_US.UTF-8
-    GRADLE_OPTS: -Dorg.gradle.parallel=false
+  LC_ALL: en_US.UTF-8
+  GRADLE_OPTS: -Dorg.gradle.parallel=false
 
 jobs:
-    build:
-        name:     build on OpenJDK Linux
-        runs-on:  ubuntu-latest
-        steps:
-        -   name: Git Checkout
-            uses: actions/checkout@v1
-        -   name: Gradle Wrapper Validation
-            uses: gradle/wrapper-validation-action@v1
-        -   name: Set up Java
-            uses: actions/setup-java@v1
-            with: 
-                java-version: 1.8
-        -   name: Build
-            shell: bash
-            run: ./gradlew build
+  build:
+    name: Build on OpenJDK Linux
+    runs-on: ubuntu-latest
+
+    # --- FIX ---
+    # Grant the GITHUB_TOKEN permissions to read packages.
+    # This is crucial for fetching dependencies from GitHub Packages.
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      # --- UPDATE ---
+      # Checks out your repository's code. Updated to v4 for the latest features.
+      - name: Git Checkout
+        uses: actions/checkout@v4
+
+      # Validates the integrity of the Gradle Wrapper JAR file.
+      - name: Gradle Wrapper Validation
+        uses: gradle/wrapper-validation-action@v1
+
+      # --- UPDATE & FIX ---
+      # Sets up the specified Java version. Updated to v4.
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin' # A popular and well-maintained distribution of OpenJDK
+          java-version: '8'
+
+      # --- NEW ---
+      # Caches Gradle dependencies and build outputs to speed up subsequent builds.
+      - name: Setup Gradle Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # --- FIX ---
+      # Runs the Gradle build command.
+      # The GITHUB_TOKEN is passed as an environment variable for authentication with GitHub Packages.
+      - name: Build with Gradle
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew build
