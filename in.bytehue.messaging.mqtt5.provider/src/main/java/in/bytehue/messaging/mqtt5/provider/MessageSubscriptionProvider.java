@@ -32,6 +32,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
 import static org.osgi.service.messaging.Features.EXTENSION_QOS;
+import static org.osgi.service.messaging.Features.REPLY_TO;
 
 import java.util.Arrays;
 import java.util.List;
@@ -168,6 +169,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
     			context = builder.channel(subChannel)
     					         .replyTo(pubChannel)
     					         .extensionEntry(EXTENSION_QOS, qos)
+    					         .extensionEntry(REPLY_TO, true)
     					         .buildContext();
     			return _subscribe(context);
     		} finally {
@@ -196,6 +198,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         }
         try {
             final int qos;
+            final boolean isReplyToSub;
             final boolean receiveLocal;
             final boolean retainAsPublished;
             final MessageContextProvider ctx = (MessageContextProvider) context;
@@ -205,8 +208,12 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
             	qos = config.qos();
             	receiveLocal = true;
                 retainAsPublished = false;
+                isReplyToSub = false;
             } else {
             	qos = getQoS(extensions, converter, config.qos());
+
+            	final Object isReplyTo = extensions.getOrDefault(REPLY_TO, false);
+            	isReplyToSub = adaptTo(isReplyTo, boolean.class, converter);
 
             	final Object receiveLcl = extensions.getOrDefault(RECEIVE_LOCAL, true);
             	receiveLocal = adaptTo(receiveLcl, boolean.class, converter);
@@ -215,7 +222,6 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
             	retainAsPublished = adaptTo(isRetainAsPublished, boolean.class, converter);
             }
 
-            final boolean isReplyToSub = pChannel != null && !pChannel.trim().isEmpty();
             final ExtendedSubscription subscription = subscriptionRegistry.addSubscription(sChannel, pChannel, qos, source::close, isReplyToSub);
             // @formatter:off
 			final CompletableFuture<Mqtt5SubAck> future = messagingClient.client.subscribeWith()

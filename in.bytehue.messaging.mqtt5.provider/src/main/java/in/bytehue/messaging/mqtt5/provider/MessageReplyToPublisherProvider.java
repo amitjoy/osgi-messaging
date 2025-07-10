@@ -163,7 +163,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 				if (extensions != null) {
 					extensions.forEach(mcb::extensionEntry);
 				}
-				final MessageContext subscriptionContext = mcb.buildContext();
+				final MessageContext subscriptionContext = mcb.extensionEntry(REPLY_TO, true).buildContext();
 
 				// Pass the new, corrected context to the subscriber
 				sub = subscriber._subscribe(subscriptionContext);
@@ -216,7 +216,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 	            if (extensions != null) {
 	                extensions.forEach(mcb::extensionEntry);
 	            }
-	            final MessageContext subscriptionContext = mcb.buildContext();
+				final MessageContext subscriptionContext = mcb.extensionEntry(REPLY_TO, true).buildContext();
 
 	            // Pass the new, corrected context to the subscriber
 	            sub = subscriber._subscribe(subscriptionContext);

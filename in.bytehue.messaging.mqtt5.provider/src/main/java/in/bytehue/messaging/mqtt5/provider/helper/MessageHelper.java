@@ -404,7 +404,7 @@ public final class MessageHelper {
 
 	public static String addTopicPrefix(final String topic, final String prefix) {
 		if (topic == null || topic.trim().isEmpty()) {
-			return "";
+			return null;
 		}
 		if (prefix == null || prefix.trim().isEmpty()) {
 			return topic;
