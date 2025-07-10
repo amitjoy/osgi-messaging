@@ -328,8 +328,11 @@ public final class MqttCommand {
         for (final ReplyToSubscriptionDTO subscription : replyToSubscriptions) {
             final ChannelDTO reqChannel = subscription.requestChannel;
             final ChannelDTO resChannel = subscription.responseChannel;
+            
+            final String reqChannelName = reqChannel == null ? "" : reqChannel.name;
+            final String resChannelName = resChannel == null ? "" : resChannel.name;
 
-            table.addRow(reqChannel.name, resChannel.name, String.valueOf(subscription.qos));
+            table.addRow(reqChannelName, resChannelName, String.valueOf(subscription.qos));
         }
         return table.print();
     }
