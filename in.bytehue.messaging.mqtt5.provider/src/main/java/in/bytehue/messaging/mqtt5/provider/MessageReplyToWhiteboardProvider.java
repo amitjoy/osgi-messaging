@@ -389,9 +389,14 @@ public final class MessageReplyToWhiteboardProvider {
 			final Object replyToSubRequest = properties.get(REPLY_TO_SUBSCRIPTION_REQUEST_CHANNEL_PROPERTY);
 			final Object propQoS = properties.get(EXTENSION_QOS);
 
+			if (propQoS == null) {
+				qos = subscriber.config().qos();
+			} else {
+				qos = adaptTo(propQoS, int.class, converter);
+			}
+
 			pubChannel = adaptTo(replyToSubResponse, String.class, converter);
 			subChannels = adaptTo(replyToSubRequest, String[].class, converter);
-			qos = adaptTo(propQoS, int.class, converter);
 
 			if (subChannels == null) {
 				throw new IllegalStateException("The '" + reference
