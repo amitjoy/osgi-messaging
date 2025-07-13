@@ -78,32 +78,32 @@ import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 public final class MessageReplyToWhiteboardProvider {
 
 	public static final String PID = "in.bytehue.messaging.whiteboard";
+	public static final String REPLY_TO_SUBSCRIPTION_REQUEST_QOS_PROPERTY = "osgi.messaging.replyToSubscription.channel.qos";
+	public static final String REPLY_TO_SUBSCRIPTION_RESPONSE_QOS_PROPERTY = "osgi.messaging.replyToSubscription.replyChannel.qos";
 
-	@ObjectClassDefinition(
-            name = "MQTT 5.0 Reply-To Whiteboard Configuration",
-            description = "This configuration is used to configure the MQTT 5.0 messaging reply-to whiteboard. "
-            		    + "Note that, all time-based configurations are in seconds.")
+	@ObjectClassDefinition(name = "MQTT 5.0 Reply-To Whiteboard Configuration", description = "This configuration is used to configure the MQTT 5.0 messaging reply-to whiteboard. "
+			+ "Note that, all time-based configurations are in seconds.")
 	@interface Config {
 		@AttributeDefinition(name = "Flag denoting to store the channel info if the channel is specified in the received message")
 		boolean storeReplyToChannelInfoIfReceivedInMessage() default true;
 
 		@AttributeDefinition(name = "Prefix of the threads' names in the pool")
-        String threadNamePrefix() default "reply-to-handler";
+		String threadNamePrefix() default "reply-to-handler";
 
-        @AttributeDefinition(name = "Suffix of the threads' names in the pool (supports only {@code %d} format specifier)")
-        String threadNameSuffix() default "-%d";
+		@AttributeDefinition(name = "Suffix of the threads' names in the pool (supports only {@code %d} format specifier)")
+		String threadNameSuffix() default "-%d";
 
-        @AttributeDefinition(name = "Flag to set if the threads will be daemon threads")
-        boolean isDaemon() default true;
+		@AttributeDefinition(name = "Flag to set if the threads will be daemon threads")
+		boolean isDaemon() default true;
 
-        @AttributeDefinition(name = "Core Pool Size (O set as default for cached behaviour)")
-        int corePoolSize() default 0;
+		@AttributeDefinition(name = "Core Pool Size (O set as default for cached behaviour)")
+		int corePoolSize() default 0;
 
-        @AttributeDefinition(name = "Maximum Pool Size")
-        int maxPoolSize() default 3;
+		@AttributeDefinition(name = "Maximum Pool Size")
+		int maxPoolSize() default 3;
 
-        @AttributeDefinition(name = "Idle time for threads before interrupted")
-        long idleTime() default 60L;
+		@AttributeDefinition(name = "Idle time for threads before interrupted")
+		long idleTime() default 60L;
 	}
 
 	@Reference(service = LoggerFactory.class)
@@ -273,12 +273,14 @@ public final class MessageReplyToWhiteboardProvider {
 
 		Stream.of(replyToDTO.subChannels).forEach(c -> {
 			try {
-				logger.debug("Processing Reply-To Single Subscription Handler for Sub-Channel: {} and Pub-Channel: {}", c, replyToDTO.pubChannel);
-				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.qos);
+				logger.debug("Processing Reply-To Single Subscription Handler for Sub-Channel: {} and Pub-Channel: {}",
+						c, replyToDTO.pubChannel);
+				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.subQos);
 				sub.addAck(ack);
 
 				ack.stream().map(m -> {
-					logger.debug("[Reply-To Single Subscription] Received message '{}' on '{}'", m.getContext(), sub.handler.getClass().getSimpleName());
+					logger.debug("[Reply-To Single Subscription] Received message '{}' on '{}'", m.getContext(),
+							sub.handler.getClass().getSimpleName());
 					return handleResponse(m, (ReplyToSingleSubscriptionHandler) sub.handler);
 				}).forEach(m -> handleMessageReceive(sub.reference, replyToDTO, c, ack, m));
 			} catch (Exception e) {
@@ -292,12 +294,14 @@ public final class MessageReplyToWhiteboardProvider {
 
 		Stream.of(replyToDTO.subChannels).forEach(c -> {
 			try {
-				logger.debug("Processing Reply-To Subscription Handler for Sub-Channel: {} and Pub-Channel: {}", c, replyToDTO.pubChannel);
-				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.qos);
+				logger.debug("Processing Reply-To Subscription Handler for Sub-Channel: {} and Pub-Channel: {}", c,
+						replyToDTO.pubChannel);
+				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.subQos);
 				sub.addAck(ack);
 
 				ack.stream().forEach(m -> {
-					logger.debug("[Reply-To Subscription] Received message '{}' on '{}'", m.getContext(), sub.handler.getClass().getSimpleName());
+					logger.debug("[Reply-To Subscription] Received message '{}' on '{}'", m.getContext(),
+							sub.handler.getClass().getSimpleName());
 					((ReplyToSubscriptionHandler) sub.handler).handleResponse(m);
 				});
 			} catch (Exception e) {
@@ -311,12 +315,14 @@ public final class MessageReplyToWhiteboardProvider {
 
 		Stream.of(replyToDTO.subChannels).forEach(c -> {
 			try {
-				logger.debug("Processing Reply-To Many Subscription Handler for Sub-Channel: {} and Pub-Channel: {}", c, replyToDTO.pubChannel);
-				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.qos);
+				logger.debug("Processing Reply-To Many Subscription Handler for Sub-Channel: {} and Pub-Channel: {}", c,
+						replyToDTO.pubChannel);
+				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.subQos);
 				sub.addAck(ack);
 
 				ack.stream().forEach(m -> {
-					logger.debug("[Reply-To Many Subscription] Received message '{}' on '{}'", m.getContext(), sub.handler.getClass().getSimpleName());
+					logger.debug("[Reply-To Many Subscription] Received message '{}' on '{}'", m.getContext(),
+							sub.handler.getClass().getSimpleName());
 					handleResponses(m, (ReplyToManySubscriptionHandler) sub.handler)
 							.forEach(msg -> handleMessageReceive(sub.reference, replyToDTO, c, ack, msg));
 				});
@@ -372,12 +378,20 @@ public final class MessageReplyToWhiteboardProvider {
 			final ExtendedSubscription subscription = registry.getSubscription(channel, sub.id());
 			subscription.updateReplyToHandlerSubscription(pubChannel, reference);
 		}
-		publisher.publish(msg, pubChannel);
+		final MessageContextBuilderProvider mcb = mcbFactory.getService();
+		try {
+			final MessageContextProvider responseMsgContext = (MessageContextProvider) msg.getContext();
+		    responseMsgContext.getExtensions().put(EXTENSION_QOS, replyToDTO.pubQos);
+			publisher.publish(msg, pubChannel);
+		} finally {
+			mcbFactory.ungetService(mcb);
+		}
 	}
 
 	private class ReplyToDTO {
 
-		int qos;
+		int pubQos;
+		int subQos;
 		boolean isConform;
 		String pubChannel;
 		String[] subChannels;
@@ -387,12 +401,18 @@ public final class MessageReplyToWhiteboardProvider {
 
 			final Object replyToSubResponse = properties.get(REPLY_TO_SUBSCRIPTION_RESPONSE_CHANNEL_PROPERTY);
 			final Object replyToSubRequest = properties.get(REPLY_TO_SUBSCRIPTION_REQUEST_CHANNEL_PROPERTY);
-			final Object propQoS = properties.get(EXTENSION_QOS);
+			final Object replyToSubResponseQos = properties.get(REPLY_TO_SUBSCRIPTION_RESPONSE_QOS_PROPERTY);
+			final Object replyToSubRequestQos = properties.get(REPLY_TO_SUBSCRIPTION_REQUEST_QOS_PROPERTY);
 
-			if (propQoS == null) {
-				qos = subscriber.config().qos();
+			if (replyToSubResponseQos == null) {
+				pubQos = publisher.config().qos();
 			} else {
-				qos = adaptTo(propQoS, int.class, converter);
+				pubQos = adaptTo(replyToSubResponseQos, int.class, converter);
+			}
+			if (replyToSubRequestQos == null) {
+				subQos = subscriber.config().qos();
+			} else {
+				subQos = adaptTo(replyToSubRequestQos, int.class, converter);
 			}
 
 			pubChannel = adaptTo(replyToSubResponse, String.class, converter);
