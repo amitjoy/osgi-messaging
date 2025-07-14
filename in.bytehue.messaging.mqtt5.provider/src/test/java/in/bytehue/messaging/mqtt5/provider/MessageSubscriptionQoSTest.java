@@ -15,6 +15,7 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
+import static in.bytehue.messaging.mqtt5.provider.MessageReplyToWhiteboardProvider.REPLY_TO_SUBSCRIPTION_REQUEST_QOS_PROPERTY;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.SUBSCRIBER;
@@ -121,7 +122,7 @@ public final class MessageSubscriptionQoSTest {
 		final String channelKey = REPLY_TO_SUBSCRIPTION_REQUEST_CHANNEL_PROPERTY;
 		final String[] channelValue = { requestChannel };
 
-		final String qosKey = EXTENSION_QOS;
+		final String qosKey = REPLY_TO_SUBSCRIPTION_REQUEST_QOS_PROPERTY;
 		final int qosValue = qos;
 
 		// Pass properties as separate key-value arguments
