@@ -145,8 +145,8 @@ public final class MessagePublisherProvider implements MessagePublisher {
 			}
 			final MqttClientState clientState = messagingClient.client.getState();
 			if (clientState == DISCONNECTED || clientState == DISCONNECTED_RECONNECT) {
-				logger.warn("Cannot publish the message to '{}' since the client is disconnected", channel);
-				return;
+				logger.error("Cannot publish the message to '{}' since the client is disconnected", channel);
+				throw new IllegalStateException("Client is disconnected, cannot publish to channel: " + channel);
 			}
 			// add topic prefix if available
 			final String prefix = messagingClient.config.topicPrefix();
