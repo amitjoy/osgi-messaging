@@ -19,6 +19,27 @@ import java.util.concurrent.CompletableFuture;
 
 import org.osgi.annotation.versioning.ProviderType;
 
+/**
+ * The {@link MqttClient} service provides an interface for managing MQTT 5.0
+ * client connections to an MQTT broker.
+ *
+ * <p>
+ * This service abstracts the connection lifecycle and provides methods to
+ * connect, disconnect, and query the connection state. It acts as a facade over
+ * the underlying HiveMQ MQTT client implementation.
+ * </p>
+ *
+ * <p>
+ * <strong>Note:</strong> Access to this service requires the
+ * {@code ServicePermission[MqttClient, GET]} permission.
+ * </p>
+ *
+ * @noimplement This interface is not intended to be implemented by consumers.
+ * @noextend This interface is not intended to be extended by consumers.
+ *
+ * @ThreadSafe
+ * @since 1.0
+ */
 @ProviderType
 public interface MqttClient {
 
