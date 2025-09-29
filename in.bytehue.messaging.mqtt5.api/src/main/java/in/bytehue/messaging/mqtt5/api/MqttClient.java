@@ -43,6 +43,19 @@ import org.osgi.annotation.versioning.ProviderType;
 @ProviderType
 public interface MqttClient {
 
+	/**
+	 * Initiates a connection to the MQTT broker.
+	 * 
+	 * <p>
+	 * This method is typically handled automatically by the OSGi component
+	 * lifecycle. Manual invocation may be useful for reconnection scenarios or
+	 * custom connection management.
+	 * </p>
+	 *
+	 * @return a {@link CompletableFuture} that completes when the connection is
+	 *         established, or completes exceptionally if the connection fails
+	 * @throws IllegalStateException if the client is already connected
+	 */
 	CompletableFuture<Void> connect();
 
 	CompletableFuture<Void> disconnect();
