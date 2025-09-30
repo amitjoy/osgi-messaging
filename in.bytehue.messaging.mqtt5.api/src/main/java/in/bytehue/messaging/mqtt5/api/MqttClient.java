@@ -58,6 +58,18 @@ public interface MqttClient {
 	 */
 	CompletableFuture<Void> connect();
 
+	/**
+	 * Disconnects from the MQTT broker gracefully.
+	 * 
+	 * <p>
+	 * This method sends a proper DISCONNECT packet to the broker and closes the
+	 * connection. It blocks until the disconnection is complete.
+	 * </p>
+	 *
+	 * @return a {@link CompletableFuture} that completes when the disconnection is
+	 *         complete
+	 * @throws IllegalStateException if the client is not connected
+	 */
 	CompletableFuture<Void> disconnect();
 
 	boolean isConnected();
