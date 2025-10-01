@@ -72,5 +72,10 @@ public interface MqttClient {
 	 */
 	CompletableFuture<Void> disconnect();
 
+	/**
+	 * Checks whether the client is currently connected to the MQTT broker.
+	 *
+	 * @return {@code true} if the client is connected, {@code false} otherwise
+	 */
 	boolean isConnected();
 }
