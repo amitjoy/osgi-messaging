@@ -350,11 +350,16 @@ public final class MessageClientProvider {
     	logger.info("Performing connection");
 		this.config = config;
         try {
-            connect();
+            connectInternal();
         } catch (final Exception e) {
             logger.error("Error occurred while establishing connection to the broker '{}'", config.server(), e);
         }
 	}
+
+    @Override
+    public CompletableFuture<Void> disconnect() {
+        return CompletableFuture.runAsync(() -> disconnect(false));
+    }
 
     private void disconnect(final boolean isNormalDisconnection) {
     	logger.info("Performing disconnection");
