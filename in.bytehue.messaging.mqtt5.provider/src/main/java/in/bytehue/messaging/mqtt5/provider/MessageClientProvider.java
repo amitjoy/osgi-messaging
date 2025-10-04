@@ -394,7 +394,26 @@ public final class MessageClientProvider {
     	}
 	}
 
-    private void connect() {
+    @Override
+    public CompletableFuture<Void> connect() {
+        if (client != null && client.getState() == com.hivemq.client.mqtt.MqttClientState.CONNECTED) {
+            throw new IllegalStateException("Client is already connected");
+        }
+        return CompletableFuture.runAsync(() -> {
+            try {
+                connectInternal();
+            } catch (final Exception e) {
+                throw new RuntimeException("Failed to connect to MQTT broker", e);
+            }
+        });
+    }
+
+    @Override
+    public boolean isConnected() {
+        return client != null && client.getState() == com.hivemq.client.mqtt.MqttClientState.CONNECTED;
+    }
+
+    private void connectInternal() {
     	final String clientId = getClientID(bundleContext);
     	final Mqtt5ClientBuilder clientBuilder = Mqtt5Client.builder()
                 .identifier(MqttClientIdentifier.of(clientId))
