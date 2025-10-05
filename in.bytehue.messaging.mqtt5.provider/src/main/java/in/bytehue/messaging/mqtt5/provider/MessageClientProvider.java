@@ -82,13 +82,14 @@ import com.hivemq.client.mqtt.mqtt5.message.connect.connack.Mqtt5ConnAck;
 import com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectBuilder.SendVoid;
 import com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode;
 
+import in.bytehue.messaging.mqtt5.api.MqttClient;
 import in.bytehue.messaging.mqtt5.provider.MessageClientProvider.Config;
 import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 
 @ProvideMessagingFeature
 @Designate(ocd = Config.class)
-@Component(service = MessageClientProvider.class, configurationPid = CLIENT, configurationPolicy = REQUIRE)
-public final class MessageClientProvider {
+@Component(service = { MessageClientProvider.class, MqttClient.class }, configurationPid = CLIENT, configurationPolicy = REQUIRE)
+public final class MessageClientProvider implements MqttClient {
 
 	@ObjectClassDefinition(
             name = "MQTT 5.0 Messaging Client Configuration",
