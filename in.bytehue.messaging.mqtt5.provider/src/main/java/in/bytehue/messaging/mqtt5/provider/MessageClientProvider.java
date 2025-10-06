@@ -88,7 +88,7 @@ import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 
 @ProvideMessagingFeature
 @Designate(ocd = Config.class)
-@Component(service = { MessageClientProvider.class, MqttClient.class }, configurationPid = CLIENT, configurationPolicy = REQUIRE)
+@Component(immediate = true, service = { MessageClientProvider.class, MqttClient.class }, configurationPid = CLIENT, configurationPolicy = REQUIRE)
 public final class MessageClientProvider implements MqttClient {
 
 	@ObjectClassDefinition(
