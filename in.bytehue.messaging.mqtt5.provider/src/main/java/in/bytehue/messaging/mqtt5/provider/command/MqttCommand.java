@@ -228,9 +228,8 @@ public final class MqttCommand {
                 System.out.println("Message Received");
                 System.out.println(new String(m.payload().array(), UTF_8));
             });
-            return "Subscribed to " + topic;
         } catch (final Exception e) {
-            e.printStackTrace();
+        	return stackTraceToString(e);
         } finally {
             mcbFactory.ungetService(mcb);
         }
