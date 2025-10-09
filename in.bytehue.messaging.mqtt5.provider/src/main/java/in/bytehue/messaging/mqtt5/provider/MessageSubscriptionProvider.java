@@ -15,6 +15,8 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
+import static com.hivemq.client.mqtt.MqttClientState.DISCONNECTED;
+import static com.hivemq.client.mqtt.MqttClientState.DISCONNECTED_RECONNECT;
 import static com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode.GRANTED_QOS_0;
 import static com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode.GRANTED_QOS_1;
 import static com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode.GRANTED_QOS_2;
@@ -60,6 +62,7 @@ import org.osgi.util.pushstream.PushStream;
 import org.osgi.util.pushstream.PushStreamProvider;
 import org.osgi.util.pushstream.SimplePushEventSource;
 
+import com.hivemq.client.mqtt.MqttClientState;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAck;
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode;
@@ -208,6 +211,11 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         if (sChannel.isEmpty()) {
         	throw new IllegalArgumentException("Channel cannot be empty");
         }
+        final MqttClientState clientState = messagingClient.client.getState();
+		if (clientState == DISCONNECTED || clientState == DISCONNECTED_RECONNECT) {
+			logger.error("Cannot subscribe to '{}' since the client is disconnected", sChannel);
+			throw new IllegalStateException("Client is disconnected, cannot subscribe to channel: " + sChannel);
+		}
         try {
             final int qos;
             final boolean isReplyToSub;
