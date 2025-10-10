@@ -3,8 +3,7 @@ package in.bytehue.messaging.mqtt5.api;
 import org.osgi.dto.DTO;
 
 /**
- * MQTT 5 SubAck message. This message is translated from and to an MQTT 5
- * SUBACK packet.
+ * MQTT SubAck message. This message is translated from and to an MQTT SUBACK packet.
  */
 public class MqttSubAckDTO extends DTO {
 
