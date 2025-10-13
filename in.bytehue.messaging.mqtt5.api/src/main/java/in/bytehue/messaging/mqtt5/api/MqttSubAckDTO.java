@@ -8,13 +8,13 @@ import org.osgi.dto.DTO;
 public class MqttSubAckDTO extends DTO {
 
 	/**
-	 * The Reason Codes of this SubAck message, each belonging to a MQTT subscription
+	 * The optional reason string of this SubAck message
 	 */
 	public String reason;
 
 	/**
-	 * The optional reason string of this SubAck message
+	 * The Reason Code of this SubAck message, each belonging to a MQTT subscription
 	 */
 	public int[] reasonCodes;
-
+	
 }
