@@ -13,6 +13,7 @@ Bundle-Description             : MQTT 5.0 implementation conforming to OSGi mess
 	in.bytehue.messaging.mqtt5.api,\
 	org.apache.felix.gogo.runtime,\
 	org.apache.felix.log,\
+	org.osgi.service.event,\
 	org.osgi.service.messaging,\
 	osgi.core,\
 	\
