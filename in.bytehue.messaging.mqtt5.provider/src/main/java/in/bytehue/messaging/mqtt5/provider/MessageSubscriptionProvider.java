@@ -309,4 +309,43 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         return reasonCodes.stream().findFirst().filter(acceptedCodes::contains).isPresent();
     }
 
+    private void sendSubscriptionStatusEvent(final MqttSubAckDTO ackDto) {
+        final EventAdmin ea = eventAdmin;
+        if (ea == null) {
+        	logger.info("EventAdmin not available to send subscription status event");
+        	return;
+        }
+
+        final Map<String, Object> dtoMap = converter.convert(ackDto).sourceAsDTO()
+        .to(new TypeReference<Map<String, Object>>() {
+        });
+
+        // Post the canonical event topic (e.g., mqtt/subscription/ACKED or FAILED)
+        final Dictionary<String, Object> dict = FrameworkUtil.asDictionary(dtoMap);
+		ea.postEvent(new Event("mqtt/subscription/" + ackDto.type.name(), dict));
+
+        // Post bucket topics for easy prefix listeners: a/*, a/b/*, ...
+        int idx = ackDto.topic.lastIndexOf('/');
+        while (idx > 0) {
+            final String bucket = ackDto.topic.substring(0, idx) + "/*";
+            ea.postEvent(new org.osgi.service.event.Event("mqtt/subscription/" + ackDto.type.name() + "/" + bucket, dict));
+            idx = ackDto.topic.lastIndexOf('/', idx - 1);
+        }
+    }
+    
+    private MqttSubAckDTO createStatusEvent(Type type, String topic, int qos, boolean replyTo, String reason, int[] reasonCodes) {
+    	MqttSubAckDTO dto = new MqttSubAckDTO();
+    	
+    	dto.type = type;
+    	dto.topic = topic;
+    	dto.qos = qos;
+    	dto.replyTo = replyTo;
+    	dto.reason = reason;
+    	dto.reasonCodes = reasonCodes;
+    	dto.timestamp = System.currentTimeMillis();
+    	
+    	return dto;
+    }
+
+
 }
