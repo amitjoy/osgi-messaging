@@ -273,12 +273,27 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 										                                   })
 										                                  .send();
 			future.thenAccept(ack -> {
-                	  if (isSubscriptionAcknowledged(ack)) {
-                		  subscription.setAcknowledged(true);
-                          logger.debug("New subscription request for '{}' processed successfully - {} > ID: {}", sChannel, ack, subscription.id);
-                      } else {
-                          logger.error("New subscription request for '{}' failed - {} > ID: {}", sChannel, ack, subscription.id);
-                      }
+				final boolean ok = isSubscriptionAcknowledged(ack);
+
+			    final String reason = ack.getReasonString().map(Objects::toString).orElse(null);
+			    final int[] codes = ack.getReasonCodes().stream()
+			            .mapToInt(Mqtt5SubAckReasonCode::getCode)
+			            .toArray();
+
+			    if (ok) {
+			        subscription.setAcknowledged(true);
+			        final MqttSubAckDTO subAck =
+			                createStatusEvent(Type.ACKED, sChannel, qos, isReplyToSub, reason, codes);
+			        sendSubscriptionStatusEvent(subAck);
+			        logger.debug("New subscription request for '{}' processed successfully - {} > ID: {}",
+			                     sChannel, ack, subscription.id);
+			    } else {
+			        final MqttSubAckDTO subNack =
+			                createStatusEvent(FAILED, sChannel, qos, isReplyToSub, reason, codes);
+			        sendSubscriptionStatusEvent(subNack);
+			        logger.error("New subscription request for '{}' failed - {} > ID: {}",
+			                     sChannel, ack, subscription.id);
+			    }
             });
             stream.onClose(() -> {
             	logger.debug("Removing subscription '{}'", subscription.id);
@@ -287,11 +302,21 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
             future.get(config.timeoutInMillis(), MILLISECONDS);
             return SubscriptionAck.of(stream, subscription.id);
         } catch (final ExecutionException e) {
-            logger.error("Error while subscribing to {}", sChannel, e);
+        	logger.error("Error while subscribing to {}", sChannel, e);
+            final Throwable cause = e.getCause() != null ? e.getCause() : e;
+            final String reason = cause.getMessage();
+            // No SubAck available here → no reason codes
+            final MqttSubAckDTO subNack =
+                    createStatusEvent(FAILED, sChannel, qos, isReplyToSub, reason, new int[0]);
+            sendSubscriptionStatusEvent(subNack);
             throw new RuntimeException(e.getCause()); //NOSONAR
         } catch (final Exception e) { //NOSONAR
-            logger.error("Error while subscribing to {}", sChannel, e);
-            throw new RuntimeException(e); //NOSONAR
+        	logger.error("Error while subscribing to {}", sChannel, e);
+            final String reason = e.getMessage();
+            final MqttSubAckDTO subNack =
+                    createStatusEvent(FAILED, sChannel, qos, isReplyToSub, reason, new int[0]);
+            sendSubscriptionStatusEvent(subNack);
+            throw new RuntimeException(e); // NOSONAR
         }
     }
 
