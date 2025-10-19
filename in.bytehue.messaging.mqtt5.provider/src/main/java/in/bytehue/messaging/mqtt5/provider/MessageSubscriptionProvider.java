@@ -123,6 +123,9 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
     @Reference
     private ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
 
+    @Reference(cardinality = OPTIONAL, policy = DYNAMIC)
+    private volatile EventAdmin eventAdmin;
+
     @Activate
     void activate(final SubscriberConfig config) {
     	logger.info("Messaging subscriber has been activated");
