@@ -219,32 +219,31 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 			logger.error("Cannot subscribe to '{}' since the client is disconnected", sChannel);
 			throw new IllegalStateException("Client is disconnected, cannot subscribe to channel: " + sChannel);
 		}
+		final int qos;
+        final boolean isReplyToSub;
+        final boolean receiveLocal;
+        final boolean retainAsPublished;
+        final MessageContextProvider ctx = (MessageContextProvider) context;
+        final Map<String, Object> extensions = context.getExtensions();
+
+        if (extensions == null || extensions.isEmpty()) {
+        	qos = config.qos();
+        	receiveLocal = true;
+            retainAsPublished = false;
+            isReplyToSub = false;
+        } else {
+        	qos = getQoS(extensions, converter, config.qos());
+
+        	final Object isReplyTo = extensions.getOrDefault(REPLY_TO, false);
+        	isReplyToSub = adaptTo(isReplyTo, boolean.class, converter);
+
+        	final Object receiveLcl = extensions.getOrDefault(RECEIVE_LOCAL, true);
+        	receiveLocal = adaptTo(receiveLcl, boolean.class, converter);
+
+        	final Object isRetainAsPublished = extensions.getOrDefault(RETAIN, false);
+        	retainAsPublished = adaptTo(isRetainAsPublished, boolean.class, converter);
+        }
         try {
-            final int qos;
-            final boolean isReplyToSub;
-            final boolean receiveLocal;
-            final boolean retainAsPublished;
-            final MessageContextProvider ctx = (MessageContextProvider) context;
-            final Map<String, Object> extensions = context.getExtensions();
-
-            if (extensions == null || extensions.isEmpty()) {
-            	qos = config.qos();
-            	receiveLocal = true;
-                retainAsPublished = false;
-                isReplyToSub = false;
-            } else {
-            	qos = getQoS(extensions, converter, config.qos());
-
-            	final Object isReplyTo = extensions.getOrDefault(REPLY_TO, false);
-            	isReplyToSub = adaptTo(isReplyTo, boolean.class, converter);
-
-            	final Object receiveLcl = extensions.getOrDefault(RECEIVE_LOCAL, true);
-            	receiveLocal = adaptTo(receiveLcl, boolean.class, converter);
-
-            	final Object isRetainAsPublished = extensions.getOrDefault(RETAIN, false);
-            	retainAsPublished = adaptTo(isRetainAsPublished, boolean.class, converter);
-            }
-
             final ExtendedSubscription subscription = subscriptionRegistry.addSubscription(sChannel, pChannel, qos, source::close, isReplyToSub);
             // @formatter:off
 			final CompletableFuture<Mqtt5SubAck> future = messagingClient.client.subscribeWith()
