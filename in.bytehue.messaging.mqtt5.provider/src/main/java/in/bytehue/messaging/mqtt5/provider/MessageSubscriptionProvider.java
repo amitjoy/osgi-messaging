@@ -114,6 +114,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         int qos() default 0;
 	}
 
+	private static final String ROOT_TOPIC_PREFIX = "mqtt/subscription/";
 	private volatile SubscriberConfig config;
 
     @Activate
@@ -360,13 +361,13 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 
         // Post the canonical event topic (e.g., mqtt/subscription/ACKED or FAILED)
         final Dictionary<String, Object> dict = FrameworkUtil.asDictionary(dtoMap);
-		ea.postEvent(new Event("mqtt/subscription/" + ackDto.type.name(), dict));
+		ea.postEvent(new Event(ROOT_TOPIC_PREFIX + ackDto.type.name(), dict));
 
         // Post bucket topics for easy prefix listeners: a/*, a/b/*, ...
         int idx = ackDto.topic.lastIndexOf('/');
         while (idx > 0) {
             final String bucket = ackDto.topic.substring(0, idx) + "/*";
-            ea.postEvent(new org.osgi.service.event.Event("mqtt/subscription/" + ackDto.type.name() + "/" + bucket, dict));
+            ea.postEvent(new Event(ROOT_TOPIC_PREFIX + ackDto.type.name() + "/" + bucket, dict));
             idx = ackDto.topic.lastIndexOf('/', idx - 1);
         }
     }
