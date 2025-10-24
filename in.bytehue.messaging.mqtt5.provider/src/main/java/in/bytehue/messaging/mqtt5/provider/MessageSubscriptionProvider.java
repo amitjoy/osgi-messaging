@@ -348,7 +348,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         return reasonCodes.stream().findFirst().filter(acceptedCodes::contains).isPresent();
     }
 
-    private void sendSubscriptionStatusEvent(final MqttSubAckDTO ackDto) {
+    private void sendSubscriptionStatusEvents(final MqttSubAckDTO ackDto) {
         final EventAdmin ea = eventAdmin;
         if (ea == null) {
         	logger.info("EventAdmin not available to send subscription status event");
