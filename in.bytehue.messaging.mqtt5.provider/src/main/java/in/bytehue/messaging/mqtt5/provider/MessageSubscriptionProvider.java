@@ -298,13 +298,13 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 			        subscription.setAcknowledged(true);
 			        final MqttSubAckDTO subAck =
 			                createStatusEvent(Type.ACKED, sChannel, qos, isReplyToSub, reason, codes);
-			        sendSubscriptionStatusEvent(subAck);
+			        sendSubscriptionStatusEvents(subAck);
 			        logger.debug("New subscription request for '{}' processed successfully - {} > ID: {}",
 			                     sChannel, ack, subscription.id);
 			    } else {
 			        final MqttSubAckDTO subNack =
 			                createStatusEvent(FAILED, sChannel, qos, isReplyToSub, reason, codes);
-			        sendSubscriptionStatusEvent(subNack);
+			        sendSubscriptionStatusEvents(subNack);
 			        logger.error("New subscription request for '{}' failed - {} > ID: {}",
 			                     sChannel, ack, subscription.id);
 			    }
@@ -322,14 +322,14 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
             // No SubAck available here → no reason codes
             final MqttSubAckDTO subNack =
                     createStatusEvent(FAILED, sChannel, qos, isReplyToSub, reason, new int[0]);
-            sendSubscriptionStatusEvent(subNack);
+            sendSubscriptionStatusEvents(subNack);
             throw new RuntimeException(e.getCause()); //NOSONAR
         } catch (final Exception e) { //NOSONAR
         	logger.error("Error while subscribing to {}", sChannel, e);
             final String reason = e.getMessage();
             final MqttSubAckDTO subNack =
                     createStatusEvent(FAILED, sChannel, qos, isReplyToSub, reason, new int[0]);
-            sendSubscriptionStatusEvent(subNack);
+            sendSubscriptionStatusEvents(subNack);
             throw new RuntimeException(e); // NOSONAR
         }
     }
