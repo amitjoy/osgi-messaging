@@ -7,6 +7,7 @@
 	org.apache.felix.configadmin,\
 	org.apache.felix.configurator,\
 	org.apache.felix.converter,\
+	org.apache.felix.eventadmin,\
 	org.apache.felix.log,\
 	org.apache.felix.scr,\
 	org.apache.sling.commons.johnzon,\
