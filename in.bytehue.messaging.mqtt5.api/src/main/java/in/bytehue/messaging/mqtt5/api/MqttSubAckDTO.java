@@ -32,7 +32,7 @@ public class MqttSubAckDTO extends DTO {
 	 * Type enum for clarity.
 	 */
 	public enum Type {
-		ACKED, FAILED
+		ACKED, FAILED, NO_ACK
 	}
 
 }
