@@ -26,6 +26,7 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationP
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RECEIVE_LOCAL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MqttSubAckDTO.Type.FAILED;
+import static in.bytehue.messaging.mqtt5.api.MqttSubAckDTO.Type.NO_ACK;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.acknowledgeMessage;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adaptTo;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.addTopicPrefix;
@@ -321,14 +322,14 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
             final String reason = cause.getMessage();
             // No SubAck available here → no reason codes
             final MqttSubAckDTO subNack =
-                    createStatusEvent(FAILED, sChannel, qos, isReplyToSub, reason, new int[0]);
+                    createStatusEvent(NO_ACK, sChannel, qos, isReplyToSub, reason, new int[0]);
             sendSubscriptionStatusEvents(subNack);
             throw new RuntimeException(e.getCause()); //NOSONAR
         } catch (final Exception e) { //NOSONAR
         	logger.error("Error while subscribing to {}", sChannel, e);
             final String reason = e.getMessage();
             final MqttSubAckDTO subNack =
-                    createStatusEvent(FAILED, sChannel, qos, isReplyToSub, reason, new int[0]);
+                    createStatusEvent(NO_ACK, sChannel, qos, isReplyToSub, reason, new int[0]);
             sendSubscriptionStatusEvents(subNack);
             throw new RuntimeException(e); // NOSONAR
         }
