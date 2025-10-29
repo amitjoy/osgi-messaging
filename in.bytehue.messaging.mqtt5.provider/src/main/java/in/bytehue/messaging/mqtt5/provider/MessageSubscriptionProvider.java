@@ -372,7 +372,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
             idx = ackDto.topic.lastIndexOf('/', idx - 1);
         }
     }
-    
+
     private MqttSubAckDTO createStatusEvent(Type type, String topic, int qos, boolean replyTo, String reason, int[] reasonCodes) {
     	MqttSubAckDTO dto = new MqttSubAckDTO();
     	
