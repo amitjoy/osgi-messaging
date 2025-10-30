@@ -320,7 +320,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         	logger.error("Error while subscribing to {}", sChannel, e);
             final Throwable cause = e.getCause() != null ? e.getCause() : e;
             final String reason = cause.getMessage();
-            // No SubAck available here → no reason codes
+            // No SubAck available here, hence, no reason codes
             final MqttSubAckDTO subNack =
                     createStatusEvent(NO_ACK, sChannel, qos, isReplyToSub, reason, new int[0]);
             sendSubscriptionStatusEvents(subNack);
@@ -328,6 +328,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         } catch (final Exception e) { //NOSONAR
         	logger.error("Error while subscribing to {}", sChannel, e);
             final String reason = e.getMessage();
+            // No SubAck available here, hence, no reason codes
             final MqttSubAckDTO subNack =
                     createStatusEvent(NO_ACK, sChannel, qos, isReplyToSub, reason, new int[0]);
             sendSubscriptionStatusEvents(subNack);
