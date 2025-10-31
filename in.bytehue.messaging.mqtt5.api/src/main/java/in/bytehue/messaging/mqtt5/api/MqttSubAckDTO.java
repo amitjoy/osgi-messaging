@@ -29,10 +29,39 @@ public class MqttSubAckDTO extends DTO {
 	public long timestamp;
 
 	/**
-	 * Type enum for clarity.
+	 * Represents the outcome of a subscription request, providing clarity on the
+	 * status of the MQTT SUBACK packet.
 	 */
 	public enum Type {
-		ACKED, FAILED, NO_ACK
+		/**
+		 * The subscription was successfully acknowledged by the broker.
+		 * <p>
+		 * This status is set when a SUBACK packet is received from the broker and
+		 * contains a success reason code (e.g., {@code GRANTED_QOS_0},
+		 * {@code GRANTED_QOS_1}, or {@code GRANTED_QOS_2}).
+		 */
+		ACKED,
+
+		/**
+		 * The broker explicitly rejected the subscription.
+		 * <p>
+		 * This status is set when a SUBACK packet is received but contains a failure
+		 * reason code (e.g., {@code UNSPECIFIED_ERROR},
+		 * {@code TOPIC_FILTER_INVALID}). This represents a definitive failure communicated
+		 * by the broker.
+		 */
+		FAILED,
+
+		/**
+		 * No acknowledgement (SUBACK) was received from the broker.
+		 * <p>
+		 * This status is set when the client does not receive a SUBACK packet within
+		 * the configured timeout period. This can occur due to a network issue, the
+		 * broker being offline, or a client-side exception (e.g.,
+		 * {@code TimeoutException}, {@code InterruptedException}) that prevents the
+		 * acknowledgement from being processed.
+		 */
+		NO_ACK
 	}
 
 }
