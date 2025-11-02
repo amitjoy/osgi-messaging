@@ -41,7 +41,6 @@ import static org.osgi.service.messaging.Features.EXTENSION_QOS;
 import static org.osgi.service.messaging.Features.REPLY_TO;
 
 import java.util.Arrays;
-import java.util.Dictionary;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -49,7 +48,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.FrameworkUtil;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -358,20 +356,11 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         }
 
         final Map<String, Object> dtoMap = converter.convert(ackDto).sourceAsDTO()
-        .to(new TypeReference<Map<String, Object>>() {
-        });
+                .to(new TypeReference<Map<String, Object>>() {
+                });
 
         // Post the canonical event topic (e.g., mqtt/subscription/ACKED or FAILED)
-        final Dictionary<String, Object> dict = FrameworkUtil.asDictionary(dtoMap);
-		ea.postEvent(new Event(ROOT_TOPIC_PREFIX + ackDto.type.name(), dict));
-
-        // Post bucket topics for easy prefix listeners: a/*, a/b/*, ...
-        int idx = ackDto.topic.lastIndexOf('/');
-        while (idx > 0) {
-            final String bucket = ackDto.topic.substring(0, idx) + "/*";
-            ea.postEvent(new Event(ROOT_TOPIC_PREFIX + ackDto.type.name() + "/" + bucket, dict));
-            idx = ackDto.topic.lastIndexOf('/', idx - 1);
-        }
+        ea.postEvent(new Event(ROOT_TOPIC_PREFIX + ackDto.type.name(), dtoMap));
     }
 
     private MqttSubAckDTO createStatusEvent(Type type, String topic, int qos, boolean replyTo, String reason, int[] reasonCodes) {
