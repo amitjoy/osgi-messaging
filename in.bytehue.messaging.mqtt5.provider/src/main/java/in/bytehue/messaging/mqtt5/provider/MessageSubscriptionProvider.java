@@ -45,6 +45,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentServiceObjects;
@@ -80,6 +82,7 @@ import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionProvider.Subscribe
 import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionRegistry.ExtendedSubscription;
 import in.bytehue.messaging.mqtt5.provider.helper.InterruptSafe;
 import in.bytehue.messaging.mqtt5.provider.helper.SubscriptionAck;
+import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 
 //@formatter:off
 @MessagingFeature(
@@ -110,6 +113,11 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 
 		@AttributeDefinition(name = "Default QoS for subscriptions unless specified", min = "0", max = "2")
         int qos() default 0;
+
+		@AttributeDefinition(name = "Unsubscribe Thread Pool Size",
+		                     description = "Number of threads in the fixed pool for handling unsubscribe tasks.",
+		                     min = "1")
+		int unsubscribeThreadPoolSize() default 5;
 	}
 
 	private volatile SubscriberConfig config;
@@ -135,21 +143,34 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
     @Reference
     private ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
 
+    private ExecutorService asyncTaskExecutor;
+
     @Activate
     void activate(final SubscriberConfig config) {
     	logger.info("Messaging subscriber has been activated");
         this.config = config;
+        createExecutor();
     }
 
     @Modified
     void modified(final SubscriberConfig config) {
     	logger.info("Messaging subscriber has been updated");
         this.config = config;
+
+        // Shut down the old executor
+        if (asyncTaskExecutor != null) {
+            asyncTaskExecutor.shutdownNow();
+        }
+        createExecutor();
     }
 
     @Deactivate
     void stop() {
         subscriptionRegistry.clearAllSubscriptions();
+        // Shut down our internal async task executor
+        if (asyncTaskExecutor != null) {
+            asyncTaskExecutor.shutdownNow();
+        }
     }
 
     public synchronized SubscriberConfig config() {
@@ -308,14 +329,15 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
             });
 			stream.onClose(() -> {
 		        logger.debug("Removing subscription '{}'", subscription.id);
-		        
+
 		        // Call the fast, synchronized, non-blocking remove method
 		        boolean wasLastSubscriber = subscriptionRegistry.removeSubscription(sChannel, subscription.id);
-		        
-		        // If we were the last, *now* we do the blocking I/O
-		        // This is safe because it holds no locks.
+
 		        if (wasLastSubscriber) {
-		            subscriptionRegistry.unsubscribeSubscription(sChannel);
+		            CompletableFuture.runAsync(() -> {
+		                logger.debug("Performing final unsubscribe for topic '{}'", sChannel);
+		                subscriptionRegistry.unsubscribeSubscription(sChannel);
+		            }, asyncTaskExecutor);
 		        }
 		    });
             future.get(config.timeoutInMillis(), MILLISECONDS);
@@ -339,6 +361,12 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
             throw new RuntimeException(e); // NOSONAR
         }
     }
+
+	private void createExecutor() {
+		asyncTaskExecutor = Executors.newFixedThreadPool(
+                config.unsubscribeThreadPoolSize(),
+                new ThreadFactoryBuilder().setThreadFactoryName("mqtt-sub-close").setDaemon(true).build());
+	}
 
 	private SimplePushEventSource<Message> acquirePushEventSource(final PushStreamProvider provider) {
 		return InterruptSafe.execute(() -> provider.createSimpleEventSource(Message.class));
@@ -376,6 +404,5 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 
     	return dto;
     }
-
 
 }
