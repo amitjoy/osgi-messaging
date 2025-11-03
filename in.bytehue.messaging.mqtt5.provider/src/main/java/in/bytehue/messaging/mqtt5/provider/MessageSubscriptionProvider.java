@@ -34,8 +34,6 @@ import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getQoS;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.toMessage;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL;
-import static org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC;
 import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
 import static org.osgi.service.messaging.Features.EXTENSION_QOS;
 import static org.osgi.service.messaging.Features.REPLY_TO;
@@ -113,11 +111,13 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         int qos() default 0;
 	}
 
-	private static final String ROOT_TOPIC_PREFIX = "mqtt/subscription/";
 	private volatile SubscriberConfig config;
 
     @Activate
     private BundleContext bundleContext;
+
+    @Reference
+    private EventAdmin eventAdmin;
 
     @Reference
     private ConverterAdapter converter;
@@ -133,9 +133,6 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 
     @Reference
     private ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
-
-    @Reference(cardinality = OPTIONAL, policy = DYNAMIC)
-    private volatile EventAdmin eventAdmin;
 
     @Activate
     void activate(final SubscriberConfig config) {
