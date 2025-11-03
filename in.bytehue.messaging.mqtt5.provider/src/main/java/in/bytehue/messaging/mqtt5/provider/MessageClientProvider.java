@@ -333,9 +333,28 @@ public final class MessageClientProvider implements MqttClient {
 		connectionLock.lock();
 		try {
 			init(config);
+			connectInProgress = true;
 		} finally {
 			connectionLock.unlock();
 		}
+
+		// Run connection logic *outside* the lock
+		CompletableFuture.runAsync(() -> {
+			try {
+				logger.info("Performing initial connection");
+				connectInternal();
+			} catch (final Exception e) {
+				logger.error("Error occurred while establishing connection to the broker '{}'", config.server(), e);
+			} finally {
+				connectionLock.lock();
+				try {
+					connectInProgress = false;
+					operationComplete.signalAll();
+				} finally {
+					connectionLock.unlock();
+				}
+			}
+		});
 	}
 
 	@Modified
@@ -343,7 +362,7 @@ public final class MessageClientProvider implements MqttClient {
 		connectionLock.lock();
 		try {
 			logger.info("Client configuration has been modified");
-			// Wait for any in-progress operations to complete
+			// Wait for any in-progress operations to complete (unchanged)
 			if (disconnectInProgress) {
 				logger.warn("Disconnect in progress, waiting before reconfiguration");
 				try {
@@ -365,6 +384,7 @@ public final class MessageClientProvider implements MqttClient {
 			connectionLock.unlock();
 		}
 
+		// --- Disconnect Phase ---
 		try {
 			disconnect(true);
 		} finally {
@@ -377,12 +397,32 @@ public final class MessageClientProvider implements MqttClient {
 			}
 		}
 
+		// --- Reconnect Phase ---
 		connectionLock.lock();
 		try {
 			init(config);
+			connectInProgress = true;
 		} finally {
 			connectionLock.unlock();
 		}
+
+		// Run re-connection logic *outside* the lock
+		CompletableFuture.runAsync(() -> {
+			try {
+				logger.info("Performing connection after modification");
+				connectInternal();
+			} catch (final Exception e) {
+				logger.error("Error occurred while establishing connection to the broker '{}'", config.server(), e);
+			} finally {
+				connectionLock.lock();
+				try {
+					connectInProgress = false;
+					operationComplete.signalAll();
+				} finally {
+					connectionLock.unlock();
+				}
+			}
+		});
 	}
 
 	@Deactivate
@@ -447,11 +487,6 @@ public final class MessageClientProvider implements MqttClient {
 	private void init(final Config config) {
 		logger.info("Performing connection");
 		this.config = config;
-		try {
-			connectInternal();
-		} catch (final Exception e) {
-			logger.error("Error occurred while establishing connection to the broker '{}'", config.server(), e);
-		}
 	}
 
 	@Override
