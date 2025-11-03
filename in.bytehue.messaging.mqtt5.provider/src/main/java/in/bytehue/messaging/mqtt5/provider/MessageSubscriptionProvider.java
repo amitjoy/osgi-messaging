@@ -348,19 +348,19 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         return reasonCodes.stream().findFirst().filter(acceptedCodes::contains).isPresent();
     }
 
-    private void sendSubscriptionStatusEvent(final MqttSubAckDTO ackDto) { 
+    private void sendSubscriptionStatusEvent(final MqttSubAckDTO ack) { 
         final EventAdmin ea = eventAdmin;
         if (ea == null) {
         	logger.info("EventAdmin not available to send subscription status event");
         	return;
         }
 
-        final Map<String, Object> dtoMap = converter.convert(ackDto).sourceAsDTO()
+        final Map<String, Object> dtoMap = converter.convert(ack).sourceAsDTO()
                 .to(new TypeReference<Map<String, Object>>() {
                 });
 
         // Post the canonical event topic (e.g., mqtt/subscription/ACKED or FAILED)
-        ea.postEvent(new Event(ROOT_TOPIC_PREFIX + ackDto.type.name(), dtoMap));
+        ea.postEvent(new Event(ROOT_TOPIC_PREFIX + ack.type.name(), dtoMap));
     }
 
     private MqttSubAckDTO createStatusEvent(Type type, String topic, int qos, boolean replyTo, String reason, int[] reasonCodes) {
