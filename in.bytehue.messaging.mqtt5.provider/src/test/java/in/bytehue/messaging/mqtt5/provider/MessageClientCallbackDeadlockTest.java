@@ -176,8 +176,18 @@ public class MessageClientCallbackDeadlockTest {
                 
                 client.connect().get(5, SECONDS);
                 
+                // Wait for connection to be established (async operation)
+                // The connect() future completes when connection is initiated, not when connected
+                int retries = 0;
+                while (!client.isConnected() && retries < 50) {
+                    Thread.sleep(100);
+                    retries++;
+                }
+                
                 // Verify we're still responsive
-                assertThat(client.isConnected()).isTrue();
+                assertThat(client.isConnected())
+                    .as("Client should be connected after waiting")
+                    .isTrue();
                 
                 Thread.sleep(100);
             }
