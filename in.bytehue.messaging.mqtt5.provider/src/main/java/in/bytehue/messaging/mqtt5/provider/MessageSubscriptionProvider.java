@@ -298,7 +298,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 			        final MqttSubAckDTO subAck =
 			                createStatusEvent(Type.ACKED, sChannel, qos, isReplyToSub, reason, codes);
 			        sendSubscriptionStatusEvent(subAck);
-			        logger.debug("New subscription request for '{}' processed successfully - {} > ID: {}",
+			        logger.info("New subscription request for '{}' processed successfully - {} > ID: {}",
 			                     sChannel, ack, subscription.id);
 			    } else {
 			        final MqttSubAckDTO subNack =
