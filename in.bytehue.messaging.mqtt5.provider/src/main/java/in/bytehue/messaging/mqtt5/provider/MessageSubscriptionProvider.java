@@ -365,7 +365,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 
     private MqttSubAckDTO createStatusEvent(Type type, String topic, int qos, boolean replyTo, String reason, int[] reasonCodes) {
     	MqttSubAckDTO dto = new MqttSubAckDTO();
-    	
+
     	dto.type = type;
     	dto.topic = topic;
     	dto.qos = qos;
@@ -373,7 +373,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
     	dto.reason = reason;
     	dto.reasonCodes = reasonCodes;
     	dto.timestamp = System.currentTimeMillis();
-    	
+
     	return dto;
     }
 
