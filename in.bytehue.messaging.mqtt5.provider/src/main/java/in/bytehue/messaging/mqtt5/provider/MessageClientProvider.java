@@ -15,6 +15,7 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
+import static com.hivemq.client.mqtt.MqttClientState.CONNECTED;
 import static com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode.NORMAL_DISCONNECTION;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.CLIENT_ID_FRAMEWORK_PROPERTY;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CONNECTION_READY_SERVICE_PROPERTY;
@@ -397,7 +398,7 @@ public final class MessageClientProvider implements MqttClient {
 
     @Override
     public CompletableFuture<Void> connect() {
-        if (client != null && client.getState() == com.hivemq.client.mqtt.MqttClientState.CONNECTED) {
+        if (client != null && client.getState() == CONNECTED) {
             throw new IllegalStateException("Client is already connected");
         }
         return CompletableFuture.runAsync(() -> {
@@ -411,7 +412,7 @@ public final class MessageClientProvider implements MqttClient {
 
     @Override
     public boolean isConnected() {
-        return client != null && client.getState() == com.hivemq.client.mqtt.MqttClientState.CONNECTED;
+        return client != null && client.getState() == CONNECTED;
     }
 
     private void connectInternal() {
