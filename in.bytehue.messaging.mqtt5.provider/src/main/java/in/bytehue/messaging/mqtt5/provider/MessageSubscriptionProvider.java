@@ -297,13 +297,13 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 			        subscription.setAcknowledged(true);
 			        final MqttSubAckDTO subAck =
 			                createStatusEvent(Type.ACKED, sChannel, qos, isReplyToSub, reason, codes);
-			        sendSubscriptionStatusEvents(subAck);
+			        sendSubscriptionStatusEvent(subAck);
 			        logger.debug("New subscription request for '{}' processed successfully - {} > ID: {}",
 			                     sChannel, ack, subscription.id);
 			    } else {
 			        final MqttSubAckDTO subNack =
 			                createStatusEvent(FAILED, sChannel, qos, isReplyToSub, reason, codes);
-			        sendSubscriptionStatusEvents(subNack);
+			        sendSubscriptionStatusEvent(subNack);
 			        logger.error("New subscription request for '{}' failed - {} > ID: {}",
 			                     sChannel, ack, subscription.id);
 			    }
@@ -321,7 +321,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
             // No SubAck available here, hence, no reason codes
             final MqttSubAckDTO subNack =
                     createStatusEvent(NO_ACK, sChannel, qos, isReplyToSub, reason, new int[0]);
-            sendSubscriptionStatusEvents(subNack);
+            sendSubscriptionStatusEvent(subNack);
             throw new RuntimeException(e.getCause()); //NOSONAR
         } catch (final Exception e) { //NOSONAR
         	logger.error("Error while subscribing to {}", sChannel, e);
@@ -329,7 +329,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
             // No SubAck available here, hence, no reason codes
             final MqttSubAckDTO subNack =
                     createStatusEvent(NO_ACK, sChannel, qos, isReplyToSub, reason, new int[0]);
-            sendSubscriptionStatusEvents(subNack);
+            sendSubscriptionStatusEvent(subNack);
             throw new RuntimeException(e); // NOSONAR
         }
     }
@@ -348,7 +348,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         return reasonCodes.stream().findFirst().filter(acceptedCodes::contains).isPresent();
     }
 
-    private void sendSubscriptionStatusEvents(final MqttSubAckDTO ackDto) {
+    private void sendSubscriptionStatusEvent(final MqttSubAckDTO ackDto) { 
         final EventAdmin ea = eventAdmin;
         if (ea == null) {
         	logger.info("EventAdmin not available to send subscription status event");
