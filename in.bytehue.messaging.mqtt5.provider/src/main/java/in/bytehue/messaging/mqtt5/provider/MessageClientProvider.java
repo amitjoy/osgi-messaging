@@ -18,10 +18,13 @@ package in.bytehue.messaging.mqtt5.provider;
 import static com.hivemq.client.mqtt.MqttClientState.CONNECTED;
 import static com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode.NORMAL_DISCONNECTION;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.CLIENT_ID_FRAMEWORK_PROPERTY;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CLIENT_CONNECTED_EVENT_TOPIC;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CONNECTION_READY_SERVICE_PROPERTY;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.CLIENT;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalService;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalServiceWithoutType;
+import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.osgi.service.component.annotations.ConfigurationPolicy.REQUIRE;
 import static org.osgi.service.condition.Condition.CONDITION_ID;
@@ -58,6 +61,8 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.event.Event;
+import org.osgi.service.event.EventAdmin;
 import org.osgi.service.log.Logger;
 import org.osgi.service.log.LoggerFactory;
 import org.osgi.service.messaging.annotations.ProvideMessagingFeature;
@@ -309,6 +314,8 @@ public final class MessageClientProvider implements MqttClient {
 
 	public volatile Mqtt5AsyncClient client;
 
+	@Reference
+	private EventAdmin eventAdmin;
 	@Reference(service = LoggerFactory.class)
 	private Logger logger;
 	@Activate
@@ -952,6 +959,7 @@ public final class MessageClientProvider implements MqttClient {
 
 			readyServiceReg = bundleContext.registerService(Object.class, new Object(),
 					FrameworkUtil.asDictionary(properties));
+			eventAdmin.postEvent(new Event(MQTT_CLIENT_CONNECTED_EVENT_TOPIC, emptyMap()));
 		} finally {
 			connectionLock.unlock();
 		}
@@ -965,6 +973,7 @@ public final class MessageClientProvider implements MqttClient {
 					readyServiceReg.unregister();
 					readyServiceReg = null;
 				}
+				eventAdmin.postEvent(new Event(MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC, emptyMap()));
 			} catch (final IllegalStateException e) {
 				// this could happen if the reconnect happens pretty quickly
 				logger.debug("The MQTT Connection Ready service has already been deregistered");
