@@ -496,8 +496,6 @@ public final class MessageClientProvider implements MqttClient {
 		try {
 			if (client == null) {
 				logger.warn("Client is null, skipping disconnection");
-				// Still need to clear the flag if this was called from lifecycle methods
-				disconnectInProgress = false;
 				return;
 			}
 			clientToDisconnect = client;
