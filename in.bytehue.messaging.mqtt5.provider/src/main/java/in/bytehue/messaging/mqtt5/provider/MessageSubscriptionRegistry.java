@@ -18,6 +18,7 @@ package in.bytehue.messaging.mqtt5.provider;
 import static com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode.NO_SUBSCRIPTIONS_EXISTED;
 import static com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode.SUCCESS;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.toServiceReferenceDTO;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,7 +60,7 @@ public final class MessageSubscriptionRegistry {
 	// there can be multiple subscriptions for a single topic
 	private final Map<String, Map<String, ExtendedSubscription>> subscriptions = new ConcurrentHashMap<>();
 
-	public synchronized ExtendedSubscription addSubscription(final String subChannel, final String pubChannel, int qos,
+	public ExtendedSubscription addSubscription(final String subChannel, final String pubChannel, int qos,
 			final Runnable connectedStreamCloser, final boolean isReplyToSub) {
 		final ExtendedSubscription sub = new ExtendedSubscription(subChannel, pubChannel, qos, connectedStreamCloser,
 				isReplyToSub);
@@ -67,18 +68,23 @@ public final class MessageSubscriptionRegistry {
 		return sub;
 	}
 
-	public synchronized void removeSubscription(final String channel, final String id) {
+	// This method blocks the *caller's thread* (due to unsubscribeSubscription),
+	// but it no longer holds the component-wide lock.
+	public void removeSubscription(final String channel, final String id) {
 		final Map<String, ExtendedSubscription> existingSubscriptions = subscriptions.get(channel);
 		if (existingSubscriptions == null || existingSubscriptions.isEmpty()) {
-			unsubscribeSubscription(channel);
+			unsubscribeSubscription(channel); // This call blocks, but holds no lock
 			return;
 		}
+		// This is an atomic, thread-safe operation on the inner ConcurrentHashMap
 		final ExtendedSubscription existingSubscription = existingSubscriptions.remove(id);
 		if (existingSubscription != null) {
 			existingSubscription.connectedStreamCloser.run();
 		}
 	}
 
+	// This is the FAST, state-only removal method.
+	// It is safely callable from multiple threads.
 	public synchronized void removeSubscription(final String channel) {
 		final Map<String, ExtendedSubscription> exisitngSubscriptions = subscriptions.remove(channel);
 		if (exisitngSubscriptions != null) {
@@ -86,27 +92,46 @@ public final class MessageSubscriptionRegistry {
 		}
 	}
 
-	public synchronized ExtendedSubscription getSubscription(final String channel, final String id) {
+	// Fast, thread-safe read from ConcurrentHashMap
+	public ExtendedSubscription getSubscription(final String channel, final String id) {
 		final Map<String, ExtendedSubscription> existingSubscriptions = subscriptions.get(channel);
 		return existingSubscriptions != null ? existingSubscriptions.get(id) : null;
 	}
 
-	public synchronized void unsubscribeSubscription(final String subChannel) {
-		messagingClient.client.unsubscribeWith().addTopicFilter(subChannel).send().thenAccept(ack -> {
+	// This method BLOCKS THE CALLER, but holds no component-wide lock.
+	public void unsubscribeSubscription(final String subChannel) {
+		try {
+			final Mqtt5UnsubAck ack = messagingClient.client.unsubscribeWith().addTopicFilter(subChannel).send().get(2,
+					SECONDS); // Block for max 2 seconds
+
 			if (isUnsubscriptionAcknowledged(ack)) {
+				// This call is now safe (re-entrant lock)
 				removeSubscription(subChannel);
 				logger.debug("Unsubscription request for '{}' processed successfully - {}", subChannel, ack);
 			} else {
 				logger.error("Unsubscription request for '{}' failed - {}", subChannel, ack);
+				// Still remove it locally to clean up the stream
+				removeSubscription(subChannel);
 			}
-		});
+		} catch (final Exception e) {
+			logger.error("Unsubscription for '{}' failed with exception, cleaning up locally", subChannel, e);
+			// Must clean up local state regardless of broker error
+			removeSubscription(subChannel);
+		}
 	}
 
 	@Deactivate
 	public void clearAllSubscriptions() {
-		subscriptions.keySet().stream().forEach(this::unsubscribeSubscription);
+		// Iterate a snapshot of the keys to avoid ConcurrentModificationException
+		final List<String> topics = new ArrayList<>(subscriptions.keySet());
+
+		// Call the FAST, non-blocking, SYNCHRONIZED removeSubscription(channel)
+		// This safely cleans up all internal streams without network I/O.
+		topics.forEach(this::removeSubscription);
 	}
 
+	// DTO methods need to lock to get a consistent snapshot for iteration.
+	// This is fast and non-blocking, so it's safe.
 	public synchronized SubscriptionDTO[] getSubscriptionDTOs() {
 		final List<SubscriptionDTO> subscriptionDTOs = new ArrayList<>();
 		for (final Entry<String, Map<String, ExtendedSubscription>> entry : subscriptions.entrySet()) {
@@ -133,7 +158,8 @@ public final class MessageSubscriptionRegistry {
 						replyToSubscriptions.add(replyToSub);
 					} else {
 						for (final Entry<String, ChannelDTO> pubEntry : sub.pubChannels.entrySet()) {
-							final ReplyToSubscriptionDTO replyToSub = getReplyToSubscriptionDTO(sub, pubEntry.getValue());
+							final ReplyToSubscriptionDTO replyToSub = getReplyToSubscriptionDTO(sub,
+									pubEntry.getValue());
 							replyToSubscriptions.add(replyToSub);
 						}
 					}
@@ -146,11 +172,11 @@ public final class MessageSubscriptionRegistry {
 	private SubscriptionDTO getSubscriptionDTO(final ExtendedSubscription sub) {
 		final SubscriptionDTO subscriptionDTO = new SubscriptionDTO();
 
-	    subscriptionDTO.serviceDTO = toServiceReferenceDTO(MessageSubscriptionProvider.class, bundleContext);
-	    subscriptionDTO.channel = sub.subChannel;
-	    subscriptionDTO.qos = sub.qos;
+		subscriptionDTO.serviceDTO = toServiceReferenceDTO(MessageSubscriptionProvider.class, bundleContext);
+		subscriptionDTO.channel = sub.subChannel;
+		subscriptionDTO.qos = sub.qos;
 
-	    return subscriptionDTO;
+		return subscriptionDTO;
 	}
 
 	private ReplyToSubscriptionDTO getReplyToSubscriptionDTO(ExtendedSubscription sub, final ChannelDTO pubDTO) {
