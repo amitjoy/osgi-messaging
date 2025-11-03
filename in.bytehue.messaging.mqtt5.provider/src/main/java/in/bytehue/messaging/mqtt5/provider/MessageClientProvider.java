@@ -41,6 +41,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 import javax.net.ssl.HostnameVerifier;
@@ -317,28 +319,108 @@ public final class MessageClientProvider implements MqttClient {
 
 	private String lastDisconnectReason;
 	private AtomicLong connectedTimestamp = new AtomicLong(-1L);
-	private final Object connectionLock = new Object();
+
+	// ReentrantLock for better concurrency control
+	private final ReentrantLock connectionLock = new ReentrantLock();
+	private final Condition operationComplete = connectionLock.newCondition();
+
+	// State tracking to prevent concurrent operations
+	private boolean connectInProgress = false;
+	private boolean disconnectInProgress = false;
 
 	@Activate
 	void activate(final Config config, final Map<String, Object> properties) {
-		synchronized (connectionLock) {
+		connectionLock.lock();
+		try {
 			init(config);
+		} finally {
+			connectionLock.unlock();
 		}
 	}
 
 	@Modified
 	void modified(final Config config, final Map<String, Object> properties) {
-		synchronized (connectionLock) {
+		connectionLock.lock();
+		try {
 			logger.info("Client configuration has been modified");
+			// Wait for any in-progress operations to complete
+			if (disconnectInProgress) {
+				logger.warn("Disconnect in progress, waiting before reconfiguration");
+				try {
+					operationComplete.await(5, SECONDS);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+			}
+			if (connectInProgress) {
+				logger.warn("Connect in progress, waiting before reconfiguration");
+				try {
+					operationComplete.await(5, SECONDS);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+			}
+			disconnectInProgress = true; // Mark as in progress for lifecycle
+		} finally {
+			connectionLock.unlock();
+		}
+
+		try {
 			disconnect(true);
+		} finally {
+			connectionLock.lock();
+			try {
+				disconnectInProgress = false;
+				operationComplete.signalAll();
+			} finally {
+				connectionLock.unlock();
+			}
+		}
+
+		connectionLock.lock();
+		try {
 			init(config);
+		} finally {
+			connectionLock.unlock();
 		}
 	}
 
 	@Deactivate
 	void deactivate(final Map<String, Object> properties) {
-		synchronized (connectionLock) {
+		connectionLock.lock();
+		try {
+			// Wait for any in-progress operations
+			if (disconnectInProgress) {
+				logger.warn("Disconnect in progress, waiting before deactivation");
+				try {
+					operationComplete.await(5, SECONDS);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+			}
+			if (connectInProgress) {
+				logger.warn("Connect in progress, waiting before deactivation");
+				try {
+					operationComplete.await(5, SECONDS);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+			}
+			disconnectInProgress = true;
+		} finally {
+			connectionLock.unlock();
+		}
+
+		try {
 			disconnect(false);
+		} finally {
+			connectionLock.lock();
+			try {
+				disconnectInProgress = false;
+				operationComplete.signalAll();
+			} finally {
+				connectionLock.unlock();
+			}
 		}
 	}
 
@@ -354,8 +436,11 @@ public final class MessageClientProvider implements MqttClient {
 
 	@Override
 	public String getLastDisconnectReason() {
-		synchronized (connectionLock) {
+		connectionLock.lock();
+		try {
 			return lastDisconnectReason;
+		} finally {
+			connectionLock.unlock();
 		}
 	}
 
@@ -371,11 +456,30 @@ public final class MessageClientProvider implements MqttClient {
 
 	@Override
 	public CompletableFuture<Void> disconnect() {
-		synchronized (connectionLock) {
+		connectionLock.lock();
+		try {
 			if (!isConnectedInternal()) {
 				throw new IllegalStateException("Client is not connected");
 			}
-			return CompletableFuture.runAsync(() -> disconnect(false));
+			if (disconnectInProgress) {
+				throw new IllegalStateException("Disconnect already in progress");
+			}
+			disconnectInProgress = true;
+			return CompletableFuture.runAsync(() -> {
+				try {
+					disconnect(false);
+				} finally {
+					connectionLock.lock();
+					try {
+						disconnectInProgress = false;
+						operationComplete.signalAll();
+					} finally {
+						connectionLock.unlock();
+					}
+				}
+			});
+		} finally {
+			connectionLock.unlock();
 		}
 	}
 
@@ -386,11 +490,14 @@ public final class MessageClientProvider implements MqttClient {
 		final boolean useSessionExpiry;
 		final int sessionExpiryInterval;
 		final ScheduledExecutorService executorToShutdown;
-		
+
 		// Critical section: capture state only
-		synchronized (connectionLock) {
+		connectionLock.lock();
+		try {
 			if (client == null) {
 				logger.warn("Client is null, skipping disconnection");
+				// Still need to clear the flag if this was called from lifecycle methods
+				disconnectInProgress = false;
 				return;
 			}
 			clientToDisconnect = client;
@@ -404,12 +511,14 @@ public final class MessageClientProvider implements MqttClient {
 			useSessionExpiry = config.useSessionExpiryForDisconnect();
 			sessionExpiryInterval = config.sessionExpiryIntervalForDisconnect();
 			executorToShutdown = customExecutor;
+		} finally {
+			connectionLock.unlock();
 		}
 		// Lock released - perform blocking I/O without holding lock
-		
+
 		logger.info("Performing disconnection");
-		final SendVoid disconnectParams = clientToDisconnect.toBlocking().disconnectWith()
-				.reasonCode(reasonCode).reasonString(reasonDescription);
+		final SendVoid disconnectParams = clientToDisconnect.toBlocking().disconnectWith().reasonCode(reasonCode)
+				.reasonString(reasonDescription);
 
 		if (useSessionExpiry) {
 			logger.debug("Applying Session Expiry Interval for Disconnect: {}", sessionExpiryInterval);
@@ -419,37 +528,58 @@ public final class MessageClientProvider implements MqttClient {
 			disconnectParams.noSessionExpiry();
 		}
 		disconnectParams.send();
-		
+
 		// Critical section: cleanup only
-		synchronized (connectionLock) {
+		connectionLock.lock();
+		try {
 			if (executorToShutdown != null) {
 				executorToShutdown.shutdownNow();
 				NettyEventLoopProvider.INSTANCE.releaseEventLoop(executorToShutdown);
 				customExecutor = null;
 			}
+		} finally {
+			connectionLock.unlock();
 		}
 	}
 
 	@Override
 	public CompletableFuture<Void> connect() {
-		synchronized (connectionLock) {
+		connectionLock.lock();
+		try {
 			if (client != null && client.getState() == CONNECTED) {
 				throw new IllegalStateException("Client is already connected");
 			}
+			if (connectInProgress) {
+				throw new IllegalStateException("Connect already in progress");
+			}
+			connectInProgress = true;
 			return CompletableFuture.runAsync(() -> {
 				try {
 					connectInternal();
 				} catch (final Exception e) {
 					throw new RuntimeException("Failed to connect to MQTT broker", e);
+				} finally {
+					connectionLock.lock();
+					try {
+						connectInProgress = false;
+						operationComplete.signalAll();
+					} finally {
+						connectionLock.unlock();
+					}
 				}
 			});
+		} finally {
+			connectionLock.unlock();
 		}
 	}
 
 	@Override
 	public boolean isConnected() {
-		synchronized (connectionLock) {
+		connectionLock.lock();
+		try {
 			return isConnectedInternal();
+		} finally {
+			connectionLock.unlock();
 		}
 	}
 
@@ -458,7 +588,8 @@ public final class MessageClientProvider implements MqttClient {
 	}
 
 	private void connectInternal() {
-		synchronized (connectionLock) {
+		connectionLock.lock();
+		try {
 			if (client != null && client.getState() == CONNECTED) {
 				logger.warn("Client already connected, skipping connection attempt");
 				return;
@@ -477,9 +608,12 @@ public final class MessageClientProvider implements MqttClient {
 
 			clientBuilder.addConnectedListener(context -> connectedTimestamp.set(System.currentTimeMillis()));
 			clientBuilder.addDisconnectedListener(context -> {
-				synchronized (connectionLock) {
+				connectionLock.lock();
+				try {
 					connectedTimestamp.set(-1);
 					lastDisconnectReason = context.getCause().getMessage();
+				} finally {
+					connectionLock.unlock();
 				}
 			});
 
@@ -650,6 +784,8 @@ public final class MessageClientProvider implements MqttClient {
 					logger.debug("Successfully connected to the broker - '{}'", connAck);
 				}
 			});
+		} finally {
+			connectionLock.unlock();
 		}
 	}
 
@@ -693,17 +829,21 @@ public final class MessageClientProvider implements MqttClient {
 	}
 
 	private void registerReadyService(final MqttClientConnectedContext context) {
-		synchronized (connectionLock) {
+		connectionLock.lock();
+		try {
 			final Map<String, Object> properties = new HashMap<>();
 			properties.put(MQTT_CONNECTION_READY_SERVICE_PROPERTY, "true");
 
 			readyServiceReg = bundleContext.registerService(Object.class, new Object(),
 					FrameworkUtil.asDictionary(properties));
+		} finally {
+			connectionLock.unlock();
 		}
 	}
 
 	private void unregisterReadyService(final MqttClientDisconnectedContext context) {
-		synchronized (connectionLock) {
+		connectionLock.lock();
+		try {
 			try {
 				if (readyServiceReg != null) {
 					readyServiceReg.unregister();
@@ -713,6 +853,8 @@ public final class MessageClientProvider implements MqttClient {
 				// this could happen if the reconnect happens pretty quickly
 				logger.debug("The MQTT Connection Ready service has already been deregistered");
 			}
+		} finally {
+			connectionLock.unlock();
 		}
 	}
 
