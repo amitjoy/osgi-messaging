@@ -815,11 +815,11 @@ public final class MessageClientProvider implements MqttClient {
 						.incomingQos1Interceptor(getOptionalService(Mqtt5IncomingQos1Interceptor.class,
 								config.qos1IncomingInterceptorFilter(), bundleContext, logger).orElse(null))
 						.incomingQos2Interceptor(getOptionalService(Mqtt5IncomingQos2Interceptor.class,
-								config.qos1IncomingInterceptorFilter(), bundleContext, logger).orElse(null))
+								config.qos2IncomingInterceptorFilter(), bundleContext, logger).orElse(null))
 						.outgoingQos1Interceptor(getOptionalService(Mqtt5OutgoingQos1Interceptor.class,
-								config.qos1IncomingInterceptorFilter(), bundleContext, logger).orElse(null))
+								config.qos1OutgoingInterceptorFilter(), bundleContext, logger).orElse(null))
 						.outgoingQos2Interceptor(getOptionalService(Mqtt5OutgoingQos2Interceptor.class,
-								config.qos1IncomingInterceptorFilter(), bundleContext, logger).orElse(null))
+								config.qos2OutgoingInterceptorFilter(), bundleContext, logger).orElse(null))
 						.applyInterceptors();
 			}
 
