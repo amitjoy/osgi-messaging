@@ -82,7 +82,7 @@ import com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos2.Mqtt5OutgoingQos2I
 import com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism;
 import com.hivemq.client.mqtt.mqtt5.message.connect.Mqtt5ConnectBuilder.Send;
 import com.hivemq.client.mqtt.mqtt5.message.connect.connack.Mqtt5ConnAck;
-import com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectBuilder.SendVoid;
+import com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectBuilder;
 import com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode;
 
 import in.bytehue.messaging.mqtt5.api.MqttClient;
@@ -464,6 +464,9 @@ public final class MessageClientProvider implements MqttClient {
 			if (disconnectInProgress) {
 				throw new IllegalStateException("Disconnect already in progress");
 			}
+			if (connectInProgress) {
+				throw new IllegalStateException("Connect already in progress");
+			}
 			disconnectInProgress = true;
 			return CompletableFuture.runAsync(() -> {
 				try {
@@ -491,7 +494,7 @@ public final class MessageClientProvider implements MqttClient {
 		final int sessionExpiryInterval;
 		final ScheduledExecutorService executorToShutdown;
 
-		// Critical section: capture state only
+		// --- PHASE 1: Capture state ---
 		connectionLock.lock();
 		try {
 			if (client == null) {
@@ -512,28 +515,42 @@ public final class MessageClientProvider implements MqttClient {
 		} finally {
 			connectionLock.unlock();
 		}
-		// Lock released - perform blocking I/O without holding lock
 
-		logger.info("Performing disconnection");
-		final SendVoid disconnectParams = clientToDisconnect.toBlocking().disconnectWith().reasonCode(reasonCode)
-				.reasonString(reasonDescription);
+		// --- PHASE 2: Best-effort Async Disconnect (Modified) ---
+		logger.info("Performing disconnection (async with 2s timeout)");
+		try {
+			final Mqtt5DisconnectBuilder.Send<CompletableFuture<Void>> disconnectParams = clientToDisconnect.toAsync()
+					.disconnectWith().reasonCode(reasonCode).reasonString(reasonDescription);
 
-		if (useSessionExpiry) {
-			logger.debug("Applying Session Expiry Interval for Disconnect: {}", sessionExpiryInterval);
-			disconnectParams.sessionExpiryInterval(sessionExpiryInterval);
-		} else {
-			logger.debug("Session Expiry for Disconnect is not enabled");
-			disconnectParams.noSessionExpiry();
+			if (useSessionExpiry) {
+				logger.debug("Applying Session Expiry Interval for Disconnect: {}", sessionExpiryInterval);
+				disconnectParams.sessionExpiryInterval(sessionExpiryInterval);
+			} else {
+				logger.debug("Session Expiry for Disconnect is not enabled");
+				disconnectParams.noSessionExpiry();
+			}
+
+			final CompletableFuture<Void> disconnectFuture = disconnectParams.send();
+			disconnectFuture.get(2, SECONDS); // Wait max 2 seconds
+
+			logger.debug("Client disconnect packet sent successfully");
+
+		} catch (final InterruptedException e) {
+			logger.warn("Interrupted while waiting for disconnect packet to send");
+			Thread.currentThread().interrupt();
+		} catch (final Exception e) {
+			// This includes TimeoutException, ConnectException, etc.
+			// We LOG but DO NOT re-throw. We must proceed to cleanup.
+			logger.warn("Failed to send disconnect packet (timeout or network error): {}", e.getMessage());
 		}
-		disconnectParams.send();
 
-		// Critical section: cleanup only
+		// --- PHASE 3: Cleanup (Corrected) ---
 		connectionLock.lock();
 		try {
 			if (executorToShutdown != null) {
 				executorToShutdown.shutdownNow();
 				NettyEventLoopProvider.INSTANCE.releaseEventLoop(executorToShutdown);
-				customExecutor = null;
+				customExecutor = null; // <-- FIX
 			}
 		} finally {
 			connectionLock.unlock();
@@ -549,6 +566,9 @@ public final class MessageClientProvider implements MqttClient {
 			}
 			if (connectInProgress) {
 				throw new IllegalStateException("Connect already in progress");
+			}
+			if (disconnectInProgress) {
+				throw new IllegalStateException("Disconnect already in progress");
 			}
 			connectInProgress = true;
 			return CompletableFuture.runAsync(() -> {
@@ -586,12 +606,12 @@ public final class MessageClientProvider implements MqttClient {
 	}
 
 	private void connectInternal() {
-		connectionLock.lock();
+		// --- PHASE 1: PREPARATION (NO LOCK) ---
+		// Perform all service lookups and builder config *before* acquiring the lock.
+		final ScheduledExecutorService localCustomExecutor;
+		final Mqtt5AsyncClient clientToConnect;
+
 		try {
-			if (client != null && client.getState() == CONNECTED) {
-				logger.warn("Client already connected, skipping connection attempt");
-				return;
-			}
 			final String clientId = getClientID(bundleContext);
 			final Mqtt5ClientBuilder clientBuilder = Mqtt5Client.builder().identifier(MqttClientIdentifier.of(clientId))
 					.serverHost(config.server()).serverPort(config.port());
@@ -682,6 +702,9 @@ public final class MessageClientProvider implements MqttClient {
 								config.hostNameVerifierTargetFilter(), bundleContext, logger).orElse(null))
 						.applySslConfig();
 			}
+
+			// Handle executor creation locally first
+			Executor executorToUse = null;
 			if (config.useCustomExecutor()) {
 				logger.debug("Applying Custom Executor Configuration");
 				final String clazz = config.executorTargetClass().trim();
@@ -690,17 +713,26 @@ public final class MessageClientProvider implements MqttClient {
 					final ThreadFactory threadFactory = new ThreadFactoryBuilder()
 							.setThreadFactoryName(config.threadNamePrefix())
 							.setThreadNameFormat(config.threadNameSuffix()).setDaemon(config.isDaemon()).build();
-					customExecutor = Executors.newScheduledThreadPool(config.numberOfThreads(), threadFactory);
-					((ScheduledThreadPoolExecutor) customExecutor).setRemoveOnCancelPolicy(true);
-					clientBuilder.executorConfig().nettyExecutor(customExecutor).applyExecutorConfig();
+					// Create locally, assign to field *inside* the lock
+					executorToUse = Executors.newScheduledThreadPool(config.numberOfThreads(), threadFactory);
+					((ScheduledThreadPoolExecutor) executorToUse).setRemoveOnCancelPolicy(true);
 				} else {
 					logger.debug("Applying Executor as Service Configuration");
 					String filter = config.executorTargetFilter().trim();
 					Optional<Object> service = getOptionalServiceWithoutType(clazz, filter, bundleContext, logger);
-					service.ifPresent(executor -> clientBuilder.executorConfig().nettyExecutor((Executor) executor)
-							.applyExecutorConfig());
+					if (service.isPresent()) {
+						executorToUse = (Executor) service.get();
+					}
+				}
+				if (executorToUse != null) {
+					clientBuilder.executorConfig().nettyExecutor(executorToUse).applyExecutorConfig();
 				}
 			}
+			// This local variable will be assigned to the field inside the lock
+			localCustomExecutor = (config.executorTargetClass().trim().isEmpty()
+					&& executorToUse instanceof ScheduledExecutorService) ? (ScheduledExecutorService) executorToUse
+							: null;
+
 			if (config.useEnhancedAuthentication()) {
 				logger.debug("Applying Enhanced Authentication Configuration");
 				clientBuilder.enhancedAuth(getOptionalService(Mqtt5EnhancedAuthMechanism.class,
@@ -757,9 +789,42 @@ public final class MessageClientProvider implements MqttClient {
 			}
 
 			advancedConfig.applyAdvancedConfig();
-			client = clientBuilder.buildAsync();
 
-			final Send<CompletableFuture<Mqtt5ConnAck>> connectionParams = client.toAsync().connectWith()
+			// Build the client, but assign to field inside lock
+			clientToConnect = clientBuilder.buildAsync();
+
+		} catch (final Exception e) {
+			logger.error("Failed to build MQTT client configuration", e);
+			// Propagate failure to the calling CompletableFuture in connect()
+			throw new RuntimeException("Failed to build MQTT client", e);
+		}
+
+		// --- PHASE 2: CRITICAL SECTION (LOCK) ---
+		// Lock only to check state and assign fields
+		connectionLock.lock();
+		try {
+			if (client != null && client.getState() == CONNECTED) {
+				logger.warn("Client already connected, skipping connection attempt");
+				// Manually shutdown the executor we just created, as it won't be used
+				if (localCustomExecutor != null) {
+					localCustomExecutor.shutdownNow();
+					NettyEventLoopProvider.INSTANCE.releaseEventLoop(localCustomExecutor);
+				}
+				return;
+			}
+			// Commit the new client and executor
+			client = clientToConnect;
+			if (localCustomExecutor != null) {
+				customExecutor = localCustomExecutor;
+			}
+		} finally {
+			connectionLock.unlock();
+		}
+
+		// --- PHASE 3: INITIATE CONNECTION (NO LOCK) ---
+		// The connection is initiated *after* the lock is released
+		try {
+			final Send<CompletableFuture<Mqtt5ConnAck>> connectionParams = clientToConnect.toAsync().connectWith()
 					.cleanStart(config.cleanStart()).keepAlive(config.keepAliveInterval());
 
 			if (config.useSessionExpiry()) {
@@ -782,8 +847,10 @@ public final class MessageClientProvider implements MqttClient {
 					logger.debug("Successfully connected to the broker - '{}'", connAck);
 				}
 			});
-		} finally {
-			connectionLock.unlock();
+		} catch (final Exception e) {
+			logger.error("Error occurred while initiating connection to the broker '{}'", config.server(), e);
+			// Propagate failure to the calling CompletableFuture in connect()
+			throw new RuntimeException("Failed to initiate connection", e);
 		}
 	}
 
