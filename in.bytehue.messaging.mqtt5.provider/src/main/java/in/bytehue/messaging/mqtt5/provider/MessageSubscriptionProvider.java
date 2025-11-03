@@ -22,6 +22,7 @@ import static com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckR
 import static com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode.GRANTED_QOS_2;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_SUBSCRIPTION_EVENT_TOPIC_PREFIX;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.SUBSCRIBER;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RECEIVE_LOCAL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
@@ -354,18 +355,12 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
     }
 
     private void sendSubscriptionStatusEvent(final MqttSubAckDTO ack) { 
-        final EventAdmin ea = eventAdmin;
-        if (ea == null) {
-        	logger.info("EventAdmin not available to send subscription status event");
-        	return;
-        }
-
         final Map<String, Object> dtoMap = converter.convert(ack).sourceAsDTO()
                 .to(new TypeReference<Map<String, Object>>() {
                 });
 
         // Post the canonical event topic (e.g., mqtt/subscription/ACKED or FAILED)
-        ea.postEvent(new Event(ROOT_TOPIC_PREFIX + ack.type.name(), dtoMap));
+        eventAdmin.postEvent(new Event(MQTT_SUBSCRIPTION_EVENT_TOPIC_PREFIX + ack.type.name(), dtoMap));
     }
 
     private MqttSubAckDTO createStatusEvent(Type type, String topic, int qos, boolean replyTo, String reason, int[] reasonCodes) {
