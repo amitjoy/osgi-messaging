@@ -78,4 +78,21 @@ public interface MqttClient {
 	 * @return {@code true} if the client is connected, {@code false} otherwise
 	 */
 	boolean isConnected();
+
+	/**
+	 * Returns the timestamp (in milliseconds since epoch) when the client was last
+	 * successfully connected to the broker.
+	 *
+	 * @return the connection timestamp in milliseconds, or {@code -1} if the client
+	 *         has never been connected or is currently disconnected
+	 */
+	long getConnectedTimestamp();
+
+	/**
+	 * Returns the reason for the last disconnection, if available.
+	 *
+	 * @return the disconnection reason message, or {@code null} if no disconnection
+	 *         has occurred or if the reason is unavailable
+	 */
+	String getLastDisconnectReason();
 }
