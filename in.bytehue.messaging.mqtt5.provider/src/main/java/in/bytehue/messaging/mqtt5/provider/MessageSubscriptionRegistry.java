@@ -60,7 +60,8 @@ public final class MessageSubscriptionRegistry {
 	// there can be multiple subscriptions for a single topic
 	private final Map<String, Map<String, ExtendedSubscription>> subscriptions = new ConcurrentHashMap<>();
 
-	public ExtendedSubscription addSubscription(final String subChannel, final String pubChannel, int qos,
+	// This method is now synchronized to prevent a race with clearAllSubscriptions
+	public synchronized ExtendedSubscription addSubscription(final String subChannel, final String pubChannel, int qos,
 			final Runnable connectedStreamCloser, final boolean isReplyToSub) {
 		final ExtendedSubscription sub = new ExtendedSubscription(subChannel, pubChannel, qos, connectedStreamCloser,
 				isReplyToSub);
@@ -121,8 +122,10 @@ public final class MessageSubscriptionRegistry {
 	}
 
 	@Deactivate
-	public void clearAllSubscriptions() {
+	// This method is now synchronized to prevent a race with addSubscription
+	public synchronized void clearAllSubscriptions() {
 		// Iterate a snapshot of the keys to avoid ConcurrentModificationException
+		// while removeSubscription(channel) modifies the map.
 		final List<String> topics = new ArrayList<>(subscriptions.keySet());
 
 		// Call the FAST, non-blocking, SYNCHRONIZED removeSubscription(channel)
