@@ -308,10 +308,18 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 			                     sChannel, ack, subscription.id);
 			    }
             });
-            stream.onClose(() -> {
-            	logger.debug("Removing subscription '{}'", subscription.id);
-            	subscriptionRegistry.removeSubscription(sChannel, subscription.id);
-            });
+			stream.onClose(() -> {
+		        logger.debug("Removing subscription '{}'", subscription.id);
+		        
+		        // Call the fast, synchronized, non-blocking remove method
+		        boolean wasLastSubscriber = subscriptionRegistry.removeSubscription(sChannel, subscription.id);
+		        
+		        // If we were the last, *now* we do the blocking I/O
+		        // This is safe because it holds no locks.
+		        if (wasLastSubscriber) {
+		            subscriptionRegistry.unsubscribeSubscription(sChannel);
+		        }
+		    });
             future.get(config.timeoutInMillis(), MILLISECONDS);
             return SubscriptionAck.of(stream, subscription.id);
         } catch (final ExecutionException e) {

@@ -60,7 +60,10 @@ public final class MessageSubscriptionRegistry {
 	// there can be multiple subscriptions for a single topic
 	private final Map<String, Map<String, ExtendedSubscription>> subscriptions = new ConcurrentHashMap<>();
 
-	// This method is now synchronized to prevent a race with clearAllSubscriptions
+	/**
+	 * Adds a new subscription to the registry. This method is synchronized to
+	 * prevent race conditions with clearAllSubscriptions.
+	 */
 	public synchronized ExtendedSubscription addSubscription(final String subChannel, final String pubChannel, int qos,
 			final Runnable connectedStreamCloser, final boolean isReplyToSub) {
 		final ExtendedSubscription sub = new ExtendedSubscription(subChannel, pubChannel, qos, connectedStreamCloser,
@@ -69,23 +72,36 @@ public final class MessageSubscriptionRegistry {
 		return sub;
 	}
 
-	// This method blocks the *caller's thread* (due to unsubscribeSubscription),
-	// but it no longer holds the component-wide lock.
-	public void removeSubscription(final String channel, final String id) {
+	/**
+	 * Removes a single subscription by its ID. This method is synchronized to be
+	 * atomic and thread-safe. It is non-blocking as it only performs in-memory
+	 * operations.
+	 *
+	 * @return true if this was the last subscription for the channel, false
+	 *         otherwise.
+	 */
+	public synchronized boolean removeSubscription(final String channel, final String id) {
 		final Map<String, ExtendedSubscription> existingSubscriptions = subscriptions.get(channel);
-		if (existingSubscriptions == null || existingSubscriptions.isEmpty()) {
-			unsubscribeSubscription(channel); // This call blocks, but holds no lock
-			return;
+
+		if (existingSubscriptions != null) {
+			final ExtendedSubscription existingSubscription = existingSubscriptions.remove(id);
+			if (existingSubscription != null) {
+				existingSubscription.connectedStreamCloser.run();
+			}
+
+			if (existingSubscriptions.isEmpty()) {
+				subscriptions.remove(channel);
+				// Signal to the caller that the last subscriber is gone
+				return true;
+			}
 		}
-		// This is an atomic, thread-safe operation on the inner ConcurrentHashMap
-		final ExtendedSubscription existingSubscription = existingSubscriptions.remove(id);
-		if (existingSubscription != null) {
-			existingSubscription.connectedStreamCloser.run();
-		}
+		return false;
 	}
 
-	// This is the FAST, state-only removal method.
-	// It is safely callable from multiple threads.
+	/**
+	 * Removes all subscriptions for a given topic and closes their streams. This is
+	 * the FAST, state-only removal method. It is synchronized to be thread-safe.
+	 */
 	public synchronized void removeSubscription(final String channel) {
 		final Map<String, ExtendedSubscription> exisitngSubscriptions = subscriptions.remove(channel);
 		if (exisitngSubscriptions != null) {
@@ -93,13 +109,19 @@ public final class MessageSubscriptionRegistry {
 		}
 	}
 
-	// Fast, thread-safe read from ConcurrentHashMap
+	/**
+	 * Retrieves a subscription by its channel and ID. Fast, non-locking,
+	 * thread-safe read from ConcurrentHashMap.
+	 */
 	public ExtendedSubscription getSubscription(final String channel, final String id) {
 		final Map<String, ExtendedSubscription> existingSubscriptions = subscriptions.get(channel);
 		return existingSubscriptions != null ? existingSubscriptions.get(id) : null;
 	}
 
-	// This method BLOCKS THE CALLER, but holds no component-wide lock.
+	/**
+	 * Sends a blocking UNSUBSCRIBE packet to the broker. This method BLOCKS THE
+	 * CALLER, but holds no component-wide lock.
+	 */
 	public void unsubscribeSubscription(final String subChannel) {
 		try {
 			final Mqtt5UnsubAck ack = messagingClient.client.unsubscribeWith().addTopicFilter(subChannel).send().get(2,
@@ -122,7 +144,11 @@ public final class MessageSubscriptionRegistry {
 	}
 
 	@Deactivate
-	// This method is now synchronized to prevent a race with addSubscription
+	/**
+	 * Clears all subscriptions during component deactivation. This method is
+	 * synchronized to prevent a race with addSubscription. It is non-blocking and
+	 * fast, as it only performs in-memory cleanup.
+	 */
 	public synchronized void clearAllSubscriptions() {
 		// Iterate a snapshot of the keys to avoid ConcurrentModificationException
 		// while removeSubscription(channel) modifies the map.
@@ -133,8 +159,10 @@ public final class MessageSubscriptionRegistry {
 		topics.forEach(this::removeSubscription);
 	}
 
-	// DTO methods need to lock to get a consistent snapshot for iteration.
-	// This is fast and non-blocking, so it's safe.
+	/**
+	 * DTO methods need to lock to get a consistent snapshot for iteration. This is
+	 * fast and non-blocking, so it's safe.
+	 */
 	public synchronized SubscriptionDTO[] getSubscriptionDTOs() {
 		final List<SubscriptionDTO> subscriptionDTOs = new ArrayList<>();
 		for (final Entry<String, Map<String, ExtendedSubscription>> entry : subscriptions.entrySet()) {
@@ -148,6 +176,10 @@ public final class MessageSubscriptionRegistry {
 		return subscriptionDTOs.toArray(new SubscriptionDTO[0]);
 	}
 
+	/**
+	 * DTO methods need to lock to get a consistent snapshot for iteration. This is
+	 * fast and non-blocking, so it's safe.
+	 */
 	public synchronized ReplyToSubscriptionDTO[] getReplyToSubscriptionDTOs() {
 		final List<ReplyToSubscriptionDTO> replyToSubscriptions = new ArrayList<>();
 
