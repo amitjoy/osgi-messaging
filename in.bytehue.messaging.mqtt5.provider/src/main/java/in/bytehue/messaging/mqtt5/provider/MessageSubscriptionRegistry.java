@@ -17,6 +17,7 @@ package in.bytehue.messaging.mqtt5.provider;
 
 import static com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode.NO_SUBSCRIPTIONS_EXISTED;
 import static com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode.SUCCESS;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.toServiceReferenceDTO;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -35,6 +36,9 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.event.Event;
+import org.osgi.service.event.EventHandler;
+import org.osgi.service.event.propertytypes.EventTopics;
 import org.osgi.service.log.Logger;
 import org.osgi.service.log.LoggerFactory;
 import org.osgi.service.messaging.dto.ChannelDTO;
@@ -44,8 +48,9 @@ import org.osgi.service.messaging.dto.SubscriptionDTO;
 import com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAck;
 import com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode;
 
-@Component(service = MessageSubscriptionRegistry.class)
-public final class MessageSubscriptionRegistry {
+@EventTopics(MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC)
+@Component(service = { EventHandler.class, MessageSubscriptionRegistry.class })
+public final class MessageSubscriptionRegistry implements EventHandler {
 
 	@Activate
 	private BundleContext bundleContext;
@@ -202,6 +207,11 @@ public final class MessageSubscriptionRegistry {
 			}
 		}
 		return replyToSubscriptions.toArray(new ReplyToSubscriptionDTO[0]);
+	}
+
+	@Override
+	public void handleEvent(Event event) {
+		clearAllSubscriptions();
 	}
 
 	private SubscriptionDTO getSubscriptionDTO(final ExtendedSubscription sub) {
