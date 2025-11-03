@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -328,8 +329,19 @@ public final class MessageClientProvider implements MqttClient {
 	private boolean connectInProgress = false;
 	private boolean disconnectInProgress = false;
 
+	/**
+	 * Dedicated executor for this component's async tasks
+	 * (connect/disconnect/activate/modified) to avoid blocking the common
+	 * ForkJoinPool.
+	 */
+	private ExecutorService asyncTaskExecutor;
+
 	@Activate
 	void activate(final Config config, final Map<String, Object> properties) {
+		// Create a dedicated executor for all our internal async tasks
+		asyncTaskExecutor = Executors.newSingleThreadScheduledExecutor(
+				new ThreadFactoryBuilder().setThreadFactoryName("mqtt-client").setDaemon(true).build());
+
 		connectionLock.lock();
 		try {
 			init(config);
@@ -338,7 +350,7 @@ public final class MessageClientProvider implements MqttClient {
 			connectionLock.unlock();
 		}
 
-		// Run connection logic *outside* the lock
+		// Run connection logic *outside* the lock on our dedicated executor
 		CompletableFuture.runAsync(() -> {
 			try {
 				logger.info("Performing initial connection");
@@ -354,7 +366,7 @@ public final class MessageClientProvider implements MqttClient {
 					connectionLock.unlock();
 				}
 			}
-		});
+		}, asyncTaskExecutor);
 	}
 
 	@Modified
@@ -406,7 +418,7 @@ public final class MessageClientProvider implements MqttClient {
 			connectionLock.unlock();
 		}
 
-		// Run re-connection logic *outside* the lock
+		// Run re-connection logic *outside* the lock on our dedicated executor
 		CompletableFuture.runAsync(() -> {
 			try {
 				logger.info("Performing connection after modification");
@@ -422,7 +434,7 @@ public final class MessageClientProvider implements MqttClient {
 					connectionLock.unlock();
 				}
 			}
-		});
+		}, asyncTaskExecutor);
 	}
 
 	@Deactivate
@@ -461,6 +473,10 @@ public final class MessageClientProvider implements MqttClient {
 			} finally {
 				connectionLock.unlock();
 			}
+			// Shut down our internal async task executor
+			if (asyncTaskExecutor != null) {
+				asyncTaskExecutor.shutdownNow();
+			}
 		}
 	}
 
@@ -485,7 +501,7 @@ public final class MessageClientProvider implements MqttClient {
 	}
 
 	private void init(final Config config) {
-		logger.info("Performing connection");
+		logger.info("Initializing client configuration");
 		this.config = config;
 	}
 
@@ -515,7 +531,7 @@ public final class MessageClientProvider implements MqttClient {
 						connectionLock.unlock();
 					}
 				}
-			});
+			}, asyncTaskExecutor);
 		} finally {
 			connectionLock.unlock();
 		}
@@ -585,7 +601,7 @@ public final class MessageClientProvider implements MqttClient {
 			if (executorToShutdown != null) {
 				executorToShutdown.shutdownNow();
 				NettyEventLoopProvider.INSTANCE.releaseEventLoop(executorToShutdown);
-				customExecutor = null; // <-- FIX
+				customExecutor = null;
 			}
 		} finally {
 			connectionLock.unlock();
@@ -620,7 +636,7 @@ public final class MessageClientProvider implements MqttClient {
 						connectionLock.unlock();
 					}
 				}
-			});
+			}, asyncTaskExecutor);
 		} finally {
 			connectionLock.unlock();
 		}
