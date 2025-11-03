@@ -380,14 +380,20 @@ public final class MessageClientProvider implements MqttClient {
 	}
 
 	private void disconnect(final boolean isNormalDisconnection) {
+		final Mqtt5AsyncClient clientToDisconnect;
+		final Mqtt5DisconnectReasonCode reasonCode;
+		final String reasonDescription;
+		final boolean useSessionExpiry;
+		final int sessionExpiryInterval;
+		final ScheduledExecutorService executorToShutdown;
+		
+		// Critical section: capture state only
 		synchronized (connectionLock) {
 			if (client == null) {
 				logger.warn("Client is null, skipping disconnection");
 				return;
 			}
-			logger.info("Performing disconnection");
-			Mqtt5DisconnectReasonCode reasonCode;
-			String reasonDescription;
+			clientToDisconnect = client;
 			if (isNormalDisconnection) {
 				reasonCode = NORMAL_DISCONNECTION;
 				reasonDescription = "";
@@ -395,24 +401,30 @@ public final class MessageClientProvider implements MqttClient {
 				reasonCode = config.disconnectionReasonCode();
 				reasonDescription = config.disconnectionReasonDescription();
 			}
-			// blocking disconnection ensures that we gracefully disconnect the established
-			// connection
-			final SendVoid disconnectParams = client.toBlocking().disconnectWith().reasonCode(reasonCode)
-					.reasonString(reasonDescription);
+			useSessionExpiry = config.useSessionExpiryForDisconnect();
+			sessionExpiryInterval = config.sessionExpiryIntervalForDisconnect();
+			executorToShutdown = customExecutor;
+		}
+		// Lock released - perform blocking I/O without holding lock
+		
+		logger.info("Performing disconnection");
+		final SendVoid disconnectParams = clientToDisconnect.toBlocking().disconnectWith()
+				.reasonCode(reasonCode).reasonString(reasonDescription);
 
-			if (config.useSessionExpiryForDisconnect()) {
-				logger.debug("Applying Session Expiry Interval for Disconnect: {}",
-						config.sessionExpiryIntervalForDisconnect());
-				disconnectParams.sessionExpiryInterval(config.sessionExpiryIntervalForDisconnect());
-			} else {
-				logger.debug("Session Expiry for Disconnect is not enabled");
-				disconnectParams.noSessionExpiry();
-			}
-			disconnectParams.send();
-			// shutdown the custom executor if used
-			if (customExecutor != null) {
-				customExecutor.shutdownNow();
-				NettyEventLoopProvider.INSTANCE.releaseEventLoop(customExecutor);
+		if (useSessionExpiry) {
+			logger.debug("Applying Session Expiry Interval for Disconnect: {}", sessionExpiryInterval);
+			disconnectParams.sessionExpiryInterval(sessionExpiryInterval);
+		} else {
+			logger.debug("Session Expiry for Disconnect is not enabled");
+			disconnectParams.noSessionExpiry();
+		}
+		disconnectParams.send();
+		
+		// Critical section: cleanup only
+		synchronized (connectionLock) {
+			if (executorToShutdown != null) {
+				executorToShutdown.shutdownNow();
+				NettyEventLoopProvider.INSTANCE.releaseEventLoop(executorToShutdown);
 				customExecutor = null;
 			}
 		}
