@@ -360,6 +360,9 @@ public final class MessageClientProvider implements MqttClient {
 
     @Override
     public CompletableFuture<Void> disconnect() {
+        if (!isConnected()) {
+            throw new IllegalStateException("Client is not connected");
+        }
         return CompletableFuture.runAsync(() -> disconnect(false));
     }
 
