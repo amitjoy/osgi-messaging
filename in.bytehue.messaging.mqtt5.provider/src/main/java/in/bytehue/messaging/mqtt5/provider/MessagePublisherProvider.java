@@ -224,11 +224,11 @@ public final class MessagePublisherProvider implements MessagePublisher {
             	    "  Channel           : {}\n" +
             	    "  Payload Format    : {}\n" +
             	    "  Content Type      : {}\n" +
-            	    "  QoS              : {}\n" +
-            	    "  Retain           : {}\n" +
+            	    "  QoS               : {}\n" +
+            	    "  Retain            : {}\n" +
             	    "  Reply-To Channel  : {}\n" +
-            	    "  Correlation ID   : {}\n" +
-            	    "  User Properties  : {}",
+            	    "  Correlation ID    : {}\n" +
+            	    "  User Properties   : {}",
             	    channel,
             	    payloadFormat,
             	    contentType,
