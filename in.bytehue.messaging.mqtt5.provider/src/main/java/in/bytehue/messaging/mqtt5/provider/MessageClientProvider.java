@@ -45,7 +45,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -326,8 +325,8 @@ public final class MessageClientProvider implements MqttClient {
 	private ScheduledExecutorService customExecutor;
 	private ServiceRegistration<Object> readyServiceReg;
 
+	private volatile String lastDisconnectReason;
 	private AtomicLong connectedTimestamp = new AtomicLong(-1L);
-	private AtomicReference<String> lastDisconnectReason = new AtomicReference<>();
 
 	// ReentrantLock for better concurrency control
 	private final ReentrantLock connectionLock = new ReentrantLock();
@@ -500,8 +499,7 @@ public final class MessageClientProvider implements MqttClient {
 
 	@Override
 	public String getLastDisconnectReason() {
-		// AtomicReference.get() is thread-safe
-		return lastDisconnectReason.get();
+		return lastDisconnectReason;
 	}
 
 	private void init(final Config config) {
@@ -684,7 +682,7 @@ public final class MessageClientProvider implements MqttClient {
 				connectionLock.lock();
 				try {
 					connectedTimestamp.set(-1);
-					lastDisconnectReason.set(context.getCause().getMessage());
+					lastDisconnectReason = context.getCause().getMessage();
 				} finally {
 					connectionLock.unlock();
 				}
