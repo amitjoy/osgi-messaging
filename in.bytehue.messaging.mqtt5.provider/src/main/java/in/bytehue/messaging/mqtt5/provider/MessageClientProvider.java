@@ -953,7 +953,7 @@ public final class MessageClientProvider implements MqttClient {
 		try {
 			// send connected event
 			eventAdmin.postEvent(new Event(MQTT_CLIENT_CONNECTED_EVENT_TOPIC, emptyMap()));
-			
+
 			// register service
 			final Map<String, Object> properties = new HashMap<>();
 			properties.put(MQTT_CONNECTION_READY_SERVICE_PROPERTY, "true");
