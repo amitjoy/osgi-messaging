@@ -87,8 +87,8 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	@Activate
 	@Modified
 	void init(final RegistryConfig config) {
-		logger.info("Messaging subscription registry has been activated/modified");
 		this.config = config;
+		logger.info("Messaging subscription registry has been activated/modified");
 	}
 
 	/**
@@ -200,6 +200,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 		// Call the FAST, non-blocking, SYNCHRONIZED removeSubscription(channel)
 		// This safely cleans up all internal streams without network I/O.
 		topics.forEach(this::removeSubscription);
+		logger.info("Messaging subscription registry has been deactivated");
 	}
 
 	/**
