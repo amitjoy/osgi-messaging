@@ -28,12 +28,14 @@ import static org.osgi.service.messaging.Features.REPLY_TO_MANY_SUBSCRIBE;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.log.Logger;
 import org.osgi.service.log.LoggerFactory;
@@ -115,10 +117,11 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 	private BundleContext bundleContext;
 
 	private volatile ReplyToConfig config;
-	private final PromiseFactory promiseFactory;
+	private PromiseFactory promiseFactory;
 
 	@Activate
-	public MessageReplyToPublisherProvider(final ReplyToConfig config) {
+	@Modified
+	void init(final ReplyToConfig config) {
 		this.config = config;
 		//@formatter:off
         final ThreadFactory threadFactory =
@@ -127,11 +130,17 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
                         .setThreadNameFormat(config.threadNameSuffix())
                         .setDaemon(config.isDaemon())
                         .build();
+        if (promiseFactory != null) {
+        	// in case the component is updated with new config
+        	((ExecutorService)promiseFactory.executor()).shutdownNow();
+        	promiseFactory.scheduledExecutor().shutdownNow();
+        }
         promiseFactory = new PromiseFactory(newFixedThreadPool(config.numThreads(), threadFactory));
         //@formatter:on
+		logger.info("Messaging reply-to publisher has been activated/modified");
 	}
 
-	public synchronized ReplyToConfig config() {
+	public ReplyToConfig config() {
 		return this.config;
 	}
 
@@ -198,45 +207,45 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 
 	@Override
 	public PushStream<Message> publishWithReplyMany(final Message requestMessage, final MessageContext replyToContext) {
-	    final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
-	    SubscriptionAck sub = null;
-	    try {
-	        // Create a new, corrected MessageContext for the subscription
-	        final String replyChannel = replyToContext.getReplyToChannel();
-	        if (replyChannel == null || replyChannel.trim().isEmpty()) {
-	            throw new IllegalArgumentException("Reply-to channel is missing in the message context");
-	        }
-	        final MessageContextBuilderProvider builder = mcbFactory.getService();
-	        try {
-	            // Use the reply-to channel as the primary channel for the subscription
-	            final MessageContextBuilder mcb = builder.channel(replyChannel);
+		final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
+		SubscriptionAck sub = null;
+		try {
+			// Create a new, corrected MessageContext for the subscription
+			final String replyChannel = replyToContext.getReplyToChannel();
+			if (replyChannel == null || replyChannel.trim().isEmpty()) {
+				throw new IllegalArgumentException("Reply-to channel is missing in the message context");
+			}
+			final MessageContextBuilderProvider builder = mcbFactory.getService();
+			try {
+				// Use the reply-to channel as the primary channel for the subscription
+				final MessageContextBuilder mcb = builder.channel(replyChannel);
 
-	            // Copy all extensions from the original context to preserve them
-	            final Map<String, Object> extensions = replyToContext.getExtensions();
-	            if (extensions != null) {
-	                extensions.forEach(mcb::extensionEntry);
-	            }
+				// Copy all extensions from the original context to preserve them
+				final Map<String, Object> extensions = replyToContext.getExtensions();
+				if (extensions != null) {
+					extensions.forEach(mcb::extensionEntry);
+				}
 				final MessageContext subscriptionContext = mcb.extensionEntry(REPLY_TO, true).buildContext();
 
-	            // Pass the new, corrected context to the subscriber
-	            sub = subscriber._subscribe(subscriptionContext);
-	        } finally {
-	            mcbFactory.ungetService(builder);
-	        }
-	    } catch (final Exception e) {
-	        // If subscription fails, return an empty, closed stream
-	        final PushStreamProvider psp = new PushStreamProvider();
-	        final SimplePushEventSource<Message> eventSource = psp.createSimpleEventSource(Message.class);
-	        eventSource.error(e); // Propagate the error to the stream
-	        return psp.createStream(eventSource);
-	    }
-	    // subscribe to the channel first
-	    final PushStream<Message> stream = sub.stream()
-	            .filter(responseMessage -> matchCorrelationId(requestMessage, responseMessage));
+				// Pass the new, corrected context to the subscriber
+				sub = subscriber._subscribe(subscriptionContext);
+			} finally {
+				mcbFactory.ungetService(builder);
+			}
+		} catch (final Exception e) {
+			// If subscription fails, return an empty, closed stream
+			final PushStreamProvider psp = new PushStreamProvider();
+			final SimplePushEventSource<Message> eventSource = psp.createSimpleEventSource(Message.class);
+			eventSource.error(e); // Propagate the error to the stream
+			return psp.createStream(eventSource);
+		}
+		// subscribe to the channel first
+		final PushStream<Message> stream = sub.stream()
+				.filter(responseMessage -> matchCorrelationId(requestMessage, responseMessage));
 
-	    // publish the request to the channel
-	    publisher.publish(requestMessage, dto.pubChannel);
-	    return stream;
+		// publish the request to the channel
+		publisher.publish(requestMessage, dto.pubChannel);
+		return stream;
 	}
 
 	private class ReplyToDTO {
