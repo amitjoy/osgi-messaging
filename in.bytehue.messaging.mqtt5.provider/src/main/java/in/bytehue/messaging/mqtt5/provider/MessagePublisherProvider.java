@@ -43,6 +43,7 @@ import java.util.concurrent.ExecutionException;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.log.Logger;
 import org.osgi.service.log.LoggerFactory;
@@ -102,7 +103,6 @@ public final class MessagePublisherProvider implements MessagePublisher {
 	}
 	//@formatter:on
 
-	@Activate
 	private volatile PublisherConfig config;
 
 	@Reference(service = LoggerFactory.class)
@@ -116,6 +116,13 @@ public final class MessagePublisherProvider implements MessagePublisher {
 
 	@Activate
 	private BundleContext bundleContext;
+
+	@Activate
+	@Modified
+	void init(final PublisherConfig config) {
+		this.config = config;
+		logger.info("Messaging publisher has been activated/modified");
+	}
 
 	@Override
 	public void publish(final Message message) {
@@ -132,7 +139,7 @@ public final class MessagePublisherProvider implements MessagePublisher {
 		publish(message, context, null);
 	}
 	
-	public synchronized PublisherConfig config() {
+	public PublisherConfig config() {
         return config;
     }
 
