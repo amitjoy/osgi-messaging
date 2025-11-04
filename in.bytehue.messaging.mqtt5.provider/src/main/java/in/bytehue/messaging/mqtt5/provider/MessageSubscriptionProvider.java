@@ -174,7 +174,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         }
     }
 
-    public synchronized SubscriberConfig config() {
+    public SubscriberConfig config() {
         return config;
     }
 
