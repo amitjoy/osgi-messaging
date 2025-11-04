@@ -57,6 +57,7 @@ import org.osgi.util.converter.TypeReference;
 
 import com.hivemq.client.mqtt.MqttClientState;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
+import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserProperties;
 import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserPropertiesBuilder;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatIndicator;
@@ -143,7 +144,14 @@ public final class MessagePublisherProvider implements MessagePublisher {
 			if (channel == null) {
 				channel = context.getChannel();
 			}
-			final MqttClientState clientState = messagingClient.client.getState();
+			// Time-of-Check to Time-of-Use (TOCTOU) race condition that can occur during bundle startup or client reconfiguration
+			final Mqtt5AsyncClient currentClient = messagingClient.client; // Read volatile field ONCE
+
+	        if (currentClient == null) {
+	            logger.error("Cannot publish to '{}' since the client is not yet initialized", channel);
+	            throw new IllegalStateException("Client is not ready, cannot publish to channel: " + channel);
+	        }
+	        final MqttClientState clientState = currentClient.getState();
 			if (clientState == DISCONNECTED || clientState == DISCONNECTED_RECONNECT) {
 				logger.error("Cannot publish the message to '{}' since the client is disconnected", channel);
 				throw new IllegalStateException("Client is disconnected, cannot publish to channel: " + channel);

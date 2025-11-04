@@ -15,6 +15,8 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
+import static com.hivemq.client.mqtt.MqttClientState.DISCONNECTED;
+import static com.hivemq.client.mqtt.MqttClientState.DISCONNECTED_RECONNECT;
 import static com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode.NO_SUBSCRIPTIONS_EXISTED;
 import static com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode.SUCCESS;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC;
@@ -49,6 +51,8 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
+import com.hivemq.client.mqtt.MqttClientState;
+import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAck;
 import com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode;
 
@@ -151,7 +155,19 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	 */
 	public void unsubscribeSubscription(final String subChannel) {
 		try {
-			final Mqtt5UnsubAck ack = messagingClient.client.unsubscribeWith().addTopicFilter(subChannel).send().get(2,
+			// Time-of-Check to Time-of-Use (TOCTOU) race condition that can occur during bundle startup or client reconfiguration
+	        final Mqtt5AsyncClient currentClient = messagingClient.client; // Read volatile field ONCE
+
+	        if (currentClient == null) {
+	            logger.error("Cannot unsubscribe from '{}' since the client is not yet initialized", subChannel);
+	            throw new IllegalStateException("Client is not ready, cannot unsubscribe from channel: " + subChannel);
+	        }
+	        final MqttClientState clientState = currentClient.getState();
+	        if (clientState == DISCONNECTED || clientState == DISCONNECTED_RECONNECT) {
+	            logger.error("Cannot unsubscribe from '{}' since the client is disconnected", subChannel);
+	            throw new IllegalStateException("Client is disconnected, cannot unsubscribe from channel: " + subChannel);
+	        }
+			final Mqtt5UnsubAck ack = currentClient.unsubscribeWith().addTopicFilter(subChannel).send().get(2,
 					SECONDS); // Block for max 2 seconds
 
 			if (isUnsubscriptionAcknowledged(ack)) {
