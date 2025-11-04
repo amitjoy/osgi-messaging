@@ -954,12 +954,15 @@ public final class MessageClientProvider implements MqttClient {
 	private void registerReadyService(final MqttClientConnectedContext context) {
 		connectionLock.lock();
 		try {
+			// send connected event
+			eventAdmin.postEvent(new Event(MQTT_CLIENT_CONNECTED_EVENT_TOPIC, emptyMap()));
+			
+			// register service
 			final Map<String, Object> properties = new HashMap<>();
 			properties.put(MQTT_CONNECTION_READY_SERVICE_PROPERTY, "true");
 
 			readyServiceReg = bundleContext.registerService(Object.class, new Object(),
 					FrameworkUtil.asDictionary(properties));
-			eventAdmin.postEvent(new Event(MQTT_CLIENT_CONNECTED_EVENT_TOPIC, emptyMap()));
 		} finally {
 			connectionLock.unlock();
 		}
@@ -968,12 +971,14 @@ public final class MessageClientProvider implements MqttClient {
 	private void unregisterReadyService(final MqttClientDisconnectedContext context) {
 		connectionLock.lock();
 		try {
+			// send disconnected event
+			eventAdmin.postEvent(new Event(MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC, emptyMap()));
 			try {
+				// register service
 				if (readyServiceReg != null) {
 					readyServiceReg.unregister();
 					readyServiceReg = null;
 				}
-				eventAdmin.postEvent(new Event(MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC, emptyMap()));
 			} catch (final IllegalStateException e) {
 				// this could happen if the reconnect happens pretty quickly
 				logger.debug("The MQTT Connection Ready service has already been deregistered");

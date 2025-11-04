@@ -35,6 +35,7 @@ import org.osgi.framework.dto.ServiceReferenceDTO;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
@@ -44,13 +45,27 @@ import org.osgi.service.log.LoggerFactory;
 import org.osgi.service.messaging.dto.ChannelDTO;
 import org.osgi.service.messaging.dto.ReplyToSubscriptionDTO;
 import org.osgi.service.messaging.dto.SubscriptionDTO;
+import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.Designate;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 import com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAck;
 import com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode;
 
+import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionRegistry.RegistryConfig;
+
+@Designate(ocd = RegistryConfig.class)
 @EventTopics(MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC)
 @Component(service = { EventHandler.class, MessageSubscriptionRegistry.class })
 public final class MessageSubscriptionRegistry implements EventHandler {
+
+	@ObjectClassDefinition(name = "MQTT 5.0 Messaging Subscription Registry Configuration", description = "This configuration is used to configure the MQTT 5.0 messaging subscription registry")
+	public @interface RegistryConfig {
+		@AttributeDefinition(name = "Clear existing subscriptions on disconnect", description = "Remove the existing subscriptions whenever the client gets disconnected.")
+		boolean clearSubscriptionsOnDisconnect() default true;
+	}
+
+	private volatile RegistryConfig config;
 
 	@Activate
 	private BundleContext bundleContext;
@@ -64,6 +79,13 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	// topic as outer map's key and subscription id as internal map's key
 	// there can be multiple subscriptions for a single topic
 	private final Map<String, Map<String, ExtendedSubscription>> subscriptions = new ConcurrentHashMap<>();
+
+	@Activate
+	@Modified
+	void init(final RegistryConfig config) {
+		logger.info("Messaging subscription registry has been activated/modified");
+		this.config = config;
+	}
 
 	/**
 	 * Adds a new subscription to the registry. This method is synchronized to
@@ -211,7 +233,11 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 
 	@Override
 	public void handleEvent(Event event) {
-		clearAllSubscriptions();
+		// if the client library like HiveMQ supports automatic resubscription, this can
+		// be disabled through config
+		if (config.clearSubscriptionsOnDisconnect()) {
+			clearAllSubscriptions();
+		}
 	}
 
 	private SubscriptionDTO getSubscriptionDTO(final ExtendedSubscription sub) {
