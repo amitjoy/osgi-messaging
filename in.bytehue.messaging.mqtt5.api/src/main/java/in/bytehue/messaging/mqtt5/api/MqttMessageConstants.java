@@ -105,13 +105,6 @@ public final class MqttMessageConstants {
 	public static final String MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC = MQTT_CLIENT_EVENT_TOPIC_PREFIX + "disconnected";
 	
 	/**
-	 * The event topic denoting that the client is disconnected.
-	 *
-	 * @since 1.0
-	 */
-	public static final String MQTT_SUBSCRIPTION_DISCONNECTED_EVENT_TOPIC = "mqtt/client/disconnected";
-	
-	/**
 	 * Standard constants for the {@code MQTT Messaging} extension features
 	 *
 	 * @since 1.0
