@@ -148,14 +148,13 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 
     @Activate
     void activate(final SubscriberConfig config) {
-    	logger.info("Messaging subscriber has been activated");
         this.config = config;
         createExecutor();
+        logger.info("Messaging subscriber has been activated");
     }
 
     @Modified
     void modified(final SubscriberConfig config) {
-    	logger.info("Messaging subscriber has been updated");
         this.config = config;
 
         // Shut down the old executor
@@ -163,6 +162,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
             asyncTaskExecutor.shutdownNow();
         }
         createExecutor();
+        logger.info("Messaging subscriber has been updated");
     }
 
     @Deactivate
@@ -172,6 +172,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         if (asyncTaskExecutor != null) {
             asyncTaskExecutor.shutdownNow();
         }
+        logger.info("Messaging subscriber has been deactivated");
     }
 
     public SubscriberConfig config() {
