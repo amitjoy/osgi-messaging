@@ -124,7 +124,7 @@ public final class MessageReplyToWhiteboardProvider {
 	@Reference
 	private ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
 
-	private Config config;
+	private volatile Config config;
 	private ExecutorService executorService;
 	private final List<ReplyToSubDTO> subscriptions = new CopyOnWriteArrayList<>();
 
@@ -249,6 +249,8 @@ public final class MessageReplyToWhiteboardProvider {
 		tracker1.open();
 		tracker2.open();
 		tracker3.open();
+
+		logger.info("Messaging reply-to whiteboard has been activated");
 	}
 
 	@Deactivate
@@ -261,11 +263,13 @@ public final class MessageReplyToWhiteboardProvider {
 		tracker3.close();
 
 		executorService.shutdownNow();
+		logger.info("Messaging reply-to whiteboard has been deactivated");
 	}
 
 	@Modified
 	void updated(final Config config) {
 		this.config = config;
+		logger.info("Messaging reply-to whiteboard has been modified");
 	}
 
 	private void processReplyToSingleSubscriptionHandler(final ReplyToSubDTO sub) {
@@ -381,7 +385,7 @@ public final class MessageReplyToWhiteboardProvider {
 		final MessageContextBuilderProvider mcb = mcbFactory.getService();
 		try {
 			final MessageContextProvider responseMsgContext = (MessageContextProvider) msg.getContext();
-		    responseMsgContext.getExtensions().put(EXTENSION_QOS, replyToDTO.pubQos);
+			responseMsgContext.getExtensions().put(EXTENSION_QOS, replyToDTO.pubQos);
 			publisher.publish(msg, pubChannel);
 		} finally {
 			mcbFactory.ungetService(mcb);
