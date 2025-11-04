@@ -73,6 +73,7 @@ import org.osgi.util.pushstream.SimplePushEventSource;
 
 import com.hivemq.client.mqtt.MqttClientState;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
+import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAck;
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode;
 
@@ -244,11 +245,19 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         if (sChannel.isEmpty()) {
         	throw new IllegalArgumentException("Channel cannot be empty");
         }
-        final MqttClientState clientState = messagingClient.client.getState();
-		if (clientState == DISCONNECTED || clientState == DISCONNECTED_RECONNECT) {
-			logger.error("Cannot subscribe to '{}' since the client is disconnected", sChannel);
-			throw new IllegalStateException("Client is disconnected, cannot subscribe to channel: " + sChannel);
-		}
+        // Time-of-Check to Time-of-Use (TOCTOU) race condition that can occur during bundle startup or client reconfiguration
+        final Mqtt5AsyncClient currentClient = messagingClient.client; // Read volatile field ONCE
+
+        if (currentClient == null) {
+            logger.error("Cannot subscribe to '{}' since the client is not yet initialized", sChannel);
+            throw new IllegalStateException("Client is not ready, cannot subscribe to channel: " + sChannel);
+        }
+
+        final MqttClientState clientState = currentClient.getState();
+        if (clientState == DISCONNECTED || clientState == DISCONNECTED_RECONNECT) {
+            logger.error("Cannot subscribe to '{}' since the client is disconnected", sChannel);
+            throw new IllegalStateException("Client is disconnected, cannot subscribe to channel: " + sChannel);
+        }
 		final int qos;
         final boolean isReplyToSub;
         final boolean receiveLocal;
