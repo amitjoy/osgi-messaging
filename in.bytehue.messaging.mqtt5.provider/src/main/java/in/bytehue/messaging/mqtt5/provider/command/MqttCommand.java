@@ -55,6 +55,7 @@ import in.bytehue.messaging.mqtt5.provider.MessageReplyToPublisherProvider;
 import in.bytehue.messaging.mqtt5.provider.MessageReplyToPublisherProvider.ReplyToConfig;
 import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionProvider;
 import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionProvider.SubscriberConfig;
+import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionRegistry;
 import in.bytehue.messaging.mqtt5.provider.helper.FelixGogoCommand;
 import in.bytehue.messaging.mqtt5.provider.helper.Table;
 
@@ -62,7 +63,7 @@ import in.bytehue.messaging.mqtt5.provider.helper.Table;
 @Descriptor("MQTT 5 Messaging")
 @Component(immediate = true, service = MqttCommand.class)
 @SatisfyingConditionTarget("(" + CONDITION_ID +"=gogo-available)")
-@FelixGogoCommand(scope = "mqtt", function = { "pub", "sub", "runtime" })
+@FelixGogoCommand(scope = "mqtt", function = { "pub", "sub", "unsub", "runtime" })
 public final class MqttCommand {
 
     @Reference
@@ -73,6 +74,9 @@ public final class MqttCommand {
 
     @Reference
     private MessagePublisherProvider publisher;
+
+    @Reference
+    private MessageSubscriptionRegistry registry;
 
     @Reference
     private MessageSubscriptionProvider subscriber;
@@ -224,16 +228,19 @@ public final class MqttCommand {
                                               .withReceiveLocal(receiveLocal)
                                               .withRetain(retainAsPublished)
                                               .buildContext();
+
             subscriber.subscribe(context).forEach(m -> {
-                System.out.println("Message Received");
-                System.out.println(new String(m.payload().array(), UTF_8));
+                System.out.println("\n--- Message Received ---");
+                System.out.println("Topic: " + m.getContext().getChannel());
+                System.out.println("Payload: " + new String(m.payload().array(), UTF_8));
+                System.out.println("------------------------");
             });
         } catch (final Exception e) {
-        	return stackTraceToString(e);
+            return stackTraceToString(e);
         } finally {
             mcbFactory.ungetService(mcb);
         }
-        return "Subscribed to " + topic;
+        return "Subscribed to '" + topic + "'.\n" + "Note: If you are subscribing to a topic for temporary debugging, don't forget to unsubscribe using the 'unsub' command.";
     }
 
     @Descriptor("Publishes to specific topic/filter with the input context")
@@ -303,6 +310,24 @@ public final class MqttCommand {
             mcbFactory.ungetService(mcb);
         }
         return "Published to " + topic;
+    }
+
+    @Descriptor("Unsubscribes from a specific topic that was subscribed to via the 'sub' command")
+    public String unsub(
+            @Descriptor("Topic/Filter to unsubscribe from")
+            @Parameter(names = { "-t", "--topic" }, absentValue = "")
+            final String topic) {
+
+        if (topic.isEmpty()) {
+            return "Error: Topic must be specified using -t or --topic.";
+        }
+
+        try {
+        	registry.unsubscribeSubscription(topic);
+            return "Successfully unsubscribed from topic: " + topic;
+        } catch (final Exception e) {
+            return "An error occurred while unsubscribing: " + stackTraceToString(e);
+        }
     }
 
     private String prepareSubscriptions(final SubscriptionDTO[] subscriptions) {
