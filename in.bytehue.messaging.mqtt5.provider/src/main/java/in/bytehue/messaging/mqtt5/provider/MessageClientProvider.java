@@ -18,8 +18,6 @@ package in.bytehue.messaging.mqtt5.provider;
 import static com.hivemq.client.mqtt.MqttClientState.CONNECTED;
 import static com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode.NORMAL_DISCONNECTION;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.CLIENT_ID_FRAMEWORK_PROPERTY;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CLIENT_CONNECTED_EVENT_TOPIC;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CONNECTION_READY_SERVICE_PROPERTY;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.CLIENT;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalService;
@@ -335,6 +333,8 @@ public final class MessageClientProvider implements MqttClient {
 	// State tracking to prevent concurrent operations
 	private boolean connectInProgress = false;
 	private boolean disconnectInProgress = false;
+
+	public static final String MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC = "mqtt/client/disconnected";
 
 	/**
 	 * Dedicated executor for this component's async tasks
@@ -949,9 +949,6 @@ public final class MessageClientProvider implements MqttClient {
 	private void registerReadyService(final MqttClientConnectedContext context) {
 		connectionLock.lock();
 		try {
-			// send connected event
-			eventAdmin.postEvent(new Event(MQTT_CLIENT_CONNECTED_EVENT_TOPIC, emptyMap()));
-
 			// register service
 			final Map<String, Object> properties = new HashMap<>();
 			properties.put(MQTT_CONNECTION_READY_SERVICE_PROPERTY, "true");
@@ -966,8 +963,9 @@ public final class MessageClientProvider implements MqttClient {
 	private void unregisterReadyService(final MqttClientDisconnectedContext context) {
 		connectionLock.lock();
 		try {
-			// send disconnected event
-			eventAdmin.postEvent(new Event(MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC, emptyMap()));
+			// send disconnected event synchronously to ensure that the registry is cleaned up
+			// before registering ready service
+			eventAdmin.sendEvent(new Event(MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC, emptyMap()));
 			try {
 				// register service
 				if (readyServiceReg != null) {

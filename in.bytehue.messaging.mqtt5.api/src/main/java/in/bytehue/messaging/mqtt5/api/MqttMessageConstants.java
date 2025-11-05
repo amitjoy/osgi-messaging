@@ -84,27 +84,6 @@ public final class MqttMessageConstants {
 	public static final String MQTT_SUBSCRIPTION_EVENT_TOPIC_PREFIX = "mqtt/subscription/";
 
 	/**
-	 * The event topic prefix for MQTT client events.
-	 *
-	 * @since 1.0
-	 */
-	public static final String MQTT_CLIENT_EVENT_TOPIC_PREFIX = "mqtt/client/";
-
-	/**
-	 * The event topic denoting that the client is connected.
-	 *
-	 * @since 1.0
-	 */
-	public static final String MQTT_CLIENT_CONNECTED_EVENT_TOPIC = MQTT_CLIENT_EVENT_TOPIC_PREFIX + "connected";
-
-	/**
-	 * The event topic denoting that the client is disconnected.
-	 *
-	 * @since 1.0
-	 */
-	public static final String MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC = MQTT_CLIENT_EVENT_TOPIC_PREFIX + "disconnected";
-	
-	/**
 	 * Standard constants for the {@code MQTT Messaging} extension features
 	 *
 	 * @since 1.0

@@ -19,7 +19,7 @@ import static com.hivemq.client.mqtt.MqttClientState.DISCONNECTED;
 import static com.hivemq.client.mqtt.MqttClientState.DISCONNECTED_RECONNECT;
 import static com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode.NO_SUBSCRIPTIONS_EXISTED;
 import static com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode.SUCCESS;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC;
+import static in.bytehue.messaging.mqtt5.provider.MessageClientProvider.MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.toServiceReferenceDTO;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
