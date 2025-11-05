@@ -323,7 +323,8 @@ public final class MqttCommand {
         }
 
         try {
-        	registry.unsubscribeSubscription(topic);
+        	// Just remove the local subscription.
+            // The stream's onClose handler will manage the broker unsubscribe.
         	registry.removeSubscription(topic);
             return "Successfully unsubscribed from topic: " + topic;
         } catch (final Exception e) {
