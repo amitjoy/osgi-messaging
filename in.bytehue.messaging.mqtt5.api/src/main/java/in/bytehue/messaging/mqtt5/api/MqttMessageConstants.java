@@ -77,7 +77,7 @@ public final class MqttMessageConstants {
 			+ MQTT_CONNECTION_READY_SERVICE_PROPERTY + "=true)";
 
 	/**
-	 * The event topic prefix for MQTT client events.
+	 * The event topic prefix for MQTT subscription events.
 	 *
 	 * @since 1.0
 	 */
