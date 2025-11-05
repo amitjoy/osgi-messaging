@@ -209,7 +209,7 @@ public final class MessagePublisherProvider implements MessagePublisher {
             
 			final Mqtt5UserProperties userProps = propsBuilder.build();
 			final Complete<CompletableFuture<Mqtt5PublishResult>> publishRequest =
-                    messagingClient.client.publishWith()
+					             currentClient.publishWith()
                                               .topic(channel)
                                               .payloadFormatIndicator(payloadFormat)
                                               .contentType(contentType)

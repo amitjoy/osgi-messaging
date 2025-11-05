@@ -286,7 +286,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         try {
             final ExtendedSubscription subscription = subscriptionRegistry.addSubscription(sChannel, pChannel, qos, source::close, isReplyToSub);
             // @formatter:off
-			final CompletableFuture<Mqtt5SubAck> future = messagingClient.client.subscribeWith()
+			final CompletableFuture<Mqtt5SubAck> future =    currentClient.subscribeWith()
 										                                  .topicFilter(sChannel)
 										                                  .qos(MqttQos.fromCode(qos))
 										                                  .noLocal(!receiveLocal)
