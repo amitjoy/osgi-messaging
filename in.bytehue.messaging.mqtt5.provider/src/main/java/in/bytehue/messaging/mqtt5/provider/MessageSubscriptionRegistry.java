@@ -152,37 +152,86 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	/**
 	 * Sends a blocking UNSUBSCRIBE packet to the broker. This method BLOCKS THE
 	 * CALLER, but holds no component-wide lock.
+	 *
+	 * <p>
+	 * This method MUST NOT modify the local subscription registry. The local state
+	 * is managed by the {@code onClose} handler in
+	 * {@link MessageSubscriptionProvider}. This method's only job is to send the
+	 * network packet and log the result.
+	 * </p>
 	 */
 	public void unsubscribeSubscription(final String subChannel) {
 		try {
-			// Time-of-Check to Time-of-Use (TOCTOU) race condition that can occur during bundle startup or client reconfiguration
-	        final Mqtt5AsyncClient currentClient = messagingClient.client; // Read volatile field ONCE
+			// Time-of-Check to Time-of-Use (TOCTOU) race condition that can occur during
+			// bundle startup or client reconfiguration
+			final Mqtt5AsyncClient currentClient = messagingClient.client; // Read volatile field ONCE
 
-	        if (currentClient == null) {
-	            logger.error("Cannot unsubscribe from '{}' since the client is not yet initialized", subChannel);
-	            throw new IllegalStateException("Client is not ready, cannot unsubscribe from channel: " + subChannel);
-	        }
-	        final MqttClientState clientState = currentClient.getState();
-	        if (clientState == DISCONNECTED || clientState == DISCONNECTED_RECONNECT) {
-	            logger.error("Cannot unsubscribe from '{}' since the client is disconnected", subChannel);
-	            throw new IllegalStateException("Client is disconnected, cannot unsubscribe from channel: " + subChannel);
-	        }
-			final Mqtt5UnsubAck ack = currentClient.unsubscribeWith().addTopicFilter(subChannel).send().get(2,
-					SECONDS); // Block for max 2 seconds
+			if (currentClient == null) {
+				logger.error("Cannot unsubscribe from '{}' since the client is not yet initialized", subChannel);
+				// Do not throw, just log. The local stream is already closed.
+				return;
+			}
+			final MqttClientState clientState = currentClient.getState();
+			if (clientState == DISCONNECTED || clientState == DISCONNECTED_RECONNECT) {
+				logger.error("Cannot unsubscribe from '{}' since the client is disconnected", subChannel);
+				// Do not throw, just log. The local stream is already closed.
+				return;
+			}
+			// Block for max 2 seconds
+			final Mqtt5UnsubAck ack = currentClient.unsubscribeWith().addTopicFilter(subChannel).send().get(2, SECONDS);
 
 			if (isUnsubscriptionAcknowledged(ack)) {
-				// This call is now safe (re-entrant lock)
-				removeSubscription(subChannel);
 				logger.debug("Unsubscription request for '{}' processed successfully - {}", subChannel, ack);
 			} else {
 				logger.error("Unsubscription request for '{}' failed - {}", subChannel, ack);
-				// Still remove it locally to clean up the stream
-				removeSubscription(subChannel);
 			}
 		} catch (final Exception e) {
-			logger.error("Unsubscription for '{}' failed with exception, cleaning up locally", subChannel, e);
-			// Must clean up local state regardless of broker error
-			removeSubscription(subChannel);
+			logger.error("Unsubscription for '{}' failed with exception", subChannel, e);
+		}
+	}
+
+	/**
+	 * Atomically removes a subscription by its ID and, if it was the last one for
+	 * the topic, sends an UNSUBSCRIBE packet to the broker.
+	 * <p>
+	 * This method is designed to be called asynchronously to prevent race
+	 * conditions. By holding the lock for the *entire* operation (local remove +
+	 * network call), it prevents a new subscription from sneaking in.
+	 *
+	 * @param channel the topic channel
+	 * @param id      the unique subscription ID
+	 */
+	public synchronized void removeAndUnsubscribeIfLast(final String channel, final String id) {
+		// The synchronized lock is held for the ENTIRE duration of this method,
+		// including the network call. This is necessary to prevent the race.
+
+		boolean wasLastSubscriber = false;
+
+		// 1. Get the subscriptions for the topic
+		final Map<String, ExtendedSubscription> existingSubscriptions = subscriptions.get(channel);
+
+		if (existingSubscriptions != null) {
+			// 2. Remove the specific subscription by its ID
+			final ExtendedSubscription existingSubscription = existingSubscriptions.remove(id);
+
+			if (existingSubscription != null) {
+				// 3. Close the underlying PushStream
+				existingSubscription.connectedStreamCloser.run();
+
+				// 4. Check if the topic is now empty
+				if (existingSubscriptions.isEmpty()) {
+					subscriptions.remove(channel); // Remove the topic entry
+					wasLastSubscriber = true;
+				}
+			}
+		}
+
+		// 5. If it was the last, send the network packet.
+		// This is now *inside* the synchronized block. A new subscriber
+		// calling addSubscription() will block until this is complete.
+		if (wasLastSubscriber) {
+			logger.debug("Performing final unsubscribe for topic '{}'", channel);
+			this.unsubscribeSubscription(channel); // Call the "dumber" version
 		}
 	}
 

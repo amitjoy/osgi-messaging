@@ -337,19 +337,18 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 			                     sChannel, ack, subscription.id);
 			    }
             });
+
 			stream.onClose(() -> {
-		        logger.debug("Removing subscription '{}'", subscription.id);
+		        logger.debug("Scheduling removal for subscription '{}' on topic '{}'", subscription.id, sChannel);
 
-		        // Call the fast, synchronized, non-blocking remove method
-		        boolean wasLastSubscriber = subscriptionRegistry.removeSubscription(sChannel, subscription.id);
-
-		        if (wasLastSubscriber) {
-		            CompletableFuture.runAsync(() -> {
-		                logger.debug("Performing final unsubscribe for topic '{}'", sChannel);
-		                subscriptionRegistry.unsubscribeSubscription(sChannel);
-		            }, asyncTaskExecutor);
-		        }
+		        // Asynchronously schedule the *entire* removal process.
+		        // This keeps stream.close() non-blocking but makes the
+		        // cleanup operation atomic.
+		        CompletableFuture.runAsync(() -> {
+		            subscriptionRegistry.removeAndUnsubscribeIfLast(sChannel, subscription.id);
+		        }, asyncTaskExecutor);
 		    });
+
             future.get(config.timeoutInMillis(), MILLISECONDS);
             return SubscriptionAck.of(stream, subscription.id);
         } catch (final ExecutionException e) {

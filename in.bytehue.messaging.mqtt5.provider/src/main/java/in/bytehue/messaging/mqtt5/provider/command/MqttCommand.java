@@ -324,6 +324,7 @@ public final class MqttCommand {
 
         try {
         	registry.unsubscribeSubscription(topic);
+        	registry.removeSubscription(topic);
             return "Successfully unsubscribed from topic: " + topic;
         } catch (final Exception e) {
             return "An error occurred while unsubscribing: " + stackTraceToString(e);
