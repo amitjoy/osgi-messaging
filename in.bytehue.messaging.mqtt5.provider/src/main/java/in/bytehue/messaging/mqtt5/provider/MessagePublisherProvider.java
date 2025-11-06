@@ -96,8 +96,8 @@ public final class MessagePublisherProvider implements MessagePublisher {
 			description = "This configuration is used to configure the MQTT 5.0 messaging publisher")
 	public @interface PublisherConfig {
 		@AttributeDefinition(name = "Default timeout for synchronously publishing to the broker", min = "5000")
-		long timeoutInMillis() default 30_000L;
-		
+		long timeoutInMillis() default 15_000L;
+
 		@AttributeDefinition(name = "Default QoS for publishes unless specified", min = "0", max = "2")
         int qos() default 0;
 	}
