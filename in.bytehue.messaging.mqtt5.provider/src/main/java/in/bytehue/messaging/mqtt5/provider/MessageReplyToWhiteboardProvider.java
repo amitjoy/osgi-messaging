@@ -51,7 +51,6 @@ import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.log.Logger;
 import org.osgi.service.log.LoggerFactory;
@@ -264,12 +263,6 @@ public final class MessageReplyToWhiteboardProvider {
 
 		executorService.shutdownNow();
 		logger.info("Messaging reply-to whiteboard has been deactivated");
-	}
-
-	@Modified
-	void updated(final Config config) {
-		this.config = config;
-		logger.info("Messaging reply-to whiteboard has been modified");
 	}
 
 	private void processReplyToSingleSubscriptionHandler(final ReplyToSubDTO sub) {
