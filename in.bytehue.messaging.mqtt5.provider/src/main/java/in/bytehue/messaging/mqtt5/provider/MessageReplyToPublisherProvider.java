@@ -248,8 +248,12 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 		final PushStream<Message> stream = sub.stream()
 				.filter(responseMessage -> matchCorrelationId(requestMessage, responseMessage));
 
-		// publish the request to the channel
-		publisher.publish(requestMessage, dto.pubChannel);
+		try {
+			// publish the request to the channel
+			publisher.publish(requestMessage, dto.pubChannel);
+		} catch (Exception e) {
+			stream.close();
+		}
 		return stream;
 	}
 
