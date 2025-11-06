@@ -338,7 +338,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
             });
 
 			stream.onClose(() -> {
-		        logger.debug("Scheduling removal for subscription '{}' on topic '{}'", subscription.id, sChannel);
+		        logger.info("Scheduling removal for subscription '{}' on topic '{}'", subscription.id, sChannel);
 
 		        // Asynchronously schedule the *entire* removal process.
 		        // This keeps stream.close() non-blocking but makes the

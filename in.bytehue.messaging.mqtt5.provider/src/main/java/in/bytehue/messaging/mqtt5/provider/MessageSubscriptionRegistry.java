@@ -118,10 +118,12 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 			final ExtendedSubscription existingSubscription = existingSubscriptions.remove(id);
 			if (existingSubscription != null) {
 				existingSubscription.connectedStreamCloser.run();
+				logger.info("Removed subscription from '{}' successfully", channel);
 			}
 
 			if (existingSubscriptions.isEmpty()) {
 				subscriptions.remove(channel);
+				logger.info("Removed the last subscription from '{}' successfully", channel);
 				// Signal to the caller that the last subscriber is gone
 				return true;
 			}
@@ -137,6 +139,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 		final Map<String, ExtendedSubscription> exisitngSubscriptions = subscriptions.remove(channel);
 		if (exisitngSubscriptions != null) {
 			exisitngSubscriptions.forEach((k, v) -> v.connectedStreamCloser.run());
+			logger.info("Removed all subscriptions from '{}' successfully", channel);
 		}
 	}
 
@@ -181,7 +184,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 			final Mqtt5UnsubAck ack = currentClient.unsubscribeWith().addTopicFilter(subChannel).send().get(2, SECONDS);
 
 			if (isUnsubscriptionAcknowledged(ack)) {
-				logger.debug("Unsubscription request for '{}' processed successfully - {}", subChannel, ack);
+				logger.info("Unsubscription request for '{}' processed successfully - {}", subChannel, ack);
 			} else {
 				logger.error("Unsubscription request for '{}' failed - {}", subChannel, ack);
 			}
@@ -230,17 +233,17 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 		// This is now *inside* the synchronized block. A new subscriber
 		// calling addSubscription() will block until this is complete.
 		if (wasLastSubscriber) {
-			logger.debug("Performing final unsubscribe for topic '{}'", channel);
+			logger.info("Performing final unsubscribe for topic '{}'", channel);
 			this.unsubscribeSubscription(channel); // Call the "dumber" version
 		}
 	}
 
-	@Deactivate
 	/**
 	 * Clears all subscriptions during component deactivation. This method is
 	 * synchronized to prevent a race with addSubscription. It is non-blocking and
 	 * fast, as it only performs in-memory cleanup.
 	 */
+	@Deactivate
 	public synchronized void clearAllSubscriptions() {
 		// Iterate a snapshot of the keys to avoid ConcurrentModificationException
 		// while removeSubscription(channel) modifies the map.
@@ -249,7 +252,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 		// Call the FAST, non-blocking, SYNCHRONIZED removeSubscription(channel)
 		// This safely cleans up all internal streams without network I/O.
 		topics.forEach(this::removeSubscription);
-		logger.info("Messaging subscription registry has been deactivated");
+		logger.info("Messaging subscription registry has been cleaned");
 	}
 
 	/**
