@@ -194,51 +194,6 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	}
 
 	/**
-	 * Atomically removes a subscription by its ID and, if it was the last one for
-	 * the topic, sends an UNSUBSCRIBE packet to the broker.
-	 * <p>
-	 * This method is designed to be called asynchronously to prevent race
-	 * conditions. By holding the lock for the *entire* operation (local remove +
-	 * network call), it prevents a new subscription from sneaking in.
-	 *
-	 * @param channel the topic channel
-	 * @param id      the unique subscription ID
-	 */
-	public synchronized void removeAndUnsubscribeIfLast(final String channel, final String id) {
-		// The synchronized lock is held for the ENTIRE duration of this method,
-		// including the network call. This is necessary to prevent the race.
-
-		boolean wasLastSubscriber = false;
-
-		// 1. Get the subscriptions for the topic
-		final Map<String, ExtendedSubscription> existingSubscriptions = subscriptions.get(channel);
-
-		if (existingSubscriptions != null) {
-			// 2. Remove the specific subscription by its ID
-			final ExtendedSubscription existingSubscription = existingSubscriptions.remove(id);
-
-			if (existingSubscription != null) {
-				// 3. Close the underlying PushStream
-				existingSubscription.connectedStreamCloser.run();
-
-				// 4. Check if the topic is now empty
-				if (existingSubscriptions.isEmpty()) {
-					subscriptions.remove(channel); // Remove the topic entry
-					wasLastSubscriber = true;
-				}
-			}
-		}
-
-		// 5. If it was the last, send the network packet.
-		// This is now *inside* the synchronized block. A new subscriber
-		// calling addSubscription() will block until this is complete.
-		if (wasLastSubscriber) {
-			logger.info("Performing final unsubscribe for topic '{}'", channel);
-			this.unsubscribeSubscription(channel); // Call the "dumber" version
-		}
-	}
-
-	/**
 	 * Clears all subscriptions during component deactivation. This method is
 	 * synchronized to prevent a race with addSubscription. It is non-blocking and
 	 * fast, as it only performs in-memory cleanup.
