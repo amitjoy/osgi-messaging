@@ -193,7 +193,16 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	 * network packet and log the result.
 	 * </p>
 	 */
-	public void unsubscribeSubscription(final String subChannel) {
+	public synchronized void unsubscribeSubscription(final String subChannel) {
+		// This method is called asynchronously. We must re-check the subscription
+		// state to prevent the A-B-A race.
+		final Map<String, ExtendedSubscription> currentSubs = subscriptions.get(subChannel);
+		if (currentSubs != null && !currentSubs.isEmpty()) {
+			// A new subscriber (S2) has arrived before this (S1) async task
+			// could run. We must CANCEL the unsubscribe packet.
+			logger.info("Cancelling stale unsubscribe for '{}', a new subscriber has joined.", subChannel);
+			return;
+		}
 		try {
 			// Time-of-Check to Time-of-Use (TOCTOU) race condition that can occur during
 			// bundle startup or client reconfiguration
