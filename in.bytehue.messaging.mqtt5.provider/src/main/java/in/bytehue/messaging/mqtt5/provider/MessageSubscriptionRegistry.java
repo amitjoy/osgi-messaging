@@ -184,7 +184,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 
 	/**
 	 * Sends a blocking UNSUBSCRIBE packet to the broker. This method BLOCKS THE
-	 * CALLER, but holds no component-wide lock.
+	 * CALLER, and holds the component-wide lock.
 	 *
 	 * <p>
 	 * This method MUST NOT modify the local subscription registry. The local state
