@@ -252,6 +252,11 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	 * fast, as it only performs in-memory cleanup.
 	 */
 	public synchronized void clearAllSubscriptions() {
+		// if the client library like HiveMQ supports automatic resubscription, this can
+		// be disabled through config
+		if (!config.clearSubscriptionsOnDisconnect()) {
+			return;
+		}
 		// Iterate a snapshot of the keys to avoid ConcurrentModificationException
 		// while removeSubscription(channel) modifies the map.
 		final List<String> topics = new ArrayList<>(subscriptions.keySet());
@@ -309,11 +314,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 
 	@Override
 	public void handleEvent(Event event) {
-		// if the client library like HiveMQ supports automatic resubscription, this can
-		// be disabled through config
-		if (config.clearSubscriptionsOnDisconnect()) {
-			clearAllSubscriptions();
-		}
+		clearAllSubscriptions();
 	}
 
 	private SubscriptionDTO getSubscriptionDTO(final ExtendedSubscription sub) {
