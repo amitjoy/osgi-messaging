@@ -62,16 +62,19 @@ import org.osgi.service.messaging.replyto.ReplyToManySubscriptionHandler;
 import org.osgi.service.messaging.replyto.ReplyToSingleSubscriptionHandler;
 import org.osgi.service.messaging.replyto.ReplyToSubscriptionHandler;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.osgi.util.pushstream.PushStream;
 import org.osgi.util.tracker.ServiceTracker;
 
+import in.bytehue.messaging.mqtt5.provider.MessageReplyToWhiteboardProvider.Config;
 import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionRegistry.ExtendedSubscription;
 import in.bytehue.messaging.mqtt5.provider.helper.FilterParser;
 import in.bytehue.messaging.mqtt5.provider.helper.FilterParser.Expression;
 import in.bytehue.messaging.mqtt5.provider.helper.SubscriptionAck;
 import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 
+@Designate(ocd = Config.class)
 @Component(configurationPid = PID)
 @MessagingFeature(name = MESSAGING_ID, protocol = MESSAGING_PROTOCOL)
 public final class MessageReplyToWhiteboardProvider {
@@ -82,7 +85,7 @@ public final class MessageReplyToWhiteboardProvider {
 
 	@ObjectClassDefinition(name = "MQTT 5.0 Reply-To Whiteboard Configuration", description = "This configuration is used to configure the MQTT 5.0 messaging reply-to whiteboard. "
 			+ "Note that, all time-based configurations are in seconds.")
-	@interface Config {
+	public @interface Config {
 		@AttributeDefinition(name = "Flag denoting to store the channel info if the channel is specified in the received message")
 		boolean storeReplyToChannelInfoIfReceivedInMessage() default true;
 
