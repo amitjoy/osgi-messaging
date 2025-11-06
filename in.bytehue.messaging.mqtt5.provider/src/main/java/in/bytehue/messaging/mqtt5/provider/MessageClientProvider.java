@@ -381,6 +381,7 @@ public final class MessageClientProvider implements MqttClient {
 		connectionLock.lock();
 		try {
 			logger.info("Client configuration has been modified");
+
 			// Wait for any in-progress operations to complete (unchanged)
 			if (disconnectInProgress) {
 				logger.warn("Disconnect in progress, waiting before reconfiguration");
@@ -403,30 +404,31 @@ public final class MessageClientProvider implements MqttClient {
 			connectionLock.unlock();
 		}
 
-		// --- Disconnect Phase ---
-		try {
-			disconnect(true);
-		} finally {
+		// --- RUN ASYNCHRONOUSLY ---
+		CompletableFuture.runAsync(() -> {
+			// --- Phase 1: Disconnect ---
+			try {
+				// This now blocks the async thread, NOT the OSGi thread
+				disconnect(true);
+			} finally {
+				connectionLock.lock();
+				try {
+					disconnectInProgress = false;
+					operationComplete.signalAll();
+				} finally {
+					connectionLock.unlock();
+				}
+			}
+		}, asyncTaskExecutor).thenRunAsync(() -> { // --- Chain the reconnect ---
+			// --- Phase 2: Re-connect ---
 			connectionLock.lock();
 			try {
-				disconnectInProgress = false;
-				operationComplete.signalAll();
+				init(config);
+				connectInProgress = true;
 			} finally {
 				connectionLock.unlock();
 			}
-		}
 
-		// --- Reconnect Phase ---
-		connectionLock.lock();
-		try {
-			init(config);
-			connectInProgress = true;
-		} finally {
-			connectionLock.unlock();
-		}
-
-		// Run re-connection logic *outside* the lock on our dedicated executor
-		CompletableFuture.runAsync(() -> {
 			try {
 				logger.info("Performing connection after modification");
 				connectInternal();
@@ -470,21 +472,24 @@ public final class MessageClientProvider implements MqttClient {
 			connectionLock.unlock();
 		}
 
-		try {
-			disconnect(false);
-		} finally {
-			connectionLock.lock();
+		// --- RUN ASYNCHRONOUSLY ---
+		CompletableFuture.runAsync(() -> {
 			try {
-				disconnectInProgress = false;
-				operationComplete.signalAll();
+				disconnect(false); // Blocks this async thread
 			} finally {
-				connectionLock.unlock();
+				connectionLock.lock();
+				try {
+					disconnectInProgress = false;
+					operationComplete.signalAll();
+				} finally {
+					connectionLock.unlock();
+				}
+				// Shut down the executor *after* the task is done
+				if (asyncTaskExecutor != null) {
+					asyncTaskExecutor.shutdownNow();
+				}
 			}
-			// Shut down our internal async task executor
-			if (asyncTaskExecutor != null) {
-				asyncTaskExecutor.shutdownNow();
-			}
-		}
+		}, asyncTaskExecutor);
 	}
 
 	public Config config() {
@@ -964,8 +969,8 @@ public final class MessageClientProvider implements MqttClient {
 	private void unregisterReadyService(final MqttClientDisconnectedContext context) {
 		connectionLock.lock();
 		try {
-			// send disconnected event synchronously to ensure that the registry is cleaned up
-			// before registering ready service
+			// send disconnected event synchronously to ensure that the registry is cleaned
+			// up before registering ready service
 			eventAdmin.sendEvent(new Event(MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC, emptyMap()));
 
 			try {
