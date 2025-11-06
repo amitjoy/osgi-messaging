@@ -30,6 +30,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -57,6 +60,7 @@ import com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAck;
 import com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode;
 
 import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionRegistry.RegistryConfig;
+import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 
 @Designate(ocd = RegistryConfig.class)
 @EventTopics(MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC)
@@ -67,6 +71,18 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	public @interface RegistryConfig {
 		@AttributeDefinition(name = "Clear existing subscriptions on disconnect", description = "Remove the existing subscriptions whenever the client gets disconnected.")
 		boolean clearSubscriptionsOnDisconnect() default true;
+
+		@AttributeDefinition(name = "Number of threads for the internal thread pool", description = "Number of threads in the fixed pool for handling unsubscribe tasks.", min = "1")
+		int numThreads() default 5;
+
+		@AttributeDefinition(name = "Prefix of the thread name")
+		String threadNamePrefix() default "mqtt-registry-unsubscribe";
+
+		@AttributeDefinition(name = "Suffix of the thread name (supports only {@code %d} format specifier)")
+		String threadNameSuffix() default "-%d";
+
+		@AttributeDefinition(name = "Flag to set if the threads will be daemon threads")
+		boolean isDaemon() default true;
 	}
 
 	private volatile RegistryConfig config;
@@ -80,6 +96,8 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	@Reference
 	private MessageClientProvider messagingClient;
 
+	private ExecutorService unsubscribeExecutor;
+
 	// topic as outer map's key and subscription id as internal map's key
 	// there can be multiple subscriptions for a single topic
 	private final Map<String, Map<String, ExtendedSubscription>> subscriptions = new ConcurrentHashMap<>();
@@ -88,6 +106,19 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	@Modified
 	void init(final RegistryConfig config) {
 		this.config = config;
+		// (Re)create the executor
+		if (unsubscribeExecutor != null) {
+			unsubscribeExecutor.shutdownNow();
+		}
+		//@formatter:off
+        final ThreadFactory threadFactory =
+                new ThreadFactoryBuilder()
+                        .setThreadFactoryName(config.threadNamePrefix())
+                        .setThreadNameFormat(config.threadNameSuffix())
+                        .setDaemon(config.isDaemon())
+                        .build();
+        //@formatter:on
+		unsubscribeExecutor = Executors.newFixedThreadPool(config.numThreads(), threadFactory);
 		logger.info("Messaging subscription registry has been activated/modified");
 	}
 
@@ -117,7 +148,6 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 		if (existingSubscriptions != null) {
 			final ExtendedSubscription existingSubscription = existingSubscriptions.remove(id);
 			if (existingSubscription != null) {
-				existingSubscription.connectedStreamCloser.run();
 				logger.info("Removed subscription from '{}' successfully", channel);
 			}
 
@@ -193,12 +223,25 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 		}
 	}
 
+	@Deactivate
+	void deactivate() {
+		clearAllSubscriptions();
+		// Shut down our executor AFTER streams are closed
+		if (unsubscribeExecutor != null) {
+			unsubscribeExecutor.shutdownNow();
+		}
+		logger.info("Messaging subscription registry has been deactivated");
+	}
+
+	public ExecutorService getUnsubscribeExecutor() {
+		return unsubscribeExecutor;
+	}
+
 	/**
 	 * Clears all subscriptions during component deactivation. This method is
 	 * synchronized to prevent a race with addSubscription. It is non-blocking and
 	 * fast, as it only performs in-memory cleanup.
 	 */
-	@Deactivate
 	public synchronized void clearAllSubscriptions() {
 		// Iterate a snapshot of the keys to avoid ConcurrentModificationException
 		// while removeSubscription(channel) modifies the map.

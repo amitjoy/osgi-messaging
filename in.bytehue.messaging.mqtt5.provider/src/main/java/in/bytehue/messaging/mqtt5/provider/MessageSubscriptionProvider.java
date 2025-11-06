@@ -46,7 +46,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentServiceObjects;
@@ -83,7 +82,6 @@ import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionProvider.Subscribe
 import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionRegistry.ExtendedSubscription;
 import in.bytehue.messaging.mqtt5.provider.helper.InterruptSafe;
 import in.bytehue.messaging.mqtt5.provider.helper.SubscriptionAck;
-import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 
 //@formatter:off
 @MessagingFeature(
@@ -114,11 +112,6 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 
 		@AttributeDefinition(name = "Default QoS for subscriptions unless specified", min = "0", max = "2")
         int qos() default 0;
-
-		@AttributeDefinition(name = "Unsubscribe Thread Pool Size",
-		                     description = "Number of threads in the fixed pool for handling unsubscribe tasks.",
-		                     min = "1")
-		int unsubscribeThreadPoolSize() default 5;
 	}
 
 	private volatile SubscriberConfig config;
@@ -144,34 +137,16 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
     @Reference
     private ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
 
-    private ExecutorService asyncTaskExecutor;
-
     @Activate
-    void activate(final SubscriberConfig config) {
-        this.config = config;
-        createExecutor();
-        logger.info("Messaging subscriber has been activated");
-    }
-
     @Modified
-    void modified(final SubscriberConfig config) {
+    void init(final SubscriberConfig config) {
         this.config = config;
-
-        // Shut down the old executor
-        if (asyncTaskExecutor != null) {
-            asyncTaskExecutor.shutdownNow();
-        }
-        createExecutor();
-        logger.info("Messaging subscriber has been updated");
+        logger.info("Messaging subscriber has been activated/updated");
     }
 
     @Deactivate
     void stop() {
         subscriptionRegistry.clearAllSubscriptions();
-        // Shut down our internal async task executor
-        if (asyncTaskExecutor != null) {
-            asyncTaskExecutor.shutdownNow();
-        }
         logger.info("Messaging subscriber has been deactivated");
     }
 
@@ -338,19 +313,24 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
             });
 
 			stream.onClose(() -> {
-		        logger.info("Scheduling removal for subscription '{}' on topic '{}'", subscription.id, sChannel);
+				logger.info("Scheduling removal for subscription '{}' on topic '{}'", subscription.id, sChannel);
 
-		        // Atomically remove the subscription from the registry
-		        // This is fast, synchronized, and non-blocking.
+		        // Atomically remove the subscription
 		        final boolean wasLastSubscriber = subscriptionRegistry.removeSubscription(sChannel, subscription.id);
 
 		        // If it was the last, schedule the *network* unsubscribe call
 		        if (wasLastSubscriber) {
 		            logger.info("Scheduling final unsubscribe for topic '{}'", sChannel);
-		            CompletableFuture.runAsync(() -> {
-		                // This is the *only* thing that runs on the async executor
-		                subscriptionRegistry.unsubscribeSubscription(sChannel);
-		            }, asyncTaskExecutor);
+
+					try {
+						final ExecutorService registryExecutor = subscriptionRegistry.getUnsubscribeExecutor();
+						registryExecutor.submit(() -> {
+							subscriptionRegistry.unsubscribeSubscription(sChannel);
+						});
+					} catch (final Exception e) {
+						// This will only fail if the registry is also stopping
+						logger.warn("Could not schedule unsubscribe task, registry may be shutting down.", e);
+					}
 		        }
 		    });
 
@@ -375,12 +355,6 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
             throw new RuntimeException(e); // NOSONAR
         }
     }
-
-	private void createExecutor() {
-		asyncTaskExecutor = Executors.newFixedThreadPool(
-                config.unsubscribeThreadPoolSize(),
-                new ThreadFactoryBuilder().setThreadFactoryName("mqtt-sub-close").setDaemon(true).build());
-	}
 
 	private SimplePushEventSource<Message> acquirePushEventSource(final PushStreamProvider provider) {
 		return InterruptSafe.execute(() -> provider.createSimpleEventSource(Message.class));
