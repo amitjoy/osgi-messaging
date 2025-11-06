@@ -20,6 +20,7 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROT
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.PUBLISHER_REPLYTO;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getCorrelationId;
 import static java.util.concurrent.Executors.newFixedThreadPool;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.osgi.service.messaging.Features.GENERATE_CORRELATION_ID;
 import static org.osgi.service.messaging.Features.GENERATE_REPLY_CHANNEL;
 import static org.osgi.service.messaging.Features.REPLY_TO;
@@ -81,25 +82,24 @@ import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
                     GENERATE_REPLY_CHANNEL
                   }
 )
+//@formatter:on
 public final class MessageReplyToPublisherProvider implements ReplyToPublisher, ReplyToManyPublisher {
 
-    @ObjectClassDefinition(
-            name = "MQTT Messaging Reply-To Publisher Executor Configuration",
-            description = "This configuration is used to configure the internal thread pool")
-    public @interface ReplyToConfig {
-        @AttributeDefinition(name = "Number of threads for the internal thread pool")
-        int numThreads() default 20;
+	@ObjectClassDefinition(name = "MQTT Messaging Reply-To Publisher Executor Configuration", description = "This configuration is used to configure the internal thread pool")
+	public @interface ReplyToConfig {
+		@AttributeDefinition(name = "Number of threads for the internal thread pool")
+		int numThreads() default 20;
 
-        @AttributeDefinition(name = "Prefix of the thread name")
-        String threadNamePrefix() default "mqtt-replyto-publisher";
+		@AttributeDefinition(name = "Prefix of the thread name")
+		String threadNamePrefix() default "mqtt-replyto-publisher";
 
-        @AttributeDefinition(name = "Suffix of the thread name (supports only {@code %d} format specifier)")
-        String threadNameSuffix() default "-%d";
+		@AttributeDefinition(name = "Suffix of the thread name (supports only {@code %d} format specifier)")
+		String threadNameSuffix() default "-%d";
 
-        @AttributeDefinition(name = "Flag to set if the threads will be daemon threads")
-        boolean isDaemon() default true;
-    }
-    //@formatter:on
+		@AttributeDefinition(name = "Flag to set if the threads will be daemon threads")
+		boolean isDaemon() default true;
+	}
+	//@formatter:on
 
 	@Reference(service = LoggerFactory.class)
 	private Logger logger;
@@ -130,13 +130,32 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
                         .setThreadNameFormat(config.threadNameSuffix())
                         .setDaemon(config.isDaemon())
                         .build();
-        if (promiseFactory != null) {
-        	// in case the component is updated with new config
-        	((ExecutorService)promiseFactory.executor()).shutdownNow();
-        	promiseFactory.scheduledExecutor().shutdownNow();
-        }
-        promiseFactory = new PromiseFactory(newFixedThreadPool(config.numThreads(), threadFactory));
         //@formatter:on
+        final PromiseFactory oldFactory = this.promiseFactory;
+		this.promiseFactory = new PromiseFactory(newFixedThreadPool(config.numThreads(), threadFactory));
+		if (oldFactory != null) {
+			logger.info("Shutting down old reply-to executor gracefully...");
+			try {
+				// Tell executors to stop accepting new tasks
+				((ExecutorService) oldFactory.executor()).shutdown();
+				oldFactory.scheduledExecutor().shutdown();
+
+				// Give in-flight tasks 5 seconds to complete
+				if (!((ExecutorService) oldFactory.executor()).awaitTermination(5, SECONDS)) {
+					// Force shutdown if they don't finish
+					((ExecutorService) oldFactory.executor()).shutdownNow();
+				}
+				if (!oldFactory.scheduledExecutor().awaitTermination(5, SECONDS)) {
+					// Force shutdown if they don't finish
+					oldFactory.scheduledExecutor().shutdownNow();
+				}
+			} catch (final InterruptedException e) {
+				Thread.currentThread().interrupt();
+				// Force shutdown on interrupt
+				((ExecutorService) oldFactory.executor()).shutdownNow();
+				oldFactory.scheduledExecutor().shutdownNow();
+			}
+		}
 		logger.info("Messaging reply-to publisher has been activated/modified");
 	}
 
