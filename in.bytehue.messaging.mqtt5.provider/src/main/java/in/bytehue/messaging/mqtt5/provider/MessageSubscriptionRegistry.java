@@ -60,6 +60,7 @@ import com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAck;
 import com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode;
 
 import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionRegistry.RegistryConfig;
+import in.bytehue.messaging.mqtt5.provider.helper.LogHelper;
 import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 
 @Designate(ocd = RegistryConfig.class)
@@ -96,6 +97,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	@Reference
 	private MessageClientProvider messagingClient;
 
+	private LogHelper logHelper;
 	private ExecutorService unsubscribeExecutor;
 
 	// topic as outer map's key and subscription id as internal map's key
@@ -106,6 +108,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	@Modified
 	void init(final RegistryConfig config) {
 		this.config = config;
+		this.logHelper = new LogHelper(logger);
 		// (Re)create the executor
 		if (unsubscribeExecutor != null) {
 			unsubscribeExecutor.shutdownNow();
@@ -119,7 +122,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
                         .build();
         //@formatter:on
 		unsubscribeExecutor = Executors.newFixedThreadPool(config.numThreads(), threadFactory);
-		logger.info("Messaging subscription registry has been activated/modified");
+		logHelper.info("Messaging subscription registry has been activated/modified");
 	}
 
 	/**
@@ -148,12 +151,12 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 		if (existingSubscriptions != null) {
 			final ExtendedSubscription existingSubscription = existingSubscriptions.remove(id);
 			if (existingSubscription != null) {
-				logger.info("Removed subscription from '{}' successfully", channel);
+				logHelper.info("Removed subscription from '{}' successfully", channel);
 			}
 
 			if (existingSubscriptions.isEmpty()) {
 				subscriptions.remove(channel);
-				logger.info("Removed the last subscription from '{}' successfully", channel);
+				logHelper.info("Removed the last subscription from '{}' successfully", channel);
 				// Signal to the caller that the last subscriber is gone
 				return true;
 			}
@@ -169,7 +172,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 		final Map<String, ExtendedSubscription> exisitngSubscriptions = subscriptions.remove(channel);
 		if (exisitngSubscriptions != null) {
 			exisitngSubscriptions.forEach((k, v) -> v.connectedStreamCloser.run());
-			logger.info("Removed all subscriptions from '{}' successfully", channel);
+			logHelper.info("Removed all subscriptions from '{}' successfully", channel);
 		}
 	}
 
@@ -200,7 +203,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 		if (currentSubs != null && !currentSubs.isEmpty()) {
 			// A new subscriber (S2) has arrived before this (S1) async task
 			// could run. We must CANCEL the unsubscribe packet.
-			logger.info("Cancelling stale unsubscribe for '{}', a new subscriber has joined.", subChannel);
+			logHelper.info("Cancelling stale unsubscribe for '{}', a new subscriber has joined.", subChannel);
 			return;
 		}
 		try {
@@ -209,13 +212,13 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 			final Mqtt5AsyncClient currentClient = messagingClient.client; // Read volatile field ONCE
 
 			if (currentClient == null) {
-				logger.error("Cannot unsubscribe from '{}' since the client is not yet initialized", subChannel);
+				logHelper.error("Cannot unsubscribe from '{}' since the client is not yet initialized", subChannel);
 				// Do not throw, just log. The local stream is already closed.
 				return;
 			}
 			final MqttClientState clientState = currentClient.getState();
 			if (clientState == DISCONNECTED || clientState == DISCONNECTED_RECONNECT) {
-				logger.error("Cannot unsubscribe from '{}' since the client is disconnected", subChannel);
+				logHelper.error("Cannot unsubscribe from '{}' since the client is disconnected", subChannel);
 				// Do not throw, just log. The local stream is already closed.
 				return;
 			}
@@ -223,12 +226,12 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 			final Mqtt5UnsubAck ack = currentClient.unsubscribeWith().addTopicFilter(subChannel).send().get(2, SECONDS);
 
 			if (isUnsubscriptionAcknowledged(ack)) {
-				logger.info("Unsubscription request for '{}' processed successfully - {}", subChannel, ack);
+				logHelper.info("Unsubscription request for '{}' processed successfully - {}", subChannel, ack);
 			} else {
-				logger.error("Unsubscription request for '{}' failed - {}", subChannel, ack);
+				logHelper.error("Unsubscription request for '{}' failed - {}", subChannel, ack);
 			}
 		} catch (final Exception e) {
-			logger.error("Unsubscription for '{}' failed with exception", subChannel, e);
+			logHelper.error("Unsubscription for '{}' failed with exception", subChannel, e);
 		}
 	}
 
@@ -239,7 +242,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 		if (unsubscribeExecutor != null) {
 			unsubscribeExecutor.shutdownNow();
 		}
-		logger.info("Messaging subscription registry has been deactivated");
+		logHelper.info("Messaging subscription registry has been deactivated");
 	}
 
 	public ExecutorService getUnsubscribeExecutor() {
@@ -264,7 +267,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 		// Call the FAST, non-blocking, SYNCHRONIZED removeSubscription(channel)
 		// This safely cleans up all internal streams without network I/O.
 		topics.forEach(this::removeSubscription);
-		logger.info("Messaging subscription registry has been cleaned");
+		logHelper.info("Messaging subscription registry has been cleaned");
 	}
 
 	/**

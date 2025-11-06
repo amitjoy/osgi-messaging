@@ -58,6 +58,7 @@ import org.osgi.util.pushstream.PushStreamProvider;
 import org.osgi.util.pushstream.SimplePushEventSource;
 
 import in.bytehue.messaging.mqtt5.provider.MessageReplyToPublisherProvider.ReplyToConfig;
+import in.bytehue.messaging.mqtt5.provider.helper.LogHelper;
 import in.bytehue.messaging.mqtt5.provider.helper.SubscriptionAck;
 import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 
@@ -116,6 +117,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 	@Activate
 	private BundleContext bundleContext;
 
+	private LogHelper logHelper;
 	private volatile ReplyToConfig config;
 	private PromiseFactory promiseFactory;
 
@@ -123,6 +125,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 	@Modified
 	void init(final ReplyToConfig config) {
 		this.config = config;
+		this.logHelper = new LogHelper(logger);
 		//@formatter:off
         final ThreadFactory threadFactory =
                 new ThreadFactoryBuilder()
@@ -131,10 +134,10 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
                         .setDaemon(config.isDaemon())
                         .build();
         //@formatter:on
-        final PromiseFactory oldFactory = this.promiseFactory;
+		final PromiseFactory oldFactory = this.promiseFactory;
 		this.promiseFactory = new PromiseFactory(newFixedThreadPool(config.numThreads(), threadFactory));
 		if (oldFactory != null) {
-			logger.info("Shutting down old reply-to executor gracefully...");
+			logHelper.info("Shutting down old reply-to executor gracefully...");
 			try {
 				// Tell executors to stop accepting new tasks
 				((ExecutorService) oldFactory.executor()).shutdown();
@@ -156,7 +159,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 				oldFactory.scheduledExecutor().shutdownNow();
 			}
 		}
-		logger.info("Messaging reply-to publisher has been activated/modified");
+		logHelper.info("Messaging reply-to publisher has been activated/modified");
 	}
 
 	public ReplyToConfig config() {
@@ -291,7 +294,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 
 		private void autoGenerateCorrelationIdIfAbsent(final Message message) {
 			final MessageContextProvider context = (MessageContextProvider) message.getContext();
-			context.correlationId = getCorrelationId(context, bundleContext, logger);
+			context.correlationId = getCorrelationId(context, bundleContext, logHelper);
 		}
 
 		private void autoGenerateReplyToChannelIfAbsent(final Message message) {
@@ -299,7 +302,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 
 			if (context.getReplyToChannel() == null) {
 				context.replyToChannel = UUID.randomUUID().toString();
-				logger.info("Auto-generated reply-to channel '{}' as it is missing in the request",
+				logHelper.info("Auto-generated reply-to channel '{}' as it is missing in the request",
 						context.replyToChannel);
 			}
 		}

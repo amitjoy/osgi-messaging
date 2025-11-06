@@ -91,6 +91,7 @@ import com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode
 
 import in.bytehue.messaging.mqtt5.api.MqttClient;
 import in.bytehue.messaging.mqtt5.provider.MessageClientProvider.Config;
+import in.bytehue.messaging.mqtt5.provider.helper.LogHelper;
 import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 
 @ProvideMessagingFeature
@@ -316,10 +317,12 @@ public final class MessageClientProvider implements MqttClient {
 	private EventAdmin eventAdmin;
 	@Reference(service = LoggerFactory.class)
 	private Logger logger;
+
 	@Activate
 	private BundleContext bundleContext;
 
 	public volatile Config config;
+	private LogHelper logHelper;
 	private ScheduledExecutorService customExecutor;
 	private ServiceRegistration<Object> readyServiceReg;
 
@@ -345,6 +348,7 @@ public final class MessageClientProvider implements MqttClient {
 
 	@Activate
 	void activate(final Config config, final Map<String, Object> properties) {
+		logHelper = new LogHelper(logger);
 		// Create a dedicated executor for all our internal async tasks
 		asyncTaskExecutor = Executors.newSingleThreadScheduledExecutor(
 				new ThreadFactoryBuilder().setThreadFactoryName("mqtt-client").setDaemon(true).build());
@@ -360,10 +364,10 @@ public final class MessageClientProvider implements MqttClient {
 		// Run connection logic *outside* the lock on our dedicated executor
 		CompletableFuture.runAsync(() -> {
 			try {
-				logger.info("Performing initial connection");
+				logHelper.info("Performing initial connection");
 				connectInternal();
 			} catch (final Exception e) {
-				logger.error("Error occurred while establishing connection to the broker '{}'", config.server(), e);
+				logHelper.error("Error occurred while establishing connection to the broker '{}'", config.server(), e);
 			} finally {
 				connectionLock.lock();
 				try {
@@ -380,11 +384,11 @@ public final class MessageClientProvider implements MqttClient {
 	void modified(final Config config, final Map<String, Object> properties) {
 		connectionLock.lock();
 		try {
-			logger.info("Client configuration has been modified");
+			logHelper.info("Client configuration has been modified");
 
 			// Wait for any in-progress operations to complete (unchanged)
 			if (disconnectInProgress) {
-				logger.warn("Disconnect in progress, waiting before reconfiguration");
+				logHelper.warn("Disconnect in progress, waiting before reconfiguration");
 				try {
 					operationComplete.await(5, SECONDS);
 				} catch (InterruptedException e) {
@@ -392,7 +396,7 @@ public final class MessageClientProvider implements MqttClient {
 				}
 			}
 			if (connectInProgress) {
-				logger.warn("Connect in progress, waiting before reconfiguration");
+				logHelper.warn("Connect in progress, waiting before reconfiguration");
 				try {
 					operationComplete.await(5, SECONDS);
 				} catch (InterruptedException e) {
@@ -430,10 +434,10 @@ public final class MessageClientProvider implements MqttClient {
 			}
 
 			try {
-				logger.info("Performing connection after modification");
+				logHelper.info("Performing connection after modification");
 				connectInternal();
 			} catch (final Exception e) {
-				logger.error("Error occurred while establishing connection to the broker '{}'", config.server(), e);
+				logHelper.error("Error occurred while establishing connection to the broker '{}'", config.server(), e);
 			} finally {
 				connectionLock.lock();
 				try {
@@ -452,7 +456,7 @@ public final class MessageClientProvider implements MqttClient {
 		try {
 			// Wait for any in-progress operations
 			if (disconnectInProgress) {
-				logger.warn("Disconnect in progress, waiting before deactivation");
+				logHelper.warn("Disconnect in progress, waiting before deactivation");
 				try {
 					operationComplete.await(5, SECONDS);
 				} catch (InterruptedException e) {
@@ -460,7 +464,7 @@ public final class MessageClientProvider implements MqttClient {
 				}
 			}
 			if (connectInProgress) {
-				logger.warn("Connect in progress, waiting before deactivation");
+				logHelper.warn("Connect in progress, waiting before deactivation");
 				try {
 					operationComplete.await(5, SECONDS);
 				} catch (InterruptedException e) {
@@ -508,7 +512,7 @@ public final class MessageClientProvider implements MqttClient {
 	}
 
 	private void init(final Config config) {
-		logger.info("Initializing client configuration");
+		logHelper.info("Initializing client configuration");
 		this.config = config;
 	}
 
@@ -556,7 +560,7 @@ public final class MessageClientProvider implements MqttClient {
 		connectionLock.lock();
 		try {
 			if (client == null) {
-				logger.warn("Client is null, skipping disconnection");
+				logHelper.warn("Client is null, skipping disconnection");
 				return;
 			}
 			clientToDisconnect = client;
@@ -575,31 +579,31 @@ public final class MessageClientProvider implements MqttClient {
 		}
 
 		// --- PHASE 2: Best-effort Async Disconnect (Modified) ---
-		logger.info("Performing disconnection (async with 2s timeout)");
+		logHelper.info("Performing disconnection (async with 2s timeout)");
 		try {
 			final Mqtt5DisconnectBuilder.Send<CompletableFuture<Void>> disconnectParams = clientToDisconnect.toAsync()
 					.disconnectWith().reasonCode(reasonCode).reasonString(reasonDescription);
 
 			if (useSessionExpiry) {
-				logger.debug("Applying Session Expiry Interval for Disconnect: {}", sessionExpiryInterval);
+				logHelper.debug("Applying Session Expiry Interval for Disconnect: {}", sessionExpiryInterval);
 				disconnectParams.sessionExpiryInterval(sessionExpiryInterval);
 			} else {
-				logger.debug("Session Expiry for Disconnect is not enabled");
+				logHelper.debug("Session Expiry for Disconnect is not enabled");
 				disconnectParams.noSessionExpiry();
 			}
 
 			final CompletableFuture<Void> disconnectFuture = disconnectParams.send();
 			disconnectFuture.get(2, SECONDS); // Wait max 2 seconds
 
-			logger.debug("Client disconnect packet sent successfully");
+			logHelper.debug("Client disconnect packet sent successfully");
 
 		} catch (final InterruptedException e) {
-			logger.warn("Interrupted while waiting for disconnect packet to send");
+			logHelper.warn("Interrupted while waiting for disconnect packet to send");
 			Thread.currentThread().interrupt();
 		} catch (final Exception e) {
 			// This includes TimeoutException, ConnectException, etc.
 			// We LOG but DO NOT re-throw. We must proceed to cleanup.
-			logger.warn("Failed to send disconnect packet (timeout or network error): {}", e.getMessage());
+			logHelper.warn("Failed to send disconnect packet (timeout or network error): {}", e.getMessage());
 		}
 
 		// --- PHASE 3: Cleanup (Corrected) ---
@@ -676,7 +680,7 @@ public final class MessageClientProvider implements MqttClient {
 			final Nested<? extends Mqtt5ClientBuilder> advancedConfig = clientBuilder.advancedConfig();
 			initLastWill(clientBuilder);
 
-			logger.debug(
+			logHelper.debug(
 					"Adding highest priority connection listeners for (de)/registering MQTT connection ready OSGi service");
 
 			clientBuilder.addConnectedListener(this::registerReadyService);
@@ -694,25 +698,25 @@ public final class MessageClientProvider implements MqttClient {
 			});
 
 			if (config.automaticReconnectWithDefaultConfig()) {
-				logger.debug("Applying Custom Automatic Reconnect Configuration");
+				logHelper.debug("Applying Custom Automatic Reconnect Configuration");
 				clientBuilder.automaticReconnect().initialDelay(config.initialDelay(), SECONDS)
 						.maxDelay(config.maxDelay(), SECONDS).applyAutomaticReconnect();
 			}
 			if (config.simpleAuth()) {
-				logger.debug("Applying Simple Authentication Configuration");
+				logHelper.debug("Applying Simple Authentication Configuration");
 				String username = null;
 				String password = null;
 				if (config.staticAuthCred()) {
-					logger.debug("Applying Simple Authentication Configuration (Static)");
+					logHelper.debug("Applying Simple Authentication Configuration (Static)");
 					username = config.username();
 					password = config.password();
 				} else {
-					logger.debug("Applying Simple Authentication Configuration (Dynamic)");
+					logHelper.debug("Applying Simple Authentication Configuration (Dynamic)");
 					@SuppressWarnings("rawtypes")
 					final Optional<Supplier> auth = getOptionalService(Supplier.class, config.simpleAuthCredFilter(),
-							bundleContext, logger);
+							bundleContext, logHelper);
 					if (auth.isPresent()) {
-						logger.debug("Found Simple Authentication Service - {}", auth.get().getClass().getName());
+						logHelper.debug("Found Simple Authentication Service - {}", auth.get().getClass().getName());
 						try {
 							final Supplier<?> supplier = auth.get();
 							final Object instance = supplier.get();
@@ -729,45 +733,45 @@ public final class MessageClientProvider implements MqttClient {
 							username = tokens[0];
 							password = tokens[1];
 						} catch (final Exception e) {
-							logger.error("Cannot Retrieve Credentials from Simple Authentication Service", e);
+							logHelper.error("Cannot Retrieve Credentials from Simple Authentication Service", e);
 						}
 					} else {
-						logger.warn("Simple Authentiation Service Not Found");
+						logHelper.warn("Simple Authentiation Service Not Found");
 					}
 				}
 				if (username == null || password == null) {
-					logger.warn("Skipping Simple Authentication Configuration - Username or Password is null");
+					logHelper.warn("Skipping Simple Authentication Configuration - Username or Password is null");
 				} else {
 					clientBuilder.simpleAuth().username(username).password(password.getBytes()).applySimpleAuth();
 				}
 			}
 			if (config.useWebSocket()) {
-				logger.debug("Applying Web Socket Configuration");
+				logHelper.debug("Applying Web Socket Configuration");
 				clientBuilder.webSocketConfig().serverPath(config.serverPath()).subprotocol(config.subProtocol())
 						.queryString(config.queryString()).handshakeTimeout(config.webSocketHandshakeTimeout(), SECONDS)
 						.applyWebSocketConfig();
 			}
 			if (config.useSSL()) {
-				logger.debug("Applying SSL Configuration");
+				logHelper.debug("Applying SSL Configuration");
 				clientBuilder.sslConfig().cipherSuites(emptyToNull(config.cipherSuites()))
 						.protocols(emptyToNull(config.protocols()))
 						.handshakeTimeout(config.sslHandshakeTimeout(), SECONDS)
 						.keyManagerFactory(getOptionalService(KeyManagerFactory.class,
-								config.keyManagerFactoryTargetFilter(), bundleContext, logger).orElse(null))
+								config.keyManagerFactoryTargetFilter(), bundleContext, logHelper).orElse(null))
 						.trustManagerFactory(getOptionalService(TrustManagerFactory.class,
-								config.trustManagerFactoryTargetFilter(), bundleContext, logger).orElse(null))
+								config.trustManagerFactoryTargetFilter(), bundleContext, logHelper).orElse(null))
 						.hostnameVerifier(getOptionalService(HostnameVerifier.class,
-								config.hostNameVerifierTargetFilter(), bundleContext, logger).orElse(null))
+								config.hostNameVerifierTargetFilter(), bundleContext, logHelper).orElse(null))
 						.applySslConfig();
 			}
 
 			// Handle executor creation locally first
 			Executor executorToUse = null;
 			if (config.useCustomExecutor()) {
-				logger.debug("Applying Custom Executor Configuration");
+				logHelper.debug("Applying Custom Executor Configuration");
 				final String clazz = config.executorTargetClass().trim();
 				if (clazz.isEmpty()) {
-					logger.debug("Applying Executor as Non-Service Configuration");
+					logHelper.debug("Applying Executor as Non-Service Configuration");
 					final ThreadFactory threadFactory = new ThreadFactoryBuilder()
 							.setThreadFactoryName(config.threadNamePrefix())
 							.setThreadNameFormat(config.threadNameSuffix()).setDaemon(config.isDaemon()).build();
@@ -775,9 +779,9 @@ public final class MessageClientProvider implements MqttClient {
 					executorToUse = Executors.newScheduledThreadPool(config.numberOfThreads(), threadFactory);
 					((ScheduledThreadPoolExecutor) executorToUse).setRemoveOnCancelPolicy(true);
 				} else {
-					logger.debug("Applying Executor as Service Configuration");
+					logHelper.debug("Applying Executor as Service Configuration");
 					String filter = config.executorTargetFilter().trim();
-					Optional<Object> service = getOptionalServiceWithoutType(clazz, filter, bundleContext, logger);
+					Optional<Object> service = getOptionalServiceWithoutType(clazz, filter, bundleContext, logHelper);
 					if (service.isPresent()) {
 						executorToUse = (Executor) service.get();
 					}
@@ -792,57 +796,57 @@ public final class MessageClientProvider implements MqttClient {
 							: null;
 
 			if (config.useEnhancedAuthentication()) {
-				logger.debug("Applying Enhanced Authentication Configuration");
+				logHelper.debug("Applying Enhanced Authentication Configuration");
 				clientBuilder.enhancedAuth(getOptionalService(Mqtt5EnhancedAuthMechanism.class,
-						config.enhancedAuthTargetFilter(), bundleContext, logger).orElse(null));
+						config.enhancedAuthTargetFilter(), bundleContext, logHelper).orElse(null));
 			}
 			if (config.useServerReauth()) {
-				logger.debug("Applying Server Reauthentication Configuration");
+				logHelper.debug("Applying Server Reauthentication Configuration");
 				advancedConfig.allowServerReAuth(config.useServerReauth());
 			}
 			if (config.connectedListenerFilters().length != 0) {
-				logger.debug("Applying Connected Listener Configuration");
+				logHelper.debug("Applying Connected Listener Configuration");
 				final String[] filters = config.connectedListenerFilters();
 				for (final String filter : filters) {
 					if (filter.trim().isEmpty()) {
-						logger.warn("Connected listener filter is empty");
+						logHelper.warn("Connected listener filter is empty");
 						continue;
 					}
 					final Optional<MqttClientConnectedListener> listener = getOptionalService(
-							MqttClientConnectedListener.class, filter, bundleContext, logger);
+							MqttClientConnectedListener.class, filter, bundleContext, logHelper);
 					listener.ifPresent(l -> {
-						logger.debug("Adding Custom MQTT Connected Listener - {}", l.getClass().getSimpleName());
+						logHelper.debug("Adding Custom MQTT Connected Listener - {}", l.getClass().getSimpleName());
 						clientBuilder.addConnectedListener(l);
 					});
 				}
 			}
 			if (config.disconnectedListenerFilters().length != 0) {
-				logger.debug("Applying Disconnected Listener Configuration");
+				logHelper.debug("Applying Disconnected Listener Configuration");
 				final String[] filters = config.disconnectedListenerFilters();
 				for (final String filter : filters) {
 					if (filter.trim().isEmpty()) {
-						logger.warn("Disconnected listener filter is empty");
+						logHelper.warn("Disconnected listener filter is empty");
 						continue;
 					}
 					final Optional<MqttClientDisconnectedListener> listener = getOptionalService(
-							MqttClientDisconnectedListener.class, filter, bundleContext, logger);
+							MqttClientDisconnectedListener.class, filter, bundleContext, logHelper);
 					listener.ifPresent(l -> {
-						logger.debug("Adding Custom MQTT Disconnected Listener - {}", l.getClass().getSimpleName());
+						logHelper.debug("Adding Custom MQTT Disconnected Listener - {}", l.getClass().getSimpleName());
 						clientBuilder.addDisconnectedListener(l);
 					});
 				}
 			}
 			if (!config.qos1IncomingInterceptorFilter().isEmpty()) {
-				logger.debug("Applying Incoming and Outgoing Interceptor Configuration");
+				logHelper.debug("Applying Incoming and Outgoing Interceptor Configuration");
 				advancedConfig.interceptors()
 						.incomingQos1Interceptor(getOptionalService(Mqtt5IncomingQos1Interceptor.class,
-								config.qos1IncomingInterceptorFilter(), bundleContext, logger).orElse(null))
+								config.qos1IncomingInterceptorFilter(), bundleContext, logHelper).orElse(null))
 						.incomingQos2Interceptor(getOptionalService(Mqtt5IncomingQos2Interceptor.class,
-								config.qos2IncomingInterceptorFilter(), bundleContext, logger).orElse(null))
+								config.qos2IncomingInterceptorFilter(), bundleContext, logHelper).orElse(null))
 						.outgoingQos1Interceptor(getOptionalService(Mqtt5OutgoingQos1Interceptor.class,
-								config.qos1OutgoingInterceptorFilter(), bundleContext, logger).orElse(null))
+								config.qos1OutgoingInterceptorFilter(), bundleContext, logHelper).orElse(null))
 						.outgoingQos2Interceptor(getOptionalService(Mqtt5OutgoingQos2Interceptor.class,
-								config.qos2OutgoingInterceptorFilter(), bundleContext, logger).orElse(null))
+								config.qos2OutgoingInterceptorFilter(), bundleContext, logHelper).orElse(null))
 						.applyInterceptors();
 			}
 
@@ -852,7 +856,7 @@ public final class MessageClientProvider implements MqttClient {
 			clientToConnect = clientBuilder.buildAsync();
 
 		} catch (final Exception e) {
-			logger.error("Failed to build MQTT client configuration", e);
+			logHelper.error("Failed to build MQTT client configuration", e);
 			// Propagate failure to the calling CompletableFuture in connect()
 			throw new RuntimeException("Failed to build MQTT client", e);
 		}
@@ -862,7 +866,7 @@ public final class MessageClientProvider implements MqttClient {
 		connectionLock.lock();
 		try {
 			if (client != null && client.getState() == CONNECTED) {
-				logger.warn("Client already connected, skipping connection attempt");
+				logHelper.warn("Client already connected, skipping connection attempt");
 				// Manually shutdown the executor we just created, as it won't be used
 				if (localCustomExecutor != null) {
 					localCustomExecutor.shutdownNow();
@@ -886,10 +890,10 @@ public final class MessageClientProvider implements MqttClient {
 					.cleanStart(config.cleanStart()).keepAlive(config.keepAliveInterval());
 
 			if (config.useSessionExpiry()) {
-				logger.debug("Applying Session Expiry Interval: {}", config.sessionExpiryInterval());
+				logHelper.debug("Applying Session Expiry Interval: {}", config.sessionExpiryInterval());
 				connectionParams.sessionExpiryInterval(config.sessionExpiryInterval());
 			} else {
-				logger.debug("Session Expiry is not enabled");
+				logHelper.debug("Session Expiry is not enabled");
 				connectionParams.noSessionExpiry();
 			}
 
@@ -900,13 +904,13 @@ public final class MessageClientProvider implements MqttClient {
 
 			ack.whenComplete((connAck, throwable) -> {
 				if (throwable != null) {
-					logger.error("Error occurred while connecting to the broker '{}'", config.server(), throwable);
+					logHelper.error("Error occurred while connecting to the broker '{}'", config.server(), throwable);
 				} else {
-					logger.debug("Successfully connected to the broker - '{}'", connAck);
+					logHelper.debug("Successfully connected to the broker - '{}'", connAck);
 				}
 			});
 		} catch (final Exception e) {
-			logger.error("Error occurred while initiating connection to the broker '{}'", config.server(), e);
+			logHelper.error("Error occurred while initiating connection to the broker '{}'", config.server(), e);
 			// Propagate failure to the calling CompletableFuture in connect()
 			throw new RuntimeException("Failed to initiate connection", e);
 		}
@@ -928,7 +932,7 @@ public final class MessageClientProvider implements MqttClient {
 		delayInterval = config.lastWillDelayInterval();
 
 		if (!topic.isEmpty()) {
-			logger.debug("Applying Last Will and Testament Configuration");
+			logHelper.debug("Applying Last Will and Testament Configuration");
 			clientBuilder.willPublish().topic(topic).qos(qos).payload(payload).contentType(contentType)
 					.messageExpiryInterval(messageExpiryInterval).delayInterval(delayInterval).applyWillPublish();
 		}
@@ -960,7 +964,7 @@ public final class MessageClientProvider implements MqttClient {
 
 			readyServiceReg = bundleContext.registerService(Object.class, new Object(),
 					FrameworkUtil.asDictionary(properties));
-			logger.info("The MQTT connection ready service has been registered");
+			logHelper.info("The MQTT connection ready service has been registered");
 		} finally {
 			connectionLock.unlock();
 		}
@@ -978,11 +982,11 @@ public final class MessageClientProvider implements MqttClient {
 				if (readyServiceReg != null) {
 					readyServiceReg.unregister();
 					readyServiceReg = null;
-					logger.info("The MQTT connection ready service has been deregistered");
+					logHelper.info("The MQTT connection ready service has been deregistered");
 				}
 			} catch (final IllegalStateException e) {
 				// this could happen if the reconnect happens pretty quickly
-				logger.info("The MQTT connection ready service has already been deregistered");
+				logHelper.info("The MQTT connection ready service has already been deregistered");
 			}
 		} finally {
 			connectionLock.unlock();

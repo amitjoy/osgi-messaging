@@ -81,6 +81,7 @@ import in.bytehue.messaging.mqtt5.api.MqttSubAckDTO.Type;
 import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionProvider.SubscriberConfig;
 import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionRegistry.ExtendedSubscription;
 import in.bytehue.messaging.mqtt5.provider.helper.InterruptSafe;
+import in.bytehue.messaging.mqtt5.provider.helper.LogHelper;
 import in.bytehue.messaging.mqtt5.provider.helper.SubscriptionAck;
 
 //@formatter:off
@@ -114,6 +115,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         int qos() default 0;
 	}
 
+	private LogHelper logHelper;
 	private volatile SubscriberConfig config;
 
     @Activate
@@ -141,13 +143,14 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
     @Modified
     void init(final SubscriberConfig config) {
         this.config = config;
-        logger.info("Messaging subscriber has been activated/updated");
+        logHelper = new LogHelper(logger);
+        logHelper.info("Messaging subscriber has been activated/updated");
     }
 
     @Deactivate
     void stop() {
         subscriptionRegistry.clearAllSubscriptions();
-        logger.info("Messaging subscriber has been deactivated");
+        logHelper.info("Messaging subscriber has been deactivated");
     }
 
     public SubscriberConfig config() {
@@ -177,7 +180,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
             }
         }
     	catch (final Exception e) { //NOSONAR
-    		logger.error("Error while subscribing to {}", subChannel, e);
+    		logHelper.error("Error while subscribing to {}", subChannel, e);
     		throw new RuntimeException(e); //NOSONAR
     	}
     }
@@ -202,7 +205,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
     		}
     	}
     	catch (final Exception e) { //NOSONAR
-    		logger.error("Error while subscribing to {}", subChannel, e);
+    		logHelper.error("Error while subscribing to {}", subChannel, e);
     		throw new RuntimeException(e); //NOSONAR
     	}
     }
@@ -225,13 +228,13 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         final Mqtt5AsyncClient currentClient = messagingClient.client; // Read volatile field ONCE
 
         if (currentClient == null) {
-            logger.error("Cannot subscribe to '{}' since the client is not yet initialized", sChannel);
+            logHelper.error("Cannot subscribe to '{}' since the client is not yet initialized", sChannel);
             throw new IllegalStateException("Client is not ready, cannot subscribe to channel: " + sChannel);
         }
 
         final MqttClientState clientState = currentClient.getState();
         if (clientState == DISCONNECTED || clientState == DISCONNECTED_RECONNECT) {
-            logger.error("Cannot subscribe to '{}' since the client is disconnected", sChannel);
+            logHelper.error("Cannot subscribe to '{}' since the client is disconnected", sChannel);
             throw new IllegalStateException("Client is disconnected, cannot subscribe to channel: " + sChannel);
         }
 		final int qos;
@@ -270,20 +273,20 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 										                                		  final MessageContextBuilderProvider mcb = mcbFactory.getService();
 											                                	  try { //NOSONAR
 											                                		  final Message message = toMessage(p, ctx, mcb);
-											                                		  logger.trace("Successful Subscription Response: {} ", message);
-											                                              acknowledgeMessage(
-											                                                      message,
-											                                                      ctx,
-											                                                      source::publish,
-											                                                      bundleContext,
-											                                                      logger);
+											                                		  logHelper.debug("Successful Subscription Response: {} ", message);
+										                                              acknowledgeMessage(
+										                                                      message,
+										                                                      ctx,
+										                                                      source::publish,
+										                                                      bundleContext,
+										                                                      logHelper);
 											                                      } catch (final Exception e) {
 											                                           source.error(e);
 											                                      } finally {
 											                                           mcbFactory.ungetService(mcb);
 											                                      }
 										                                	  } catch (final Exception ex) {
-										                                		  logger.error("Exception occurred while processing message", ex);
+										                                		  logHelper.error("Exception occurred while processing message", ex);
 										                                		  source.error(ex);
 										                                	  }
 										                                   })
@@ -301,26 +304,26 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 			        final MqttSubAckDTO subAck =
 			                createStatusEvent(Type.ACKED, sChannel, qos, isReplyToSub, reason, codes);
 			        sendSubscriptionStatusEvent(subAck);
-			        logger.info("New subscription request for '{}' processed successfully - {} > ID: {}",
+			        logHelper.info("New subscription request for '{}' processed successfully - {} > ID: {}",
 			                     sChannel, ack, subscription.id);
 			    } else {
 			        final MqttSubAckDTO subNack =
 			                createStatusEvent(FAILED, sChannel, qos, isReplyToSub, reason, codes);
 			        sendSubscriptionStatusEvent(subNack);
-			        logger.error("New subscription request for '{}' failed - {} > ID: {}",
+			        logHelper.error("New subscription request for '{}' failed - {} > ID: {}",
 			                     sChannel, ack, subscription.id);
 			    }
             });
 
 			stream.onClose(() -> {
-				logger.info("Scheduling removal for subscription '{}' on topic '{}'", subscription.id, sChannel);
+				logHelper.info("Scheduling removal for subscription '{}' on topic '{}'", subscription.id, sChannel);
 
 		        // Atomically remove the subscription
 		        final boolean wasLastSubscriber = subscriptionRegistry.removeSubscription(sChannel, subscription.id);
 
 		        // If it was the last, schedule the *network* unsubscribe call
 		        if (wasLastSubscriber) {
-		            logger.info("Scheduling final unsubscribe for topic '{}'", sChannel);
+		        	logHelper.info("Scheduling final unsubscribe for topic '{}'", sChannel);
 
 					try {
 						final ExecutorService registryExecutor = subscriptionRegistry.getUnsubscribeExecutor();
@@ -329,7 +332,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 						});
 					} catch (final Exception e) {
 						// This will only fail if the registry is also stopping
-						logger.warn("Could not schedule unsubscribe task, registry may be shutting down.", e);
+						logHelper.warn("Could not schedule unsubscribe task, registry may be shutting down.", e);
 					}
 		        }
 		    });
@@ -337,7 +340,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
             future.get(config.timeoutInMillis(), MILLISECONDS);
             return SubscriptionAck.of(stream, subscription.id);
         } catch (final ExecutionException e) {
-        	logger.error("Error while subscribing to {}", sChannel, e);
+        	logHelper.error("Error while subscribing to {}", sChannel, e);
             final Throwable cause = e.getCause() != null ? e.getCause() : e;
             final String reason = cause.getMessage();
             // No SubAck available here, hence, no reason codes
@@ -346,7 +349,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
             sendSubscriptionStatusEvent(subNack);
             throw new RuntimeException(e.getCause()); //NOSONAR
         } catch (final Exception e) { //NOSONAR
-        	logger.error("Error while subscribing to {}", sChannel, e);
+        	logHelper.error("Error while subscribing to {}", sChannel, e);
             final String reason = e.getMessage();
             // No SubAck available here, hence, no reason codes
             final MqttSubAckDTO subNack =

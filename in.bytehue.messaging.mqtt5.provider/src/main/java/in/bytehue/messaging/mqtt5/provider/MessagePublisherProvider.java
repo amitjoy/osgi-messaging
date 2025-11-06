@@ -66,6 +66,7 @@ import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishBuilder.Send.Com
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishResult;
 
 import in.bytehue.messaging.mqtt5.provider.MessagePublisherProvider.PublisherConfig;
+import in.bytehue.messaging.mqtt5.provider.helper.LogHelper;
 
 //@formatter:off
 @MessagingFeature(
@@ -117,11 +118,14 @@ public final class MessagePublisherProvider implements MessagePublisher {
 	@Activate
 	private BundleContext bundleContext;
 
+	private LogHelper logHelper;
+
 	@Activate
 	@Modified
 	void init(final PublisherConfig config) {
 		this.config = config;
-		logger.info("Messaging publisher has been activated/modified");
+		logHelper = new LogHelper(logger);
+		logHelper.info("Messaging publisher has been activated/modified");
 	}
 
 	@Override
@@ -138,10 +142,10 @@ public final class MessagePublisherProvider implements MessagePublisher {
 	public void publish(final Message message, final MessageContext context) {
 		publish(message, context, null);
 	}
-	
+
 	public PublisherConfig config() {
-        return config;
-    }
+		return config;
+	}
 
 	private void publish(final Message message, MessageContext context, String channel) {
 		try {
@@ -151,16 +155,17 @@ public final class MessagePublisherProvider implements MessagePublisher {
 			if (channel == null) {
 				channel = context.getChannel();
 			}
-			// Time-of-Check to Time-of-Use (TOCTOU) race condition that can occur during bundle startup or client reconfiguration
+			// Time-of-Check to Time-of-Use (TOCTOU) race condition that can occur during
+			// bundle startup or client reconfiguration
 			final Mqtt5AsyncClient currentClient = messagingClient.client; // Read volatile field ONCE
 
-	        if (currentClient == null) {
-	            logger.error("Cannot publish to '{}' since the client is not yet initialized", channel);
-	            throw new IllegalStateException("Client is not ready, cannot publish to channel: " + channel);
-	        }
-	        final MqttClientState clientState = currentClient.getState();
+			if (currentClient == null) {
+				logHelper.error("Cannot publish to '{}' since the client is not yet initialized", channel);
+				throw new IllegalStateException("Client is not ready, cannot publish to channel: " + channel);
+			}
+			final MqttClientState clientState = currentClient.getState();
 			if (clientState == DISCONNECTED || clientState == DISCONNECTED_RECONNECT) {
-				logger.error("Cannot publish the message to '{}' since the client is disconnected", channel);
+				logHelper.error("Cannot publish the message to '{}' since the client is disconnected", channel);
 				throw new IllegalStateException("Client is disconnected, cannot publish to channel: " + channel);
 			}
 			// add topic prefix if available
@@ -172,7 +177,7 @@ public final class MessagePublisherProvider implements MessagePublisher {
 
 			final String contentType = context.getContentType();
 			final String replyToChannel = context.getReplyToChannel();
-			final String correlationId = getCorrelationId((MessageContextProvider) context, bundleContext, logger);
+			final String correlationId = getCorrelationId((MessageContextProvider) context, bundleContext, logHelper);
 			final ByteBuffer content = message.payload();
 
 			final Object messageExpiry = extensions.getOrDefault(MESSAGE_EXPIRY_INTERVAL, null);
@@ -180,10 +185,10 @@ public final class MessagePublisherProvider implements MessagePublisher {
 
 			final int qos;
 			if (extensions == null || extensions.isEmpty()) {
-            	qos = config.qos();
-            } else {
-            	qos = getQoS(extensions, converter, config.qos());
-            }
+				qos = config.qos();
+			} else {
+				qos = getQoS(extensions, converter, config.qos());
+			}
 
 			final Object isRetain = extensions.getOrDefault(RETAIN, false);
 			final boolean retain = adaptTo(isRetain, boolean.class, converter);
@@ -226,7 +231,7 @@ public final class MessagePublisherProvider implements MessagePublisher {
                 publishRequest.messageExpiryInterval(messageExpiryInterval);
             }
 
-            logger.debug(
+            logHelper.debug(
             	    "Publish Request:\n" +
             	    "  Channel           : {}\n" +
             	    "  Payload Format    : {}\n" +
@@ -250,24 +255,24 @@ public final class MessagePublisherProvider implements MessagePublisher {
                           .whenComplete((result, throwable) -> {
                               if (throwable != null) {
                             	  resultFuture.completeExceptionally(throwable);
-                                  logger.error("Error occurred while publishing message", throwable);
+                                  logHelper.error("Error occurred while publishing message", throwable);
                               } else if (isPublishSuccessful(result)) {
                             	  resultFuture.complete(null);
-                            	  logger.debug("Successful Publish Request: {} ", result);
-							      logger.debug("New publish request for '{}' has been processed successfully", ch);
+                            	  logHelper.debug("Successful Publish Request: {} ", result);
+                            	  logHelper.debug("New publish request for '{}' has been processed successfully", ch);
 							  } else {
 								  final Throwable t = result.getError().get();
 								  resultFuture.completeExceptionally(t);
-								  logger.error("New publish request for '{}' failed - {}", ch, t);
+								  logHelper.error("New publish request for '{}' failed - {}", ch, t);
 							  }
                           });
             resultFuture.get(config.timeoutInMillis(), MILLISECONDS);
             // @formatter:on
 		} catch (final ExecutionException e) {
-			logger.error("Error while publishing data to {}", channel, e);
+			logHelper.error("Error while publishing data to {}", channel, e);
 			throw new RuntimeException(e.getCause());
 		} catch (final Exception e) {
-			logger.error("Error while publishing data to {}", channel, e);
+			logHelper.error("Error while publishing data to {}", channel, e);
 			throw new RuntimeException(e);
 		}
 	}

@@ -71,6 +71,7 @@ import in.bytehue.messaging.mqtt5.provider.MessageReplyToWhiteboardProvider.Conf
 import in.bytehue.messaging.mqtt5.provider.MessageSubscriptionRegistry.ExtendedSubscription;
 import in.bytehue.messaging.mqtt5.provider.helper.FilterParser;
 import in.bytehue.messaging.mqtt5.provider.helper.FilterParser.Expression;
+import in.bytehue.messaging.mqtt5.provider.helper.LogHelper;
 import in.bytehue.messaging.mqtt5.provider.helper.SubscriptionAck;
 import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 
@@ -126,6 +127,7 @@ public final class MessageReplyToWhiteboardProvider {
 	@Reference
 	private ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
 
+	private LogHelper logHelper;
 	private volatile Config config;
 	private ExecutorService executorService;
 	private final List<ReplyToSubDTO> subscriptions = new CopyOnWriteArrayList<>();
@@ -137,6 +139,7 @@ public final class MessageReplyToWhiteboardProvider {
 	@Activate
 	void activate(final Config config, final BundleContext context) {
 		this.config = config;
+		this.logHelper = new LogHelper(logger);
 		// @formatter:off
 		final ThreadFactory threadFactory =
                 new ThreadFactoryBuilder()
@@ -252,7 +255,7 @@ public final class MessageReplyToWhiteboardProvider {
 		tracker2.open();
 		tracker3.open();
 
-		logger.info("Messaging reply-to whiteboard has been activated");
+		logHelper.info("Messaging reply-to whiteboard has been activated");
 	}
 
 	@Deactivate
@@ -265,7 +268,7 @@ public final class MessageReplyToWhiteboardProvider {
 		tracker3.close();
 
 		executorService.shutdownNow();
-		logger.info("Messaging reply-to whiteboard has been deactivated");
+		logHelper.info("Messaging reply-to whiteboard has been deactivated");
 	}
 
 	private void processReplyToSingleSubscriptionHandler(final ReplyToSubDTO sub) {
@@ -273,18 +276,18 @@ public final class MessageReplyToWhiteboardProvider {
 
 		Stream.of(replyToDTO.subChannels).forEach(c -> {
 			try {
-				logger.debug("Processing Reply-To Single Subscription Handler for Sub-Channel: {} and Pub-Channel: {}",
+				logHelper.debug("Processing Reply-To Single Subscription Handler for Sub-Channel: {} and Pub-Channel: {}",
 						c, replyToDTO.pubChannel);
 				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.subQos);
 				sub.addAck(ack);
 
 				ack.stream().map(m -> {
-					logger.debug("[Reply-To Single Subscription] Received message '{}' on '{}'", m.getContext(),
+					logHelper.debug("[Reply-To Single Subscription] Received message '{}' on '{}'", m.getContext(),
 							sub.handler.getClass().getSimpleName());
 					return handleResponse(m, (ReplyToSingleSubscriptionHandler) sub.handler);
 				}).forEach(m -> handleMessageReceive(sub.reference, replyToDTO, c, ack, m));
 			} catch (Exception e) {
-				logger.error("Cannot process reply-to single subscription: {}", c, e);
+				logHelper.error("Cannot process reply-to single subscription: {}", c, e);
 			}
 		});
 	}
@@ -294,18 +297,18 @@ public final class MessageReplyToWhiteboardProvider {
 
 		Stream.of(replyToDTO.subChannels).forEach(c -> {
 			try {
-				logger.debug("Processing Reply-To Subscription Handler for Sub-Channel: {} and Pub-Channel: {}", c,
+				logHelper.debug("Processing Reply-To Subscription Handler for Sub-Channel: {} and Pub-Channel: {}", c,
 						replyToDTO.pubChannel);
 				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.subQos);
 				sub.addAck(ack);
 
 				ack.stream().forEach(m -> {
-					logger.debug("[Reply-To Subscription] Received message '{}' on '{}'", m.getContext(),
+					logHelper.debug("[Reply-To Subscription] Received message '{}' on '{}'", m.getContext(),
 							sub.handler.getClass().getSimpleName());
 					((ReplyToSubscriptionHandler) sub.handler).handleResponse(m);
 				});
 			} catch (Exception e) {
-				logger.error("Cannot process reply-to subscription: {}", c, e);
+				logHelper.error("Cannot process reply-to subscription: {}", c, e);
 			}
 		});
 	}
@@ -315,19 +318,19 @@ public final class MessageReplyToWhiteboardProvider {
 
 		Stream.of(replyToDTO.subChannels).forEach(c -> {
 			try {
-				logger.debug("Processing Reply-To Many Subscription Handler for Sub-Channel: {} and Pub-Channel: {}", c,
+				logHelper.debug("Processing Reply-To Many Subscription Handler for Sub-Channel: {} and Pub-Channel: {}", c,
 						replyToDTO.pubChannel);
 				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.subQos);
 				sub.addAck(ack);
 
 				ack.stream().forEach(m -> {
-					logger.debug("[Reply-To Many Subscription] Received message '{}' on '{}'", m.getContext(),
+					logHelper.debug("[Reply-To Many Subscription] Received message '{}' on '{}'", m.getContext(),
 							sub.handler.getClass().getSimpleName());
 					handleResponses(m, (ReplyToManySubscriptionHandler) sub.handler)
 							.forEach(msg -> handleMessageReceive(sub.reference, replyToDTO, c, ack, msg));
 				});
 			} catch (Exception e) {
-				logger.error("Cannot process reply-to many subscription: {}", c, e);
+				logHelper.error("Cannot process reply-to many subscription: {}", c, e);
 			}
 		});
 	}
@@ -337,7 +340,7 @@ public final class MessageReplyToWhiteboardProvider {
 		try {
 			return handler.handleResponse(request, mcb);
 		} catch (final Exception e) {
-			logger.warn("Exception occurred while retrieving response for message: {}", request.getContext(), e);
+			logHelper.warn("Exception occurred while retrieving response for message: {}", request.getContext(), e);
 			return prepareExceptionAsMessage(e, mcb);
 		} finally {
 			mcbFactory.ungetService(mcb);
@@ -367,13 +370,13 @@ public final class MessageReplyToWhiteboardProvider {
 				? msg.getContext().getReplyToChannel()
 				: pubChannelProp;
 
-		logger.debug("Publishing channel: {}", pubChannel);
+		logHelper.debug("Publishing channel: {}", pubChannel);
 		if (pubChannel == null) {
-			logger.error("No reply-to channel is specified for the subscription handler");
+			logHelper.error("No reply-to channel is specified for the subscription handler");
 			return;
 		}
 		if (config.storeReplyToChannelInfoIfReceivedInMessage()) {
-			logger.debug("Updating subscription info to contain the reply-to channel");
+			logHelper.debug("Updating subscription info to contain the reply-to channel");
 			// update the subscription
 			final ExtendedSubscription subscription = registry.getSubscription(channel, sub.id());
 			subscription.updateReplyToHandlerSubscription(pubChannel, reference);

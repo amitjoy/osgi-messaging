@@ -41,6 +41,7 @@ import org.osgi.service.messaging.annotations.ProvideMessagingAcknowledgeFeature
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
 
 import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
+import in.bytehue.messaging.mqtt5.provider.helper.LogHelper;
 
 // @formatter:off
 @Component(
@@ -67,7 +68,7 @@ public final class MessageContextBuilderProvider
             MessageContextBuilder,
             AcknowledgeMessageContextBuilder {
 
-    private final Logger logger;
+    private final LogHelper logHelper;
     private final MessageProvider message;
     private final MessageContextProvider messageContext;
 
@@ -76,9 +77,8 @@ public final class MessageContextBuilderProvider
             @Reference(service = LoggerFactory.class)
             final Logger logger) {
 
-        this.logger = logger;
-
         message = new MessageProvider();
+        logHelper = new LogHelper(logger);
         messageContext = new MessageContextProvider();
         message.messageContext = messageContext;
     }
@@ -148,7 +148,7 @@ public final class MessageContextBuilderProvider
 	public MqttMessageContextBuilder channel(final String channelName, final String channelExtension) {
 		// routing key ('channelExtension') is not required by MQTT
 		channel(channelName);
-		logger.debug("Channel extension will be ignored");
+		logHelper.debug("Channel extension will be ignored");
 		return this;
 	}
 

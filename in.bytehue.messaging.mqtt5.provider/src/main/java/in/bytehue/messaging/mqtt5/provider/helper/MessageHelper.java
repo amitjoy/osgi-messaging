@@ -52,7 +52,6 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.dto.ServiceReferenceDTO;
-import org.osgi.service.log.Logger;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageContextBuilder;
@@ -81,44 +80,41 @@ public final class MessageHelper {
 	private MessageHelper() {
 		throw new IllegalAccessError("Non-instantiable");
 	}
-	
+
 	public static Object getServiceWithoutType(final String clazz, final String filter, final BundleContext context) {
-        try {
-            ServiceReference<?>[] references = context.getServiceReferences(clazz, filter);
-            
-            if (references == null || references.length == 0) {
-                throw new RuntimeException(String.format("'%s' service instance cannot be found", clazz));
-            }
+		try {
+			ServiceReference<?>[] references = context.getServiceReferences(clazz, filter);
 
-            return Arrays.stream(references)
-                    .max(Comparator.comparingLong(getServiceRanking()))
-                    .map(context::getService)
-                    .orElseThrow(() -> new RuntimeException(String.format("'%s' service instance cannot be found", clazz)));
+			if (references == null || references.length == 0) {
+				throw new RuntimeException(String.format("'%s' service instance cannot be found", clazz));
+			}
 
-        } catch (Exception e) {
-            throw new RuntimeException(String.format("Service '%s' cannot be retrieved", clazz), e);
-        }
-    }
+			return Arrays.stream(references).max(Comparator.comparingLong(getServiceRanking())).map(context::getService)
+					.orElseThrow(
+							() -> new RuntimeException(String.format("'%s' service instance cannot be found", clazz)));
 
-    public static Optional<Object> getOptionalServiceWithoutType(final String clazz, String filter, final BundleContext context, final Logger logger) {
-        try {
-            if (filter == null || filter.trim().isEmpty()) {
-                filter = null;
-            }
-            return Optional.ofNullable(getServiceWithoutType(clazz, filter, context));
-        } catch (Exception e) {
-            logger.warn("Service '{}' cannot be retrieved", clazz, e);
-            return Optional.empty();
-        }
-    }
+		} catch (Exception e) {
+			throw new RuntimeException(String.format("Service '%s' cannot be retrieved", clazz), e);
+		}
+	}
 
-    private static ToLongFunction<ServiceReference<?>> getServiceRanking() {
-        return sr -> Optional.ofNullable(sr.getProperty(SERVICE_RANKING))
-                .filter(Number.class::isInstance)
-                .map(Number.class::cast)
-                .map(Number::longValue)
-                .orElse(0L);
-    }
+	public static Optional<Object> getOptionalServiceWithoutType(final String clazz, String filter,
+			final BundleContext context, final LogHelper logger) {
+		try {
+			if (filter == null || filter.trim().isEmpty()) {
+				filter = null;
+			}
+			return Optional.ofNullable(getServiceWithoutType(clazz, filter, context));
+		} catch (Exception e) {
+			logger.warn("Service '{}' cannot be retrieved", clazz, e);
+			return Optional.empty();
+		}
+	}
+
+	private static ToLongFunction<ServiceReference<?>> getServiceRanking() {
+		return sr -> Optional.ofNullable(sr.getProperty(SERVICE_RANKING)).filter(Number.class::isInstance)
+				.map(Number.class::cast).map(Number::longValue).orElse(0L);
+	}
 
 	public static <T> T getService(final Class<T> clazz, final String filter, final BundleContext context) {
 		try {
@@ -139,7 +135,7 @@ public final class MessageHelper {
         }
     }
 
-    public static <T> Optional<T> getOptionalService(final Class<T> clazz, String filter, final BundleContext context, final Logger logger) {
+    public static <T> Optional<T> getOptionalService(final Class<T> clazz, String filter, final BundleContext context, final LogHelper logger) {
         try {
             if (filter.trim().isEmpty()) {
             	filter = null;
@@ -260,7 +256,7 @@ public final class MessageHelper {
             final MessageContextProvider ctx,
             final Consumer<Message> interimConsumer,
             final BundleContext context,
-            final Logger logger) {
+            final LogHelper logger) {
 
         // message is received but not yet acknowledged
         changeAcknowledgeState(message, RECEIVED);
@@ -304,7 +300,7 @@ public final class MessageHelper {
             final Message message,
             final MessageContextProvider ctx,
             final BundleContext context,
-            final Logger logger) {
+            final LogHelper logger) {
 
         final Consumer<Message> handler = ctx.acknowledgeHandler.findEffective(context, logger);
         if (handler != null) {
@@ -320,7 +316,7 @@ public final class MessageHelper {
             final Message message,
             final MessageContextProvider ctx,
             final BundleContext context,
-            final Logger logger) {
+            final LogHelper logger) {
 
         final Consumer<Message> consumer = ctx.acknowledgeConsumer.findEffective(context, logger);
         if (consumer != null) {
@@ -348,8 +344,8 @@ public final class MessageHelper {
 		final boolean isGuaranteedDelivery = adaptTo(isGuranteedOrderingProp, boolean.class, converter);
 		final boolean isGuranteedOrdering = adaptTo(isGuaranteedDeliveryProp, boolean.class, converter);
 
-		// In MQTT, there is no concept of guaranteed ordering though, that's why, QoS 2 is set to guarantee
-		// the delivery of the message
+		// In MQTT, there is no concept of guaranteed ordering though, that's why, QoS 2
+		// is set to guarantee the delivery of the message
 		if (isGuaranteedDelivery || isGuranteedOrdering) {
 			return EXACTLY_ONCE.getCode();
 		}
@@ -439,7 +435,7 @@ public final class MessageHelper {
     public static String getCorrelationId(
             final MessageContextProvider messageContext,
             final BundleContext bundleContext,
-            final Logger logger) {
+            final LogHelper logger) {
 
         final String predefinedCorrelationId = messageContext.getCorrelationId();
         if (predefinedCorrelationId != null) {

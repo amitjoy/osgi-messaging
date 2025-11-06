@@ -18,7 +18,6 @@ package in.bytehue.messaging.mqtt5.provider.helper;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalService;
 
 import org.osgi.framework.BundleContext;
-import org.osgi.service.log.Logger;
 
 public final class AcknowledgePair<B> {
 
@@ -62,7 +61,7 @@ public final class AcknowledgePair<B> {
 	}
 
 	@SuppressWarnings("unchecked")
-	public B findEffective(final BundleContext context, final Logger logger) {
+	public B findEffective(final BundleContext context, final LogHelper logger) {
 		B effective = null;
 		if (serviceFilter != null) {
 			effective = (B) getOptionalService(clazz, serviceFilter, context, logger).orElse(null);
