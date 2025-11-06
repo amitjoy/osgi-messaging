@@ -265,7 +265,7 @@ public final class MessageSubscriptionRegistryTest {
 		final SubscriptionAck subscription = subscriber._subscribe(channel);
 		TimeUnit.SECONDS.sleep(2);
 
-		registry.unsubscribeSubscription(channel);
+		registry.removeSubscription(channel);
 		TimeUnit.SECONDS.sleep(2);
 
 		assertThat(registry.getSubscription(channel, subscription.id())).isNull();
