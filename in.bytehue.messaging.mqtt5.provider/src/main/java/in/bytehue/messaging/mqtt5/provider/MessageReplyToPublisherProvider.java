@@ -195,8 +195,13 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 			stream.close();
 		});
 
-		// publish the request to the channel
-		publisher.publish(requestMessage, dto.pubChannel);
+		try {
+			// publish the request to the channel
+			publisher.publish(requestMessage, dto.pubChannel);
+		} catch (Exception e) {
+			deferred.fail(e);
+			stream.close();
+		}
 		return deferred.getPromise();
 	}
 
