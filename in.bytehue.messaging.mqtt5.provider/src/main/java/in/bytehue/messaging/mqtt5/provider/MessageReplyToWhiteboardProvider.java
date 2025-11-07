@@ -113,6 +113,9 @@ public final class MessageReplyToWhiteboardProvider {
 	private Logger logger;
 
 	@Reference
+	private LogMirrorService logMirror;
+
+	@Reference
 	private ConverterAdapter converter;
 
 	@Reference
@@ -139,7 +142,7 @@ public final class MessageReplyToWhiteboardProvider {
 	@Activate
 	void activate(final Config config, final BundleContext context) {
 		this.config = config;
-		this.logHelper = new LogHelper(logger);
+		this.logHelper = new LogHelper(logger, logMirror);
 		// @formatter:off
 		final ThreadFactory threadFactory =
                 new ThreadFactoryBuilder()
@@ -276,8 +279,9 @@ public final class MessageReplyToWhiteboardProvider {
 
 		Stream.of(replyToDTO.subChannels).forEach(c -> {
 			try {
-				logHelper.debug("Processing Reply-To Single Subscription Handler for Sub-Channel: {} and Pub-Channel: {}",
-						c, replyToDTO.pubChannel);
+				logHelper.debug(
+						"Processing Reply-To Single Subscription Handler for Sub-Channel: {} and Pub-Channel: {}", c,
+						replyToDTO.pubChannel);
 				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.subQos);
 				sub.addAck(ack);
 
@@ -318,8 +322,8 @@ public final class MessageReplyToWhiteboardProvider {
 
 		Stream.of(replyToDTO.subChannels).forEach(c -> {
 			try {
-				logHelper.debug("Processing Reply-To Many Subscription Handler for Sub-Channel: {} and Pub-Channel: {}", c,
-						replyToDTO.pubChannel);
+				logHelper.debug("Processing Reply-To Many Subscription Handler for Sub-Channel: {} and Pub-Channel: {}",
+						c, replyToDTO.pubChannel);
 				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.subQos);
 				sub.addAck(ack);
 

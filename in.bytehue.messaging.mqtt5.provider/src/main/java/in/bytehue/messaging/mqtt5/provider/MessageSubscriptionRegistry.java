@@ -95,6 +95,9 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	private Logger logger;
 
 	@Reference
+	private LogMirrorService logMirror;
+
+	@Reference
 	private MessageClientProvider messagingClient;
 
 	private LogHelper logHelper;
@@ -108,7 +111,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	@Modified
 	void init(final RegistryConfig config) {
 		this.config = config;
-		this.logHelper = new LogHelper(logger);
+		this.logHelper = new LogHelper(logger, logMirror);
 		// (Re)create the executor
 		if (unsubscribeExecutor != null) {
 			unsubscribeExecutor.shutdownNow();

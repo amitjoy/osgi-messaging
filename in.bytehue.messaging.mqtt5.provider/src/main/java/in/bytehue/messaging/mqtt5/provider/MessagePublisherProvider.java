@@ -110,6 +110,9 @@ public final class MessagePublisherProvider implements MessagePublisher {
 	private Logger logger;
 
 	@Reference
+	private LogMirrorService logMirror;
+
+	@Reference
 	private ConverterAdapter converter;
 
 	@Reference
@@ -124,7 +127,7 @@ public final class MessagePublisherProvider implements MessagePublisher {
 	@Modified
 	void init(final PublisherConfig config) {
 		this.config = config;
-		logHelper = new LogHelper(logger);
+		logHelper = new LogHelper(logger, logMirror);
 		logHelper.info("Messaging publisher has been activated/modified");
 	}
 

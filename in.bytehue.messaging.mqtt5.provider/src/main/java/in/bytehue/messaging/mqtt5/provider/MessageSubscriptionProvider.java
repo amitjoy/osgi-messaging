@@ -131,6 +131,9 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
     private Logger logger;
 
     @Reference
+	private LogMirrorService logMirror;
+
+    @Reference
     private MessageClientProvider messagingClient;
 
     @Reference
@@ -143,7 +146,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
     @Modified
     void init(final SubscriberConfig config) {
         this.config = config;
-        logHelper = new LogHelper(logger);
+        logHelper = new LogHelper(logger, logMirror);
         logHelper.info("Messaging subscriber has been activated/updated");
     }
 

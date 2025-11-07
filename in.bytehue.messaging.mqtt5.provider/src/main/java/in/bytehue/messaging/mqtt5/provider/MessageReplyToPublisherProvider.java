@@ -106,6 +106,9 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 	private Logger logger;
 
 	@Reference
+	private LogMirrorService logMirror;
+
+	@Reference
 	private MessagePublisherProvider publisher;
 
 	@Reference
@@ -125,7 +128,7 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 	@Modified
 	void init(final ReplyToConfig config) {
 		this.config = config;
-		this.logHelper = new LogHelper(logger);
+		this.logHelper = new LogHelper(logger, logMirror);
 		//@formatter:off
         final ThreadFactory threadFactory =
                 new ThreadFactoryBuilder()

@@ -75,10 +75,11 @@ public final class MessageContextBuilderProvider
     @Activate
     public MessageContextBuilderProvider(
             @Reference(service = LoggerFactory.class)
-            final Logger logger) {
+            final Logger logger,
+            @Reference final LogMirrorService logMirror) {
 
         message = new MessageProvider();
-        logHelper = new LogHelper(logger);
+        logHelper = new LogHelper(logger, logMirror);
         messageContext = new MessageContextProvider();
         message.messageContext = messageContext;
     }

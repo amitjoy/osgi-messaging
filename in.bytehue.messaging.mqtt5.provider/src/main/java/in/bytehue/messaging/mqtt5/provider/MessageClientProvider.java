@@ -317,6 +317,8 @@ public final class MessageClientProvider implements MqttClient {
 	private EventAdmin eventAdmin;
 	@Reference(service = LoggerFactory.class)
 	private Logger logger;
+	@Reference
+	private LogMirrorService logMirror;
 
 	@Activate
 	private BundleContext bundleContext;
@@ -348,7 +350,7 @@ public final class MessageClientProvider implements MqttClient {
 
 	@Activate
 	void activate(final Config config, final Map<String, Object> properties) {
-		logHelper = new LogHelper(logger);
+		logHelper = new LogHelper(logger, logMirror);
 		// Create a dedicated executor for all our internal async tasks
 		asyncTaskExecutor = Executors.newSingleThreadScheduledExecutor(
 				new ThreadFactoryBuilder().setThreadFactoryName("mqtt-client").setDaemon(true).build());

@@ -47,6 +47,7 @@ import com.hivemq.client.mqtt.MqttClientState;
 
 import in.bytehue.messaging.mqtt5.api.MqttCommandExtension;
 import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
+import in.bytehue.messaging.mqtt5.provider.LogMirrorService;
 import in.bytehue.messaging.mqtt5.provider.MessageClientProvider;
 import in.bytehue.messaging.mqtt5.provider.MessageClientProvider.Config;
 import in.bytehue.messaging.mqtt5.provider.MessagePublisherProvider;
@@ -63,10 +64,13 @@ import in.bytehue.messaging.mqtt5.provider.helper.Table;
 @Descriptor("MQTT 5 Messaging")
 @Component(immediate = true, service = MqttCommand.class)
 @SatisfyingConditionTarget("(" + CONDITION_ID +"=gogo-available)")
-@FelixGogoCommand(scope = "mqtt", function = { "pub", "sub", "unsub", "runtime" })
+@FelixGogoCommand(scope = "mqtt", function = { "pub", "sub", "unsub", "runtime", "mirror" })
 public final class MqttCommand {
 
-    @Reference
+	@Reference
+	private LogMirrorService logMirror;
+
+	@Reference
     private MessageClientProvider client;
 
     @Reference
@@ -332,6 +336,23 @@ public final class MqttCommand {
         }
     }
 
+    @Descriptor("Shows the status of the log mirror or start/stop the log mirror")
+    public String mirror(
+            @Descriptor("Supported values - [status, on, off]")
+            @Parameter(absentValue = "STATUS", names = { "-i" }) final String extra) {
+    	if ("STATUS".equalsIgnoreCase(extra)) {
+            return logMirror.isMirrorEnabled() ? "Log Mirror ENABLED" : "Log Mirror DISABLED";
+        } else if ("OFF".equalsIgnoreCase(extra)) {
+            logMirror.disableMirror();
+            return "Log Mirror DISABLED";
+        } else if ("ON".equalsIgnoreCase(extra)) {
+        	logMirror.enableMirror();
+            return "Log Mirror ENABLED";
+        } else {
+        	return "Invalid Parameter";
+        }
+    }
+    
     private String prepareSubscriptions(final SubscriptionDTO[] subscriptions) {
         final Table table = new Table();
 
