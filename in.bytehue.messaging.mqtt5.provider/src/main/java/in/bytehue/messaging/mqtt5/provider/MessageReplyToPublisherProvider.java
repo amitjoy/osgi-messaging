@@ -184,8 +184,10 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 			// Create a new, corrected MessageContext for the subscription
 			final String replyChannel = replyToContext.getReplyToChannel();
 			if (replyChannel == null || replyChannel.trim().isEmpty()) {
-				deferred.fail(new IllegalArgumentException("Reply-to channel is missing in the message context"));
-				return deferred.getPromise();
+				String errorMsg = "Reply-to channel is missing in the message context";
+			    logHelper.error(errorMsg + " for request message: {}", requestMessage.getContext());
+			    deferred.fail(new IllegalArgumentException(errorMsg));
+			    return deferred.getPromise();
 			}
 			final MessageContextBuilderProvider builder = mcbFactory.getService();
 			try {
@@ -243,7 +245,9 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 			// Create a new, corrected MessageContext for the subscription
 			final String replyChannel = replyToContext.getReplyToChannel();
 			if (replyChannel == null || replyChannel.trim().isEmpty()) {
-				throw new IllegalArgumentException("Reply-to channel is missing in the message context");
+				String errorMsg = "Reply-to channel is missing in the message context";
+				logHelper.error(errorMsg + " for request message: {}", requestMessage.getContext());
+				throw new IllegalArgumentException(errorMsg);
 			}
 			final MessageContextBuilderProvider builder = mcbFactory.getService();
 			try {

@@ -260,13 +260,16 @@ public final class MessageHelper {
 
         // message is received but not yet acknowledged
         changeAcknowledgeState(message, RECEIVED);
+        logger.debug("Message state set to RECEIVED. Context: {}", message.getContext());
 
         // check for the existence of effective filter
         final Predicate<Message> filter = ctx.acknowledgeFilter.findEffective(context, logger);
 
         if (filter != null) {
+        	logger.debug("Acknowledge filter found. Testing message.");
             final boolean isAcknowledged = filter.test(message);
             if (isAcknowledged) {
+            	logger.debug("Acknowledge filter returned true. Message ACKNOWLEDGED.");
                 // acknowledge the message if the filter returns true
                 changeAcknowledgeState(message, ACKNOWLEDGED);
                 // publish the message to the downstream subscriber if acknowledged
@@ -274,10 +277,12 @@ public final class MessageHelper {
                 // execute the post handler (if set) if the message is acknowledged
                 invokePostAcknowledgeHandler(message, ctx, context, logger);
             } else {
+            	logger.debug("Acknowledge filter returned false. Message REJECTED.");
                 // if the filter returns false, reject the message
                 changeAcknowledgeState(message, REJECTED);
             }
         } else {
+        	logger.debug("No acknowledge filter found. Proceeding to acknowledge handler.");
             // if we don't have any filter at all, execute the acknowledge handler if set
             invokeAcknowledgeHandler(message, ctx, context, logger);
             // publish the message to the subscriber irrespective of the acknowledgement state
@@ -304,8 +309,10 @@ public final class MessageHelper {
 
         final Consumer<Message> handler = ctx.acknowledgeHandler.findEffective(context, logger);
         if (handler != null) {
+        	logger.debug("Invoking acknowledge handler: {}", handler.getClass().getName());
             handler.accept(message);
         } else {
+        	logger.debug("No acknowledge handler found. Defaulting to ACKNOWLEDGED.");
             // if the handler is also not provided, we acknowledge the message anyway
             final MessageContextProvider ackContext = (MessageContextProvider) message.getContext();
             ackContext.acknowledgeState = ACKNOWLEDGED;
@@ -320,6 +327,7 @@ public final class MessageHelper {
 
         final Consumer<Message> consumer = ctx.acknowledgeConsumer.findEffective(context, logger);
         if (consumer != null) {
+        	logger.debug("Invoking post-acknowledge handler: {}", consumer.getClass().getName());
             consumer.accept(message);
         }
     }
@@ -439,10 +447,12 @@ public final class MessageHelper {
 
         final String predefinedCorrelationId = messageContext.getCorrelationId();
         if (predefinedCorrelationId != null) {
+        	logger.debug("Using predefined correlation ID: {}", predefinedCorrelationId);
             return predefinedCorrelationId;
         }
         final String correlationIdGenerator = messageContext.correlationIdGenerator;
         if (correlationIdGenerator == null) {
+        	logger.debug("No correlation ID generator filter found in context. Generating new UUID.");
             return UUID.randomUUID().toString();
         }
         final Optional<MqttMessageCorrelationIdGenerator> service =
@@ -451,10 +461,12 @@ public final class MessageHelper {
                                    bundleContext,
                                    logger);
         if (service.isPresent()) {
+        	logger.debug("Using correlation ID from generator service: {}", service.get().getClass().getName());
             final String generatedId = service.get().generate();
             requireNonNull(generatedId, "'MqttMessageCorrelationIdGenerator' (filter: " + correlationIdGenerator  + " returned 'null' value");
             return generatedId;
         }
+        logger.debug("Correlation ID generator service (filter: {}) not found. Generating new UUID.", correlationIdGenerator);
         return UUID.randomUUID().toString();
     }
     // @formatter:on

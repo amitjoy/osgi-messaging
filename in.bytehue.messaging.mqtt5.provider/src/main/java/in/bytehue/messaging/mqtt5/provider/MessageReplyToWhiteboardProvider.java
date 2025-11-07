@@ -24,6 +24,7 @@ import static in.bytehue.messaging.mqtt5.provider.MessageReplyToWhiteboardProvid
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adaptTo;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.prepareExceptionAsMessage;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.osgi.framework.Constants.SERVICE_ID;
 import static org.osgi.service.messaging.Features.EXTENSION_QOS;
 import static org.osgi.service.messaging.Features.REPLY_TO;
 import static org.osgi.service.messaging.MessageConstants.MESSAGING_FEATURE_PROPERTY;
@@ -426,6 +427,8 @@ public final class MessageReplyToWhiteboardProvider {
 			subChannels = adaptTo(replyToSubRequest, String[].class, converter);
 
 			if (subChannels == null) {
+				logHelper.error("Service {} missing required property '{}'", reference.getProperty(SERVICE_ID),
+						REPLY_TO_SUBSCRIPTION_REQUEST_CHANNEL_PROPERTY);
 				throw new IllegalStateException("The '" + reference
 						+ "' handler instance doesn't specify the reply-to subscription channel(s)");
 			}
@@ -445,6 +448,8 @@ public final class MessageReplyToWhiteboardProvider {
 			isConform = exp.eval(requiredValues);
 
 			if (!isConform) {
+				logHelper.error("Service {} has non-conformant target filter '{}'. Required values: {}",
+						reference.getProperty(SERVICE_ID), replyToSubTarget, requiredValues);
 				throw new IllegalStateException(
 						"The '" + reference + "' handler service doesn't specify the reply-to target filter");
 			}

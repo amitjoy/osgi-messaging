@@ -39,6 +39,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -274,6 +275,13 @@ public final class MessagePublisherProvider implements MessagePublisher {
 		} catch (final ExecutionException e) {
 			logHelper.error("Error while publishing data to {}", channel, e);
 			throw new RuntimeException(e.getCause());
+		} catch (final InterruptedException e) {
+			Thread.currentThread().interrupt();
+			logHelper.warn("Publish operation was interrupted while waiting for result", e);
+			throw new RuntimeException(e);
+		} catch (final TimeoutException e) {
+			logHelper.error("Publish operation to {} timed out after {}ms", channel, config.timeoutInMillis(), e);
+			throw new RuntimeException("Publish timed out", e);
 		} catch (final Exception e) {
 			logHelper.error("Error while publishing data to {}", channel, e);
 			throw new RuntimeException(e);

@@ -284,9 +284,10 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 										                                                      bundleContext,
 										                                                      logHelper);
 											                                      } catch (final Exception e) {
-											                                           source.error(e);
+											                                    	  logHelper.error("Failed to process incoming message on topic {}", sChannel, e);
+											                                          source.error(e);
 											                                      } finally {
-											                                           mcbFactory.ungetService(mcb);
+											                                          mcbFactory.ungetService(mcb);
 											                                      }
 										                                	  } catch (final Exception ex) {
 										                                		  logHelper.error("Exception occurred while processing message", ex);

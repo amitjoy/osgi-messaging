@@ -112,6 +112,9 @@ public final class MessageContextBuilderProvider
 	@Override
 	public <T> MqttMessageContextBuilder content(final T object, final Function<T, ByteBuffer> contentMapper) {
 		message.byteBuffer = Optional.ofNullable(contentMapper).map(c -> c.apply(object)).orElse(null);
+		if (message.byteBuffer == null) {
+			logHelper.warn("Content mapper returned null");
+		}
 		return this;
 	}
 

@@ -15,12 +15,16 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.log.Logger;
+import org.osgi.service.log.LoggerFactory;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
+import in.bytehue.messaging.mqtt5.provider.LogMirrorService.Config;
+
+@Designate(ocd = Config.class)
 @Component(service = LogMirrorService.class, immediate = true, configurationPid = PID)
-@Designate(ocd = LogMirrorService.Config.class)
 public final class LogMirrorService {
 
 	@ObjectClassDefinition(name = "Log Mirror Configuration", description = "Configuration for the console log mirror")
@@ -31,6 +35,9 @@ public final class LogMirrorService {
 
 	public static final String PID = "in.bytehue.mqtt.debug";
 	private static final String PROP_ENABLED = "enabled";
+
+	@Reference(service = LoggerFactory.class)
+	private Logger logger;
 
 	@Reference
 	private ConfigurationAdmin cm;
@@ -65,11 +72,13 @@ public final class LogMirrorService {
 		this.consumerThread.setName("mqtt-log-mirror");
 		this.consumerThread.setDaemon(true);
 		this.consumerThread.start();
+		logger.info("Log mirror has been activated with enabled={}", config.enabled());
 	}
 
 	@Modified
 	void modified(final Config config) {
 		this.config = config;
+		logger.info("Log mirror has been updated with enabled={}", config.enabled());
 	}
 
 	@Deactivate
@@ -110,7 +119,7 @@ public final class LogMirrorService {
 			props.put(PROP_ENABLED, enabled);
 			cfg.updateIfDifferent(props);
 		} catch (final IOException e) {
-			// Fail silently
+			logger.error("Failed to update log mirror configuration (PID: {})", PID, e);
 		}
 	}
 }

@@ -261,6 +261,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 		// if the client library like HiveMQ supports automatic resubscription, this can
 		// be disabled through config
 		if (!config.clearSubscriptionsOnDisconnect()) {
+			logHelper.info("Skipping subscription clear on disconnect (clearSubscriptionsOnDisconnect=false)");
 			return;
 		}
 		// Iterate a snapshot of the keys to avoid ConcurrentModificationException

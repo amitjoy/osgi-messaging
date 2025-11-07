@@ -523,12 +523,15 @@ public final class MessageClientProvider implements MqttClient {
 		connectionLock.lock();
 		try {
 			if (!isConnectedInternal()) {
+				logHelper.warn("disconnect() called, but the client is not connected.");
 				throw new IllegalStateException("Client is not connected");
 			}
 			if (disconnectInProgress) {
+				logHelper.warn("disconnect() called, but a disconnect is already in progress.");
 				throw new IllegalStateException("Disconnect already in progress");
 			}
 			if (connectInProgress) {
+				logHelper.warn("disconnect() called, but a connect is already in progress.");
 				throw new IllegalStateException("Connect already in progress");
 			}
 			disconnectInProgress = true;
@@ -626,12 +629,15 @@ public final class MessageClientProvider implements MqttClient {
 		connectionLock.lock();
 		try {
 			if (client != null && client.getState() == CONNECTED) {
+				logHelper.warn("connect() called, but client is already connected.");
 				throw new IllegalStateException("Client is already connected");
 			}
 			if (connectInProgress) {
+				logHelper.warn("connect() called, but a connect is already in progress.");
 				throw new IllegalStateException("Connect already in progress");
 			}
 			if (disconnectInProgress) {
+				logHelper.warn("connect() called, but a disconnect is already in progress.");
 				throw new IllegalStateException("Disconnect already in progress");
 			}
 			connectInProgress = true;
@@ -943,15 +949,19 @@ public final class MessageClientProvider implements MqttClient {
 	private String getClientID(final BundleContext bundleContext) {
 		// check for the existence of configuration
 		if (!config.id().isEmpty()) {
+			logHelper.info("Using client ID from component configuration: {}", config.id());
 			return config.id();
 		}
 		// check for framework property if available
 		final String id = bundleContext.getProperty(CLIENT_ID_FRAMEWORK_PROPERTY);
+		logHelper.info("Using client ID from framework property: {}", id);
 		// generate client ID if framework property is absent
 		if (id == null) {
 			final String generatedClientId = UUID.randomUUID().toString();
 			// update the generated framework property for others to use
 			System.setProperty(CLIENT_ID_FRAMEWORK_PROPERTY, generatedClientId);
+			logHelper.info("No client ID found in config or properties. Generated new client ID: {}",
+					generatedClientId);
 			return generatedClientId;
 		}
 		return id;
