@@ -303,6 +303,16 @@ public final class MessageReplyToWhiteboardProvider {
 			logHelper.info("Processing Reply-To Single Subscription Handler. Service ID: {}",
 					sub.reference.getProperty(SERVICE_ID));
 
+			// Check if this specific DTO instance is still in the main list.
+			// If it's not, it means a "remove" or "modify" operation has
+			// already removed it, and this task is stale.
+			if (!subscriptions.contains(sub)) {
+				logHelper.warn(
+						"Cancelling stale subscription task for Reply-To Single Subscription Handler - Service ID: {}. This is normal.",
+						sub.reference.getProperty(SERVICE_ID));
+				return; // Abort
+			}
+
 			final ReplyToDTO replyToDTO = new ReplyToDTO(sub.reference);
 
 			logHelper.info(
@@ -344,6 +354,16 @@ public final class MessageReplyToWhiteboardProvider {
 			logHelper.info("Processing Reply-To Subscription Handler. Service ID: {}",
 					sub.reference.getProperty(SERVICE_ID));
 
+			// Check if this specific DTO instance is still in the main list.
+			// If it's not, it means a "remove" or "modify" operation has
+			// already removed it, and this task is stale.
+			if (!subscriptions.contains(sub)) {
+				logHelper.warn(
+						"Cancelling stale subscription task for Reply-To Subscription Handler. Service ID: {}. This is normal.",
+						sub.reference.getProperty(SERVICE_ID));
+				return; // Abort
+			}
+
 			final ReplyToDTO replyToDTO = new ReplyToDTO(sub.reference);
 
 			logHelper.info("Validated Reply-To Subscription Handler. Service ID: {}. SubChannels: {}. PubChannel: {}",
@@ -382,6 +402,16 @@ public final class MessageReplyToWhiteboardProvider {
 		try {
 			logHelper.info("Processing Reply-To Many Subscription Handler. Service ID: {}",
 					sub.reference.getProperty(SERVICE_ID));
+
+			// Check if this specific DTO instance is still in the main list.
+			// If it's not, it means a "remove" or "modify" operation has
+			// already removed it, and this task is stale.
+			if (!subscriptions.contains(sub)) {
+				logHelper.warn(
+						"Cancelling stale subscription task for Reply-To Many Subscription Handler. Service ID: {}. This is normal.",
+						sub.reference.getProperty(SERVICE_ID));
+				return; // Abort
+			}
 
 			final ReplyToDTO replyToDTO = new ReplyToDTO(sub.reference);
 
