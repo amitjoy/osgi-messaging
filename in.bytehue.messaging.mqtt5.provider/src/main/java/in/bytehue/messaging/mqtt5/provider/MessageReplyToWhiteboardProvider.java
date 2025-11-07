@@ -299,99 +299,125 @@ public final class MessageReplyToWhiteboardProvider {
 	}
 
 	private void processReplyToSingleSubscriptionHandler(final ReplyToSubDTO sub) {
-		logHelper.info("Processing Reply-To Single Subscription Handler. Service ID: {}",
-				sub.reference.getProperty(SERVICE_ID));
+		try {
+			logHelper.info("Processing Reply-To Single Subscription Handler. Service ID: {}",
+					sub.reference.getProperty(SERVICE_ID));
 
-		final ReplyToDTO replyToDTO = new ReplyToDTO(sub.reference);
+			final ReplyToDTO replyToDTO = new ReplyToDTO(sub.reference);
 
-		logHelper.info(
-				"Validated Reply-To Single Subscription Handler. Service ID: {}. SubChannels: {}. PubChannel: {}",
-				sub.reference.getProperty(SERVICE_ID), Arrays.toString(replyToDTO.subChannels), replyToDTO.pubChannel);
+			logHelper.info(
+					"Validated Reply-To Single Subscription Handler. Service ID: {}. SubChannels: {}. PubChannel: {}",
+					sub.reference.getProperty(SERVICE_ID), Arrays.toString(replyToDTO.subChannels),
+					replyToDTO.pubChannel);
 
-		Stream.of(replyToDTO.subChannels).forEach(c -> {
-			try {
-				logHelper.debug(
-						"Processing Reply-To Single Subscription Handler for Sub-Channel: {} and Pub-Channel: {}", c,
-						replyToDTO.pubChannel);
-				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.subQos);
-				sub.addAck(ack);
+			Stream.of(replyToDTO.subChannels).forEach(c -> {
+				try {
+					logHelper.debug(
+							"Processing Reply-To Single Subscription Handler for Sub-Channel: {} and Pub-Channel: {}",
+							c, replyToDTO.pubChannel);
+					final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel,
+							replyToDTO.subQos);
+					sub.addAck(ack);
 
-				logHelper.info(
-						"MQTT subscription successful for Reply-To Single Subscription Handler. Service ID: {}. Channel: {}. Sub-ID: {}",
-						sub.reference.getProperty(SERVICE_ID), c, ack.id());
+					logHelper.info(
+							"MQTT subscription successful for Reply-To Single Subscription Handler. Service ID: {}. Channel: {}. Sub-ID: {}",
+							sub.reference.getProperty(SERVICE_ID), c, ack.id());
 
-				ack.stream().map(m -> {
-					logHelper.debug("[Reply-To Single Subscription] Received message '{}' on '{}'", m.getContext(),
-							sub.handler.getClass().getSimpleName());
-					return handleResponse(m, (ReplyToSingleSubscriptionHandler) sub.handler);
-				}).forEach(m -> handleMessageReceive(sub.reference, replyToDTO, c, ack, m));
-			} catch (Exception e) {
-				logHelper.error("Cannot process reply-to single subscription: {}", c, e);
-			}
-		});
+					ack.stream().map(m -> {
+						logHelper.debug("[Reply-To Single Subscription] Received message '{}' on '{}'", m.getContext(),
+								sub.handler.getClass().getSimpleName());
+						return handleResponse(m, (ReplyToSingleSubscriptionHandler) sub.handler);
+					}).forEach(m -> handleMessageReceive(sub.reference, replyToDTO, c, ack, m));
+				} catch (Exception e) {
+					logHelper.error("Cannot process reply-to single subscription: {}", c, e);
+				}
+			});
+		} catch (Exception e) {
+			logHelper.error(
+					"Failed to validate Reply-To Single Subscription Handler. Service ID: {}. Reason: {}. Check service properties.",
+					sub.reference.getProperty(SERVICE_ID), e.getMessage());
+		}
 	}
 
 	private void processReplyToSubscriptionHandler(final ReplyToSubDTO sub) {
-		logHelper.info("Processing Reply-To Subscription Handler. Service ID: {}",
-				sub.reference.getProperty(SERVICE_ID));
+		try {
+			logHelper.info("Processing Reply-To Subscription Handler. Service ID: {}",
+					sub.reference.getProperty(SERVICE_ID));
 
-		final ReplyToDTO replyToDTO = new ReplyToDTO(sub.reference);
+			final ReplyToDTO replyToDTO = new ReplyToDTO(sub.reference);
 
-		logHelper.info("Validated Reply-To Subscription Handler. Service ID: {}. SubChannels: {}. PubChannel: {}",
-				sub.reference.getProperty(SERVICE_ID), Arrays.toString(replyToDTO.subChannels), replyToDTO.pubChannel);
+			logHelper.info("Validated Reply-To Subscription Handler. Service ID: {}. SubChannels: {}. PubChannel: {}",
+					sub.reference.getProperty(SERVICE_ID), Arrays.toString(replyToDTO.subChannels),
+					replyToDTO.pubChannel);
 
-		Stream.of(replyToDTO.subChannels).forEach(c -> {
-			try {
-				logHelper.debug("Processing Reply-To Subscription Handler for Sub-Channel: {} and Pub-Channel: {}", c,
-						replyToDTO.pubChannel);
-				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.subQos);
-				sub.addAck(ack);
+			Stream.of(replyToDTO.subChannels).forEach(c -> {
+				try {
+					logHelper.debug("Processing Reply-To Subscription Handler for Sub-Channel: {} and Pub-Channel: {}",
+							c, replyToDTO.pubChannel);
+					final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel,
+							replyToDTO.subQos);
+					sub.addAck(ack);
 
-				logHelper.info(
-						"MQTT subscription successful for Reply-To Subscription Handler. Service ID: {}. Channel: {}. Sub-ID: {}",
-						sub.reference.getProperty(SERVICE_ID), c, ack.id());
+					logHelper.info(
+							"MQTT subscription successful for Reply-To Subscription Handler. Service ID: {}. Channel: {}. Sub-ID: {}",
+							sub.reference.getProperty(SERVICE_ID), c, ack.id());
 
-				ack.stream().forEach(m -> {
-					logHelper.debug("[Reply-To Subscription] Received message '{}' on '{}'", m.getContext(),
-							sub.handler.getClass().getSimpleName());
-					((ReplyToSubscriptionHandler) sub.handler).handleResponse(m);
-				});
-			} catch (Exception e) {
-				logHelper.error("Cannot process reply-to subscription: {}", c, e);
-			}
-		});
+					ack.stream().forEach(m -> {
+						logHelper.debug("[Reply-To Subscription] Received message '{}' on '{}'", m.getContext(),
+								sub.handler.getClass().getSimpleName());
+						((ReplyToSubscriptionHandler) sub.handler).handleResponse(m);
+					});
+				} catch (Exception e) {
+					logHelper.error("Cannot process reply-to subscription: {}", c, e);
+				}
+			});
+		} catch (Exception e) {
+			logHelper.error(
+					"Failed to validate Reply-To Subscription Handler. Service ID: {}. Reason: {}. Check service properties.",
+					sub.reference.getProperty(SERVICE_ID), e.getMessage());
+		}
 	}
 
 	private void processReplyToManySubscriptionHandler(final ReplyToSubDTO sub) {
-		logHelper.info("Processing Reply-To Many Subscription Handler. Service ID: {}",
-				sub.reference.getProperty(SERVICE_ID));
+		try {
+			logHelper.info("Processing Reply-To Many Subscription Handler. Service ID: {}",
+					sub.reference.getProperty(SERVICE_ID));
 
-		final ReplyToDTO replyToDTO = new ReplyToDTO(sub.reference);
+			final ReplyToDTO replyToDTO = new ReplyToDTO(sub.reference);
 
-		logHelper.info("Validated Reply-To Many Subscription Handler. Service ID: {}. SubChannels: {}. PubChannel: {}",
-				sub.reference.getProperty(SERVICE_ID), Arrays.toString(replyToDTO.subChannels), replyToDTO.pubChannel);
+			logHelper.info(
+					"Validated Reply-To Many Subscription Handler. Service ID: {}. SubChannels: {}. PubChannel: {}",
+					sub.reference.getProperty(SERVICE_ID), Arrays.toString(replyToDTO.subChannels),
+					replyToDTO.pubChannel);
 
-		Stream.of(replyToDTO.subChannels).forEach(c -> {
-			try {
-				logHelper.debug("Processing Reply-To Many Subscription Handler for Sub-Channel: {} and Pub-Channel: {}",
-						c, replyToDTO.pubChannel);
-				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.subQos);
-				sub.addAck(ack);
+			Stream.of(replyToDTO.subChannels).forEach(c -> {
+				try {
+					logHelper.debug(
+							"Processing Reply-To Many Subscription Handler for Sub-Channel: {} and Pub-Channel: {}", c,
+							replyToDTO.pubChannel);
+					final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel,
+							replyToDTO.subQos);
+					sub.addAck(ack);
 
-				logHelper.info(
-						"MQTT subscription successful for Reply-To Many Subscription Handler. Service ID: {}. Channel: {}. Sub-ID: {}",
-						sub.reference.getProperty(SERVICE_ID), c, ack.id());
+					logHelper.info(
+							"MQTT subscription successful for Reply-To Many Subscription Handler. Service ID: {}. Channel: {}. Sub-ID: {}",
+							sub.reference.getProperty(SERVICE_ID), c, ack.id());
 
-				ack.stream().forEach(m -> {
-					logHelper.debug("[Reply-To Many Subscription] Received message '{}' on '{}'", m.getContext(),
-							sub.handler.getClass().getSimpleName());
-					handleResponses(m, (ReplyToManySubscriptionHandler) sub.handler)
-							.forEach(msg -> handleMessageReceive(sub.reference, replyToDTO, c, ack, msg));
-				});
-			} catch (Exception e) {
-				logHelper.error("Cannot process reply-to many subscription: {}", c, e);
-			}
-		});
+					ack.stream().forEach(m -> {
+						logHelper.debug("[Reply-To Many Subscription] Received message '{}' on '{}'", m.getContext(),
+								sub.handler.getClass().getSimpleName());
+						handleResponses(m, (ReplyToManySubscriptionHandler) sub.handler)
+								.forEach(msg -> handleMessageReceive(sub.reference, replyToDTO, c, ack, msg));
+					});
+				} catch (Exception e) {
+					logHelper.error("Cannot process reply-to many subscription: {}", c, e);
+				}
+			});
+		} catch (Exception e) {
+			logHelper.error(
+					"Failed to validate Reply-To Many Subscription Handler. Service ID: {}. Reason: {}. Check service properties.",
+					sub.reference.getProperty(SERVICE_ID), e.getMessage());
+		}
 	}
 
 	private Message handleResponse(final Message request, final ReplyToSingleSubscriptionHandler handler) {
