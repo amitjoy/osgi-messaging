@@ -34,7 +34,6 @@ import static org.osgi.service.messaging.MessageConstants.REPLY_TO_SUBSCRIPTION_
 import static org.osgi.service.messaging.MessageConstants.REPLY_TO_SUBSCRIPTION_RESPONSE_CHANNEL_PROPERTY;
 import static org.osgi.service.messaging.MessageConstants.REPLY_TO_SUBSCRIPTION_TARGET_PROPERTY;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.HashMap;
@@ -527,7 +526,7 @@ public final class MessageReplyToWhiteboardProvider {
 		Type type;
 		Object handler;
 		ServiceReference<?> reference;
-		List<SubscriptionAck> subAcks = new ArrayList<>();
+		List<SubscriptionAck> subAcks = new CopyOnWriteArrayList<>();
 
 		public ReplyToSubDTO(final Object handler, final Type type, final ServiceReference<?> reference) {
 			this.handler = handler;
@@ -535,11 +534,11 @@ public final class MessageReplyToWhiteboardProvider {
 			this.reference = reference;
 		}
 
-		public synchronized void addAck(final SubscriptionAck subAck) {
+		public void addAck(final SubscriptionAck subAck) {
 			subAcks.add(subAck);
 		}
 
-		public synchronized boolean isProcessed() {
+		public boolean isProcessed() {
 			return !subAcks.isEmpty();
 		}
 
