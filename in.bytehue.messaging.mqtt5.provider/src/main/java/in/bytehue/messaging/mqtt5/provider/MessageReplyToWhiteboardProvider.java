@@ -35,6 +35,7 @@ import static org.osgi.service.messaging.MessageConstants.REPLY_TO_SUBSCRIPTION_
 import static org.osgi.service.messaging.MessageConstants.REPLY_TO_SUBSCRIPTION_TARGET_PROPERTY;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.List;
@@ -183,6 +184,10 @@ public final class MessageReplyToWhiteboardProvider {
 				final ReplyToSubDTO sub = new ReplyToSubDTO(handler, REPLY_TO_SINGLE_SUB, reference);
 				subscriptions.add(sub);
 
+				logHelper.info(
+						"Reply-To Single Subscription Handler tracked. Service ID: {}. Submitting for processing...",
+						reference.getProperty(SERVICE_ID));
+
 				executorService.submit(() -> processReplyToSingleSubscriptionHandler(sub));
 				return handler;
 			}
@@ -190,6 +195,8 @@ public final class MessageReplyToWhiteboardProvider {
 			@Override
 			public synchronized void modifiedService(final ServiceReference<ReplyToSingleSubscriptionHandler> reference,
 					final ReplyToSingleSubscriptionHandler service) {
+				logHelper.info("Reply-To Single Subscription Handler modified. Service ID: {}",
+						reference.getProperty(SERVICE_ID));
 				removedService(reference, service);
 				addingService(reference);
 			}
@@ -197,6 +204,8 @@ public final class MessageReplyToWhiteboardProvider {
 			@Override
 			public synchronized void removedService(final ServiceReference<ReplyToSingleSubscriptionHandler> reference,
 					final ReplyToSingleSubscriptionHandler service) {
+				logHelper.info("Reply-To Single Subscription Handler removed. Service ID: {}",
+						reference.getProperty(SERVICE_ID));
 				removeSubscription(reference);
 			}
 		};
@@ -210,6 +219,9 @@ public final class MessageReplyToWhiteboardProvider {
 				final ReplyToSubDTO sub = new ReplyToSubDTO(handler, REPLY_TO_SUB, reference);
 				subscriptions.add(sub);
 
+				logHelper.info("Reply-To Subscription Handler tracked. Service ID: {}. Submitting for processing...",
+						reference.getProperty(SERVICE_ID));
+
 				executorService.submit(() -> processReplyToSubscriptionHandler(sub));
 				return handler;
 			}
@@ -217,6 +229,8 @@ public final class MessageReplyToWhiteboardProvider {
 			@Override
 			public synchronized void modifiedService(final ServiceReference<ReplyToSubscriptionHandler> reference,
 					final ReplyToSubscriptionHandler service) {
+				logHelper.info("Reply-To Subscription Handler modified. Service ID: {}",
+						reference.getProperty(SERVICE_ID));
 				removedService(reference, service);
 				addingService(reference);
 			}
@@ -224,6 +238,8 @@ public final class MessageReplyToWhiteboardProvider {
 			@Override
 			public synchronized void removedService(final ServiceReference<ReplyToSubscriptionHandler> reference,
 					final ReplyToSubscriptionHandler service) {
+				logHelper.info("Reply-To Subscription Handler removed. Service ID: {}",
+						reference.getProperty(SERVICE_ID));
 				removeSubscription(reference);
 			}
 		};
@@ -237,6 +253,10 @@ public final class MessageReplyToWhiteboardProvider {
 				final ReplyToSubDTO sub = new ReplyToSubDTO(handler, REPLY_TO_MANY_SUB, reference);
 				subscriptions.add(sub);
 
+				logHelper.info(
+						"Reply-To Many Subscription Handler tracked. Service ID: {}. Submitting for processing...",
+						reference.getProperty(SERVICE_ID));
+
 				executorService.submit(() -> processReplyToManySubscriptionHandler(sub));
 				return handler;
 			}
@@ -244,6 +264,8 @@ public final class MessageReplyToWhiteboardProvider {
 			@Override
 			public synchronized void modifiedService(final ServiceReference<ReplyToManySubscriptionHandler> reference,
 					final ReplyToManySubscriptionHandler service) {
+				logHelper.info("Reply-To Many Subscription Handler modified. Service ID: {}",
+						reference.getProperty(SERVICE_ID));
 				removedService(reference, service);
 				addingService(reference);
 			}
@@ -251,6 +273,8 @@ public final class MessageReplyToWhiteboardProvider {
 			@Override
 			public synchronized void removedService(final ServiceReference<ReplyToManySubscriptionHandler> reference,
 					final ReplyToManySubscriptionHandler service) {
+				logHelper.info("Reply-To Many Subscription Handler removed. Service ID: {}",
+						reference.getProperty(SERVICE_ID));
 				removeSubscription(reference);
 			}
 		};
@@ -276,7 +300,14 @@ public final class MessageReplyToWhiteboardProvider {
 	}
 
 	private void processReplyToSingleSubscriptionHandler(final ReplyToSubDTO sub) {
+		logHelper.info("Processing Reply-To Single Subscription Handler. Service ID: {}",
+				sub.reference.getProperty(SERVICE_ID));
+
 		final ReplyToDTO replyToDTO = new ReplyToDTO(sub.reference);
+
+		logHelper.info(
+				"Validated Reply-To Single Subscription Handler. Service ID: {}. SubChannels: {}. PubChannel: {}",
+				sub.reference.getProperty(SERVICE_ID), Arrays.toString(replyToDTO.subChannels), replyToDTO.pubChannel);
 
 		Stream.of(replyToDTO.subChannels).forEach(c -> {
 			try {
@@ -285,6 +316,10 @@ public final class MessageReplyToWhiteboardProvider {
 						replyToDTO.pubChannel);
 				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.subQos);
 				sub.addAck(ack);
+
+				logHelper.info(
+						"MQTT subscription successful for Reply-To Single Subscription Handler. Service ID: {}. Channel: {}. Sub-ID: {}",
+						sub.reference.getProperty(SERVICE_ID), c, ack.id());
 
 				ack.stream().map(m -> {
 					logHelper.debug("[Reply-To Single Subscription] Received message '{}' on '{}'", m.getContext(),
@@ -298,7 +333,13 @@ public final class MessageReplyToWhiteboardProvider {
 	}
 
 	private void processReplyToSubscriptionHandler(final ReplyToSubDTO sub) {
+		logHelper.info("Processing Reply-To Subscription Handler. Service ID: {}",
+				sub.reference.getProperty(SERVICE_ID));
+
 		final ReplyToDTO replyToDTO = new ReplyToDTO(sub.reference);
+
+		logHelper.info("Validated Reply-To Subscription Handler. Service ID: {}. SubChannels: {}. PubChannel: {}",
+				sub.reference.getProperty(SERVICE_ID), Arrays.toString(replyToDTO.subChannels), replyToDTO.pubChannel);
 
 		Stream.of(replyToDTO.subChannels).forEach(c -> {
 			try {
@@ -306,6 +347,10 @@ public final class MessageReplyToWhiteboardProvider {
 						replyToDTO.pubChannel);
 				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.subQos);
 				sub.addAck(ack);
+
+				logHelper.info(
+						"MQTT subscription successful for Reply-To Subscription Handler. Service ID: {}. Channel: {}. Sub-ID: {}",
+						sub.reference.getProperty(SERVICE_ID), c, ack.id());
 
 				ack.stream().forEach(m -> {
 					logHelper.debug("[Reply-To Subscription] Received message '{}' on '{}'", m.getContext(),
@@ -319,7 +364,13 @@ public final class MessageReplyToWhiteboardProvider {
 	}
 
 	private void processReplyToManySubscriptionHandler(final ReplyToSubDTO sub) {
+		logHelper.info("Processing Reply-To Many Subscription Handler. Service ID: {}",
+				sub.reference.getProperty(SERVICE_ID));
+
 		final ReplyToDTO replyToDTO = new ReplyToDTO(sub.reference);
+
+		logHelper.info("Validated Reply-To Many Subscription Handler. Service ID: {}. SubChannels: {}. PubChannel: {}",
+				sub.reference.getProperty(SERVICE_ID), Arrays.toString(replyToDTO.subChannels), replyToDTO.pubChannel);
 
 		Stream.of(replyToDTO.subChannels).forEach(c -> {
 			try {
@@ -327,6 +378,10 @@ public final class MessageReplyToWhiteboardProvider {
 						c, replyToDTO.pubChannel);
 				final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.subQos);
 				sub.addAck(ack);
+
+				logHelper.info(
+						"MQTT subscription successful for Reply-To Many Subscription Handler. Service ID: {}. Channel: {}. Sub-ID: {}",
+						sub.reference.getProperty(SERVICE_ID), c, ack.id());
 
 				ack.stream().forEach(m -> {
 					logHelper.debug("[Reply-To Many Subscription] Received message '{}' on '{}'", m.getContext(),
@@ -342,6 +397,8 @@ public final class MessageReplyToWhiteboardProvider {
 
 	private Message handleResponse(final Message request, final ReplyToSingleSubscriptionHandler handler) {
 		final MessageContextBuilderProvider mcb = getResponse(request);
+		logHelper.debug("Triggering callback in Reply-To Single Subscription Handler: {}",
+				handler.getClass().getName());
 		try {
 			return handler.handleResponse(request, mcb);
 		} catch (final Exception e) {
@@ -364,6 +421,7 @@ public final class MessageReplyToWhiteboardProvider {
 
 	private PushStream<Message> handleResponses(final Message request, final ReplyToManySubscriptionHandler handler) {
 		final MessageContextBuilder mcb = getResponse(request);
+		logHelper.debug("Triggering callback in Reply-To Many Subscription Handler: {}", handler.getClass().getName());
 		return handler.handleResponses(request, mcb);
 	}
 
@@ -390,6 +448,10 @@ public final class MessageReplyToWhiteboardProvider {
 		try {
 			final MessageContextProvider responseMsgContext = (MessageContextProvider) msg.getContext();
 			responseMsgContext.getExtensions().put(EXTENSION_QOS, replyToDTO.pubQos);
+
+			logHelper.debug("Publishing reply from Service ID: {}. Topic: {}", reference.getProperty(SERVICE_ID),
+					pubChannel);
+
 			publisher.publish(msg, pubChannel);
 		} finally {
 			mcbFactory.ungetService(mcb);
@@ -484,8 +546,11 @@ public final class MessageReplyToWhiteboardProvider {
 	}
 
 	private synchronized void removeSubscription(final ServiceReference<?> reference) {
-		subscriptions.stream().filter(sub -> sub.reference == reference)
-				.forEach(sub -> sub.subAcks.stream().forEach(s -> s.stream().close()));
+		subscriptions.stream().filter(sub -> sub.reference == reference).forEach(sub -> {
+			logHelper.info("Closing {} active subscription streams created by the reply-to handler. Service ID: {}",
+					sub.subAcks.size(), reference.getProperty(SERVICE_ID));
+			sub.subAcks.stream().forEach(s -> s.stream().close());
+		});
 		subscriptions.removeIf(sub -> sub.reference == reference);
 	}
 
