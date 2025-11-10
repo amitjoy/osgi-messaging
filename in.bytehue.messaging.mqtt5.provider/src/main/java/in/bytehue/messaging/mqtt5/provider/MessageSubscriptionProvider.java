@@ -347,18 +347,30 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         	logHelper.error("Error while subscribing to {}", sChannel, e);
             final Throwable cause = e.getCause() != null ? e.getCause() : e;
             final String reason = cause.getMessage();
+
             // No SubAck available here, hence, no reason codes
             final MqttSubAckDTO subNack =
                     createStatusEvent(NO_ACK, sChannel, qos, isReplyToSub, reason, new int[0]);
             sendSubscriptionStatusEvent(subNack);
+
+            // Close the stream to trigger the onClose handler,
+            // which removes the subscription from the registry.
+            stream.close();
+
             throw new RuntimeException(e.getCause()); //NOSONAR
         } catch (final Exception e) { //NOSONAR
         	logHelper.error("Error while subscribing to {}", sChannel, e);
             final String reason = e.getMessage();
+
             // No SubAck available here, hence, no reason codes
             final MqttSubAckDTO subNack =
                     createStatusEvent(NO_ACK, sChannel, qos, isReplyToSub, reason, new int[0]);
             sendSubscriptionStatusEvent(subNack);
+
+            // Close the stream to trigger the onClose handler,
+            // which removes the subscription from the registry.
+            stream.close();
+
             throw new RuntimeException(e); // NOSONAR
         }
     }
