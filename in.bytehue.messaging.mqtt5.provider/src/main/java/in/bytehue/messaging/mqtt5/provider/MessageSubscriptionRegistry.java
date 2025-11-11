@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -283,7 +284,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 		for (final Entry<String, Map<String, ExtendedSubscription>> entry : subscriptions.entrySet()) {
 			for (final Entry<String, ExtendedSubscription> e : entry.getValue().entrySet()) {
 				final ExtendedSubscription sub = e.getValue();
-				if (!sub.isReplyToSub && sub.isAcknowledged) {
+				if (!sub.isReplyToSub && sub.isAcknowledged.get()) {
 					subscriptionDTOs.add(getSubscriptionDTO(sub));
 				}
 			}
@@ -301,7 +302,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 		for (final Entry<String, Map<String, ExtendedSubscription>> entry : subscriptions.entrySet()) {
 			for (final Entry<String, ExtendedSubscription> e : entry.getValue().entrySet()) {
 				final ExtendedSubscription sub = e.getValue();
-				if (sub.isReplyToSub && sub.isAcknowledged) {
+				if (sub.isReplyToSub && sub.isAcknowledged.get()) {
 					if (sub.pubChannels.isEmpty()) {
 						// true for ReplyToSubscriptionHandlers
 						final ReplyToSubscriptionDTO replyToSub = getReplyToSubscriptionDTO(sub, null);
@@ -359,7 +360,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 
 		int qos;
 		String id;
-		volatile boolean isAcknowledged;
+		AtomicBoolean isAcknowledged;
 		volatile boolean isReplyToSub;
 		ChannelDTO subChannel;
 		Runnable connectedStreamCloser;
@@ -373,13 +374,14 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 			this.connectedStreamCloser = connectedStreamCloser;
 			this.subChannel = createChannelDTO(subChannel);
 			this.isReplyToSub = isReplyToSub;
+			this.isAcknowledged = new AtomicBoolean(false);
 			if (pubChannel != null) {
 				pubChannels.put(pubChannel, createChannelDTO(pubChannel));
 			}
 		}
 
-		public synchronized void setAcknowledged(final boolean isAcknowledged) {
-			this.isAcknowledged = isAcknowledged;
+		public void setAcknowledged(final boolean isAcknowledged) {
+			this.isAcknowledged.set(isAcknowledged);
 		}
 
 		public synchronized void updateReplyToHandlerSubscription(final String pubChannel,
