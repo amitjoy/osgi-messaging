@@ -19,6 +19,7 @@ import static com.hivemq.client.mqtt.MqttClientState.CONNECTED;
 import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatIndicator.UTF_8;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CONNECTION_READY_SERVICE_PROPERTY_FILTER;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.PUBLISHER;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.MESSAGE_EXPIRY_INTERVAL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
@@ -30,6 +31,8 @@ import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getCorrel
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getQoS;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL;
+import static org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC;
 import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_DELIVERY;
 import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_ORDERING;
 import static org.osgi.service.messaging.Features.EXTENSION_QOS;
@@ -41,6 +44,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.osgi.framework.BundleContext;
+import org.osgi.service.component.AnyService;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Modified;
@@ -118,6 +122,9 @@ public final class MessagePublisherProvider implements MessagePublisher {
 	@Reference
 	private MessageClientProvider messagingClient;
 
+	@Reference(service = AnyService.class, target = MQTT_CONNECTION_READY_SERVICE_PROPERTY_FILTER, cardinality = OPTIONAL, policy = DYNAMIC)
+	private volatile Object mqttConnectionReady;
+
 	@Activate
 	private BundleContext bundleContext;
 
@@ -158,6 +165,15 @@ public final class MessagePublisherProvider implements MessagePublisher {
 			if (channel == null) {
 				channel = context.getChannel();
 			}
+
+			// Check if connection is fully ready
+			// The MQTT connection ready service is the authoritative signal that the
+			// connection is fully operational, not just that HiveMQ reports CONNECTED state
+			if (mqttConnectionReady == null) {
+				logHelper.error("Cannot publish to '{}' - MQTT connection not ready yet", channel);
+				throw new IllegalStateException("MQTT connection not ready, cannot publish to channel: " + channel);
+			}
+
 			// Time-of-Check to Time-of-Use (TOCTOU) race condition that can occur during
 			// bundle startup or client reconfiguration
 			final Mqtt5AsyncClient currentClient = messagingClient.client; // Read volatile field ONCE
@@ -173,6 +189,7 @@ public final class MessagePublisherProvider implements MessagePublisher {
 				throw new IllegalStateException(
 						"Client is not in CONNECTED state: " + clientState + ", cannot publish to channel: " + channel);
 			}
+
 			// add topic prefix if available
 			final String prefix = messagingClient.config.topicPrefix();
 			channel = addTopicPrefix(channel, prefix);

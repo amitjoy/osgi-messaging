@@ -21,6 +21,7 @@ import static com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckR
 import static com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode.GRANTED_QOS_2;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CONNECTION_READY_SERVICE_PROPERTY_FILTER;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_SUBSCRIPTION_EVENT_TOPIC_PREFIX;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.SUBSCRIBER;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RECEIVE_LOCAL;
@@ -34,6 +35,8 @@ import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getQoS;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.toMessage;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL;
+import static org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC;
 import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
 import static org.osgi.service.messaging.Features.EXTENSION_QOS;
 import static org.osgi.service.messaging.Features.REPLY_TO;
@@ -47,6 +50,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
 import org.osgi.framework.BundleContext;
+import org.osgi.service.component.AnyService;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -141,6 +145,9 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
     @Reference
     private ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
 
+    @Reference(service = AnyService.class, target = MQTT_CONNECTION_READY_SERVICE_PROPERTY_FILTER, cardinality = OPTIONAL, policy = DYNAMIC)
+	private volatile Object mqttConnectionReady;
+
     @Activate
     @Modified
     void init(final SubscriberConfig config) {
@@ -226,6 +233,15 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         if (sChannel.isEmpty()) {
         	throw new IllegalArgumentException("Channel cannot be empty");
         }
+
+        // Check if connection is fully ready
+        // The MQTT connection ready service is the authoritative signal that the connection
+        // is fully operational, not just that HiveMQ reports CONNECTED state
+        if (mqttConnectionReady == null) {
+            logHelper.error("Cannot subscribe to '{}' - MQTT connection not ready yet", sChannel);
+            throw new IllegalStateException("MQTT connection not ready, cannot subscribe to channel: " + sChannel);
+        }
+
         // Time-of-Check to Time-of-Use (TOCTOU) race condition that can occur during bundle startup or client reconfiguration
         final Mqtt5AsyncClient currentClient = messagingClient.client; // Read volatile field ONCE
 
