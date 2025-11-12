@@ -64,7 +64,7 @@ import in.bytehue.messaging.mqtt5.provider.helper.Table;
 @Descriptor("MQTT 5 Messaging")
 @Component(immediate = true, service = MqttCommand.class)
 @SatisfyingConditionTarget("(" + CONDITION_ID +"=gogo-available)")
-@FelixGogoCommand(scope = "mqtt", function = { "pub", "sub", "unsub", "runtime", "mirror" })
+@FelixGogoCommand(scope = "mqtt", function = { "pub", "sub", "unsub", "runtime", "mirror", "connect", "disconnect" })
 public final class MqttCommand {
 
 	@Reference
@@ -350,6 +350,55 @@ public final class MqttCommand {
             return "Log Mirror ENABLED";
         } else {
         	return "Invalid Parameter";
+        }
+    }
+
+    @Descriptor("Connects to the MQTT broker")
+    public String connect(
+            @Descriptor("Username for authentication")
+            @Parameter(names = { "-u", "--username" }, absentValue = "")
+            final String username,
+
+            @Descriptor("Password for authentication")
+            @Parameter(names = { "-p", "--password" }, absentValue = "")
+            final String password) {
+
+        try {
+            if (client.isConnected()) {
+                return "Already connected to the MQTT broker";
+            }
+            final Table table = new Table();
+            table.setShowVerticalLines(true);
+            table.setHeaders("Configuration", "Value");
+            table.addRow("Server", client.config().server());
+            table.addRow("Port", String.valueOf(client.config().port()));
+            table.addRow("SSL", String.valueOf(client.config().useSSL()));
+            
+            if (!username.isEmpty() && !password.isEmpty()) {
+                table.addRow("Authentication", "Using provided credentials");
+                System.out.println(table.print());
+                client.connect(username, password.getBytes());
+            } else {
+                table.addRow("Authentication", "Using configured credentials");
+                System.out.println(table.print());
+                client.connect();
+            }
+            return "Connection initiated to the MQTT broker";
+        } catch (final Exception e) {
+            return "Failed to connect to the MQTT broker: " + stackTraceToString(e);
+        }
+    }
+
+    @Descriptor("Disconnects from the MQTT broker")
+    public String disconnect() {
+        try {
+            if (!client.isConnected()) {
+                return "Not connected to the MQTT broker";
+            }
+            client.disconnect();
+            return "Disconnection initiated from the MQTT broker";
+        } catch (final Exception e) {
+            return "Failed to disconnect from the MQTT broker: " + stackTraceToString(e);
         }
     }
     
