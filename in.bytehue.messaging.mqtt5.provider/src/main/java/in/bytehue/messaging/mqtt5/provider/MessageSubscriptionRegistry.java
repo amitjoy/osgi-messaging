@@ -358,14 +358,15 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 
 	static class ExtendedSubscription {
 
-		int qos;
-		String id;
-		AtomicBoolean isAcknowledged;
-		volatile boolean isReplyToSub;
-		ChannelDTO subChannel;
-		Runnable connectedStreamCloser;
+		final int qos;
+		final String id;
+		final boolean isReplyToSub;
+		final ChannelDTO subChannel;
+		final AtomicBoolean isAcknowledged;
+		final Runnable connectedStreamCloser;
+		final Map<String, ChannelDTO> pubChannels = new ConcurrentHashMap<>();
+
 		ServiceReferenceDTO handlerReference;
-		Map<String, ChannelDTO> pubChannels = new ConcurrentHashMap<>();
 
 		private ExtendedSubscription(final String subChannel, final String pubChannel, int qos,
 				final Runnable connectedStreamCloser, final boolean isReplyToSub) {
