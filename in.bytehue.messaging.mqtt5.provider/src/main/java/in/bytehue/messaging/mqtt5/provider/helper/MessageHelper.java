@@ -436,6 +436,10 @@ public final class MessageHelper {
 		if (buffer == null) {
 			return null;
 		}
+		final int size = buffer.array().length;
+		if (size > 200) {
+			return "[" + size + " bytes]";
+		}
 		return new String(buffer.array(), UTF_8);
 	}
 
