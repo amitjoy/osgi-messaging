@@ -17,6 +17,7 @@ package in.bytehue.messaging.mqtt5.provider;
 
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CONNECTION_READY_SERVICE_PROPERTY_FILTER;
 import static in.bytehue.messaging.mqtt5.provider.MessageReplyToWhiteboardProvider.PID;
 import static in.bytehue.messaging.mqtt5.provider.MessageReplyToWhiteboardProvider.ReplyToSubDTO.Type.REPLY_TO_MANY_SUB;
 import static in.bytehue.messaging.mqtt5.provider.MessageReplyToWhiteboardProvider.ReplyToSubDTO.Type.REPLY_TO_SINGLE_SUB;
@@ -48,6 +49,7 @@ import java.util.stream.Stream;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
+import org.osgi.service.component.AnyService;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -127,6 +129,9 @@ public final class MessageReplyToWhiteboardProvider {
 
 	@Reference
 	private MessageSubscriptionRegistry registry;
+
+	@Reference(service = AnyService.class, target = MQTT_CONNECTION_READY_SERVICE_PROPERTY_FILTER)
+	private Object mqttConnectionReady;
 
 	@Reference
 	private ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
