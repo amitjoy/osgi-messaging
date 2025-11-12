@@ -132,6 +132,21 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	/**
 	 * Adds a new subscription to the registry. This method is synchronized to
 	 * prevent race conditions with clearAllSubscriptions.
+	 * 
+	 * <p>
+	 * <b>Acceptable Race Window:</b> When a subscription is added, {@code isAcknowledged}
+	 * is initially {@code false} and will be set to {@code true} asynchronously when the
+	 * broker acknowledges the subscription (typically within milliseconds to seconds, bounded
+	 * by the configured timeout). If {@code getSubscriptionDTOs()} or 
+	 * {@code getReplyToSubscriptionDTOs()} is called during this window, the subscription
+	 * may be excluded from the DTO snapshot. This is acceptable because:
+	 * <ul>
+	 * <li>DTOs represent informational snapshots, not authoritative state</li>
+	 * <li>The race window is small and bounded by the subscription timeout</li>
+	 * <li>The issue is self-correcting on the next DTO retrieval</li>
+	 * <li>The subscription itself is fully active and processing messages correctly</li>
+	 * </ul>
+	 * </p>
 	 */
 	public synchronized ExtendedSubscription addSubscription(final String subChannel, final String pubChannel, int qos,
 			final Runnable connectedStreamCloser, final boolean isReplyToSub) {
@@ -171,6 +186,16 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	/**
 	 * Removes all subscriptions for a given topic and closes their streams. This is
 	 * the FAST, state-only removal method. It is synchronized to be thread-safe.
+	 * 
+	 * <p>
+	 * <b>Reentrant Synchronization Note:</b> This method makes a reentrant synchronized call.
+	 * When {@code connectedStreamCloser.run()} is invoked (which triggers {@code stream.close()}),
+	 * it eventually calls back into {@code removeSubscription(channel, id)}. Since Java's
+	 * {@code synchronized} is reentrant, the same thread can reacquire this lock. However,
+	 * the channel is already removed from the map at line 176, so the reentrant call finds
+	 * nothing and returns immediately. This design is intentional for bulk cleanup scenarios
+	 * (e.g., client disconnect) where individual MQTT unsubscribe packets are unnecessary.
+	 * </p>
 	 */
 	public synchronized void removeSubscription(final String channel) {
 		final Map<String, ExtendedSubscription> exisitngSubscriptions = subscriptions.remove(channel);
