@@ -15,8 +15,7 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
-import static com.hivemq.client.mqtt.MqttClientState.DISCONNECTED;
-import static com.hivemq.client.mqtt.MqttClientState.DISCONNECTED_RECONNECT;
+import static com.hivemq.client.mqtt.MqttClientState.CONNECTED;
 import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatIndicator.UTF_8;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
@@ -168,9 +167,11 @@ public final class MessagePublisherProvider implements MessagePublisher {
 				throw new IllegalStateException("Client is not ready, cannot publish to channel: " + channel);
 			}
 			final MqttClientState clientState = currentClient.getState();
-			if (clientState == DISCONNECTED || clientState == DISCONNECTED_RECONNECT) {
-				logHelper.error("Cannot publish the message to '{}' since the client is disconnected", channel);
-				throw new IllegalStateException("Client is disconnected, cannot publish to channel: " + channel);
+			if (clientState != CONNECTED) {
+				logHelper.error("Cannot publish to '{}' - client state is {} (must be CONNECTED)", channel,
+						clientState);
+				throw new IllegalStateException(
+						"Client is not in CONNECTED state: " + clientState + ", cannot publish to channel: " + channel);
 			}
 			// add topic prefix if available
 			final String prefix = messagingClient.config.topicPrefix();

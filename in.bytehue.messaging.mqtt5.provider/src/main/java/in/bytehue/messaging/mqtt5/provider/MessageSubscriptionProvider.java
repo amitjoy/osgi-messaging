@@ -15,8 +15,7 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
-import static com.hivemq.client.mqtt.MqttClientState.DISCONNECTED;
-import static com.hivemq.client.mqtt.MqttClientState.DISCONNECTED_RECONNECT;
+import static com.hivemq.client.mqtt.MqttClientState.CONNECTED;
 import static com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode.GRANTED_QOS_0;
 import static com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode.GRANTED_QOS_1;
 import static com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode.GRANTED_QOS_2;
@@ -236,9 +235,9 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         }
 
         final MqttClientState clientState = currentClient.getState();
-        if (clientState == DISCONNECTED || clientState == DISCONNECTED_RECONNECT) {
-            logHelper.error("Cannot subscribe to '{}' since the client is disconnected", sChannel);
-            throw new IllegalStateException("Client is disconnected, cannot subscribe to channel: " + sChannel);
+        if (clientState != CONNECTED) {
+            logHelper.error("Cannot subscribe to '{}' - client state is {} (must be CONNECTED)", sChannel, clientState);
+            throw new IllegalStateException("Client is not in CONNECTED state: " + clientState + ", cannot subscribe to channel: " + sChannel);
         }
 		final int qos;
         final boolean isReplyToSub;
