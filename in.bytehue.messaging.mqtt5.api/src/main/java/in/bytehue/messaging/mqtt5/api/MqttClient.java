@@ -59,6 +59,24 @@ public interface MqttClient {
 	CompletableFuture<Void> connect();
 
 	/**
+	 * Initiates a connection to the MQTT broker using the provided credentials.
+	 * 
+	 * <p>
+	 * This method allows explicit credential-based authentication, overriding any
+	 * credentials configured in the component configuration. The credentials are
+	 * used for simple authentication (username/password) with the MQTT broker.
+	 * </p>
+	 *
+	 * @param username the username for authentication
+	 * @param password the password as a byte array for secure handling
+	 * @return a {@link CompletableFuture} that completes when the connection is
+	 *         established, or completes exceptionally if the connection fails
+	 * @throws IllegalStateException if the client is already connected
+	 * @throws IllegalArgumentException if username is null or password is null
+	 */
+	CompletableFuture<Void> connect(String username, byte[] password);
+
+	/**
 	 * Disconnects from the MQTT broker gracefully.
 	 * 
 	 * <p>

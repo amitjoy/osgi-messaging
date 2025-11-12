@@ -367,7 +367,7 @@ public final class MessageClientProvider implements MqttClient {
 		CompletableFuture.runAsync(() -> {
 			try {
 				logHelper.info("Performing initial connection");
-				connectInternal();
+				connectInternal(null, null);
 			} catch (final Exception e) {
 				logHelper.error("Error occurred while establishing connection to the broker '{}'", config.server(), e);
 			} finally {
@@ -437,7 +437,7 @@ public final class MessageClientProvider implements MqttClient {
 
 			try {
 				logHelper.info("Performing connection after modification");
-				connectInternal();
+				connectInternal(null, null);
 			} catch (final Exception e) {
 				logHelper.error("Error occurred while establishing connection to the broker '{}'", config.server(), e);
 			} finally {
@@ -626,6 +626,16 @@ public final class MessageClientProvider implements MqttClient {
 
 	@Override
 	public CompletableFuture<Void> connect() {
+		return connect(null, null);
+	}
+
+	@Override
+	public CompletableFuture<Void> connect(final String username, final byte[] password) {
+		if ((username == null && password != null) || (username != null && password == null)) {
+			throw new IllegalArgumentException(
+					"Both username and password must be provided together or both must be null");
+		}
+
 		connectionLock.lock();
 		try {
 			if (client != null && client.getState() == CONNECTED) {
@@ -643,7 +653,7 @@ public final class MessageClientProvider implements MqttClient {
 			connectInProgress = true;
 			return CompletableFuture.runAsync(() -> {
 				try {
-					connectInternal();
+					connectInternal(username, password);
 				} catch (final Exception e) {
 					throw new RuntimeException("Failed to connect to MQTT broker", e);
 				} finally {
@@ -675,7 +685,7 @@ public final class MessageClientProvider implements MqttClient {
 		return client != null && client.getState() == CONNECTED;
 	}
 
-	private void connectInternal() {
+	private void connectInternal(final String username, final byte[] password) {
 		// --- PHASE 1: PREPARATION (NO LOCK) ---
 		// Perform all service lookups and builder config *before* acquiring the lock.
 		final ScheduledExecutorService localCustomExecutor;
@@ -710,14 +720,20 @@ public final class MessageClientProvider implements MqttClient {
 				clientBuilder.automaticReconnect().initialDelay(config.initialDelay(), SECONDS)
 						.maxDelay(config.maxDelay(), SECONDS).applyAutomaticReconnect();
 			}
-			if (config.simpleAuth()) {
+			// Handle authentication - prioritize provided credentials over config
+			if (username != null && password != null) {
+				// Use explicitly provided credentials
+				logHelper.debug("Applying Simple Authentication Configuration (Explicit Credentials)");
+				clientBuilder.simpleAuth().username(username).password(password).applySimpleAuth();
+			} else if (config.simpleAuth()) {
+				// Fall back to configured authentication
 				logHelper.debug("Applying Simple Authentication Configuration");
-				String username = null;
-				String password = null;
+				String configUsername = null;
+				String configPassword = null;
 				if (config.staticAuthCred()) {
 					logHelper.debug("Applying Simple Authentication Configuration (Static)");
-					username = config.username();
-					password = config.password();
+					configUsername = config.username();
+					configPassword = config.password();
 				} else {
 					logHelper.debug("Applying Simple Authentication Configuration (Dynamic)");
 					@SuppressWarnings("rawtypes")
@@ -738,8 +754,8 @@ public final class MessageClientProvider implements MqttClient {
 								throw new RuntimeException(
 										"Simple Authentication Service should return non-null String");
 							}
-							username = tokens[0];
-							password = tokens[1];
+							configUsername = tokens[0];
+							configPassword = tokens[1];
 						} catch (final Exception e) {
 							logHelper.error("Cannot Retrieve Credentials from Simple Authentication Service", e);
 						}
@@ -747,10 +763,11 @@ public final class MessageClientProvider implements MqttClient {
 						logHelper.warn("Simple Authentiation Service Not Found");
 					}
 				}
-				if (username == null || password == null) {
+				if (configUsername == null || configPassword == null) {
 					logHelper.warn("Skipping Simple Authentication Configuration - Username or Password is null");
 				} else {
-					clientBuilder.simpleAuth().username(username).password(password.getBytes()).applySimpleAuth();
+					clientBuilder.simpleAuth().username(configUsername).password(configPassword.getBytes())
+							.applySimpleAuth();
 				}
 			}
 			if (config.useWebSocket()) {
