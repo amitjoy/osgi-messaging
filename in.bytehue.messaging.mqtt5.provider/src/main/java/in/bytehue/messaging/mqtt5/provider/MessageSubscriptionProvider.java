@@ -238,7 +238,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         // The MQTT connection ready service is the authoritative signal that the connection
         // is fully operational, not just that HiveMQ reports CONNECTED state
         if (mqttConnectionReady == null) {
-            logHelper.error("Cannot subscribe to '{}' - MQTT connection not ready yet", sChannel);
+            logHelper.warn("Cannot subscribe to '{}' - MQTT connection not ready yet (likely during startup)", sChannel);
             throw new IllegalStateException("MQTT connection not ready, cannot subscribe to channel: " + sChannel);
         }
 
@@ -246,13 +246,13 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         final Mqtt5AsyncClient currentClient = messagingClient.client; // Read volatile field ONCE
 
         if (currentClient == null) {
-            logHelper.error("Cannot subscribe to '{}' since the client is not yet initialized", sChannel);
+            logHelper.warn("Cannot subscribe to '{}' - client not yet initialized (likely during startup/shutdown)", sChannel);
             throw new IllegalStateException("Client is not ready, cannot subscribe to channel: " + sChannel);
         }
 
         final MqttClientState clientState = currentClient.getState();
         if (clientState != CONNECTED) {
-            logHelper.error("Cannot subscribe to '{}' - client state is {} (must be CONNECTED)", sChannel, clientState);
+            logHelper.warn("Cannot subscribe to '{}' - client state is {} (likely during reconnection)", sChannel, clientState);
             throw new IllegalStateException("Client is not in CONNECTED state: " + clientState + ", cannot subscribe to channel: " + sChannel);
         }
 		final int qos;
@@ -281,7 +281,22 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         }
         try {
             final ExtendedSubscription subscription = subscriptionRegistry.addSubscription(sChannel, pChannel, qos, source::close, isReplyToSub);
-			final CompletableFuture<Mqtt5SubAck> future =    currentClient.subscribeWith()
+
+            logHelper.debug(
+            	    "Subscription Request:\n" +
+            	    "  Channel           : {}\n" +
+            	    "  QoS               : {}\n" +
+            	    "  Receive Local     : {}\n" +
+            	    "  Retain As Pub.    : {}\n" +
+            	    "  Reply-To Sub      : {}",
+            	    sChannel,
+            	    MqttQos.fromCode(qos),
+            	    receiveLocal,
+            	    retainAsPublished,
+            	    isReplyToSub
+            );
+
+            final CompletableFuture<Mqtt5SubAck> future =    currentClient.subscribeWith()
 										                                  .topicFilter(sChannel)
 										                                  .qos(MqttQos.fromCode(qos))
 										                                  .noLocal(!receiveLocal)
@@ -292,6 +307,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 											                                	  try { //NOSONAR
 											                                		  final Message message = toMessage(p, ctx, mcb);
 											                                		  logHelper.debug("Successful Subscription Response: {} ", message);
+											                                		  logHelper.debug("New subscription request for '{}' has been processed successfully", sChannel);
 										                                              acknowledgeMessage(
 										                                                      message,
 										                                                      ctx,
@@ -342,7 +358,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 
 		        // If it was the last, schedule the *network* unsubscribe call
 		        if (wasLastSubscriber) {
-		        	logHelper.info("Scheduling final unsubscribe for topic '{}'", sChannel);
+		        	logHelper.info("Last subscriber removed, scheduling unsubscribe for topic '{}'", sChannel);
 
 					try {
 						final ExecutorService registryExecutor = subscriptionRegistry.getUnsubscribeExecutor();

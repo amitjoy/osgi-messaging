@@ -170,7 +170,8 @@ public final class MessagePublisherProvider implements MessagePublisher {
 			// The MQTT connection ready service is the authoritative signal that the
 			// connection is fully operational, not just that HiveMQ reports CONNECTED state
 			if (mqttConnectionReady == null) {
-				logHelper.error("Cannot publish to '{}' - MQTT connection not ready yet", channel);
+				logHelper.warn("Cannot publish to '{}' - MQTT connection not ready yet (likely during startup)",
+						channel);
 				throw new IllegalStateException("MQTT connection not ready, cannot publish to channel: " + channel);
 			}
 
@@ -179,12 +180,13 @@ public final class MessagePublisherProvider implements MessagePublisher {
 			final Mqtt5AsyncClient currentClient = messagingClient.client; // Read volatile field ONCE
 
 			if (currentClient == null) {
-				logHelper.error("Cannot publish to '{}' since the client is not yet initialized", channel);
+				logHelper.warn("Cannot publish to '{}' - client not yet initialized (likely during startup/shutdown)",
+						channel);
 				throw new IllegalStateException("Client is not ready, cannot publish to channel: " + channel);
 			}
 			final MqttClientState clientState = currentClient.getState();
 			if (clientState != CONNECTED) {
-				logHelper.error("Cannot publish to '{}' - client state is {} (must be CONNECTED)", channel,
+				logHelper.warn("Cannot publish to '{}' - client state is {} (likely during reconnection)", channel,
 						clientState);
 				throw new IllegalStateException(
 						"Client is not in CONNECTED state: " + clientState + ", cannot publish to channel: " + channel);
@@ -301,7 +303,7 @@ public final class MessagePublisherProvider implements MessagePublisher {
 			logHelper.error("Publish operation to {} timed out after {}ms", channel, config.timeoutInMillis(), e);
 			throw new RuntimeException("Publish timed out", e);
 		} catch (final Exception e) {
-			logHelper.error("Error while publishing data to {}", channel, e);
+			logHelper.error("Unexpected error while publishing data to {}", channel, e);
 			throw new RuntimeException(e);
 		}
 	}

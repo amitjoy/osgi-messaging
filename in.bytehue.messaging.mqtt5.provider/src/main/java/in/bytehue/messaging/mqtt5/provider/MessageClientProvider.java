@@ -454,6 +454,7 @@ public final class MessageClientProvider implements MqttClient {
 
 	@Deactivate
 	void deactivate(final Map<String, Object> properties) {
+		logHelper.info("Client deactivation initiated");
 		connectionLock.lock();
 		try {
 			// Wait for any in-progress operations
@@ -482,6 +483,7 @@ public final class MessageClientProvider implements MqttClient {
 		CompletableFuture.runAsync(() -> {
 			try {
 				disconnect(false); // Blocks this async thread
+				logHelper.info("Client deactivation completed successfully");
 			} finally {
 				connectionLock.lock();
 				try {
@@ -618,7 +620,9 @@ public final class MessageClientProvider implements MqttClient {
 				executorToShutdown.shutdownNow();
 				NettyEventLoopProvider.INSTANCE.releaseEventLoop(executorToShutdown);
 				customExecutor = null;
+				logHelper.debug("Custom executor shut down and event loop released");
 			}
+			logHelper.info("Disconnection completed successfully");
 		} finally {
 			connectionLock.unlock();
 		}
@@ -931,7 +935,8 @@ public final class MessageClientProvider implements MqttClient {
 				if (throwable != null) {
 					logHelper.error("Error occurred while connecting to the broker '{}'", config.server(), throwable);
 				} else {
-					logHelper.debug("Successfully connected to the broker - '{}'", connAck);
+					logHelper.info("Successfully connected to the broker '{}'", config.server());
+					logHelper.debug("Connection acknowledgment: {}", connAck);
 				}
 			});
 		} catch (final Exception e) {
@@ -971,17 +976,15 @@ public final class MessageClientProvider implements MqttClient {
 		}
 		// check for framework property if available
 		final String id = bundleContext.getProperty(CLIENT_ID_FRAMEWORK_PROPERTY);
-		logHelper.info("Using client ID from framework property: {}", id);
-		// generate client ID if framework property is absent
-		if (id == null) {
-			final String generatedClientId = UUID.randomUUID().toString();
-			// update the generated framework property for others to use
-			System.setProperty(CLIENT_ID_FRAMEWORK_PROPERTY, generatedClientId);
-			logHelper.info("No client ID found in config or properties. Generated new client ID: {}",
-					generatedClientId);
-			return generatedClientId;
+		if (id != null) {
+			logHelper.info("Using client ID from framework property: {}", id);
+			return id;
 		}
-		return id;
+		final String generatedClientId = UUID.randomUUID().toString();
+		// update the generated framework property for others to use
+		System.setProperty(CLIENT_ID_FRAMEWORK_PROPERTY, generatedClientId);
+		logHelper.info("No client ID found in config or properties. Generated new client ID: {}", generatedClientId);
+		return generatedClientId;
 	}
 
 	private void registerReadyService(final MqttClientConnectedContext context) {
@@ -1015,6 +1018,8 @@ public final class MessageClientProvider implements MqttClient {
 					// this could happen if the reconnect happens pretty quickly
 					logHelper.info("The MQTT connection ready service has already been deregistered");
 				}
+			} else {
+				logHelper.debug("MQTT connection ready service already unregistered, skipping disconnect event");
 			}
 		} finally {
 			connectionLock.unlock();

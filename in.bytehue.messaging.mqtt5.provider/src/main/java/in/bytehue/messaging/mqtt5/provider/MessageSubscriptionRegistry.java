@@ -245,13 +245,13 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 			final Mqtt5AsyncClient currentClient = messagingClient.client; // Read volatile field ONCE
 
 			if (currentClient == null) {
-				logHelper.error("Cannot unsubscribe from '{}' since the client is not yet initialized", subChannel);
+				logHelper.warn("Cannot unsubscribe from '{}' - client not yet initialized (likely during startup/shutdown)", subChannel);
 				// Do not throw, just log. The local stream is already closed.
 				return;
 			}
 			final MqttClientState clientState = currentClient.getState();
 			if (clientState != CONNECTED) {
-				logHelper.error("Cannot unsubscribe from '{}' - client state is {} (must be CONNECTED)", subChannel,
+				logHelper.warn("Cannot unsubscribe from '{}' - client state is {} (likely during reconnection)", subChannel,
 						clientState);
 				// Do not throw, just log. The local stream is already closed.
 				return;
