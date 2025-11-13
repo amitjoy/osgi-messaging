@@ -483,11 +483,49 @@ public final class MessageHelper {
 		if (buffer == null) {
 			return null;
 		}
-		final int size = buffer.array().length;
-		if (size > 200) {
-			return "[" + size + " bytes]";
+		final byte[] data = buffer.array();
+		final int size = data.length;
+
+		// Check if content is likely binary
+		if (isBinaryData(data)) {
+			return "[binary data: " + size + " bytes]";
 		}
-		return new String(buffer.array(), UTF_8);
+
+		// For text data, show content if reasonable size, otherwise show size
+		if (size > 200) {
+			return "[text data: " + size + " bytes]";
+		}
+		return new String(data, UTF_8);
+	}
+
+	/**
+	 * Heuristic to detect if byte array contains binary data. Checks for null bytes
+	 * and excessive non-printable characters.
+	 */
+	private static boolean isBinaryData(final byte[] data) {
+		if (data.length == 0) {
+			return false;
+		}
+
+		int nonPrintableCount = 0;
+		final int sampleSize = Math.min(data.length, 512); // Check first 512 bytes
+
+		for (int i = 0; i < sampleSize; i++) {
+			final byte b = data[i];
+
+			// Null bytes are strong indicator of binary data
+			if (b == 0) {
+				return true;
+			}
+
+			// Count non-printable characters (excluding common whitespace)
+			if (b < 32 && b != '\n' && b != '\r' && b != '\t') {
+				nonPrintableCount++;
+			}
+		}
+
+		// If more than 30% of sampled bytes are non-printable, likely binary
+		return nonPrintableCount > (sampleSize * 0.3);
 	}
 
 	// @formatter:off
