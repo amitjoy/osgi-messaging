@@ -1002,20 +1002,19 @@ public final class MessageClientProvider implements MqttClient {
 	private void unregisterReadyService(final MqttClientDisconnectedContext context) {
 		connectionLock.lock();
 		try {
-			// send disconnected event synchronously to ensure that the registry is cleaned
-			// up before registering ready service
-			eventAdmin.sendEvent(new Event(MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC, emptyMap()));
+			if (readyServiceReg != null) {
+				// send disconnected event synchronously to ensure that the registry is cleaned
+				// up before unregistering ready service
+				eventAdmin.sendEvent(new Event(MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC, emptyMap()));
 
-			try {
-				// register service
-				if (readyServiceReg != null) {
+				try {
 					readyServiceReg.unregister();
 					readyServiceReg = null;
 					logHelper.info("The MQTT connection ready service has been deregistered");
+				} catch (final IllegalStateException e) {
+					// this could happen if the reconnect happens pretty quickly
+					logHelper.info("The MQTT connection ready service has already been deregistered");
 				}
-			} catch (final IllegalStateException e) {
-				// this could happen if the reconnect happens pretty quickly
-				logHelper.info("The MQTT connection ready service has already been deregistered");
 			}
 		} finally {
 			connectionLock.unlock();
