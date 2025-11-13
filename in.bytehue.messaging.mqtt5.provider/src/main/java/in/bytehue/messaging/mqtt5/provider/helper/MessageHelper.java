@@ -101,12 +101,21 @@ public final class MessageHelper {
 	public static Optional<Object> getOptionalServiceWithoutType(final String clazz, String filter,
 			final BundleContext context, final LogHelper logger) {
 		try {
-			if (filter == null || filter.trim().isEmpty()) {
+			final boolean hasFilter = filter != null && !filter.trim().isEmpty();
+			if (!hasFilter) {
 				filter = null;
 			}
 			return Optional.ofNullable(getServiceWithoutType(clazz, filter, context));
 		} catch (Exception e) {
-			logger.warn("Service '{}' cannot be retrieved", clazz, e);
+			final boolean hasFilter = filter != null;
+			if (hasFilter) {
+				// Log at WARN level if a specific filter was provided - indicates user expects
+				// the service
+				logger.warn("Service '{}' cannot be retrieved", clazz, e);
+			} else {
+				// Log at DEBUG level if no filter provided - service is truly optional
+				logger.debug("Optional service '{}' not available, using defaults", clazz);
+			}
 			return Optional.empty();
 		}
 	}
@@ -137,13 +146,21 @@ public final class MessageHelper {
 
     public static <T> Optional<T> getOptionalService(final Class<T> clazz, String filter, final BundleContext context, final LogHelper logger) {
         try {
-            if (filter.trim().isEmpty()) {
+        	final boolean hasFilter = filter != null && !filter.trim().isEmpty();
+            if (!hasFilter) {
             	filter = null;
             }
             final T service = getService(clazz, filter, context);
             return Optional.ofNullable(service);
         } catch (final Exception e) {
-            logger.warn("Service '{}' cannot be retrieved", clazz.getName());
+        	final boolean hasFilter = filter != null;
+        	if (hasFilter) {
+        		// Log at WARN level if a specific filter was provided - indicates user expects the service
+        		logger.warn("Service '{}' cannot be retrieved", clazz.getName());
+        	} else {
+        		// Log at DEBUG level if no filter provided - service is truly optional
+        		logger.debug("Optional service '{}' not available, using defaults", clazz.getName());
+        	}
             return Optional.empty();
         }
     }
