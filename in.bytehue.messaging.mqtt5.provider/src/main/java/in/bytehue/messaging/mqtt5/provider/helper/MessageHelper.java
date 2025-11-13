@@ -486,9 +486,14 @@ public final class MessageHelper {
 		final byte[] data = buffer.array();
 		final int size = data.length;
 
-		// Check if content is likely binary
+		// Check if content is likely binary (null bytes or control characters)
 		if (isBinaryData(data)) {
 			return "[binary data: " + size + " bytes]";
+		}
+
+		// Check if data is valid UTF-8 text
+		if (!isValidUtf8(data)) {
+			return "[non-UTF-8 data: " + size + " bytes]";
 		}
 
 		// For text data, show content if reasonable size, otherwise show size
@@ -499,33 +504,78 @@ public final class MessageHelper {
 	}
 
 	/**
+	 * Validates if byte array contains valid UTF-8 encoded text.
+	 */
+	private static boolean isValidUtf8(final byte[] data) {
+		int i = 0;
+		while (i < data.length) {
+			final int b = data[i] & 0xFF;
+
+			// Single byte character (0xxxxxxx)
+			if (b <= 0x7F) {
+				i++;
+				continue;
+			}
+
+			// Multi-byte character
+			int numBytes = 0;
+			if ((b & 0xE0) == 0xC0) {
+				numBytes = 2; // 110xxxxx
+			} else if ((b & 0xF0) == 0xE0) {
+				numBytes = 3; // 1110xxxx
+			} else if ((b & 0xF8) == 0xF0) {
+				numBytes = 4; // 11110xxx
+			} else {
+				return false; // Invalid UTF-8 start byte
+			}
+
+			// Check continuation bytes (10xxxxxx)
+			if (i + numBytes > data.length) {
+				return false; // Truncated sequence
+			}
+
+			for (int j = 1; j < numBytes; j++) {
+				if ((data[i + j] & 0xC0) != 0x80) {
+					return false; // Invalid continuation byte
+				}
+			}
+
+			i += numBytes;
+		}
+		return true;
+	}
+
+	/**
 	 * Heuristic to detect if byte array contains binary data. Checks for null bytes
-	 * and excessive non-printable characters.
+	 * and excessive control characters (not including valid UTF-8 multi-byte
+	 * sequences).
 	 */
 	private static boolean isBinaryData(final byte[] data) {
 		if (data.length == 0) {
 			return false;
 		}
 
-		int nonPrintableCount = 0;
+		int controlCharCount = 0;
 		final int sampleSize = Math.min(data.length, 512); // Check first 512 bytes
 
 		for (int i = 0; i < sampleSize; i++) {
-			final byte b = data[i];
+			final int b = data[i] & 0xFF; // Treat as unsigned
 
-			// Null bytes are strong indicator of binary data
+			// Null bytes are strong indicator of binary data (images, executables, etc.)
 			if (b == 0) {
 				return true;
 			}
 
-			// Count non-printable characters (excluding common whitespace)
-			if (b < 32 && b != '\n' && b != '\r' && b != '\t') {
-				nonPrintableCount++;
+			// Only count ASCII control characters (0x01-0x1F) excluding whitespace
+			// High bytes (>= 0x80) are valid UTF-8 continuation/start bytes, not binary
+			if (b >= 0x01 && b <= 0x1F && b != '\n' && b != '\r' && b != '\t') {
+				controlCharCount++;
 			}
 		}
 
-		// If more than 30% of sampled bytes are non-printable, likely binary
-		return nonPrintableCount > (sampleSize * 0.3);
+		// If more than 5% are control characters, likely binary
+		// Lower threshold since we're only counting actual control chars now
+		return controlCharCount > (sampleSize * 0.05);
 	}
 
 	// @formatter:off
