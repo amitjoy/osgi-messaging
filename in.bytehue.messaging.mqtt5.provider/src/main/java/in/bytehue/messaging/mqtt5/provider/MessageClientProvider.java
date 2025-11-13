@@ -703,11 +703,8 @@ public final class MessageClientProvider implements MqttClient {
 			final Nested<? extends Mqtt5ClientBuilder> advancedConfig = clientBuilder.advancedConfig();
 			initLastWill(clientBuilder);
 
-			// Register listeners based on configuration
-			logHelper.debug(
-					"Using custom-first listener order (custom listeners execute before internal state management)");
-			addCustomListeners(clientBuilder, bundleContext);
 			addInternalListeners(clientBuilder);
+			addCustomListeners(clientBuilder, bundleContext);
 
 			if (config.automaticReconnectWithDefaultConfig()) {
 				logHelper.debug("Applying Custom Automatic Reconnect Configuration");
