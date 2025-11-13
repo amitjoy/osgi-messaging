@@ -36,7 +36,6 @@ import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -89,7 +88,7 @@ public final class MessageHelper {
 				throw new RuntimeException(String.format("'%s' service instance cannot be found", clazz));
 			}
 
-			return Arrays.stream(references).max(Comparator.comparingLong(getServiceRanking())).map(context::getService)
+			return Arrays.stream(references).max(comparingLong(getServiceRanking())).map(context::getService)
 					.orElseThrow(
 							() -> new RuntimeException(String.format("'%s' service instance cannot be found", clazz)));
 
@@ -162,6 +161,37 @@ public final class MessageHelper {
         		logger.debug("Optional service '{}' not available, using defaults", clazz.getName());
         	}
             return Optional.empty();
+        }
+    }
+
+    /**
+     * Gets all services of the specified type matching the filter, sorted by service ranking (highest to lowest).
+     * 
+     * @param clazz the service class
+     * @param filter the LDAP filter (can be null or empty)
+     * @param context the bundle context
+     * @param logger the logger for diagnostics
+     * @return stream of services sorted by ranking (highest first), empty if none found
+     */
+    public static <T> Stream<T> getAllServicesSortedByRanking(final Class<T> clazz, String filter, 
+            final BundleContext context, final LogHelper logger) {
+        try {
+            final boolean hasFilter = filter != null && !filter.trim().isEmpty();
+            if (!hasFilter) {
+                filter = null;
+            }
+            final Collection<ServiceReference<T>> references = context.getServiceReferences(clazz, filter);
+            if (references == null || references.isEmpty()) {
+                return Stream.empty();
+            }
+            
+            // Return services sorted by ranking (highest first)
+            return references.stream()
+                             .sorted(comparingLong(getServiceRanking()).reversed())
+                             .map(context::getService);
+        } catch (final Exception e) {
+            logger.warn("Failed to retrieve services for class '{}': {}", clazz.getName(), e.getMessage());
+            return Stream.empty();
         }
     }
 

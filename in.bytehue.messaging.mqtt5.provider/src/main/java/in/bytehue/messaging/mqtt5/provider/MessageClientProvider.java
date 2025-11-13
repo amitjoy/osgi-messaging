@@ -20,6 +20,7 @@ import static com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectRea
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.CLIENT_ID_FRAMEWORK_PROPERTY;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CONNECTION_READY_SERVICE_PROPERTY;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.CLIENT;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getAllServicesSortedByRanking;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalService;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalServiceWithoutType;
 import static java.util.Collections.emptyMap;
@@ -284,6 +285,12 @@ public final class MessageClientProvider implements MqttClient {
 
         @AttributeDefinition(name = "Disconnected Listener Service Filters")
         String[] disconnectedListenerFilters() default {};
+
+        @AttributeDefinition(name = "Execute custom listeners before internal state management",
+                             description = "If true, custom connected/disconnected listeners execute before internal state management "
+                                         + "(timestamp tracking and ready service). This allows reconnection logic to run before cleanup. "
+                                         + "If false (legacy behavior), internal state management executes first.")
+        boolean customListenersFirst() default true;
 
         @AttributeDefinition(name = "QoS 1 Incoming Interceptor Service Filter")
         String qos1IncomingInterceptorFilter() default "";
@@ -702,22 +709,18 @@ public final class MessageClientProvider implements MqttClient {
 			final Nested<? extends Mqtt5ClientBuilder> advancedConfig = clientBuilder.advancedConfig();
 			initLastWill(clientBuilder);
 
-			logHelper.debug(
-					"Adding highest priority connection listeners for (de)/registering MQTT connection ready OSGi service");
-
-			clientBuilder.addConnectedListener(this::registerReadyService);
-			clientBuilder.addDisconnectedListener(this::unregisterReadyService);
-
-			clientBuilder.addConnectedListener(context -> connectedTimestamp.set(System.currentTimeMillis()));
-			clientBuilder.addDisconnectedListener(context -> {
-				connectionLock.lock();
-				try {
-					connectedTimestamp.set(-1);
-					lastDisconnectReason = context.getCause().getMessage();
-				} finally {
-					connectionLock.unlock();
-				}
-			});
+			// Register listeners based on configuration
+			if (config.customListenersFirst()) {
+				logHelper.debug(
+						"Using custom-first listener order (custom listeners execute before internal state management)");
+				addCustomListeners(clientBuilder, bundleContext);
+				addInternalListeners(clientBuilder);
+			} else {
+				logHelper.debug(
+						"Using legacy listener order (internal state management executes before custom listeners)");
+				addInternalListeners(clientBuilder);
+				addCustomListeners(clientBuilder, bundleContext);
+			}
 
 			if (config.automaticReconnectWithDefaultConfig()) {
 				logHelper.debug("Applying Custom Automatic Reconnect Configuration");
@@ -833,38 +836,7 @@ public final class MessageClientProvider implements MqttClient {
 				logHelper.debug("Applying Server Reauthentication Configuration");
 				advancedConfig.allowServerReAuth(config.useServerReauth());
 			}
-			if (config.connectedListenerFilters().length != 0) {
-				logHelper.debug("Applying Connected Listener Configuration");
-				final String[] filters = config.connectedListenerFilters();
-				for (final String filter : filters) {
-					if (filter.trim().isEmpty()) {
-						logHelper.warn("Connected listener filter is empty");
-						continue;
-					}
-					final Optional<MqttClientConnectedListener> listener = getOptionalService(
-							MqttClientConnectedListener.class, filter, bundleContext, logHelper);
-					listener.ifPresent(l -> {
-						logHelper.debug("Adding Custom MQTT Connected Listener - {}", l.getClass().getSimpleName());
-						clientBuilder.addConnectedListener(l);
-					});
-				}
-			}
-			if (config.disconnectedListenerFilters().length != 0) {
-				logHelper.debug("Applying Disconnected Listener Configuration");
-				final String[] filters = config.disconnectedListenerFilters();
-				for (final String filter : filters) {
-					if (filter.trim().isEmpty()) {
-						logHelper.warn("Disconnected listener filter is empty");
-						continue;
-					}
-					final Optional<MqttClientDisconnectedListener> listener = getOptionalService(
-							MqttClientDisconnectedListener.class, filter, bundleContext, logHelper);
-					listener.ifPresent(l -> {
-						logHelper.debug("Adding Custom MQTT Disconnected Listener - {}", l.getClass().getSimpleName());
-						clientBuilder.addDisconnectedListener(l);
-					});
-				}
-			}
+
 			if (!config.qos1IncomingInterceptorFilter().isEmpty()) {
 				logHelper.debug("Applying Incoming and Outgoing Interceptor Configuration");
 				advancedConfig.interceptors()
@@ -966,6 +938,74 @@ public final class MessageClientProvider implements MqttClient {
 			clientBuilder.willPublish().topic(topic).qos(qos).payload(payload).contentType(contentType)
 					.messageExpiryInterval(messageExpiryInterval).delayInterval(delayInterval).applyWillPublish();
 		}
+	}
+
+	/**
+	 * Adds custom connected and disconnected listeners sorted by service ranking
+	 * (highest to lowest).
+	 */
+	private void addCustomListeners(final Mqtt5ClientBuilder clientBuilder, final BundleContext bundleContext) {
+		// Add custom connected listeners sorted by ranking (highest to lowest)
+		if (config.connectedListenerFilters().length != 0) {
+			logHelper.debug("Applying Connected Listener Configuration (sorted by ranking)");
+			final String[] filters = config.connectedListenerFilters();
+			for (final String filter : filters) {
+				if (filter.trim().isEmpty()) {
+					logHelper.warn("Connected listener filter is empty");
+					continue;
+				}
+				// Get all services matching the filter, sorted by ranking
+				getAllServicesSortedByRanking(MqttClientConnectedListener.class, filter, bundleContext, logHelper)
+						.forEach(l -> {
+							logHelper.debug("Adding Custom MQTT Connected Listener - {}", l.getClass().getSimpleName());
+							clientBuilder.addConnectedListener(l);
+						});
+			}
+		}
+
+		// Add custom disconnected listeners sorted by ranking (highest to lowest)
+		if (config.disconnectedListenerFilters().length != 0) {
+			logHelper.debug("Applying Disconnected Listener Configuration (sorted by ranking)");
+			final String[] filters = config.disconnectedListenerFilters();
+			for (final String filter : filters) {
+				if (filter.trim().isEmpty()) {
+					logHelper.warn("Disconnected listener filter is empty");
+					continue;
+				}
+				// Get all services matching the filter, sorted by ranking
+				getAllServicesSortedByRanking(MqttClientDisconnectedListener.class, filter, bundleContext, logHelper)
+						.forEach(l -> {
+							logHelper.debug("Adding Custom MQTT Disconnected Listener - {}",
+									l.getClass().getSimpleName());
+							clientBuilder.addDisconnectedListener(l);
+						});
+			}
+		}
+	}
+
+	/**
+	 * Adds internal listeners for state management (timestamp tracking and ready
+	 * service). These listeners are grouped together to minimize lock contention
+	 * since they both use the connectionLock.
+	 */
+	private void addInternalListeners(final Mqtt5ClientBuilder clientBuilder) {
+		logHelper.debug("Adding internal listeners for timestamp tracking and ready service management");
+
+		// Add timestamp tracking listeners
+		clientBuilder.addConnectedListener(context -> connectedTimestamp.set(System.currentTimeMillis()));
+		clientBuilder.addDisconnectedListener(context -> {
+			connectionLock.lock();
+			try {
+				connectedTimestamp.set(-1);
+				lastDisconnectReason = context.getCause().getMessage();
+			} finally {
+				connectionLock.unlock();
+			}
+		});
+
+		// Add ready service management listeners
+		clientBuilder.addConnectedListener(this::registerReadyService);
+		clientBuilder.addDisconnectedListener(this::unregisterReadyService);
 	}
 
 	private String getClientID(final BundleContext bundleContext) {
