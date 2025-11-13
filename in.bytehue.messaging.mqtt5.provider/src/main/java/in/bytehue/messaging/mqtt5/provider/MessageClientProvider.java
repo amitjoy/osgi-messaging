@@ -286,12 +286,6 @@ public final class MessageClientProvider implements MqttClient {
         @AttributeDefinition(name = "Disconnected Listener Service Filters")
         String[] disconnectedListenerFilters() default {};
 
-        @AttributeDefinition(name = "Execute custom listeners before internal state management",
-                             description = "If true, custom connected/disconnected listeners execute before internal state management "
-                                         + "(timestamp tracking and ready service). This allows reconnection logic to run before cleanup. "
-                                         + "If false (legacy behavior), internal state management executes first.")
-        boolean customListenersFirst() default true;
-
         @AttributeDefinition(name = "QoS 1 Incoming Interceptor Service Filter")
         String qos1IncomingInterceptorFilter() default "";
 
@@ -710,17 +704,10 @@ public final class MessageClientProvider implements MqttClient {
 			initLastWill(clientBuilder);
 
 			// Register listeners based on configuration
-			if (config.customListenersFirst()) {
-				logHelper.debug(
-						"Using custom-first listener order (custom listeners execute before internal state management)");
-				addCustomListeners(clientBuilder, bundleContext);
-				addInternalListeners(clientBuilder);
-			} else {
-				logHelper.debug(
-						"Using legacy listener order (internal state management executes before custom listeners)");
-				addInternalListeners(clientBuilder);
-				addCustomListeners(clientBuilder, bundleContext);
-			}
+			logHelper.debug(
+					"Using custom-first listener order (custom listeners execute before internal state management)");
+			addCustomListeners(clientBuilder, bundleContext);
+			addInternalListeners(clientBuilder);
 
 			if (config.automaticReconnectWithDefaultConfig()) {
 				logHelper.debug("Applying Custom Automatic Reconnect Configuration");
