@@ -25,6 +25,7 @@ import static in.bytehue.messaging.mqtt5.provider.MessageReplyToWhiteboardProvid
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.adaptTo;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.prepareExceptionAsMessage;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toList;
 import static org.osgi.framework.Constants.SERVICE_ID;
 import static org.osgi.service.messaging.Features.EXTENSION_QOS;
 import static org.osgi.service.messaging.Features.REPLY_TO;
@@ -43,8 +44,12 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import org.osgi.framework.BundleContext;
@@ -110,6 +115,18 @@ public final class MessageReplyToWhiteboardProvider {
 
 		@AttributeDefinition(name = "Idle time for threads before interrupted")
 		long idleTime() default 60L;
+
+		@AttributeDefinition(name = "Enable subscription health check", description = "Enable periodic health check for reply-to subscriptions")
+		boolean enableHealthCheck() default true;
+
+		@AttributeDefinition(name = "Health check interval", description = "Interval in seconds between subscription health checks", min = "1")
+		int healthCheckIntervalSeconds() default 5;
+
+		@AttributeDefinition(name = "Initial health check delay", description = "Initial delay in seconds before starting health checks", min = "1")
+		int healthCheckInitialDelaySeconds() default 10;
+
+		@AttributeDefinition(name = "Maximum retry attempts", description = "Maximum number of times to retry a failed subscription", min = "1")
+		int maxRetryAttempts() default 5;
 	}
 
 	@Reference(service = LoggerFactory.class)
@@ -139,6 +156,7 @@ public final class MessageReplyToWhiteboardProvider {
 	private LogHelper logHelper;
 	private volatile Config config;
 	private ExecutorService executorService;
+	private ScheduledExecutorService healthCheckExecutor;
 	private final List<ReplyToSubDTO> subscriptions = new CopyOnWriteArrayList<>();
 
 	private ServiceTracker<ReplyToSingleSubscriptionHandler, ReplyToSingleSubscriptionHandler> tracker1;
@@ -164,7 +182,25 @@ public final class MessageReplyToWhiteboardProvider {
 	            new LinkedBlockingQueue<>(),
 	            threadFactory
 	    );
+
+		// Initialize health check executor if enabled
+		if (config.enableHealthCheck()) {
+			final ThreadFactory healthCheckThreadFactory = new ThreadFactoryBuilder()
+					.setThreadFactoryName("reply-to-health-check")
+					.setThreadNameFormat("-%d")
+					.setDaemon(true)
+					.build();
+			healthCheckExecutor = new ScheduledThreadPoolExecutor(1, healthCheckThreadFactory);
+			healthCheckExecutor.scheduleAtFixedRate(
+					this::checkSubscriptionHealth,
+					config.healthCheckInitialDelaySeconds(),
+					config.healthCheckIntervalSeconds(),
+					SECONDS);
+			logHelper.info("Subscription health check enabled - interval: {}s, initial delay: {}s",
+					config.healthCheckIntervalSeconds(), config.healthCheckInitialDelaySeconds());
+		}
 		// @formatter:on
+
 		subscriptions.stream().filter(sub -> !sub.isProcessed()).forEach(sub -> {
 			switch (sub.type) {
 			case REPLY_TO_SUB:
@@ -292,6 +328,12 @@ public final class MessageReplyToWhiteboardProvider {
 
 	@Deactivate
 	void deactivate() {
+		// Shutdown health check executor first
+		if (healthCheckExecutor != null) {
+			healthCheckExecutor.shutdownNow();
+			logHelper.info("Health check executor shut down");
+		}
+
 		subscriptions.stream().forEach(sub -> sub.subAcks.stream().forEach(s -> s.stream().close()));
 		subscriptions.clear();
 
@@ -325,13 +367,15 @@ public final class MessageReplyToWhiteboardProvider {
 					sub.reference.getProperty(SERVICE_ID), Arrays.toString(replyToDTO.subChannels),
 					replyToDTO.pubChannel);
 
+			final long serviceId = (long) sub.reference.getProperty(SERVICE_ID);
+
 			Stream.of(replyToDTO.subChannels).forEach(c -> {
 				try {
 					logHelper.debug(
 							"Processing Reply-To Single Subscription Handler for Sub-Channel: {} and Pub-Channel: {}",
 							c, replyToDTO.pubChannel);
-					final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel,
-							replyToDTO.subQos);
+					final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.subQos,
+							serviceId);
 					sub.addAck(ack);
 
 					logHelper.info(
@@ -345,12 +389,15 @@ public final class MessageReplyToWhiteboardProvider {
 					}).forEach(m -> handleMessageReceive(sub.reference, replyToDTO, c, ack, m));
 				} catch (Exception e) {
 					logHelper.error("Cannot process reply-to single subscription: {}", c, e);
+					sub.markForRetry();
 				}
 			});
+			sub.clearRetry();
 		} catch (Exception e) {
 			logHelper.error(
 					"Failed to validate Reply-To Single Subscription Handler. Service ID: {}. Reason: {}. Check service properties.",
 					sub.reference.getProperty(SERVICE_ID), e.getMessage());
+			sub.markForRetry();
 		}
 	}
 
@@ -375,12 +422,14 @@ public final class MessageReplyToWhiteboardProvider {
 					sub.reference.getProperty(SERVICE_ID), Arrays.toString(replyToDTO.subChannels),
 					replyToDTO.pubChannel);
 
+			final long serviceId = (long) sub.reference.getProperty(SERVICE_ID);
+
 			Stream.of(replyToDTO.subChannels).forEach(c -> {
 				try {
 					logHelper.debug("Processing Reply-To Subscription Handler for Sub-Channel: {} and Pub-Channel: {}",
 							c, replyToDTO.pubChannel);
-					final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel,
-							replyToDTO.subQos);
+					final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.subQos,
+							serviceId);
 					sub.addAck(ack);
 
 					logHelper.info(
@@ -394,12 +443,15 @@ public final class MessageReplyToWhiteboardProvider {
 					});
 				} catch (Exception e) {
 					logHelper.error("Cannot process reply-to subscription: {}", c, e);
+					sub.markForRetry();
 				}
 			});
+			sub.clearRetry();
 		} catch (Exception e) {
 			logHelper.error(
 					"Failed to validate Reply-To Subscription Handler. Service ID: {}. Reason: {}. Check service properties.",
 					sub.reference.getProperty(SERVICE_ID), e.getMessage());
+			sub.markForRetry();
 		}
 	}
 
@@ -425,13 +477,15 @@ public final class MessageReplyToWhiteboardProvider {
 					sub.reference.getProperty(SERVICE_ID), Arrays.toString(replyToDTO.subChannels),
 					replyToDTO.pubChannel);
 
+			final long serviceId = (long) sub.reference.getProperty(SERVICE_ID);
+
 			Stream.of(replyToDTO.subChannels).forEach(c -> {
 				try {
 					logHelper.debug(
 							"Processing Reply-To Many Subscription Handler for Sub-Channel: {} and Pub-Channel: {}", c,
 							replyToDTO.pubChannel);
-					final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel,
-							replyToDTO.subQos);
+					final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.subQos,
+							serviceId);
 					sub.addAck(ack);
 
 					logHelper.info(
@@ -446,12 +500,15 @@ public final class MessageReplyToWhiteboardProvider {
 					});
 				} catch (Exception e) {
 					logHelper.error("Cannot process reply-to many subscription: {}", c, e);
+					sub.markForRetry();
 				}
 			});
+			sub.clearRetry();
 		} catch (Exception e) {
 			logHelper.error(
 					"Failed to validate Reply-To Many Subscription Handler. Service ID: {}. Reason: {}. Check service properties.",
 					sub.reference.getProperty(SERVICE_ID), e.getMessage());
+			sub.markForRetry();
 		}
 	}
 
@@ -475,8 +532,13 @@ public final class MessageReplyToWhiteboardProvider {
 		final String replyToChannel = context.getReplyToChannel();
 		final String correlation = context.getCorrelationId();
 
-		return (MessageContextBuilderProvider) mcbFactory.getService().channel(channel).replyTo(replyToChannel)
-				.correlationId(correlation).content(request.payload());
+		// @formatter:off
+		return (MessageContextBuilderProvider) mcbFactory.getService()
+				                                         .channel(channel)
+				                                         .replyTo(replyToChannel)
+				                                         .correlationId(correlation)
+				                                         .content(request.payload());
+		// @formatter:on
 	}
 
 	private PushStream<Message> handleResponses(final Message request, final ReplyToManySubscriptionHandler handler) {
@@ -587,7 +649,11 @@ public final class MessageReplyToWhiteboardProvider {
 		Type type;
 		Object handler;
 		ServiceReference<?> reference;
+		final long createdAt = System.currentTimeMillis();
 		List<SubscriptionAck> subAcks = new CopyOnWriteArrayList<>();
+		AtomicInteger retryCount = new AtomicInteger(0);
+		AtomicBoolean needsRetry = new AtomicBoolean(false);
+		AtomicBoolean isRetrying = new AtomicBoolean(false);
 
 		public ReplyToSubDTO(final Object handler, final Type type, final ServiceReference<?> reference) {
 			this.handler = handler;
@@ -603,6 +669,27 @@ public final class MessageReplyToWhiteboardProvider {
 			return !subAcks.isEmpty();
 		}
 
+		public boolean needsRetry() {
+			return needsRetry.get();
+		}
+
+		public void markForRetry() {
+			needsRetry.set(true);
+		}
+
+		public void clearRetry() {
+			needsRetry.set(false);
+			retryCount.set(0);
+		}
+
+		public boolean startRetry() {
+			return isRetrying.compareAndSet(false, true);
+		}
+
+		public void finishRetry() {
+			isRetrying.set(false);
+		}
+
 	}
 
 	private synchronized void removeSubscription(final ServiceReference<?> reference) {
@@ -612,6 +699,140 @@ public final class MessageReplyToWhiteboardProvider {
 			sub.subAcks.stream().forEach(s -> s.stream().close());
 		});
 		subscriptions.removeIf(sub -> sub.reference == reference);
+	}
+
+	/**
+	 * Periodic health check that verifies all tracked handlers have active
+	 * subscriptions. For each handler:
+	 * <ul>
+	 * <li>Get configured channel(s) from service properties</li>
+	 * <li>Check if registry has active subscription for those channels</li>
+	 * <li>If not, mark for retry</li>
+	 * </ul>
+	 */
+	private void checkSubscriptionHealth() {
+		try {
+			logHelper.debug("Running whiteboard subscription health check...");
+
+			subscriptions.forEach(sub -> {
+				final long serviceId = (long) sub.reference.getProperty(SERVICE_ID);
+
+				if (!sub.isProcessed()) {
+					// Safety Net: Check if the handler has been in a pending state for too long
+					final long pendingDuration = System.currentTimeMillis() - sub.createdAt;
+					final long timeoutThreshold = config.healthCheckIntervalSeconds() * 2 * 1000L;
+
+					if (pendingDuration > timeoutThreshold && !sub.needsRetry()) {
+						logHelper.warn(
+								"Handler for Service ID {} has been in a pending state for over {}ms. It might be stuck. Forcing a retry.",
+								serviceId, pendingDuration);
+						sub.markForRetry();
+					}
+					return; // Skip main check for unprocessed handlers
+				}
+				try {
+					// Get the configured channels for this handler
+					final ReplyToDTO replyToDTO = new ReplyToDTO(sub.reference);
+					final String[] configuredChannels = replyToDTO.subChannels;
+
+					// Check if registry has an active subscription owned by this specific handler
+					for (final String channel : configuredChannels) {
+						if (!registry.hasActiveSubscription(channel, serviceId)) {
+							logHelper.warn(
+									"Health check: No active subscription found for channel '{}' on Service ID: {}. Marking for retry.",
+									channel, serviceId);
+							if (!sub.needsRetry()) {
+								sub.markForRetry();
+							}
+							break; // No need to check other channels for this handler
+						} else {
+							logHelper.debug("Health check: Subscription for channel '{}' on Service ID: {} is active.",
+									channel, serviceId);
+						}
+					}
+				} catch (final Exception e) {
+					// Failed to validate - likely bad service properties
+					// Don't mark for retry if it's a configuration issue
+					logHelper.debug("Could not validate handler during health check. Service ID: {}. Reason: {}",
+							serviceId, e.getMessage());
+				}
+			});
+			// Retry any subscriptions marked for retry
+			retryFailedSubscriptions();
+		} catch (Exception e) {
+			logHelper.error("Error during subscription health check", e);
+		}
+	}
+
+	/**
+	 * Retries all subscriptions that are marked for retry.
+	 */
+	private void retryFailedSubscriptions() {
+		final List<ReplyToSubDTO> subsToRetry = subscriptions.stream().filter(ReplyToSubDTO::needsRetry)
+				.collect(toList());
+
+		if (subsToRetry.isEmpty()) {
+			return;
+		}
+
+		logHelper.info("Found {} subscription(s) that need retry", subsToRetry.size());
+
+		for (ReplyToSubDTO sub : subsToRetry) {
+			// Prevent concurrent retry attempts for the same handler
+			if (!sub.startRetry()) {
+				logHelper.debug("Skipping retry for Service ID: {} - already being retried",
+						sub.reference.getProperty(SERVICE_ID));
+				continue;
+			}
+
+			final int retryAttempt = sub.retryCount.incrementAndGet();
+
+			if (retryAttempt > config.maxRetryAttempts()) {
+				logHelper.error(
+						"Max retry attempts ({}) exceeded for Service ID: {}. Giving up and clearing retry flag.",
+						config.maxRetryAttempts(), sub.reference.getProperty(SERVICE_ID));
+				sub.clearRetry();
+				sub.finishRetry();
+				continue;
+			}
+
+			logHelper.info("Retrying subscription (attempt {}/{}) for Service ID: {}", retryAttempt,
+					config.maxRetryAttempts(), sub.reference.getProperty(SERVICE_ID));
+
+			// Close any remaining stale streams before retry
+			sub.subAcks.forEach(ack -> {
+				try {
+					ack.stream().close();
+				} catch (Exception e) {
+					// Ignore - stream might already be closed
+					logHelper.debug("Failed to close stale stream during retry: {}", e.getMessage());
+				}
+			});
+			sub.subAcks.clear();
+
+			// Retry based on type
+			executorService.submit(() -> {
+				try {
+					switch (sub.type) {
+					case REPLY_TO_SUB:
+						processReplyToSubscriptionHandler(sub);
+						break;
+					case REPLY_TO_SINGLE_SUB:
+						processReplyToSingleSubscriptionHandler(sub);
+						break;
+					case REPLY_TO_MANY_SUB:
+						processReplyToManySubscriptionHandler(sub);
+						break;
+					}
+				} catch (Exception e) {
+					logHelper.error("Error during subscription retry for Service ID: {}",
+							sub.reference.getProperty(SERVICE_ID), e);
+					// Keep retry flag set so it will be retried in next health check
+				} finally {
+					sub.finishRetry();
+				}
+			});
+		}
 	}
 
 }

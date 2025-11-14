@@ -25,6 +25,7 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CONNECTIO
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_SUBSCRIPTION_EVENT_TOPIC_PREFIX;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.SUBSCRIBER;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RECEIVE_LOCAL;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.OSGI_MESSAGING_SERVICE_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MqttSubAckDTO.Type.FAILED;
 import static in.bytehue.messaging.mqtt5.api.MqttSubAckDTO.Type.NO_ACK;
@@ -197,17 +198,19 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
     public SubscriptionAck replyToSubscribe(
     		final String subChannel,
     		final String pubChannel,
-    		int qos) {
+    		final int qos,
+    		final long ownerServiceId) {
     	requireNonNull(subChannel, "Channel cannot be null");
     	try {
     		MessageContext context = null;
     		final MessageContextBuilderProvider builder = mcbFactory.getService();
     		try {
     			context = builder.channel(subChannel)
-    					         .replyTo(pubChannel)
-    					         .extensionEntry(EXTENSION_QOS, qos)
-    					         .extensionEntry(REPLY_TO, true)
-    					         .buildContext();
+    				         .replyTo(pubChannel)
+    				         .extensionEntry(EXTENSION_QOS, qos)
+    				         .extensionEntry(REPLY_TO, true)
+    				         .extensionEntry(OSGI_MESSAGING_SERVICE_ID, ownerServiceId)
+    				         .buildContext();
     			return _subscribe(context);
     		} finally {
     			mcbFactory.ungetService(builder);
@@ -259,6 +262,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         final boolean isReplyToSub;
         final boolean receiveLocal;
         final boolean retainAsPublished;
+        final long ownerServiceId;
         final MessageContextProvider ctx = (MessageContextProvider) context;
         final Map<String, Object> extensions = context.getExtensions();
 
@@ -267,6 +271,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         	receiveLocal = true;
             retainAsPublished = false;
             isReplyToSub = false;
+            ownerServiceId = -1; // Should not happen for reply-to
         } else {
         	qos = getQoS(extensions, converter, config.qos());
 
@@ -278,9 +283,11 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 
         	final Object isRetainAsPublished = extensions.getOrDefault(RETAIN, false);
         	retainAsPublished = adaptTo(isRetainAsPublished, boolean.class, converter);
+
+        	ownerServiceId = (long) extensions.getOrDefault(OSGI_MESSAGING_SERVICE_ID, -1L);
         }
         try {
-            final ExtendedSubscription subscription = subscriptionRegistry.addSubscription(sChannel, pChannel, qos, source::close, isReplyToSub);
+            final ExtendedSubscription subscription = subscriptionRegistry.addSubscription(sChannel, pChannel, qos, source::close, isReplyToSub, ownerServiceId);
 
             logHelper.debug(
             	    "Subscription Request:\n" +

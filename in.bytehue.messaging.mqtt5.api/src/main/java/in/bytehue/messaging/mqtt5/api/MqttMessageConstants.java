@@ -140,6 +140,14 @@ public final class MqttMessageConstants {
 		 * @since 1.0
 		 */
 		public static final String LAST_WILL_DELAY_INTERVAL = "lastWillDelayInterval";
+
+		/**
+		 * The name of the {@code Service ID} extension used internally for tracking
+		 * subscriptions per handler.
+		 *
+		 * @since 1.0
+		 */
+		public static final String OSGI_MESSAGING_SERVICE_ID = "osgi.messaging.service.id";
 	}
 
 	/**

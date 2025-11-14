@@ -105,7 +105,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 
 	// topic as outer map's key and subscription id as internal map's key
 	// there can be multiple subscriptions for a single topic
-	private final Map<String, Map<String, ExtendedSubscription>> subscriptions = new ConcurrentHashMap<>();
+	final Map<String, Map<String, ExtendedSubscription>> subscriptions = new ConcurrentHashMap<>();
 
 	@Activate
 	@Modified
@@ -150,10 +150,11 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	 * </ul>
 	 * </p>
 	 */
-	public synchronized ExtendedSubscription addSubscription(final String subChannel, final String pubChannel, int qos,
-			final Runnable connectedStreamCloser, final boolean isReplyToSub) {
+	public synchronized ExtendedSubscription addSubscription(final String subChannel, final String pubChannel,
+			final int qos, final Runnable connectedStreamCloser, final boolean isReplyToSub,
+			final long ownerServiceId) {
 		final ExtendedSubscription sub = new ExtendedSubscription(subChannel, pubChannel, qos, connectedStreamCloser,
-				isReplyToSub);
+				isReplyToSub, ownerServiceId);
 		subscriptions.computeIfAbsent(subChannel, c -> new ConcurrentHashMap<>()).put(sub.id, sub);
 		return sub;
 	}
@@ -219,6 +220,29 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	}
 
 	/**
+	 * Checks if there is any active subscription for the given channel. Fast,
+	 * non-locking, thread-safe read from ConcurrentHashMap.
+	 */
+	public boolean hasActiveSubscription(final String channel) {
+		final Map<String, ExtendedSubscription> existingSubscriptions = subscriptions.get(channel);
+		return existingSubscriptions != null && !existingSubscriptions.isEmpty();
+	}
+
+	/**
+	 * Checks if there is an active subscription for the given channel owned by a
+	 * specific service. Fast, non-locking, thread-safe read.
+	 */
+	public boolean hasActiveSubscription(final String channel, final long serviceId) {
+		final Map<String, ExtendedSubscription> existingSubscriptions = subscriptions.get(channel);
+		if (existingSubscriptions == null || existingSubscriptions.isEmpty()) {
+			return false;
+		}
+		// Check if any of the subscriptions for this channel are owned by the specific
+		// service
+		return existingSubscriptions.values().stream().anyMatch(sub -> sub.ownerServiceId == serviceId);
+	}
+
+	/**
 	 * Sends a blocking UNSUBSCRIBE packet to the broker. This method BLOCKS THE
 	 * CALLER, and holds the component-wide lock.
 	 *
@@ -245,14 +269,16 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 			final Mqtt5AsyncClient currentClient = messagingClient.client; // Read volatile field ONCE
 
 			if (currentClient == null) {
-				logHelper.warn("Cannot unsubscribe from '{}' - client not yet initialized (likely during startup/shutdown)", subChannel);
+				logHelper.warn(
+						"Cannot unsubscribe from '{}' - client not yet initialized (likely during startup/shutdown)",
+						subChannel);
 				// Do not throw, just log. The local stream is already closed.
 				return;
 			}
 			final MqttClientState clientState = currentClient.getState();
 			if (clientState != CONNECTED) {
-				logHelper.warn("Cannot unsubscribe from '{}' - client state is {} (likely during reconnection)", subChannel,
-						clientState);
+				logHelper.warn("Cannot unsubscribe from '{}' - client state is {} (likely during reconnection)",
+						subChannel, clientState);
 				// Do not throw, just log. The local stream is already closed.
 				return;
 			}
@@ -390,6 +416,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 
 		final int qos;
 		final String id;
+		final long ownerServiceId;
 		final boolean isReplyToSub;
 		final ChannelDTO subChannel;
 		final AtomicBoolean isAcknowledged;
@@ -398,13 +425,14 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 
 		ServiceReferenceDTO handlerReference;
 
-		private ExtendedSubscription(final String subChannel, final String pubChannel, int qos,
-				final Runnable connectedStreamCloser, final boolean isReplyToSub) {
+		private ExtendedSubscription(final String subChannel, final String pubChannel, final int qos,
+				final Runnable connectedStreamCloser, final boolean isReplyToSub, final long ownerServiceId) {
 			id = UUID.randomUUID().toString();
 			this.qos = qos;
 			this.connectedStreamCloser = connectedStreamCloser;
 			this.subChannel = createChannelDTO(subChannel);
 			this.isReplyToSub = isReplyToSub;
+			this.ownerServiceId = ownerServiceId;
 			this.isAcknowledged = new AtomicBoolean(false);
 			if (pubChannel != null) {
 				pubChannels.put(pubChannel, createChannelDTO(pubChannel));
