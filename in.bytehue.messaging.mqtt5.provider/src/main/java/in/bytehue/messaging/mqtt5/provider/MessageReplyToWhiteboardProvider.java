@@ -125,8 +125,8 @@ public final class MessageReplyToWhiteboardProvider {
 		@AttributeDefinition(name = "Initial health check delay", description = "Initial delay in seconds before starting health checks", min = "1")
 		int healthCheckInitialDelaySeconds() default 10;
 
-		@AttributeDefinition(name = "Maximum retry attempts", description = "Maximum number of times to retry a failed subscription", min = "1")
-		int maxRetryAttempts() default 5;
+		@AttributeDefinition(name = "Maximum retry attempts", description = "Maximum number of times to retry a failed subscription (0 to disable)", min = "0")
+		int maxRetryAttempts() default 0;
 	}
 
 	@Reference(service = LoggerFactory.class)
@@ -786,18 +786,19 @@ public final class MessageReplyToWhiteboardProvider {
 			}
 
 			final int retryAttempt = sub.retryCount.incrementAndGet();
+			final long maxAttempts = config.maxRetryAttempts();
 
-			if (retryAttempt > config.maxRetryAttempts()) {
+			if (maxAttempts > 0 && retryAttempt > maxAttempts) {
 				logHelper.error(
 						"Max retry attempts ({}) exceeded for Service ID: {}. Giving up and clearing retry flag.",
-						config.maxRetryAttempts(), sub.reference.getProperty(SERVICE_ID));
+						maxAttempts, sub.reference.getProperty(SERVICE_ID));
 				sub.clearRetry();
 				sub.finishRetry();
 				continue;
 			}
 
 			logHelper.info("Retrying subscription (attempt {}/{}) for Service ID: {}", retryAttempt,
-					config.maxRetryAttempts(), sub.reference.getProperty(SERVICE_ID));
+					maxAttempts == 0 ? "unlimited" : maxAttempts, sub.reference.getProperty(SERVICE_ID));
 
 			// Close any remaining stale streams before retry
 			sub.subAcks.forEach(ack -> {
