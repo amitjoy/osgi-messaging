@@ -15,6 +15,8 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.api;
 
+import static org.osgi.service.condition.Condition.CONDITION_ID;
+
 /**
  * Standard constants for the {@code MQTT Messaging}
  */
@@ -75,6 +77,14 @@ public final class MqttMessageConstants {
 	 */
 	public static final String MQTT_CONNECTION_READY_SERVICE_PROPERTY_FILTER = "("
 			+ MQTT_CONNECTION_READY_SERVICE_PROPERTY + "=true)";
+
+	/**
+	 * The condition to track the OSGi service which gets registered when there
+	 * exists a valid connection to the MQTT broker.
+	 *
+	 * @since 1.0
+	 */
+	public static final String MQTT_CONNECTION_READY_CONDITION = "(" + CONDITION_ID + "=mqtt-ready)";
 
 	/**
 	 * The event topic prefix for MQTT subscription events.
@@ -193,6 +203,14 @@ public final class MqttMessageConstants {
 		 * @since 1.0
 		 */
 		public static final String CLIENT = "in.bytehue.messaging.client";
+
+		/**
+		 * The configuration PID to configure connection ready service which
+		 * gets registered when MQTT connection gets available
+		 *
+		 * @since 1.0
+		 */
+		public static final String CONNECTION_READY = "in.bytehue.mqtt.connection.ready";
 
 	}
 
