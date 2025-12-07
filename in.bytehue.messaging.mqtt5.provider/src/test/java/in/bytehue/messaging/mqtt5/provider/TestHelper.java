@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.osgi.service.condition.Condition;
+
 import aQute.launchpad.Launchpad;
 
 public final class TestHelper {
@@ -58,7 +60,7 @@ public final class TestHelper {
 
 	public static void waitForMqttConnectionReady(final Launchpad launchpad) {
 		await().atMost(20, TimeUnit.SECONDS) //
-				.until((Callable<Boolean>) () -> launchpad.getService(Object.class, "(mqtt.connection.ready=true)")
+				.until((Callable<Boolean>) () -> launchpad.getService(Condition.class, "(mqtt.connection.ready=true)")
 						.isPresent());
 	}
 
