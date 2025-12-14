@@ -18,7 +18,6 @@ package in.bytehue.messaging.mqtt5.provider;
 import static com.hivemq.client.mqtt.MqttClientState.CONNECTED;
 import static com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode.NORMAL_DISCONNECTION;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.CLIENT_ID_FRAMEWORK_PROPERTY;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CONNECTION_READY_SERVICE_PROPERTY;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.CLIENT;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getAllServicesSortedByRanking;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalService;
@@ -31,7 +30,8 @@ import static org.osgi.service.condition.Condition.CONDITION_ID_TRUE;
 import static org.osgi.service.metatype.annotations.AttributeType.PASSWORD;
 
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Dictionary;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -53,7 +53,6 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -178,7 +177,7 @@ public final class MessageClientProvider implements MqttClient {
         int numberOfThreads() default 5;
 
         @AttributeDefinition(name = "Custom Executor Prefix of the thread name")
-        String threadNamePrefix() default "osgi-mqtt";
+        String threadNamePrefix() default "mqtt-client";
 
         @AttributeDefinition(name = "Custom Executor Suffix of the thread name (supports only {@code %d} format specifier)")
         String threadNameSuffix() default "-%d";
@@ -352,9 +351,15 @@ public final class MessageClientProvider implements MqttClient {
 	@Activate
 	void activate(final Config config, final Map<String, Object> properties) {
 		logHelper = new LogHelper(logger, logMirror);
+
 		// Create a dedicated executor for all our internal async tasks
-		asyncTaskExecutor = Executors.newSingleThreadScheduledExecutor(
-				new ThreadFactoryBuilder().setThreadFactoryName("mqtt-client").setDaemon(true).build());
+		asyncTaskExecutor = Executors.newScheduledThreadPool(1, r -> {
+			final Thread t = new Thread(r);
+			t.setName("mqtt-client-lifecycle");
+			t.setDaemon(config.isDaemon());
+			return t;
+		});
+		((ScheduledThreadPoolExecutor) asyncTaskExecutor).setRemoveOnCancelPolicy(true);
 
 		connectionLock.lock();
 		try {
@@ -413,7 +418,7 @@ public final class MessageClientProvider implements MqttClient {
 
 		// --- RUN ASYNCHRONOUSLY ---
 		CompletableFuture.runAsync(() -> {
-			// --- Phase 1: Disconnect ---
+			// --- PHASE 1: Disconnect ---
 			try {
 				// This now blocks the async thread, NOT the OSGi thread
 				disconnect(true);
@@ -427,7 +432,7 @@ public final class MessageClientProvider implements MqttClient {
 				}
 			}
 		}, asyncTaskExecutor).thenRunAsync(() -> { // --- Chain the reconnect ---
-			// --- Phase 2: Re-connect ---
+			// --- PHASE 2: Re-connect ---
 			connectionLock.lock();
 			try {
 				init(config);
@@ -481,8 +486,13 @@ public final class MessageClientProvider implements MqttClient {
 		}
 
 		// --- RUN ASYNCHRONOUSLY ---
-		CompletableFuture.runAsync(() -> {
+		// Use a separate thread to manage the shutdown so asyncTaskExecutor
+		// doesn't commit suicide while running the task.
+		new Thread(() -> {
 			try {
+				// Execute disconnect synchronously on this temporary thread
+				// or wait for the async task to finish if reusing method logic.
+				// Here we call the sync-like internal logic directly.
 				disconnect(false); // Blocks this async thread
 				logHelper.info("Client deactivation completed successfully");
 			} finally {
@@ -493,12 +503,12 @@ public final class MessageClientProvider implements MqttClient {
 				} finally {
 					connectionLock.unlock();
 				}
-				// Shut down the executor *after* the task is done
+				// Safe to shutdown because we are not inside this executor
 				if (asyncTaskExecutor != null) {
 					asyncTaskExecutor.shutdownNow();
 				}
 			}
-		}, asyncTaskExecutor);
+		}, "mqtt-client-deactivator").start();
 	}
 
 	public Config config() {
@@ -586,7 +596,7 @@ public final class MessageClientProvider implements MqttClient {
 			connectionLock.unlock();
 		}
 
-		// --- PHASE 2: Best-effort Async Disconnect (Modified) ---
+		// --- PHASE 2: Best-effort Async Disconnect ---
 		logHelper.info("Performing disconnection (async with 2s timeout)");
 		try {
 			final Mqtt5DisconnectBuilder.Send<CompletableFuture<Void>> disconnectParams = clientToDisconnect.toAsync()
@@ -614,7 +624,7 @@ public final class MessageClientProvider implements MqttClient {
 			logHelper.warn("Failed to send disconnect packet (timeout or network error): {}", e.getMessage());
 		}
 
-		// --- PHASE 3: Cleanup (Corrected) ---
+		// --- PHASE 3: Cleanup ---
 		connectionLock.lock();
 		try {
 			if (executorToShutdown != null) {
@@ -656,9 +666,12 @@ public final class MessageClientProvider implements MqttClient {
 				throw new IllegalStateException("Disconnect already in progress");
 			}
 			connectInProgress = true;
-			return CompletableFuture.runAsync(() -> {
+
+			// @formatter:off
+			return CompletableFuture.supplyAsync(() -> {
 				try {
-					connectInternal(username, password);
+					// Wait for the inner future (the network packet)
+					return connectInternal(username, password);
 				} catch (final Exception e) {
 					throw new RuntimeException("Failed to connect to MQTT broker", e);
 				} finally {
@@ -670,7 +683,10 @@ public final class MessageClientProvider implements MqttClient {
 						connectionLock.unlock();
 					}
 				}
-			}, asyncTaskExecutor);
+			}, asyncTaskExecutor)
+			.thenCompose(f -> f) // Unwrap the nested future
+			.thenAccept(ack -> {}); // Convert to Void for interface compliance
+			// @formatter:on
 		} finally {
 			connectionLock.unlock();
 		}
@@ -690,7 +706,7 @@ public final class MessageClientProvider implements MqttClient {
 		return client != null && client.getState() == CONNECTED;
 	}
 
-	private void connectInternal(final String username, final byte[] password) {
+	private CompletableFuture<Mqtt5ConnAck> connectInternal(final String username, final byte[] password) {
 		// --- PHASE 1: PREPARATION (NO LOCK) ---
 		// Perform all service lookups and builder config *before* acquiring the lock.
 		final ScheduledExecutorService localCustomExecutor;
@@ -698,8 +714,13 @@ public final class MessageClientProvider implements MqttClient {
 
 		try {
 			final String clientId = getClientID(bundleContext);
-			final Mqtt5ClientBuilder clientBuilder = Mqtt5Client.builder().identifier(MqttClientIdentifier.of(clientId))
-					.serverHost(config.server()).serverPort(config.port());
+			// @formatter:off
+			final Mqtt5ClientBuilder clientBuilder = 
+					Mqtt5Client.builder()
+					           .identifier(MqttClientIdentifier.of(clientId))
+					           .serverHost(config.server())
+					           .serverPort(config.port());
+			// @formatter:on
 			final Nested<? extends Mqtt5ClientBuilder> advancedConfig = clientBuilder.advancedConfig();
 			initLastWill(clientBuilder);
 
@@ -708,8 +729,12 @@ public final class MessageClientProvider implements MqttClient {
 
 			if (config.automaticReconnectWithDefaultConfig()) {
 				logHelper.debug("Applying Custom Automatic Reconnect Configuration");
-				clientBuilder.automaticReconnect().initialDelay(config.initialDelay(), SECONDS)
-						.maxDelay(config.maxDelay(), SECONDS).applyAutomaticReconnect();
+				// @formatter:off
+				clientBuilder.automaticReconnect()
+				             .initialDelay(config.initialDelay(), SECONDS)
+				             .maxDelay(config.maxDelay(), SECONDS)
+				             .applyAutomaticReconnect();
+				// @formatter:on
 			}
 			// Handle authentication - prioritize provided credentials over config
 			if (username != null && password != null) {
@@ -757,15 +782,24 @@ public final class MessageClientProvider implements MqttClient {
 				if (configUsername == null || configPassword == null) {
 					logHelper.warn("Skipping Simple Authentication Configuration - Username or Password is null");
 				} else {
-					clientBuilder.simpleAuth().username(configUsername).password(configPassword.getBytes())
-							.applySimpleAuth();
+					// @formatter:off
+					clientBuilder.simpleAuth()
+					             .username(configUsername)
+					             .password(configPassword.getBytes())
+					             .applySimpleAuth();
+					// @formatter:on
 				}
 			}
 			if (config.useWebSocket()) {
 				logHelper.debug("Applying Web Socket Configuration");
-				clientBuilder.webSocketConfig().serverPath(config.serverPath()).subprotocol(config.subProtocol())
-						.queryString(config.queryString()).handshakeTimeout(config.webSocketHandshakeTimeout(), SECONDS)
-						.applyWebSocketConfig();
+				// @formatter:off
+				clientBuilder.webSocketConfig()
+				             .serverPath(config.serverPath())
+				             .subprotocol(config.subProtocol())
+				             .queryString(config.queryString())
+				             .handshakeTimeout(config.webSocketHandshakeTimeout(), SECONDS)
+				             .applyWebSocketConfig();
+				// @formatter:on
 			}
 			if (config.useSSL()) {
 				logHelper.debug("Applying SSL Configuration");
@@ -788,9 +822,16 @@ public final class MessageClientProvider implements MqttClient {
 				final String clazz = config.executorTargetClass().trim();
 				if (clazz.isEmpty()) {
 					logHelper.debug("Applying Executor as Non-Service Configuration");
-					final ThreadFactory threadFactory = new ThreadFactoryBuilder()
-							.setThreadFactoryName(config.threadNamePrefix())
-							.setThreadNameFormat(config.threadNameSuffix()).setDaemon(config.isDaemon()).build();
+
+					// @formatter:off
+					final ThreadFactory threadFactory = 
+							new ThreadFactoryBuilder()
+							        .setThreadFactoryName(config.threadNamePrefix())
+							        .setThreadNameFormat(config.threadNameSuffix())
+							        .setDaemon(config.isDaemon())
+							        .build();
+					// @formatter:on
+
 					// Create locally, assign to field *inside* the lock
 					executorToUse = Executors.newScheduledThreadPool(config.numberOfThreads(), threadFactory);
 					((ScheduledThreadPoolExecutor) executorToUse).setRemoveOnCancelPolicy(true);
@@ -856,8 +897,15 @@ public final class MessageClientProvider implements MqttClient {
 				if (localCustomExecutor != null) {
 					localCustomExecutor.shutdownNow();
 					NettyEventLoopProvider.INSTANCE.releaseEventLoop(localCustomExecutor);
+					logHelper.debug("Cleaning up stale local executor");
 				}
-				return;
+				return CompletableFuture.completedFuture(null);
+			}
+			// Clean up the old executor before overwriting
+			if (this.customExecutor != null) {
+				this.customExecutor.shutdownNow();
+				NettyEventLoopProvider.INSTANCE.releaseEventLoop(this.customExecutor);
+				logHelper.debug("Cleaning up stale executor");
 			}
 			// Commit the new client and executor
 			client = clientToConnect;
@@ -882,19 +930,27 @@ public final class MessageClientProvider implements MqttClient {
 				connectionParams.noSessionExpiry();
 			}
 
-			final CompletableFuture<Mqtt5ConnAck> ack = connectionParams.restrictions()
-					.receiveMaximum(config.receiveMaximum()).sendMaximum(config.sendMaximum())
-					.maximumPacketSize(config.maximumPacketSize()).sendMaximumPacketSize(config.sendMaximumPacketSize())
-					.sendTopicAliasMaximum(config.topicAliasMaximum()).applyRestrictions().send();
+			// @formatter:off
+			final CompletableFuture<Mqtt5ConnAck> ack = 
+					connectionParams.restrictions()
+					                .receiveMaximum(config.receiveMaximum())
+					                .sendMaximum(config.sendMaximum())
+					                .maximumPacketSize(config.maximumPacketSize())
+					                .sendMaximumPacketSize(config.sendMaximumPacketSize())
+					                .sendTopicAliasMaximum(config.topicAliasMaximum())
+					                .applyRestrictions()
+					                .send();
+			// @formatter:on
 
 			ack.whenComplete((connAck, throwable) -> {
 				if (throwable != null) {
 					logHelper.error("Error occurred while connecting to the broker '{}'", config.server(), throwable);
 				} else {
 					logHelper.info("Successfully connected to the broker '{}'", config.server());
-					logHelper.debug("Connection acknowledgment: {}", connAck);
+					logHelper.info("Connection acknowledgment: {}", connAck);
 				}
 			});
+			return ack;
 		} catch (final Exception e) {
 			logHelper.error("Error occurred while initiating connection to the broker '{}'", config.server(), e);
 			// Propagate failure to the calling CompletableFuture in connect()
@@ -919,8 +975,16 @@ public final class MessageClientProvider implements MqttClient {
 
 		if (!topic.isEmpty()) {
 			logHelper.debug("Applying Last Will and Testament Configuration");
-			clientBuilder.willPublish().topic(topic).qos(qos).payload(payload).contentType(contentType)
-					.messageExpiryInterval(messageExpiryInterval).delayInterval(delayInterval).applyWillPublish();
+			// @formatter:off
+			clientBuilder.willPublish()
+			             .topic(topic)
+			             .qos(qos)
+			             .payload(payload)
+			             .contentType(contentType)
+			             .messageExpiryInterval(messageExpiryInterval)
+			             .delayInterval(delayInterval)
+			             .applyWillPublish();
+			// @formatter:on
 		}
 	}
 
@@ -1012,42 +1076,110 @@ public final class MessageClientProvider implements MqttClient {
 	}
 
 	private void registerReadyService(final MqttClientConnectedContext context) {
-		connectionLock.lock();
-		try {
-			// register service
-			final Map<String, Object> properties = new HashMap<>();
-			properties.put(MQTT_CONNECTION_READY_SERVICE_PROPERTY, "true");
+		// Offload service registration to a separate thread.
+		// This prevents the I/O thread from being hijacked by the OSGi SCR framework,
+		// allowing it to process lifecycle events, such as, SUBACKs.
+		asyncTaskExecutor.submit(() -> {
+			// 1. Prepare properties
+			final Dictionary<String, Object> props = new Hashtable<>();
+			props.put("connection.ready.condition", "true");
 
-			readyServiceReg = bundleContext.registerService(Object.class, new Object(),
-					FrameworkUtil.asDictionary(properties));
-			logHelper.info("The MQTT connection ready service has been registered");
-		} finally {
-			connectionLock.unlock();
-		}
+			ServiceRegistration<Object> newReg = null;
+
+			// 2. Register OUTSIDE the lock (DEADLOCK PREVENTION)
+			// We must call registerService() OUTSIDE the 'connectionLock'.
+			// Scenario:
+			// 1. Thread A (This Thread): Holds 'connectionLock', waits for OSGi Framework
+			// Lock (to register).
+			// 2. Thread B (OSGi Framework): Holds OSGi Framework Lock (e.g. stopping
+			// bundle), waits for 'connectionLock' (in @Deactivate).
+			// Result: Deadlock.
+			// Solution: Perform the OSGi call unlocked, then acquire the lock to verify
+			// state safely.
+			try {
+				newReg = bundleContext.registerService(Object.class, new Object(), props);
+			} catch (Exception e) {
+				logHelper.error("Failed to register MQTT connection ready service", e);
+				return;
+			}
+
+			// 3. Verify state INSIDE the lock
+			boolean keepRegistration = false;
+			ServiceRegistration<Object> staleReg = null;
+
+			connectionLock.lock();
+			try {
+				// Verify: Are we still connected?
+				// Since executor is single-threaded, 'readyServiceReg' cannot be changed
+				// concurrently.
+				if (isConnectedInternal() && !disconnectInProgress) {
+					// Capture the old one to close later
+					staleReg = readyServiceReg;
+
+					// Assign the new one
+					readyServiceReg = newReg;
+					keepRegistration = true;
+				}
+			} finally {
+				connectionLock.unlock();
+			}
+
+			// 4. Cleanup Stale Registration (OUTSIDE lock)
+			if (staleReg != null) {
+				try {
+					staleReg.unregister();
+					logger.debug("Stale MQTT connection ready service deregistered safely");
+				} catch (Exception e) {
+					logHelper.debug("Stale MQTT connection ready service has already been deregistered");
+				}
+			}
+
+			// 5. Rollback if verification failed (OUTSIDE lock)
+			if (!keepRegistration && newReg != null) {
+				try {
+					newReg.unregister();
+				} catch (Exception e) {
+					logger.debug("New MQTT connection ready service has already been deregistered");
+				}
+			} else {
+				logHelper.debug("MQTT connection ready service has already been registered");
+			}
+		});
 	}
 
 	private void unregisterReadyService(final MqttClientDisconnectedContext context) {
-		connectionLock.lock();
-		try {
-			if (readyServiceReg != null) {
-				// send disconnected event synchronously to ensure that the registry is cleaned
-				// up before unregistering ready service
-				eventAdmin.sendEvent(new Event(MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC, emptyMap()));
+		// Offload service deregistration to a separate thread.
+		asyncTaskExecutor.submit(() -> {
+			ServiceRegistration<Object> regToClose = null;
 
-				try {
-					readyServiceReg.unregister();
-					readyServiceReg = null;
-					logHelper.info("The MQTT connection ready service has been deregistered");
-				} catch (final IllegalStateException e) {
-					// this could happen if the reconnect happens pretty quickly
-					logHelper.info("The MQTT connection ready service has already been deregistered");
-				}
-			} else {
-				logHelper.debug("MQTT connection ready service already unregistered, skipping disconnect event");
+			// 1. Get the handle and clear the field (Atomic swap)
+			connectionLock.lock();
+			try {
+				regToClose = readyServiceReg;
+				readyServiceReg = null;
+			} finally {
+				connectionLock.unlock();
 			}
-		} finally {
-			connectionLock.unlock();
-		}
+
+			// 2. Unregister (OUTSIDE Lock)
+			// We must call unregister() OUTSIDE the 'connectionLock'.
+			// If we hold the lock while unregistering, we risk the same Lock Inversion
+			// deadlock if the Framework is simultaneously processing service events or
+			// stopping the bundle.
+			if (regToClose != null) {
+				if (eventAdmin != null) {
+					// send disconnected event synchronously to ensure that the registry is cleaned
+					// up before unregistering ready service
+					eventAdmin.sendEvent(new Event(MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC, emptyMap()));
+				}
+				try {
+					regToClose.unregister();
+					logHelper.debug("MQTT connection ready service has been deregistered");
+				} catch (Exception e) {
+					logger.debug("MQTT ready service has already been deregistered");
+				}
+			}
+		});
 	}
 
 	private <T> List<T> emptyToNull(final T[] array) {
