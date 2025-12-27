@@ -19,7 +19,6 @@ import static com.hivemq.client.mqtt.MqttClientState.CONNECTED;
 import static com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatIndicator.UTF_8;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CONNECTION_READY_SERVICE_PROPERTY_FILTER;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.PUBLISHER;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.MESSAGE_EXPIRY_INTERVAL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
@@ -31,8 +30,6 @@ import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getCorrel
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getQoS;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL;
-import static org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC;
 import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_DELIVERY;
 import static org.osgi.service.messaging.Features.EXTENSION_GUARANTEED_ORDERING;
 import static org.osgi.service.messaging.Features.EXTENSION_QOS;
@@ -44,7 +41,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.osgi.framework.BundleContext;
-import org.osgi.service.component.AnyService;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Modified;
@@ -66,7 +62,6 @@ import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserProperties;
 import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserPropertiesBuilder;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatIndicator;
-import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishBuilder.Send.Complete;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishResult;
 
 import in.bytehue.messaging.mqtt5.provider.MessagePublisherProvider.PublisherConfig;
@@ -122,9 +117,6 @@ public final class MessagePublisherProvider implements MessagePublisher {
 	@Reference
 	private MessageClientProvider messagingClient;
 
-	@Reference(service = AnyService.class, target = MQTT_CONNECTION_READY_SERVICE_PROPERTY_FILTER, cardinality = OPTIONAL, policy = DYNAMIC)
-	private volatile Object mqttConnectionReady;
-
 	@Activate
 	private BundleContext bundleContext;
 
@@ -158,158 +150,143 @@ public final class MessagePublisherProvider implements MessagePublisher {
 	}
 
 	private void publish(final Message message, MessageContext context, String channel) {
-		try {
-			if (context == null) {
-				context = message.getContext();
-			}
-			if (channel == null) {
-				channel = context.getChannel();
-			}
+		if (context == null) {
+			context = message.getContext();
+		}
+		if (channel == null) {
+			channel = context.getChannel();
+		}
 
-			// Check if connection is fully ready
-			// The MQTT connection ready service is the authoritative signal that the
-			// connection is fully operational, not just that HiveMQ reports CONNECTED state
-			if (mqttConnectionReady == null) {
-				logHelper.warn("Cannot publish to '{}' - MQTT connection not ready yet (likely during startup)",
-						channel);
-				throw new IllegalStateException("MQTT connection not ready, cannot publish to channel: " + channel);
-			}
+		// Time-of-Check to Time-of-Use (TOCTOU) race condition that can occur during
+		// bundle startup or client reconfiguration
+		final Mqtt5AsyncClient currentClient = messagingClient.client; // Read volatile field ONCE
 
-			// Time-of-Check to Time-of-Use (TOCTOU) race condition that can occur during
-			// bundle startup or client reconfiguration
-			final Mqtt5AsyncClient currentClient = messagingClient.client; // Read volatile field ONCE
+		if (currentClient == null) {
+			logHelper.warn("Cannot publish to '{}' - client not yet initialized (likely during startup/shutdown)",
+					channel);
+			throw new IllegalStateException("Client is not READY, cannot publish to channel: " + channel);
+		}
+		final MqttClientState clientState = currentClient.getState();
+		if (clientState != CONNECTED) {
+			logHelper.warn("Cannot publish to '{}' - client state is {} (likely during reconnection)", channel,
+					clientState);
+			throw new IllegalStateException(
+					"Client is not in CONNECTED state: " + clientState + ", cannot publish to channel: " + channel);
+		}
 
-			if (currentClient == null) {
-				logHelper.warn("Cannot publish to '{}' - client not yet initialized (likely during startup/shutdown)",
-						channel);
-				throw new IllegalStateException("Client is not ready, cannot publish to channel: " + channel);
-			}
-			final MqttClientState clientState = currentClient.getState();
-			if (clientState != CONNECTED) {
-				logHelper.warn("Cannot publish to '{}' - client state is {} (likely during reconnection)", channel,
-						clientState);
-				throw new IllegalStateException(
-						"Client is not in CONNECTED state: " + clientState + ", cannot publish to channel: " + channel);
-			}
+		// add topic prefix if available
+		final String prefix = messagingClient.config.topicPrefix();
+		channel = addTopicPrefix(channel, prefix);
 
-			// add topic prefix if available
-			final String prefix = messagingClient.config.topicPrefix();
-			channel = addTopicPrefix(channel, prefix);
+		final Map<String, Object> extensions = context.getExtensions();
 
-			final String ch = channel; // needed for lambda as it needs to be effectively final :(
-			final Map<String, Object> extensions = context.getExtensions();
+		final String contentType = context.getContentType();
+		final String replyToChannel = context.getReplyToChannel();
+		final String correlationId = getCorrelationId((MessageContextProvider) context, bundleContext, logHelper);
+		final ByteBuffer content = message.payload();
 
-			final String contentType = context.getContentType();
-			final String replyToChannel = context.getReplyToChannel();
-			final String correlationId = getCorrelationId((MessageContextProvider) context, bundleContext, logHelper);
-			final ByteBuffer content = message.payload();
+		final Object messageExpiry = extensions.getOrDefault(MESSAGE_EXPIRY_INTERVAL, null);
+		final Long messageExpiryInterval = adaptTo(messageExpiry, Long.class, converter);
 
-			final Object messageExpiry = extensions.getOrDefault(MESSAGE_EXPIRY_INTERVAL, null);
-			final Long messageExpiryInterval = adaptTo(messageExpiry, Long.class, converter);
+		final int qos;
+		if (extensions.isEmpty()) {
+			qos = config.qos();
+		} else {
+			qos = getQoS(extensions, converter, config.qos());
+		}
 
-			final int qos;
-			if (extensions == null || extensions.isEmpty()) {
-				qos = config.qos();
-			} else {
-				qos = getQoS(extensions, converter, config.qos());
-			}
+		final Object isRetain = extensions.getOrDefault(RETAIN, false);
+		final boolean retain = adaptTo(isRetain, boolean.class, converter);
 
-			final Object isRetain = extensions.getOrDefault(RETAIN, false);
-			final boolean retain = adaptTo(isRetain, boolean.class, converter);
+		final String contentEncoding = context.getContentEncoding();
 
-			final String contentEncoding = context.getContentEncoding();
+		Mqtt5PayloadFormatIndicator payloadFormat = null;
+		if ("UTF-8".equalsIgnoreCase(contentEncoding)) {
+			payloadFormat = UTF_8;
+		}
 
-			Mqtt5PayloadFormatIndicator payloadFormat = null;
-			if ("UTF-8".equalsIgnoreCase(contentEncoding)) {
-				payloadFormat = UTF_8;
-			}
+		// @formatter:off
+        final Object userProp = extensions.getOrDefault(USER_PROPERTIES, emptyMap());
+        final Map<String, String> userProperties =
+                adapt(
+                		userProp,
+                		new TypeReference<Map<String, String>>() {},
+                        converter);
 
-			// @formatter:off
-            final Object userProp = extensions.getOrDefault(USER_PROPERTIES, emptyMap());
-            final Map<String, String> userProperties =
-                    adapt(
-                            userProp,
-                            new TypeReference<Map<String, String>>() {},
-                            converter);
-
-            final Mqtt5UserPropertiesBuilder propsBuilder = Mqtt5UserProperties.builder();
-            userProperties.forEach(propsBuilder::add);
-
+        final Mqtt5UserPropertiesBuilder propsBuilder = Mqtt5UserProperties.builder();
+        userProperties.forEach(propsBuilder::add);
             
-			final Mqtt5UserProperties userProps = propsBuilder.build();
-			final Complete<CompletableFuture<Mqtt5PublishResult>> publishRequest =
-					             currentClient.publishWith()
-                                              .topic(channel)
-                                              .payloadFormatIndicator(payloadFormat)
-                                              .contentType(contentType)
-                                              .payload(content)
-                                              .qos(MqttQos.fromCode(qos))
-                                              .retain(retain)
-                                              .responseTopic(replyToChannel)
-                                              .correlationData(correlationId.getBytes())
-                                              .userProperties(userProps);
+		final Mqtt5UserProperties userProps = propsBuilder.build();
+		final CompletableFuture<Mqtt5PublishResult> publishRequestFuture =
+				             currentClient.publishWith()
+                                          .topic(channel)
+                                          .payloadFormatIndicator(payloadFormat)
+                                          .contentType(contentType)
+                                          .payload(content)
+                                          .qos(MqttQos.fromCode(qos))
+                                          .retain(retain)
+                                          .responseTopic(replyToChannel)
+                                          .correlationData(correlationId.getBytes())
+                                          .userProperties(userProps)
+                                          .messageExpiryInterval(
+                                        		  messageExpiryInterval == null ? -1 : messageExpiryInterval)
+                                          .send();
 
-            if (messageExpiryInterval == null || messageExpiryInterval == 0) {
-                publishRequest.noMessageExpiry();
-            } else {
-                publishRequest.messageExpiryInterval(messageExpiryInterval);
+        logHelper.debug(
+        	    "Publish Request:\n" +
+        	    "  Channel           : {}\n" +
+        	    "  Payload Format    : {}\n" +
+        	    "  Content Type      : {}\n" +
+        	    "  QoS               : {}\n" +
+        	    "  Retain            : {}\n" +
+        	    "  Reply-To Channel  : {}\n" +
+        	    "  Correlation ID    : {}\n" +
+        	    "  User Properties   : {}",
+        	    channel,
+        	    payloadFormat,
+        	    contentType,
+        	    MqttQos.fromCode(qos),
+        	    retain,
+        	    replyToChannel,
+        	    correlationId,
+        	    userProps
+        );
+        try {
+        	// 1. Blocking Wait
+            // We wait directly for the result. No need for 'whenComplete'.
+            final Mqtt5PublishResult result = publishRequestFuture.get(config.timeoutInMillis(), MILLISECONDS);
+
+            // 2. Check for MQTT 5.0 Protocol Errors
+            // get() returns normally even if the broker rejected the message. We must check explicitly.
+            if (result.getError().isPresent()) {
+                final Throwable mqttError = result.getError().get();
+                logHelper.error("Publish request for '{}' failed - {}", channel, mqttError.getMessage());
+                // Throwing here ensures the caller knows the publish failed
+                throw new RuntimeException("Publish refused by broker: " + mqttError.getMessage(), mqttError);
             }
 
-            logHelper.debug(
-            	    "Publish Request:\n" +
-            	    "  Channel           : {}\n" +
-            	    "  Payload Format    : {}\n" +
-            	    "  Content Type      : {}\n" +
-            	    "  QoS               : {}\n" +
-            	    "  Retain            : {}\n" +
-            	    "  Reply-To Channel  : {}\n" +
-            	    "  Correlation ID    : {}\n" +
-            	    "  User Properties   : {}",
-            	    channel,
-            	    payloadFormat,
-            	    contentType,
-            	    MqttQos.fromCode(qos),
-            	    retain,
-            	    replyToChannel,
-            	    correlationId,
-            	    userProps
-            	);
-            final CompletableFuture<Void> resultFuture = new CompletableFuture<>();
-            publishRequest.send()
-                          .whenComplete((result, throwable) -> {
-                              if (throwable != null) {
-                            	  resultFuture.completeExceptionally(throwable);
-                                  logHelper.error("Error occurred while publishing message", throwable);
-                              } else if (isPublishSuccessful(result)) {
-                            	  resultFuture.complete(null);
-                            	  logHelper.debug("Successful Publish Request: {} ", result);
-                            	  logHelper.debug("New publish request for '{}' has been processed successfully", ch);
-							  } else {
-								  final Throwable t = result.getError().get();
-								  resultFuture.completeExceptionally(t);
-								  logHelper.error("New publish request for '{}' failed - {}", ch, t);
-							  }
-                          });
-            resultFuture.get(config.timeoutInMillis(), MILLISECONDS);
+            // 3. SUCCESS
+            logHelper.debug("Successful Publish Request: {}", result);
+            logHelper.debug("New publish request for '{}' has been processed successfully", channel);
             // @formatter:on
 		} catch (final ExecutionException e) {
 			logHelper.error("Error while publishing data to {}", channel, e);
 			throw new RuntimeException(e.getCause());
 		} catch (final InterruptedException e) {
+			// Cancel the network request on timeout to prevent "Phantom Messages"
+			publishRequestFuture.cancel(true);
 			Thread.currentThread().interrupt();
 			logHelper.warn("Publish operation was interrupted while waiting for result", e);
 			throw new RuntimeException(e);
 		} catch (final TimeoutException e) {
+			// Cancel the network request here as well
+			publishRequestFuture.cancel(true);
 			logHelper.error("Publish operation to {} timed out after {}ms", channel, config.timeoutInMillis(), e);
 			throw new RuntimeException("Publish timed out", e);
 		} catch (final Exception e) {
 			logHelper.error("Unexpected error while publishing data to {}", channel, e);
 			throw new RuntimeException(e);
 		}
-	}
-
-	private boolean isPublishSuccessful(final Mqtt5PublishResult result) {
-		return !result.getError().isPresent();
 	}
 
 }
