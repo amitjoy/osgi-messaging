@@ -21,11 +21,10 @@ import static com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckR
 import static com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAckReasonCode.GRANTED_QOS_2;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CONNECTION_READY_SERVICE_PROPERTY_FILTER;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_SUBSCRIPTION_EVENT_TOPIC_PREFIX;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.SUBSCRIBER;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RECEIVE_LOCAL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.OSGI_MESSAGING_SERVICE_ID;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RECEIVE_LOCAL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MqttSubAckDTO.Type.FAILED;
 import static in.bytehue.messaging.mqtt5.api.MqttSubAckDTO.Type.NO_ACK;
@@ -36,8 +35,6 @@ import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getQoS;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.toMessage;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL;
-import static org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC;
 import static org.osgi.service.messaging.Features.ACKNOWLEDGE;
 import static org.osgi.service.messaging.Features.EXTENSION_QOS;
 import static org.osgi.service.messaging.Features.REPLY_TO;
@@ -51,7 +48,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
 import org.osgi.framework.BundleContext;
-import org.osgi.service.component.AnyService;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -146,9 +142,6 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
     @Reference
     private ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
 
-    @Reference(service = AnyService.class, target = MQTT_CONNECTION_READY_SERVICE_PROPERTY_FILTER, cardinality = OPTIONAL, policy = DYNAMIC)
-	private volatile Object mqttConnectionReady;
-
     @Activate
     @Modified
     void init(final SubscriberConfig config) {
@@ -237,20 +230,12 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
         	throw new IllegalArgumentException("Channel cannot be empty");
         }
 
-        // Check if connection is fully ready
-        // The MQTT connection ready service is the authoritative signal that the connection
-        // is fully operational, not just that HiveMQ reports CONNECTED state
-        if (mqttConnectionReady == null) {
-            logHelper.warn("Cannot subscribe to '{}' - MQTT connection not ready yet (likely during startup)", sChannel);
-            throw new IllegalStateException("MQTT connection not ready, cannot subscribe to channel: " + sChannel);
-        }
-
         // Time-of-Check to Time-of-Use (TOCTOU) race condition that can occur during bundle startup or client reconfiguration
         final Mqtt5AsyncClient currentClient = messagingClient.client; // Read volatile field ONCE
 
         if (currentClient == null) {
             logHelper.warn("Cannot subscribe to '{}' - client not yet initialized (likely during startup/shutdown)", sChannel);
-            throw new IllegalStateException("Client is not ready, cannot subscribe to channel: " + sChannel);
+            throw new IllegalStateException("Client is not READY, cannot subscribe to channel: " + sChannel);
         }
 
         final MqttClientState clientState = currentClient.getState();
@@ -381,35 +366,25 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 
             future.get(config.timeoutInMillis(), MILLISECONDS);
             return SubscriptionAck.of(stream, subscription.id);
-        } catch (final ExecutionException e) {
-        	logHelper.error("Error while subscribing to {}", sChannel, e);
-            final Throwable cause = e.getCause() != null ? e.getCause() : e;
-            final String reason = cause.getMessage();
-
-            // No SubAck available here, hence, no reason codes
-            final MqttSubAckDTO subNack =
-                    createStatusEvent(NO_ACK, sChannel, qos, isReplyToSub, reason, new int[0]);
-            sendSubscriptionStatusEvent(subNack);
-
-            // Close the stream to trigger the onClose handler,
-            // which removes the subscription from the registry.
+        } catch (final Exception e) {
+            // ROBUST CLEANUP
+            // 1. Close the stream (triggers onClose -> removes from registry)
             stream.close();
 
-            throw new RuntimeException(e.getCause()); //NOSONAR
-        } catch (final Exception e) { //NOSONAR
-        	logHelper.error("Error while subscribing to {}", sChannel, e);
-            final String reason = e.getMessage();
+            // 2. Determine reason
+            Throwable cause = e;
+            if (e instanceof ExecutionException) {
+                cause = e.getCause();
+            }
+            String message = cause != null ? cause.getMessage() : "Unknown error";
 
-            // No SubAck available here, hence, no reason codes
-            final MqttSubAckDTO subNack =
-                    createStatusEvent(NO_ACK, sChannel, qos, isReplyToSub, reason, new int[0]);
+            logHelper.error("Subscription failed for channel '{}': {}", sChannel, message);
+
+            // 3. Send NACK Event
+            final MqttSubAckDTO subNack = createStatusEvent(NO_ACK, sChannel, qos, isReplyToSub, message, new int[0]);
             sendSubscriptionStatusEvent(subNack);
 
-            // Close the stream to trigger the onClose handler,
-            // which removes the subscription from the registry.
-            stream.close();
-
-            throw new RuntimeException(e); // NOSONAR
+            throw new RuntimeException("Failed to subscribe to " + sChannel, cause);
         }
     }
 
