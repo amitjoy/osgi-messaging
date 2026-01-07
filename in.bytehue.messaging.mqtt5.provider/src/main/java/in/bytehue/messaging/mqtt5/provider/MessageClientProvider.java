@@ -928,6 +928,18 @@ public final class MessageClientProvider implements MqttClient {
 			}
 			// Commit the new client and executor
 			client = clientToConnect;
+			if (disconnectInProgress) {
+				logHelper.warn("Disconnect initiated during connection attempt. Aborting connection.");
+				if (localCustomExecutor != null) {
+					localCustomExecutor.shutdownNow();
+					NettyEventLoopProvider.INSTANCE.releaseEventLoop(localCustomExecutor);
+				}
+				if (clientToConnect != null) {
+					// We built it but haven't connected it. Just discard it.
+					// If we needed to close it, we would. But it's async and not connected.
+				}
+				return CompletableFuture.completedFuture(null);
+			}
 			if (localCustomExecutor != null) {
 				customExecutor = localCustomExecutor;
 			}
