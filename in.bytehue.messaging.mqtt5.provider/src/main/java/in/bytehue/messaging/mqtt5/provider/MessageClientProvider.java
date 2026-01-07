@@ -776,7 +776,7 @@ public final class MessageClientProvider implements MqttClient {
 							logHelper.error("Cannot Retrieve Credentials from Simple Authentication Service", e);
 						}
 					} else {
-						logHelper.warn("Simple Authentiation Service Not Found");
+						logHelper.warn("Simple Authentication Service Not Found");
 					}
 				}
 				if (configUsername == null || configPassword == null) {
