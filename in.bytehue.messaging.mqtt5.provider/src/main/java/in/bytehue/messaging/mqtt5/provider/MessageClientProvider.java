@@ -646,8 +646,11 @@ public final class MessageClientProvider implements MqttClient {
 			if (executorToShutdown != null) {
 				executorToShutdown.shutdownNow();
 				NettyEventLoopProvider.INSTANCE.releaseEventLoop(executorToShutdown);
-				customExecutor = null;
 				logHelper.debug("Custom executor shut down and event loop released");
+				// Only clear the field if it hasn't been replaced by a new connection
+				if (customExecutor == executorToShutdown) {
+					customExecutor = null;
+				}
 			}
 			logHelper.info("Disconnection completed successfully");
 		} finally {
