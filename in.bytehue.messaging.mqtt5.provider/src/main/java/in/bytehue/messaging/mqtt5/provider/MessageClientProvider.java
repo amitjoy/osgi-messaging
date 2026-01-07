@@ -610,8 +610,13 @@ public final class MessageClientProvider implements MqttClient {
 		// --- PHASE 2: Best-effort Async Disconnect ---
 		logHelper.info("Performing disconnection (async with 2s timeout)");
 		try {
-			final Mqtt5DisconnectBuilder.Send<CompletableFuture<Void>> disconnectParams = clientToDisconnect.toAsync()
-					.disconnectWith().reasonCode(reasonCode).reasonString(reasonDescription);
+			// @formatter:off
+			final Mqtt5DisconnectBuilder.Send<CompletableFuture<Void>> disconnectParams = 
+					clientToDisconnect.toAsync()
+					                  .disconnectWith()
+					                  .reasonCode(reasonCode)
+					                  .reasonString(reasonDescription);
+			// @formatter:on
 
 			if (useSessionExpiry) {
 				logHelper.debug("Applying Session Expiry Interval for Disconnect: {}", sessionExpiryInterval);
