@@ -488,7 +488,7 @@ public final class MessageClientProvider implements MqttClient {
 		// --- RUN ASYNCHRONOUSLY ---
 		// Use a separate thread to manage the shutdown so asyncTaskExecutor
 		// doesn't commit suicide while running the task.
-		new Thread(() -> {
+		final Thread deactivatorThread = new Thread(() -> {
 			try {
 				// Execute disconnect synchronously on this temporary thread
 				// or wait for the async task to finish if reusing method logic.
@@ -508,7 +508,18 @@ public final class MessageClientProvider implements MqttClient {
 					asyncTaskExecutor.shutdownNow();
 				}
 			}
-		}, "mqtt-client-deactivator").start();
+		}, "mqtt-client-deactivator");
+		
+		deactivatorThread.start();
+		
+		try {
+			// Wait for the deactivator thread to finish to ensure OSGi context 
+			// remains valid during cleanup (e.g. for logging)
+			deactivatorThread.join(5000); // 5 seconds timeout
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			logHelper.warn("Interrupted while waiting for deactivation cleanup");
+		}
 	}
 
 	public Config config() {
