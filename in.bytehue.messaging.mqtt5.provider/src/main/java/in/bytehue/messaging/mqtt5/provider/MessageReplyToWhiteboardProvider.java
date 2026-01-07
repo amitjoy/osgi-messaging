@@ -17,7 +17,7 @@ package in.bytehue.messaging.mqtt5.provider;
 
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CONNECTION_READY_SERVICE_PROPERTY_FILTER;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MQTT_CONNECTION_READY_CONDITION;
 import static in.bytehue.messaging.mqtt5.provider.MessageReplyToWhiteboardProvider.PID;
 import static in.bytehue.messaging.mqtt5.provider.MessageReplyToWhiteboardProvider.ReplyToSubDTO.Type.REPLY_TO_MANY_SUB;
 import static in.bytehue.messaging.mqtt5.provider.MessageReplyToWhiteboardProvider.ReplyToSubDTO.Type.REPLY_TO_SINGLE_SUB;
@@ -54,12 +54,12 @@ import java.util.stream.Stream;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
-import org.osgi.service.component.AnyService;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.condition.Condition;
 import org.osgi.service.log.Logger;
 import org.osgi.service.log.LoggerFactory;
 import org.osgi.service.messaging.Message;
@@ -147,8 +147,8 @@ public final class MessageReplyToWhiteboardProvider {
 	@Reference
 	private MessageSubscriptionRegistry registry;
 
-	@Reference(service = AnyService.class, target = MQTT_CONNECTION_READY_SERVICE_PROPERTY_FILTER)
-	private Object mqttConnectionReady;
+	@Reference(target = MQTT_CONNECTION_READY_CONDITION)
+	private Condition mqttConnectionReady;
 
 	@Reference
 	private ComponentServiceObjects<MessageContextBuilderProvider> mcbFactory;
@@ -376,6 +376,18 @@ public final class MessageReplyToWhiteboardProvider {
 							c, replyToDTO.pubChannel);
 					final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.subQos,
 							serviceId);
+
+					// We must check if the subscription 'sub' is still valid (tracked).
+					// If 'removeSubscription' ran before this, 'sub' is no longer in the list.
+					if (!subscriptions.contains(sub)) {
+						logHelper.warn(
+								"Handler removed during subscription setup. Closing orphaned stream for channel: {}",
+								c);
+						ack.stream().close();
+						return;
+					}
+
+					// If valid, safely add the ack so future removal can find it
 					sub.addAck(ack);
 
 					logHelper.info(
@@ -430,6 +442,17 @@ public final class MessageReplyToWhiteboardProvider {
 							c, replyToDTO.pubChannel);
 					final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.subQos,
 							serviceId);
+
+					// We must check if the subscription 'sub' is still valid (tracked).
+					// If 'removeSubscription' ran before this, 'sub' is no longer in the list.
+					if (!subscriptions.contains(sub)) {
+						logHelper.warn(
+								"Handler removed during subscription setup. Closing orphaned stream for channel: {}",
+								c);
+						ack.stream().close();
+						return;
+					}
+
 					sub.addAck(ack);
 
 					logHelper.info(
@@ -486,6 +509,17 @@ public final class MessageReplyToWhiteboardProvider {
 							replyToDTO.pubChannel);
 					final SubscriptionAck ack = subscriber.replyToSubscribe(c, replyToDTO.pubChannel, replyToDTO.subQos,
 							serviceId);
+
+					// We must check if the subscription 'sub' is still valid (tracked).
+					// If 'removeSubscription' ran before this, 'sub' is no longer in the list.
+					if (!subscriptions.contains(sub)) {
+						logHelper.warn(
+								"Handler removed during subscription setup. Closing orphaned stream for channel: {}",
+								c);
+						ack.stream().close();
+						return;
+					}
+
 					sub.addAck(ack);
 
 					logHelper.info(
