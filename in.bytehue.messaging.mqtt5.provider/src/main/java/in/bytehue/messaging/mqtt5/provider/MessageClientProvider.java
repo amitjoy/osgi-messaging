@@ -536,15 +536,15 @@ public final class MessageClientProvider implements MqttClient {
 		connectionLock.lock();
 		try {
 			if (!isConnectedInternal()) {
-				logHelper.warn("disconnect() called, but the client is not connected.");
+				logHelper.error("disconnect() called, but the client is not connected.");
 				throw new IllegalStateException("Client is not connected");
 			}
 			if (disconnectInProgress) {
-				logHelper.warn("disconnect() called, but a disconnect is already in progress.");
+				logHelper.error("disconnect() called, but a disconnect is already in progress.");
 				throw new IllegalStateException("Disconnect already in progress");
 			}
 			if (connectInProgress) {
-				logHelper.warn("disconnect() called, but a connect is already in progress.");
+				logHelper.error("disconnect() called, but a connect is already in progress.");
 				throw new IllegalStateException("Connect already in progress");
 			}
 			disconnectInProgress = true;
@@ -654,15 +654,15 @@ public final class MessageClientProvider implements MqttClient {
 		connectionLock.lock();
 		try {
 			if (client != null && client.getState() == CONNECTED) {
-				logHelper.warn("connect() called, but client is already connected.");
+				logHelper.error("connect() called, but client is already connected.");
 				throw new IllegalStateException("Client is already connected");
 			}
 			if (connectInProgress) {
-				logHelper.warn("connect() called, but a connect is already in progress.");
+				logHelper.error("connect() called, but a connect is already in progress.");
 				throw new IllegalStateException("Connect already in progress");
 			}
 			if (disconnectInProgress) {
-				logHelper.warn("connect() called, but a disconnect is already in progress.");
+				logHelper.error("connect() called, but a disconnect is already in progress.");
 				throw new IllegalStateException("Disconnect already in progress");
 			}
 			connectInProgress = true;
