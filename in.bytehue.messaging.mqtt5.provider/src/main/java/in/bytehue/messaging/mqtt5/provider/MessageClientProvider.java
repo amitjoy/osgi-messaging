@@ -346,7 +346,7 @@ public final class MessageClientProvider implements MqttClient {
 	 * (connect/disconnect/activate/modified) to avoid blocking the common
 	 * ForkJoinPool.
 	 */
-	private ExecutorService asyncTaskExecutor;
+	private volatile ExecutorService asyncTaskExecutor;
 
 	@Activate
 	void activate(final Config config, final Map<String, Object> properties) {
