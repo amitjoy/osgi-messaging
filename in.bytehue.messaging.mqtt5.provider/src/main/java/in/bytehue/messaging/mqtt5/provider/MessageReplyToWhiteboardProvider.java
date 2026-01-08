@@ -604,6 +604,10 @@ public final class MessageReplyToWhiteboardProvider {
 			logHelper.debug("Updating subscription info to contain the reply-to channel");
 			// update the subscription
 			final ExtendedSubscription subscription = registry.getSubscription(channel, sub.id());
+			if (subscription == null) {
+				logHelper.warn("Skipping update of subscription info as no subscription for '{}' found", channel);
+				return;
+			}
 			subscription.updateReplyToHandlerSubscription(pubChannel, reference);
 		}
 		final MessageContextBuilderProvider mcb = mcbFactory.getService();
