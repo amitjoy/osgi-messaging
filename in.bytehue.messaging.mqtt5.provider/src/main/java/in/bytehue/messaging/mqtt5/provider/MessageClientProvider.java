@@ -421,7 +421,8 @@ public final class MessageClientProvider implements MqttClient {
 			// --- PHASE 1: Disconnect ---
 			try {
 				// This now blocks the async thread, NOT the OSGi thread
-				// We MUST unregister the ready service to clean up the old state before reconnecting.
+				// We MUST unregister the ready service to clean up the old state before
+				// reconnecting.
 				disconnect(true, false);
 			} finally {
 				connectionLock.lock();
@@ -592,6 +593,7 @@ public final class MessageClientProvider implements MqttClient {
 		final boolean useSessionExpiry;
 		final int sessionExpiryInterval;
 		final ScheduledExecutorService executorToShutdown;
+		ServiceRegistration<Object> regToClose = null;
 
 		// --- PHASE 1: Capture state ---
 		connectionLock.lock();
@@ -646,32 +648,32 @@ public final class MessageClientProvider implements MqttClient {
 			// This includes TimeoutException, ConnectException, etc.
 			// We LOG but DO NOT re-throw. We must proceed to cleanup.
 			logHelper.warn("Failed to send disconnect packet (timeout or network error): {}", e.getMessage());
-		}
-
-		// --- PHASE 3: Cleanup (Inside Lock) ---
-		ServiceRegistration<Object> regToClose = null;
-		connectionLock.lock();
-		try {
-			if (executorToShutdown != null) {
-				executorToShutdown.shutdownNow();
-				NettyEventLoopProvider.INSTANCE.releaseEventLoop(executorToShutdown);
-				logHelper.debug("Custom executor shut down and event loop released");
-				// Only clear the field if it hasn't been replaced by a new connection
-				if (customExecutor == executorToShutdown) {
-					customExecutor = null;
-				}
-			}
-
-			// Atomic Swap - Capture and clear the service registration here.
-			// This ensures cleanup happens even if the listener never fires.
-			if (readyServiceReg != null) {
-				regToClose = readyServiceReg;
-				readyServiceReg = null;
-			}
-
-			logHelper.info("Disconnection completed successfully");
 		} finally {
-			connectionLock.unlock();
+			// Ensures that this runs no matter what happens in Phase 1 or 2.
+			// --- PHASE 3: Cleanup (Inside Lock) ---
+			connectionLock.lock();
+			try {
+				if (executorToShutdown != null) {
+					executorToShutdown.shutdownNow();
+					NettyEventLoopProvider.INSTANCE.releaseEventLoop(executorToShutdown);
+					logHelper.debug("Custom executor shut down and event loop released");
+					// Only clear the field if it hasn't been replaced by a new connection
+					if (customExecutor == executorToShutdown) {
+						customExecutor = null;
+					}
+				}
+
+				// Atomic Swap - Capture and clear the service registration here.
+				// This ensures cleanup happens even if the listener never fires.
+				if (readyServiceReg != null) {
+					regToClose = readyServiceReg;
+					readyServiceReg = null;
+				}
+
+				logHelper.info("Disconnection completed successfully");
+			} finally {
+				connectionLock.unlock();
+			}
 		}
 
 		// --- PHASE 4: Service Cleanup (Outside Lock) ---
