@@ -68,7 +68,6 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-import com.hivemq.client.internal.netty.NettyEventLoopProvider;
 import com.hivemq.client.mqtt.datatypes.MqttClientIdentifier;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.lifecycle.MqttClientConnectedContext;
@@ -655,7 +654,6 @@ public final class MessageClientProvider implements MqttClient {
 			try {
 				if (executorToShutdown != null) {
 					executorToShutdown.shutdownNow();
-					NettyEventLoopProvider.INSTANCE.releaseEventLoop(executorToShutdown);
 					logHelper.debug("Custom executor shut down and event loop released");
 					// Only clear the field if it hasn't been replaced by a new connection
 					if (customExecutor == executorToShutdown) {
@@ -962,7 +960,6 @@ public final class MessageClientProvider implements MqttClient {
 				// Manually shutdown the executor we just created, as it won't be used
 				if (localCustomExecutor != null) {
 					localCustomExecutor.shutdownNow();
-					NettyEventLoopProvider.INSTANCE.releaseEventLoop(localCustomExecutor);
 					logHelper.debug("Cleaning up stale local executor");
 				}
 				return CompletableFuture.completedFuture(null);
@@ -970,7 +967,6 @@ public final class MessageClientProvider implements MqttClient {
 			// Clean up the old executor before overwriting
 			if (this.customExecutor != null) {
 				this.customExecutor.shutdownNow();
-				NettyEventLoopProvider.INSTANCE.releaseEventLoop(this.customExecutor);
 				logHelper.debug("Cleaning up stale executor");
 			}
 			// Commit the new client and executor
@@ -979,7 +975,6 @@ public final class MessageClientProvider implements MqttClient {
 				logHelper.warn("Disconnect initiated during connection attempt. Aborting connection.");
 				if (localCustomExecutor != null) {
 					localCustomExecutor.shutdownNow();
-					NettyEventLoopProvider.INSTANCE.releaseEventLoop(localCustomExecutor);
 				}
 				if (clientToConnect != null) {
 					// We built it but haven't connected it. Just discard it.
