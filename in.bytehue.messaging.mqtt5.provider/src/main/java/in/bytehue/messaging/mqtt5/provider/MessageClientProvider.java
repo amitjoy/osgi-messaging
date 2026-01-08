@@ -950,8 +950,13 @@ public final class MessageClientProvider implements MqttClient {
 		// --- PHASE 3: INITIATE CONNECTION (NO LOCK) ---
 		// The connection is initiated *after* the lock is released
 		try {
-			final Send<CompletableFuture<Mqtt5ConnAck>> connectionParams = clientToConnect.toAsync().connectWith()
-					.cleanStart(config.cleanStart()).keepAlive(config.keepAliveInterval());
+			// @formatter:off
+			final Send<CompletableFuture<Mqtt5ConnAck>> connectionParams = 
+					clientToConnect.toAsync()
+					               .connectWith()
+					               .cleanStart(config.cleanStart())
+					               .keepAlive(config.keepAliveInterval());
+			// @formatter:on
 
 			if (config.useSessionExpiry()) {
 				logHelper.debug("Applying Session Expiry Interval: {}", config.sessionExpiryInterval());
