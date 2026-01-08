@@ -1178,7 +1178,7 @@ public final class MessageClientProvider implements MqttClient {
 					logger.debug("New MQTT connection ready service has already been deregistered");
 				}
 			} else {
-				logHelper.debug("MQTT connection ready service has already been registered");
+				logHelper.debug("MQTT connection ready service registered successfully");
 			}
 		});
 	}
