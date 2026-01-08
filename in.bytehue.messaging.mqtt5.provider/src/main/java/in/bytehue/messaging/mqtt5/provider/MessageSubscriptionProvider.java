@@ -296,8 +296,8 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 										                                  .callback(p -> {
 										                                	  try {
 										                                		  final MessageContextBuilderProvider mcb = mcbFactory.getService();
+										                                		  final Message message = toMessage(p, ctx, mcb);
 											                                	  try { //NOSONAR
-											                                		  final Message message = toMessage(p, ctx, mcb);
 											                                		  logHelper.debug("Successful Subscription Response: {} ", message);
 											                                		  logHelper.debug("New subscription request for '{}' has been processed successfully", sChannel);
 										                                              acknowledgeMessage(
@@ -307,13 +307,18 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 										                                                      bundleContext,
 										                                                      logHelper);
 											                                      } catch (final Exception e) {
-											                                    	  logHelper.error("Failed to process incoming message on topic {}", sChannel, e);
+											                                    	  logHelper.error(
+											                                    			  "Failed to process incoming message on topic '{}' [correlationId={}]", 
+											                                    			  sChannel, 
+											                                    			  message.getContext().getCorrelationId(), 
+											                                    			  e);
 											                                          source.error(e);
 											                                      } finally {
 											                                          mcbFactory.ungetService(mcb);
 											                                      }
 										                                	  } catch (final Exception ex) {
-										                                		  logHelper.error("Exception occurred while processing message", ex);
+										                                		  logHelper.error(
+										                                				  "Exception occurred while processing incoming message on topic '{}'", sChannel, ex);
 										                                		  source.error(ex);
 										                                	  }
 										                                   })
