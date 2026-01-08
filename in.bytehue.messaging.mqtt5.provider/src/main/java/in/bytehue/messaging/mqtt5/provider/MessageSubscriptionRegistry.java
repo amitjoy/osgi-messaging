@@ -101,11 +101,42 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	private MessageClientProvider messagingClient;
 
 	private LogHelper logHelper;
-	private ExecutorService unsubscribeExecutor;
+	private volatile ExecutorService unsubscribeExecutor;
 
 	// topic as outer map's key and subscription id as internal map's key
 	// there can be multiple subscriptions for a single topic
 	final Map<String, Map<String, ExtendedSubscription>> subscriptions = new ConcurrentHashMap<>();
+
+	// Striped locks to reduce contention while maintaining safety per channel
+	private final Object[] locks;
+
+	/**
+	 * We initialize locks in the constructor rather than in the @Activate method to
+	 * ensure they remain invariant throughout the component's lifecycle.
+	 * 
+	 * <p>
+	 * If we initialized them in @Activate or @Modified, a configuration update
+	 * would create a new array of lock objects. This would break thread safety:
+	 * <ul>
+	 * <li>Thread A holds a lock from the OLD array (e.g., performing a slow
+	 * unsubscribe).</li>
+	 * <li>Thread B gets the configuration update and re-initializes the
+	 * array.</li>
+	 * <li>Thread C acquires the corresponding lock from the NEW array.</li>
+	 * <li>Result: Thread A and Thread C run concurrently on the same channel,
+	 * violating mutual exclusion.</li>
+	 * </ul>
+	 * By making the locks final and initializing in the constructor, we guarantee
+	 * that {@code getLock(channel)} always returns the same object instance
+	 * for the lifespan of this component instance.
+	 * </p>
+	 */
+	public MessageSubscriptionRegistry() {
+		this.locks = new Object[32];
+		for (int i = 0; i < locks.length; i++) {
+			locks[i] = new Object();
+		}
+	}
 
 	@Activate
 	@Modified
@@ -128,9 +159,20 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 		logHelper.info("Messaging subscription registry has been activated/modified");
 	}
 
+	@Deactivate
+	void deactivate() {
+		clearAllSubscriptions();
+		// Shut down our executor AFTER streams are closed
+		if (unsubscribeExecutor != null) {
+			unsubscribeExecutor.shutdownNow();
+		}
+		logHelper.info("Messaging subscription registry has been deactivated");
+	}
+
 	/**
-	 * Adds a new subscription to the registry. This method is synchronized to
-	 * prevent race conditions with clearAllSubscriptions.
+	 * Adds a new subscription to the registry. This method uses striped locking to
+	 * ensure thread safety for the specific channel while allowing concurrency across
+	 * different channels.
 	 * 
 	 * <p>
 	 * <b>Acceptable Race Window:</b> When a subscription is added,
@@ -150,45 +192,48 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	 * </ul>
 	 * </p>
 	 */
-	public synchronized ExtendedSubscription addSubscription(final String subChannel, final String pubChannel,
-			final int qos, final Runnable connectedStreamCloser, final boolean isReplyToSub,
-			final long ownerServiceId) {
-		final ExtendedSubscription sub = new ExtendedSubscription(subChannel, pubChannel, qos, connectedStreamCloser,
-				isReplyToSub, ownerServiceId);
-		subscriptions.computeIfAbsent(subChannel, c -> new ConcurrentHashMap<>()).put(sub.id, sub);
-		return sub;
+	public ExtendedSubscription addSubscription(final String subChannel, final String pubChannel, final int qos,
+			final Runnable connectedStreamCloser, final boolean isReplyToSub, final long ownerServiceId) {
+		synchronized (getLock(subChannel)) {
+			final ExtendedSubscription sub = new ExtendedSubscription(subChannel, pubChannel, qos,
+					connectedStreamCloser, isReplyToSub, ownerServiceId);
+			subscriptions.computeIfAbsent(subChannel, c -> new ConcurrentHashMap<>()).put(sub.id, sub);
+			return sub;
+		}
 	}
 
 	/**
-	 * Removes a single subscription by its ID. This method is synchronized to be
-	 * atomic and thread-safe. It is non-blocking as it only performs in-memory
-	 * operations.
+	 * Removes a single subscription by its ID. This method is synchronized on the
+	 * channel's lock to be atomic and thread-safe. It is non-blocking as it only
+	 * performs in-memory operations.
 	 *
 	 * @return true if this was the last subscription for the channel, false
 	 *         otherwise.
 	 */
-	public synchronized boolean removeSubscription(final String channel, final String id) {
-		final Map<String, ExtendedSubscription> existingSubscriptions = subscriptions.get(channel);
+	public boolean removeSubscription(final String channel, final String id) {
+		synchronized (getLock(channel)) {
+			final Map<String, ExtendedSubscription> existingSubscriptions = subscriptions.get(channel);
 
-		if (existingSubscriptions != null) {
-			final ExtendedSubscription existingSubscription = existingSubscriptions.remove(id);
-			if (existingSubscription != null) {
-				logHelper.info("Removed subscription from '{}' successfully", channel);
-			}
+			if (existingSubscriptions != null) {
+				final ExtendedSubscription existingSubscription = existingSubscriptions.remove(id);
+				if (existingSubscription != null) {
+					logHelper.info("Removed subscription from '{}' successfully", channel);
+				}
 
-			if (existingSubscriptions.isEmpty()) {
-				subscriptions.remove(channel);
-				logHelper.info("Removed the last subscription from '{}' successfully", channel);
-				// Signal to the caller that the last subscriber is gone
-				return true;
+				if (existingSubscriptions.isEmpty()) {
+					subscriptions.remove(channel);
+					logHelper.info("Removed the last subscription from '{}' successfully", channel);
+					// Signal to the caller that the last subscriber is gone
+					return true;
+				}
 			}
+			return false;
 		}
-		return false;
 	}
 
 	/**
 	 * Removes all subscriptions for a given topic and closes their streams. This is
-	 * the FAST, state-only removal method. It is synchronized to be thread-safe.
+	 * the FAST, state-only removal method. It is synchronized on the channel's lock.
 	 * 
 	 * <p>
 	 * <b>Reentrant Synchronization Note:</b> This method makes a reentrant
@@ -202,8 +247,11 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	 * are unnecessary.
 	 * </p>
 	 */
-	public synchronized void removeSubscription(final String channel) {
-		final Map<String, ExtendedSubscription> exisitngSubscriptions = subscriptions.remove(channel);
+	public void removeSubscription(final String channel) {
+		final Map<String, ExtendedSubscription> exisitngSubscriptions;
+		synchronized (getLock(channel)) {
+			exisitngSubscriptions = subscriptions.remove(channel);
+		}
 		if (exisitngSubscriptions != null) {
 			exisitngSubscriptions.forEach((k, v) -> v.connectedStreamCloser.run());
 			logHelper.info("Removed all subscriptions from '{}' successfully", channel);
@@ -244,7 +292,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 
 	/**
 	 * Sends a blocking UNSUBSCRIBE packet to the broker. This method BLOCKS THE
-	 * CALLER, and holds the component-wide lock.
+	 * CALLER, and holds the channel-specific lock.
 	 *
 	 * <p>
 	 * This method MUST NOT modify the local subscription registry. The local state
@@ -253,56 +301,49 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	 * network packet and log the result.
 	 * </p>
 	 */
-	public synchronized void unsubscribeSubscription(final String subChannel) {
-		// This method is called asynchronously. We must re-check the subscription
-		// state to prevent the A-B-A race.
-		final Map<String, ExtendedSubscription> currentSubs = subscriptions.get(subChannel);
-		if (currentSubs != null && !currentSubs.isEmpty()) {
-			// A new subscriber (S2) has arrived before this (S1) async task
-			// could run. We must CANCEL the unsubscribe packet.
-			logHelper.info("Cancelling stale unsubscribe for '{}', a new subscriber has joined.", subChannel);
-			return;
-		}
-		try {
-			// Time-of-Check to Time-of-Use (TOCTOU) race condition that can occur during
-			// bundle startup or client reconfiguration
-			final Mqtt5AsyncClient currentClient = messagingClient.client; // Read volatile field ONCE
-
-			if (currentClient == null) {
-				logHelper.warn(
-						"Cannot unsubscribe from '{}' - client not yet initialized (likely during startup/shutdown)",
-						subChannel);
-				// Do not throw, just log. The local stream is already closed.
+	public void unsubscribeSubscription(final String subChannel) {
+		synchronized (getLock(subChannel)) {
+			// This method is called asynchronously. We must re-check the subscription
+			// state to prevent the A-B-A race.
+			final Map<String, ExtendedSubscription> currentSubs = subscriptions.get(subChannel);
+			if (currentSubs != null && !currentSubs.isEmpty()) {
+				// A new subscriber (S2) has arrived before this (S1) async task
+				// could run. We must CANCEL the unsubscribe packet.
+				logHelper.info("Cancelling stale unsubscribe for '{}', a new subscriber has joined.", subChannel);
 				return;
 			}
-			final MqttClientState clientState = currentClient.getState();
-			if (clientState != CONNECTED) {
-				logHelper.warn("Cannot unsubscribe from '{}' - client state is {} (likely during reconnection)",
-						subChannel, clientState);
-				// Do not throw, just log. The local stream is already closed.
-				return;
-			}
-			// Block for max 2 seconds
-			final Mqtt5UnsubAck ack = currentClient.unsubscribeWith().addTopicFilter(subChannel).send().get(2, SECONDS);
+			try {
+				// Time-of-Check to Time-of-Use (TOCTOU) race condition that can occur during
+				// bundle startup or client reconfiguration
+				final Mqtt5AsyncClient currentClient = messagingClient.client; // Read volatile field ONCE
 
-			if (isUnsubscriptionAcknowledged(ack)) {
-				logHelper.info("Unsubscription request for '{}' processed successfully - {}", subChannel, ack);
-			} else {
-				logHelper.error("Unsubscription request for '{}' failed - {}", subChannel, ack);
-			}
-		} catch (final Exception e) {
-			logHelper.error("Unsubscription for '{}' failed with exception", subChannel, e);
-		}
-	}
+				if (currentClient == null) {
+					logHelper.warn(
+							"Cannot unsubscribe from '{}' - client not yet initialized (likely during startup/shutdown)",
+							subChannel);
+					// Do not throw, just log. The local stream is already closed.
+					return;
+				}
+				final MqttClientState clientState = currentClient.getState();
+				if (clientState != CONNECTED) {
+					logHelper.warn("Cannot unsubscribe from '{}' - client state is {} (likely during reconnection)",
+							subChannel, clientState);
+					// Do not throw, just log. The local stream is already closed.
+					return;
+				}
+				// Block for max 2 seconds
+				final Mqtt5UnsubAck ack = currentClient.unsubscribeWith().addTopicFilter(subChannel).send().get(2,
+						SECONDS);
 
-	@Deactivate
-	void deactivate() {
-		clearAllSubscriptions();
-		// Shut down our executor AFTER streams are closed
-		if (unsubscribeExecutor != null) {
-			unsubscribeExecutor.shutdownNow();
+				if (isUnsubscriptionAcknowledged(ack)) {
+					logHelper.info("Unsubscription request for '{}' processed successfully - {}", subChannel, ack);
+				} else {
+					logHelper.error("Unsubscription request for '{}' failed - {}", subChannel, ack);
+				}
+			} catch (final Exception e) {
+				logHelper.error("Unsubscription for '{}' failed with exception", subChannel, e);
+			}
 		}
-		logHelper.info("Messaging subscription registry has been deactivated");
 	}
 
 	public ExecutorService getUnsubscribeExecutor() {
@@ -310,11 +351,10 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	}
 
 	/**
-	 * Clears all subscriptions during component deactivation. This method is
-	 * synchronized to prevent a race with addSubscription. It is non-blocking and
-	 * fast, as it only performs in-memory cleanup.
+	 * Clears all subscriptions during component deactivation. This method iterates
+	 * over all channels and safely removes them one by one using per-channel locks.
 	 */
-	public synchronized void clearAllSubscriptions() {
+	public void clearAllSubscriptions() {
 		// if the client library like HiveMQ supports automatic resubscription, this can
 		// be disabled through config
 		if (!config.clearSubscriptionsOnDisconnect()) {
@@ -332,14 +372,15 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	}
 
 	/**
-	 * DTO methods need to lock to get a consistent snapshot for iteration. This is
-	 * fast and non-blocking, so it's safe.
+	 * DTO methods iterate over the concurrent map to provide a weakly consistent
+	 * snapshot. This is fast, non-blocking, and thread-safe.
 	 */
-	public synchronized SubscriptionDTO[] getSubscriptionDTOs() {
+	public SubscriptionDTO[] getSubscriptionDTOs() {
 		final List<SubscriptionDTO> subscriptionDTOs = new ArrayList<>();
+		// Iterate over concurrent map (weakly consistent iterator)
 		for (final Entry<String, Map<String, ExtendedSubscription>> entry : subscriptions.entrySet()) {
-			for (final Entry<String, ExtendedSubscription> e : entry.getValue().entrySet()) {
-				final ExtendedSubscription sub = e.getValue();
+			// Snapshot the values
+			for (final ExtendedSubscription sub : entry.getValue().values()) {
 				if (!sub.isReplyToSub && sub.isAcknowledged.get()) {
 					subscriptionDTOs.add(getSubscriptionDTO(sub));
 				}
@@ -349,15 +390,14 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	}
 
 	/**
-	 * DTO methods need to lock to get a consistent snapshot for iteration. This is
-	 * fast and non-blocking, so it's safe.
+	 * DTO methods iterate over the concurrent map to provide a weakly consistent
+	 * snapshot. This is fast, non-blocking, and thread-safe.
 	 */
-	public synchronized ReplyToSubscriptionDTO[] getReplyToSubscriptionDTOs() {
+	public ReplyToSubscriptionDTO[] getReplyToSubscriptionDTOs() {
 		final List<ReplyToSubscriptionDTO> replyToSubscriptions = new ArrayList<>();
 
 		for (final Entry<String, Map<String, ExtendedSubscription>> entry : subscriptions.entrySet()) {
-			for (final Entry<String, ExtendedSubscription> e : entry.getValue().entrySet()) {
-				final ExtendedSubscription sub = e.getValue();
+			for (final ExtendedSubscription sub : entry.getValue().values()) {
 				if (sub.isReplyToSub && sub.isAcknowledged.get()) {
 					if (sub.pubChannels.isEmpty()) {
 						// true for ReplyToSubscriptionHandlers
@@ -379,6 +419,43 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	@Override
 	public void handleEvent(Event event) {
 		clearAllSubscriptions();
+	}
+
+	/**
+	 * Returns the lock object associated with the given channel key using Striped
+	 * Locking.
+	 * 
+	 * <p>
+	 * <b>Mechanism:</b>
+	 * This method maps the infinite space of channel strings to a fixed set of 32
+	 * lock objects using {@code Math.abs(key.hashCode() % 32)}.
+	 * </p>
+	 * 
+	 * <p>
+	 * <b>Guarantees:</b>
+	 * <ul>
+	 * <li><b>Consistency:</b> The same channel string will ALWAYS return the same
+	 * lock object. This ensures mutual exclusion for operations on the same
+	 * channel.</li>
+	 * <li><b>Concurrency:</b> Operations on different channels will LIKELY return
+	 * different lock objects, allowing them to proceed in parallel.</li>
+	 * </ul>
+	 * </p>
+	 * 
+	 * <p>
+	 * <b>Collisions:</b>
+	 * It is possible for two different channels to map to the same lock (a hash
+	 * collision). In this case, operations on these two specific channels will block
+	 * each other. With 32 locks, the probability of collision for any pair of
+	 * active channels is low (~3%). This is an intentional trade-off to avoid the
+	 * memory overhead and complexity of maintaining a dynamic 1:1 lock map.
+	 * </p>
+	 * 
+	 * @param key the channel name
+	 * @return the lock object for the channel
+	 */
+	private Object getLock(final String key) {
+		return locks[Math.abs(key.hashCode() % locks.length)];
 	}
 
 	private SubscriptionDTO getSubscriptionDTO(final ExtendedSubscription sub) {
@@ -423,7 +500,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 		final Runnable connectedStreamCloser;
 		final Map<String, ChannelDTO> pubChannels = new ConcurrentHashMap<>();
 
-		ServiceReferenceDTO handlerReference;
+		volatile ServiceReferenceDTO handlerReference;
 
 		private ExtendedSubscription(final String subChannel, final String pubChannel, final int qos,
 				final Runnable connectedStreamCloser, final boolean isReplyToSub, final long ownerServiceId) {
