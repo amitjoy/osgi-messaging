@@ -143,10 +143,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	void init(final RegistryConfig config) {
 		this.config = config;
 		this.logHelper = new LogHelper(logger, logMirror);
-		// (Re)create the executor
-		if (unsubscribeExecutor != null) {
-			unsubscribeExecutor.shutdownNow();
-		}
+
 		//@formatter:off
         final ThreadFactory threadFactory =
                 new ThreadFactoryBuilder()
@@ -155,7 +152,19 @@ public final class MessageSubscriptionRegistry implements EventHandler {
                         .setDaemon(config.isDaemon())
                         .build();
         //@formatter:on
-		unsubscribeExecutor = Executors.newFixedThreadPool(config.numThreads(), threadFactory);
+
+		// Create the new executor first
+		final ExecutorService newExecutor = Executors.newFixedThreadPool(config.numThreads(), threadFactory);
+
+		// Atomically replace the old executor
+		final ExecutorService oldExecutor = this.unsubscribeExecutor;
+		this.unsubscribeExecutor = newExecutor;
+
+		// Gracefully shut down the old executor to allow pending tasks to finish
+		if (oldExecutor != null) {
+			oldExecutor.shutdown();
+		}
+
 		logHelper.info("Messaging subscription registry has been activated/modified");
 	}
 
@@ -164,7 +173,15 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 		clearAllSubscriptions();
 		// Shut down our executor AFTER streams are closed
 		if (unsubscribeExecutor != null) {
-			unsubscribeExecutor.shutdownNow();
+			unsubscribeExecutor.shutdown();
+			try {
+				if (!unsubscribeExecutor.awaitTermination(5, SECONDS)) {
+					unsubscribeExecutor.shutdownNow();
+				}
+			} catch (final InterruptedException e) {
+				unsubscribeExecutor.shutdownNow();
+				Thread.currentThread().interrupt();
+			}
 		}
 		logHelper.info("Messaging subscription registry has been deactivated");
 	}
