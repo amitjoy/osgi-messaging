@@ -421,7 +421,8 @@ public final class MessageClientProvider implements MqttClient {
 			// --- PHASE 1: Disconnect ---
 			try {
 				// This now blocks the async thread, NOT the OSGi thread
-				disconnect(true);
+				// We MUST unregister the ready service to clean up the old state before reconnecting.
+				disconnect(true, false);
 			} finally {
 				connectionLock.lock();
 				try {
@@ -493,13 +494,14 @@ public final class MessageClientProvider implements MqttClient {
 				// Execute disconnect synchronously on this temporary thread
 				// or wait for the async task to finish if reusing method logic.
 				// Here we call the sync-like internal logic directly.
-				disconnect(false); // Blocks this async thread
+				// Pass 'true' to skip manual ready service unregistration (OSGi will do it)
+				disconnect(false, true); // Blocks this async thread
 				logHelper.info("Client deactivation completed successfully");
 			} catch (Exception e) {
 				// SILENT CATCH:
 				// We ignore exceptions here (like NPEs from invalid loggers/services)
-		        // because the component is shutting down. This prevents a single
-		        // ugly stack trace from appearing if the OSGi context is already invalid.
+				// because the component is shutting down. This prevents a single
+				// ugly stack trace from appearing if the OSGi context is already invalid.
 			} finally {
 				connectionLock.lock();
 				try {
@@ -514,11 +516,11 @@ public final class MessageClientProvider implements MqttClient {
 				}
 			}
 		}, "mqtt-client-deactivator");
-		
+
 		deactivatorThread.start();
-		
+
 		try {
-			// Wait for the deactivator thread to finish to ensure OSGi context 
+			// Wait for the deactivator thread to finish to ensure OSGi context
 			// remains valid during cleanup (e.g. for logging)
 			deactivatorThread.join(5000); // 5 seconds timeout
 		} catch (InterruptedException e) {
@@ -566,7 +568,8 @@ public final class MessageClientProvider implements MqttClient {
 			disconnectInProgress = true;
 			return CompletableFuture.runAsync(() -> {
 				try {
-					disconnect(false);
+					// Public call: We MUST unregister manually
+					disconnect(false, false);
 				} finally {
 					connectionLock.lock();
 					try {
@@ -582,7 +585,7 @@ public final class MessageClientProvider implements MqttClient {
 		}
 	}
 
-	private void disconnect(final boolean isNormalDisconnection) {
+	private void disconnect(final boolean isNormalDisconnection, final boolean fromDeactivate) {
 		final Mqtt5AsyncClient clientToDisconnect;
 		final Mqtt5DisconnectReasonCode reasonCode;
 		final String reasonDescription;
@@ -660,38 +663,44 @@ public final class MessageClientProvider implements MqttClient {
 			}
 
 			// Atomic Swap - Capture and clear the service registration here.
-	        // This ensures cleanup happens even if the listener never fires.
-	        if (readyServiceReg != null) {
-	            regToClose = readyServiceReg;
-	            readyServiceReg = null;
-	        }
+			// This ensures cleanup happens even if the listener never fires.
+			if (readyServiceReg != null) {
+				regToClose = readyServiceReg;
+				readyServiceReg = null;
+			}
 
-	        logHelper.info("Disconnection completed successfully");
+			logHelper.info("Disconnection completed successfully");
 		} finally {
 			connectionLock.unlock();
 		}
 
 		// --- PHASE 4: Service Cleanup (Outside Lock) ---
-	    // We execute this synchronously here to ensure it finishes before 
-	    // deactivate() kills the asyncTaskExecutor.
-	    if (regToClose != null) {
-	        // 1. Send Event (Cleanup Subscription Registry)
-	        if (eventAdmin != null) {
-	            try {
-	                eventAdmin.sendEvent(new Event(MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC, emptyMap()));
-	            } catch (Exception e) {
-	                logHelper.warn("Failed to send disconnect event", e);
-	            }
-	        }
+		// We execute this synchronously here to ensure it finishes before
+		// deactivate() kills the asyncTaskExecutor.
+		if (regToClose != null) {
+			// 1. Send Event (Cleanup Subscription Registry)
+			if (eventAdmin != null) {
+				try {
+					eventAdmin.sendEvent(new Event(MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC, emptyMap()));
+				} catch (Exception e) {
+					logHelper.warn("Failed to send disconnect event", e);
+				}
+			}
 
-	        // 2. Unregister Service
-	        try {
-	            regToClose.unregister();
-	            logHelper.debug("MQTT connection ready service deregistered (forced during disconnect)");
-	        } catch (Exception e) {
-	            // Ignore (already unregistered)
-	        }
-	    }
+			// 2. Unregister Service
+			// Deadlock Prevention
+			// If called from deactivate, we MUST NOT call unregister() because
+			// the main thread holding the Bundle Lock is waiting for us (join).
+			// OSGi will automatically unregister this service when the bundle stops.
+			if (!fromDeactivate) {
+				try {
+					regToClose.unregister();
+					logHelper.debug("MQTT connection ready service deregistered (forced during disconnect)");
+				} catch (Exception e) {
+					// Ignore (already unregistered)
+				}
+			}
+		}
 	}
 
 	@Override
