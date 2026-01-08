@@ -1161,6 +1161,12 @@ public final class MessageClientProvider implements MqttClient {
 		// This prevents the I/O thread from being hijacked by the OSGi SCR framework,
 		// allowing it to process lifecycle events, such as, SUBACKs.
 		asyncTaskExecutor.submit(() -> {
+			// Check state first without lock
+			if (disconnectInProgress) {
+				logHelper.debug("Disconnect in progress, skipping service registration");
+				return;
+			}
+
 			// 1. Prepare properties
 			final Dictionary<String, Object> props = new Hashtable<>();
 			props.put("connection.ready.condition", "true");
