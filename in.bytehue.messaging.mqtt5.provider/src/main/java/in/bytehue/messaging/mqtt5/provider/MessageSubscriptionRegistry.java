@@ -445,7 +445,8 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	 * <p>
 	 * <b>Mechanism:</b>
 	 * This method maps the infinite space of channel strings to a fixed set of 32
-	 * lock objects using {@code Math.abs(key.hashCode() % 32)}.
+	 * lock objects using {@code hash & 31)}, that keeps the lowest 5 bits of the hash 
+	 * and discards the rest.
 	 * </p>
 	 * 
 	 * <p>
@@ -472,7 +473,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	 * @return the lock object for the channel
 	 */
 	private Object getLock(final String key) {
-		return locks[Math.abs(key.hashCode() % locks.length)];
+		return locks[key.hashCode() & (locks.length - 1)];
 	}
 
 	private SubscriptionDTO getSubscriptionDTO(final ExtendedSubscription sub) {
