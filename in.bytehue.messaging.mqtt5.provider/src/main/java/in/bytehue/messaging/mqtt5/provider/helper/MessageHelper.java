@@ -32,6 +32,8 @@ import static org.osgi.service.messaging.acknowledge.AcknowledgeType.ACKNOWLEDGE
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.RECEIVED;
 import static org.osgi.service.messaging.acknowledge.AcknowledgeType.REJECTED;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -386,10 +388,10 @@ public final class MessageHelper {
 	}
 
 	public static String stackTraceToString(final Throwable t) {
-		final StringBuilder result = new StringBuilder(t.toString()).append(lineSeparator());
-		final StackTraceElement[] trace = t.getStackTrace();
-		Stream.of(trace).forEach(e -> result.append(e.toString()).append(lineSeparator()));
-		return result.toString();
+		final StringWriter sw = new StringWriter();
+		final PrintWriter pw = new PrintWriter(sw);
+		t.printStackTrace(pw);
+		return sw.toString();
 	}
 
 	public static int getQoS(final Map<String, Object> extensions, final Converter converter, int defaultQoS) {
