@@ -495,6 +495,11 @@ public final class MessageClientProvider implements MqttClient {
 				// Here we call the sync-like internal logic directly.
 				disconnect(false); // Blocks this async thread
 				logHelper.info("Client deactivation completed successfully");
+			} catch (Exception e) {
+				// SILENT CATCH:
+				// We ignore exceptions here (like NPEs from invalid loggers/services)
+		        // because the component is shutting down. This prevents a single
+		        // ugly stack trace from appearing if the OSGi context is already invalid.
 			} finally {
 				connectionLock.lock();
 				try {
