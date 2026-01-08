@@ -396,8 +396,8 @@ public final class MessageHelper {
 		final Object isGuaranteedDeliveryProp = extensions.getOrDefault(EXTENSION_GUARANTEED_DELIVERY, false);
 		final Object isGuranteedOrderingProp = extensions.getOrDefault(EXTENSION_GUARANTEED_ORDERING, false);
 
-		final boolean isGuaranteedDelivery = adaptTo(isGuranteedOrderingProp, boolean.class, converter);
-		final boolean isGuranteedOrdering = adaptTo(isGuaranteedDeliveryProp, boolean.class, converter);
+		final boolean isGuaranteedDelivery = adaptTo(isGuaranteedDeliveryProp, boolean.class, converter);
+		final boolean isGuranteedOrdering = adaptTo(isGuranteedOrderingProp, boolean.class, converter);
 
 		// In MQTT, there is no concept of guaranteed ordering though, that's why, QoS 2
 		// is set to guarantee the delivery of the message
