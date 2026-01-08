@@ -336,8 +336,8 @@ public final class MessageClientProvider implements MqttClient {
 	private final Condition operationComplete = connectionLock.newCondition();
 
 	// State tracking to prevent concurrent operations
-	private boolean connectInProgress = false;
-	private boolean disconnectInProgress = false;
+	private volatile boolean connectInProgress = false;
+	private volatile boolean disconnectInProgress = false;
 
 	public static final String MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC = "mqtt/client/disconnected";
 
