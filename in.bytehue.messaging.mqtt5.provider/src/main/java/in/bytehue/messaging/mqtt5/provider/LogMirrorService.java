@@ -76,6 +76,15 @@ public final class LogMirrorService {
 		} catch (final InterruptedException e) {
 			// We were told to stop.
 			Thread.currentThread().interrupt();
+		} finally {
+			// Drain remaining logs
+			while (!queue.isEmpty()) {
+				if (isMirrorEnabled()) {
+					System.out.println(queue.poll());
+				} else {
+					queue.poll();
+				}
+			}
 		}
 	};
 
