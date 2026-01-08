@@ -18,7 +18,6 @@ package in.bytehue.messaging.mqtt5.provider.helper;
 import static com.hivemq.client.mqtt.datatypes.MqttQos.EXACTLY_ONCE;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
-import static java.lang.System.lineSeparator;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Comparator.comparingLong;
 import static java.util.Objects.requireNonNull;
