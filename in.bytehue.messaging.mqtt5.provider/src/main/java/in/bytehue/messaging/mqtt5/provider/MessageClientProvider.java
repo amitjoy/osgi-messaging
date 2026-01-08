@@ -676,7 +676,7 @@ public final class MessageClientProvider implements MqttClient {
 			try {
 				if (executorToShutdown != null) {
 					executorToShutdown.shutdownNow();
-					logHelper.debug("Custom executor shut down and event loop released");
+					logHelper.debug("Custom executor shut down");
 					// Only clear the field if it hasn't been replaced by a new connection
 					if (customExecutor == executorToShutdown) {
 						customExecutor = null;
