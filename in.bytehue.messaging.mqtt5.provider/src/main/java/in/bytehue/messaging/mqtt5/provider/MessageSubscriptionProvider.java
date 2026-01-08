@@ -339,6 +339,9 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 			        sendSubscriptionStatusEvent(subNack);
 			        logHelper.error("New subscription request for '{}' failed - {} > ID: {}",
 			                     sChannel, ack, subscription.id);
+			        // Fail the stream and close it to trigger cleanup in the registry
+			        source.error(new RuntimeException("Subscription refused by broker. Reason: " + reason));
+			        stream.close();
 			    }
             });
 
