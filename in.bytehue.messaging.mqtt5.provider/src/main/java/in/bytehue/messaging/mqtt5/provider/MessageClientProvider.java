@@ -640,7 +640,8 @@ public final class MessageClientProvider implements MqttClient {
 			logHelper.warn("Failed to send disconnect packet (timeout or network error): {}", e.getMessage());
 		}
 
-		// --- PHASE 3: Cleanup ---
+		// --- PHASE 3: Cleanup (Inside Lock) ---
+		ServiceRegistration<Object> regToClose = null;
 		connectionLock.lock();
 		try {
 			if (executorToShutdown != null) {
@@ -652,10 +653,40 @@ public final class MessageClientProvider implements MqttClient {
 					customExecutor = null;
 				}
 			}
-			logHelper.info("Disconnection completed successfully");
+
+			// Atomic Swap - Capture and clear the service registration here.
+	        // This ensures cleanup happens even if the listener never fires.
+	        if (readyServiceReg != null) {
+	            regToClose = readyServiceReg;
+	            readyServiceReg = null;
+	        }
+
+	        logHelper.info("Disconnection completed successfully");
 		} finally {
 			connectionLock.unlock();
 		}
+
+		// --- PHASE 4: Service Cleanup (Outside Lock) ---
+	    // We execute this synchronously here to ensure it finishes before 
+	    // deactivate() kills the asyncTaskExecutor.
+	    if (regToClose != null) {
+	        // 1. Send Event (Cleanup Subscription Registry)
+	        if (eventAdmin != null) {
+	            try {
+	                eventAdmin.sendEvent(new Event(MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC, emptyMap()));
+	            } catch (Exception e) {
+	                logHelper.warn("Failed to send disconnect event", e);
+	            }
+	        }
+
+	        // 2. Unregister Service
+	        try {
+	            regToClose.unregister();
+	            logHelper.debug("MQTT connection ready service deregistered (forced during disconnect)");
+	        } catch (Exception e) {
+	            // Ignore (already unregistered)
+	        }
+	    }
 	}
 
 	@Override
