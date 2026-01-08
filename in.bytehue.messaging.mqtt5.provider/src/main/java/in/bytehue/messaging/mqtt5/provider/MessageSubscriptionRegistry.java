@@ -265,12 +265,12 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	 * </p>
 	 */
 	public void removeSubscription(final String channel) {
-		final Map<String, ExtendedSubscription> exisitngSubscriptions;
+		final Map<String, ExtendedSubscription> existingSubscriptions;
 		synchronized (getLock(channel)) {
-			exisitngSubscriptions = subscriptions.remove(channel);
+			existingSubscriptions = subscriptions.remove(channel);
 		}
-		if (exisitngSubscriptions != null) {
-			exisitngSubscriptions.forEach((k, v) -> v.connectedStreamCloser.run());
+		if (existingSubscriptions != null) {
+			existingSubscriptions.forEach((k, v) -> v.connectedStreamCloser.run());
 			logHelper.info("Removed all subscriptions from '{}' successfully", channel);
 		}
 	}

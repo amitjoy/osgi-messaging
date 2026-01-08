@@ -166,7 +166,7 @@ public final class RemoteResourceManagement {
 		subscriber.subscribe(topic).forEach(reqMessage -> {
 			Message response;
 			try {
-				final RequestDTO request = prepareReqeust(reqMessage);
+				final RequestDTO request = prepareRequest(reqMessage);
 				response = execMqttApplication(request);
 			} catch (final MqttException e) {
 				final int code = e.code;
@@ -183,7 +183,7 @@ public final class RemoteResourceManagement {
 		}).onFailure(e -> logger.error("Error occurred while processing the request", topic, e));
 	}
 
-	private RequestDTO prepareReqeust(final Message requestMessage) {
+	private RequestDTO prepareRequest(final Message requestMessage) {
 		final String topic = requestMessage.getContext().getChannel();
 		return initRequest(topic, requestMessage);
 	}
