@@ -174,14 +174,20 @@ public final class MessageReplyToWhiteboardProvider {
                         .setThreadNameFormat(config.threadNameSuffix())
                         .setDaemon(config.isDaemon())
                         .build();
-		executorService = new ThreadPoolExecutor(
-	            config.corePoolSize(),
+
+		final int configuredCorePoolSize = config.corePoolSize();
+		final int corePoolSize = configuredCorePoolSize == 0 ? config.maxPoolSize() : configuredCorePoolSize;
+
+		final ThreadPoolExecutor threadPool = new ThreadPoolExecutor(
+	            corePoolSize,
 	            config.maxPoolSize(),
 	            config.idleTime(),
 	            SECONDS,
 	            new LinkedBlockingQueue<>(),
 	            threadFactory
 	    );
+		threadPool.allowCoreThreadTimeOut(configuredCorePoolSize == 0);
+		executorService = threadPool;
 
 		// Initialize health check executor if enabled
 		if (config.enableHealthCheck()) {
