@@ -81,7 +81,7 @@ public interface MqttClient {
 	 * 
 	 * <p>
 	 * This method sends a proper DISCONNECT packet to the broker and closes the
-	 * connection. It blocks until the disconnection is complete.
+	 * connection.
 	 * </p>
 	 *
 	 * @return a {@link CompletableFuture} that completes when the disconnection is
