@@ -298,6 +298,11 @@ public final class MessageClientProvider implements MqttClient {
 
         //---------- Component Lifecycle ----------//
 
+        @AttributeDefinition(name = "Active Mode", 
+                description = "If true (Active Mode), the client connects automatically on start/modification. "
+                            + "If false (Passive Mode), it waits for an external trigger (e.g., Reconnector).")
+        boolean activeMode() default true;
+
         @AttributeDefinition(name = "Filter to be satisfied for the messaging client to be active")
         String osgi_ds_satisfying_condition_target() default "(" + CONDITION_ID + "=" + CONDITION_ID_TRUE + ")";
 
@@ -363,28 +368,38 @@ public final class MessageClientProvider implements MqttClient {
 		connectionLock.lock();
 		try {
 			init(config);
-			connectInProgress = true;
+			// [ACTIVE MODE] mark as in-progress
+			if (config.activeMode()) {
+				connectInProgress = true;
+			}
 		} finally {
 			connectionLock.unlock();
 		}
 
-		// Run connection logic *outside* the lock on our dedicated executor
-		CompletableFuture.runAsync(() -> {
-			try {
-				logHelper.info("Performing initial connection");
-				connectInternal(null, null);
-			} catch (final Exception e) {
-				logHelper.error("Error occurred while establishing connection to the broker '{}'", config.server(), e);
-			} finally {
-				connectionLock.lock();
+		// [ACTIVE MODE] Schedule connection immediately
+		if (config.activeMode()) {
+			// Run connection logic *outside* the lock on our dedicated executor
+			CompletableFuture.runAsync(() -> {
 				try {
-					connectInProgress = false;
-					operationComplete.signalAll();
+					logHelper.info("Performing initial connection");
+					connectInternal(null, null);
+				} catch (final Exception e) {
+					logHelper.error("Error occurred while establishing connection to the broker '{}'", config.server(),
+							e);
 				} finally {
-					connectionLock.unlock();
+					connectionLock.lock();
+					try {
+						connectInProgress = false;
+						operationComplete.signalAll();
+					} finally {
+						connectionLock.unlock();
+					}
 				}
-			}
-		}, asyncTaskExecutor);
+			}, asyncTaskExecutor);
+		} else {
+			// [PASSIVE MODE] Do nothing
+			logHelper.info("Client activated (Passive Mode). Waiting for external trigger.");
+		}
 	}
 
 	@Modified
@@ -417,7 +432,7 @@ public final class MessageClientProvider implements MqttClient {
 
 		// --- RUN ASYNCHRONOUSLY ---
 		CompletableFuture.runAsync(() -> {
-			// --- PHASE 1: Disconnect ---
+			// --- PHASE 1: Disconnect (Runs always) ---
 			try {
 				// This now blocks the async thread, NOT the OSGi thread
 				// We MUST unregister the ready service to clean up the old state before
@@ -433,28 +448,35 @@ public final class MessageClientProvider implements MqttClient {
 				}
 			}
 		}, asyncTaskExecutor).thenRunAsync(() -> { // --- Chain the reconnect ---
-			// --- PHASE 2: Re-connect ---
-			connectionLock.lock();
-			try {
-				init(config);
-				connectInProgress = true;
-			} finally {
-				connectionLock.unlock();
-			}
-
-			try {
-				logHelper.info("Performing connection after modification");
-				connectInternal(null, null);
-			} catch (final Exception e) {
-				logHelper.error("Error occurred while establishing connection to the broker '{}'", config.server(), e);
-			} finally {
+			// --- PHASE 2: Conditional Re-connect ---
+			if (config.activeMode()) {
+				// [ACTIVE MODE] Reconnect immediately
 				connectionLock.lock();
 				try {
-					connectInProgress = false;
-					operationComplete.signalAll();
+					init(config);
+					connectInProgress = true;
 				} finally {
 					connectionLock.unlock();
 				}
+
+				try {
+					logHelper.info("Performing connection after modification");
+					connectInternal(null, null);
+				} catch (final Exception e) {
+					logHelper.error("Error occurred while establishing connection to the broker '{}'", config.server(),
+							e);
+				} finally {
+					connectionLock.lock();
+					try {
+						connectInProgress = false;
+						operationComplete.signalAll();
+					} finally {
+						connectionLock.unlock();
+					}
+				}
+			} else {
+				// [PASSIVE MODE] Stop here.
+				logHelper.info("Configuration updated (Passive Mode). Client disconnected.");
 			}
 		}, asyncTaskExecutor);
 	}
