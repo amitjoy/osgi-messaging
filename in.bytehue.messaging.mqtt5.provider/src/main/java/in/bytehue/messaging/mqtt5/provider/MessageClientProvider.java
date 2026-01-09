@@ -298,9 +298,12 @@ public final class MessageClientProvider implements MqttClient {
 
         //---------- Component Lifecycle ----------//
 
-        @AttributeDefinition(name = "Active Mode", 
-                description = "If true (Active Mode), the client connects automatically on start/modification. "
-                            + "If false (Passive Mode), it waits for an external trigger (e.g., Reconnector).")
+        @AttributeDefinition(name = "Active Mode",
+        	    description = "Determines if the client manages its own connection lifecycle. "
+        	                + "If true (Active Mode), the client connects automatically upon "
+        	                + "activation and reconnects immediately after configuration changes. "
+        	                + "If false (Passive Mode), the client initializes but waits for "
+        	                + "an explicit API call, allowing external components to drive the lifecycle.")
         boolean activeMode() default true;
 
         @AttributeDefinition(name = "Filter to be satisfied for the messaging client to be active")
