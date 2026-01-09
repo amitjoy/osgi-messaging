@@ -408,6 +408,12 @@ public final class MessageClientProvider implements MqttClient {
 	void modified(final Config config) {
 		connectionLock.lock();
 		try {
+			init(config);
+			// [ACTIVE MODE] mark as in-progress
+			if (config.activeMode()) {
+				connectInProgress = true;
+			}
+
 			logHelper.info("Client configuration has been modified");
 
 			// Wait for any in-progress operations to complete (unchanged)
@@ -453,14 +459,6 @@ public final class MessageClientProvider implements MqttClient {
 			// --- PHASE 2: Conditional Re-connect ---
 			if (config.activeMode()) {
 				// [ACTIVE MODE] Reconnect immediately
-				connectionLock.lock();
-				try {
-					init(config);
-					connectInProgress = true;
-				} finally {
-					connectionLock.unlock();
-				}
-
 				try {
 					logHelper.info("Performing connection after modification");
 					connectInternal(null, null);
