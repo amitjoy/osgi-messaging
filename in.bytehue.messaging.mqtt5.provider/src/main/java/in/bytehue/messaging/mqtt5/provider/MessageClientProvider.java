@@ -33,7 +33,6 @@ import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -356,7 +355,7 @@ public final class MessageClientProvider implements MqttClient {
 	private volatile ExecutorService asyncTaskExecutor;
 
 	@Activate
-	void activate(final Config config, final Map<String, Object> properties) {
+	void activate(final Config config) {
 		logHelper = new LogHelper(logger, logMirror);
 
 		// Create a dedicated executor for all our internal async tasks
@@ -406,7 +405,7 @@ public final class MessageClientProvider implements MqttClient {
 	}
 
 	@Modified
-	void modified(final Config config, final Map<String, Object> properties) {
+	void modified(final Config config) {
 		connectionLock.lock();
 		try {
 			logHelper.info("Client configuration has been modified");
@@ -485,7 +484,7 @@ public final class MessageClientProvider implements MqttClient {
 	}
 
 	@Deactivate
-	void deactivate(final Map<String, Object> properties) {
+	void deactivate() {
 		logHelper.info("Client deactivation initiated");
 		connectionLock.lock();
 		try {
