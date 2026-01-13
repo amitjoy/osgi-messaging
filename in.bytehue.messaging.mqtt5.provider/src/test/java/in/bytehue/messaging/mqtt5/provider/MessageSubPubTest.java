@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Before;
@@ -272,6 +273,41 @@ public final class MessageSubPubTest {
 		});
 		// messageContext has higher priority over message.getContext().getChannel()
 		publisher.publish(message, messageContext);
+		waitForRequestProcessing(flag);
+	}
+
+	@Test
+	public void test_correlation_id() throws Exception {
+		final AtomicBoolean flag = new AtomicBoolean();
+		final String requestTopic = "a/b/request";
+		final String responseTopicBase = "a/b/c/";
+		final String correlationId = UUID.randomUUID().toString();
+		final String payload = "some-payload-data-that-is-long-enough-to-potentially-trigger-buffer-issues";
+
+		// 1. Setup Responder
+		subscriber.subscribe(requestTopic).forEach(m -> {
+			final String receivedCorrelationId = m.getContext().getCorrelationId();
+			// If extraction is buggy, this topic will have garbage characters
+			final String responseTopic = responseTopicBase + receivedCorrelationId;
+			final Message response = mcb.channel(responseTopic).content(ByteBuffer.wrap("response".getBytes()))
+					.buildMessage();
+			publisher.publish(response);
+		});
+
+		// 2. Setup Requestor
+		subscriber.subscribe(responseTopicBase + "#").forEach(m -> {
+			final String topic = m.getContext().getChannel();
+			// Verify the topic matches exactly what we expect (no extra nulls/garbage)
+			if (topic.equals(responseTopicBase + correlationId)) {
+				flag.set(true);
+			}
+		});
+
+		// 3. Publish Request
+		final Message request = mcb.channel(requestTopic).correlationId(correlationId)
+				.content(ByteBuffer.wrap(payload.getBytes())).buildMessage();
+		publisher.publish(request);
+
 		waitForRequestProcessing(flag);
 	}
 
