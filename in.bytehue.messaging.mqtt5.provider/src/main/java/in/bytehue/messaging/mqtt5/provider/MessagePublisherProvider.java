@@ -215,8 +215,8 @@ public final class MessagePublisherProvider implements MessagePublisher {
 
         final Mqtt5UserPropertiesBuilder propsBuilder = Mqtt5UserProperties.builder();
         userProperties.forEach(propsBuilder::add);
-            
-		final Mqtt5UserProperties userProps = propsBuilder.build();
+
+        final Mqtt5UserProperties userProps = propsBuilder.build();
 		final CompletableFuture<Mqtt5PublishResult> publishRequestFuture =
 				             currentClient.publishWith()
                                           .topic(channel)
