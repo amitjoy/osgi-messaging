@@ -31,8 +31,17 @@ public final class Mqtt5ReplyToSingleSubscriptionHandler implements ReplyToSingl
 
 	@Override
 	public Message handleResponse(final Message requestMessage, final MessageContextBuilder responseBuilder) {
-		final String content = new String(requestMessage.payload().array(), UTF_8);
+		final String content = new String(getAsByteArray(requestMessage.payload()), UTF_8);
 		return responseBuilder.content(ByteBuffer.wrap(content.getBytes())).buildMessage();
+	}
+
+	private byte[] getAsByteArray(ByteBuffer buffer) {
+		if (buffer.hasArray() && buffer.arrayOffset() == 0 && buffer.array().length == buffer.remaining()) {
+			return buffer.array();
+		}
+		final byte[] result = new byte[buffer.remaining()];
+		buffer.duplicate().get(result);
+		return result;
 	}
 
 }

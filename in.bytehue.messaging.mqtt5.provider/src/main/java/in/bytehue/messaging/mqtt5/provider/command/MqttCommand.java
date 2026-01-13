@@ -236,7 +236,12 @@ public final class MqttCommand {
             subscriber.subscribe(context).forEach(m -> {
                 System.out.println("\n--- Message Received ---");
                 System.out.println("Topic: " + m.getContext().getChannel());
-                System.out.println("Payload: " + new String(m.payload().array(), UTF_8));
+
+                final ByteBuffer payload = m.payload();
+                final byte[] bytes = new byte[payload.remaining()];
+                payload.duplicate().get(bytes);
+
+                System.out.println("Payload: " + new String(bytes, UTF_8));
                 System.out.println("------------------------");
             });
         } catch (final Exception e) {

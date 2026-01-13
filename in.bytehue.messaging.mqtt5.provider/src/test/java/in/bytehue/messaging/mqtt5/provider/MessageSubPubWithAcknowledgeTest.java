@@ -43,6 +43,7 @@ import aQute.launchpad.Launchpad;
 import aQute.launchpad.LaunchpadBuilder;
 import aQute.launchpad.Service;
 import aQute.launchpad.junit.LaunchpadRunner;
+import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
 
 @RunWith(LaunchpadRunner.class)
 public final class MessageSubPubWithAcknowledgeTest {
@@ -88,7 +89,7 @@ public final class MessageSubPubWithAcknowledgeTest {
 		subscriber.subscribe(message.getContext()).forEach(m -> {
 			final String topic = m.getContext().getChannel();
 			final String ctype = m.getContext().getContentType();
-			final String content = new String(m.payload().array(), UTF_8);
+			final String content = new String(MessageHelper.toByteArray(m.payload()), UTF_8);
 
 			assertThat(channel).isEqualTo(topic);
 			assertThat(payload).isEqualTo(content);
@@ -125,7 +126,7 @@ public final class MessageSubPubWithAcknowledgeTest {
 		subscriber.subscribe(message.getContext()).forEach(m -> {
 			final String topic = m.getContext().getChannel();
 			final String ctype = m.getContext().getContentType();
-			final String content = new String(m.payload().array(), UTF_8);
+			final String content = new String(MessageHelper.toByteArray(m.payload()), UTF_8);
 
 			assertThat(channel).isEqualTo(topic);
 			assertThat(payload).isEqualTo(content);
@@ -159,7 +160,7 @@ public final class MessageSubPubWithAcknowledgeTest {
 		subscriber.subscribe(message.getContext()).forEach(m -> {
 			final String topic = m.getContext().getChannel();
 			final String ctype = m.getContext().getContentType();
-			final String content = new String(m.payload().array(), UTF_8);
+			final String content = new String(MessageHelper.toByteArray(m.payload()), UTF_8);
 
 			assertThat(channel).isEqualTo(topic);
 			assertThat(payload).isEqualTo(content);
@@ -199,7 +200,7 @@ public final class MessageSubPubWithAcknowledgeTest {
 		subscriber.subscribe(message.getContext()).forEach(m -> {
 			final String topic = m.getContext().getChannel();
 			final String ctype = m.getContext().getContentType();
-			final String content = new String(m.payload().array(), UTF_8);
+			final String content = new String(MessageHelper.toByteArray(m.payload()), UTF_8);
 
 			assertThat(channel).isEqualTo(topic);
 			assertThat(payload).isEqualTo(content);
@@ -235,7 +236,7 @@ public final class MessageSubPubWithAcknowledgeTest {
 		subscriber.subscribe(message.getContext()).forEach(m -> {
 			final String topic = m.getContext().getChannel();
 			final String ctype = m.getContext().getContentType();
-			final String content = new String(m.payload().array(), UTF_8);
+			final String content = new String(MessageHelper.toByteArray(m.payload()), UTF_8);
 
 			assertThat(channel).isEqualTo(topic);
 			assertThat(payload).isEqualTo(content);
@@ -274,7 +275,7 @@ public final class MessageSubPubWithAcknowledgeTest {
 		subscriber.subscribe(message.getContext()).forEach(m -> {
 			final String topic = m.getContext().getChannel();
 			final String ctype = m.getContext().getContentType();
-			final String content = new String(m.payload().array(), UTF_8);
+			final String content = new String(MessageHelper.toByteArray(m.payload()), UTF_8);
 
 			assertThat(channel).isEqualTo(topic);
 			assertThat(payload).isEqualTo(content);
@@ -310,7 +311,7 @@ public final class MessageSubPubWithAcknowledgeTest {
 		subscriber.subscribe(context).forEach(m -> {
 			final String topic = m.getContext().getChannel();
 			final String ctype = m.getContext().getContentType();
-			final String content = new String(m.payload().array(), UTF_8);
+			final String content = new String(MessageHelper.toByteArray(m.payload()), UTF_8);
 			final AcknowledgeType acknowledgeState = ((AcknowledgeMessageContext) m.getContext()).getAcknowledgeState();
 
 			assertThat(channel).isEqualTo(topic);

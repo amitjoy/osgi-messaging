@@ -38,6 +38,7 @@ import aQute.launchpad.Launchpad;
 import aQute.launchpad.LaunchpadBuilder;
 import aQute.launchpad.Service;
 import aQute.launchpad.junit.LaunchpadRunner;
+import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
 
 @RunWith(LaunchpadRunner.class)
 public final class MessageReplyToManyHandlerTest {
@@ -112,7 +113,7 @@ public final class MessageReplyToManyHandlerTest {
         // @formatter:on
 
 		subscriber.subscribe(replyToChannel).forEach(m -> {
-			if (responsePyload.equals(new String(m.payload().array(), StandardCharsets.UTF_8))) {
+			if (responsePyload.equals(new String(MessageHelper.toByteArray(m.payload()), StandardCharsets.UTF_8))) {
 				flag2.set(true);
 			}
 		});
@@ -169,7 +170,7 @@ public final class MessageReplyToManyHandlerTest {
         // @formatter:on
 
 		subscriber.subscribe(replyToChannel).forEach(m -> {
-			if (responsePyload.equals(new String(m.payload().array(), StandardCharsets.UTF_8))) {
+			if (responsePyload.equals(new String(MessageHelper.toByteArray(m.payload()), StandardCharsets.UTF_8))) {
 				throw new AssertionError("Will never be executed");
 			}
 		});
@@ -224,7 +225,7 @@ public final class MessageReplyToManyHandlerTest {
         // @formatter:on
 
 		subscriber.subscribe(replyToChannel).forEach(m -> {
-			if (responsePyload.equals(new String(m.payload().array(), StandardCharsets.UTF_8))) {
+			if (responsePyload.equals(new String(MessageHelper.toByteArray(m.payload()), StandardCharsets.UTF_8))) {
 				throw new AssertionError("Will never be executed");
 			}
 		});
@@ -279,7 +280,7 @@ public final class MessageReplyToManyHandlerTest {
         // @formatter:on
 
 		subscriber.subscribe(replyToChannel).forEach(m -> {
-			if (responsePyload.equals(new String(m.payload().array(), StandardCharsets.UTF_8))) {
+			if (responsePyload.equals(new String(MessageHelper.toByteArray(m.payload()), StandardCharsets.UTF_8))) {
 				throw new AssertionError("Will never be executed");
 			}
 		});
@@ -334,7 +335,7 @@ public final class MessageReplyToManyHandlerTest {
         // @formatter:on
 
 		subscriber.subscribe(replyToChannel).forEach(m -> {
-			if (responsePyload.equals(new String(m.payload().array(), StandardCharsets.UTF_8))) {
+			if (responsePyload.equals(new String(MessageHelper.toByteArray(m.payload()), StandardCharsets.UTF_8))) {
 				throw new AssertionError("Will never be executed");
 			}
 		});
@@ -389,7 +390,7 @@ public final class MessageReplyToManyHandlerTest {
         // @formatter:on
 
 		subscriber.subscribe(replyToChannel).forEach(m -> {
-			if (responsePyload.equals(new String(m.payload().array(), StandardCharsets.UTF_8))) {
+			if (responsePyload.equals(new String(MessageHelper.toByteArray(m.payload()), StandardCharsets.UTF_8))) {
 				throw new AssertionError("Will never be executed");
 			}
 		});
@@ -444,7 +445,7 @@ public final class MessageReplyToManyHandlerTest {
         // @formatter:on
 
 		subscriber.subscribe(replyToChannel).forEach(m -> {
-			if (responsePyload.equals(new String(m.payload().array(), StandardCharsets.UTF_8))) {
+			if (responsePyload.equals(new String(MessageHelper.toByteArray(m.payload()), StandardCharsets.UTF_8))) {
 				throw new AssertionError("Will never be executed");
 			}
 		});
@@ -496,7 +497,7 @@ public final class MessageReplyToManyHandlerTest {
         // @formatter:on
 
 		subscriber.subscribe(replyToChannel).forEach(m -> {
-			if (responsePyload.equals(new String(m.payload().array(), StandardCharsets.UTF_8))) {
+			if (responsePyload.equals(new String(MessageHelper.toByteArray(m.payload()), StandardCharsets.UTF_8))) {
 				throw new AssertionError("Will never be executed");
 			}
 		});
@@ -548,7 +549,7 @@ public final class MessageReplyToManyHandlerTest {
         // @formatter:on
 
 		subscriber.subscribe(replyToChannel).forEach(m -> {
-			if (responsePyload.equals(new String(m.payload().array(), StandardCharsets.UTF_8))) {
+			if (responsePyload.equals(new String(MessageHelper.toByteArray(m.payload()), StandardCharsets.UTF_8))) {
 				throw new AssertionError("Will never be executed");
 			}
 		});
@@ -600,7 +601,7 @@ public final class MessageReplyToManyHandlerTest {
         // @formatter:on
 
 		subscriber.subscribe(replyToChannel).forEach(m -> {
-			if (responsePyload.equals(new String(m.payload().array(), StandardCharsets.UTF_8))) {
+			if (responsePyload.equals(new String(MessageHelper.toByteArray(m.payload()), StandardCharsets.UTF_8))) {
 				throw new AssertionError("Will never be executed");
 			}
 		});

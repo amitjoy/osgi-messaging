@@ -476,6 +476,18 @@ public final class MessageHelper {
 		return converter.convert(value).to(ref);
 	}
 
+	public static byte[] toByteArray(final ByteBuffer buffer) {
+		if (buffer == null) {
+			return new byte[0];
+		}
+		if (buffer.hasArray() && buffer.arrayOffset() == 0 && buffer.array().length == buffer.remaining()) {
+			return buffer.array();
+		}
+		final byte[] data = new byte[buffer.remaining()];
+		buffer.duplicate().get(data);
+		return data;
+	}
+
 	public static String asString(final MqttUtf8String string) {
 		return string.toString();
 	}
@@ -484,7 +496,7 @@ public final class MessageHelper {
 		if (buffer == null) {
 			return null;
 		}
-		final byte[] data = buffer.array();
+		final byte[] data = toByteArray(buffer);
 		final int size = data.length;
 
 		// Check if content is likely binary (null bytes or control characters)

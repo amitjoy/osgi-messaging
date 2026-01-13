@@ -17,6 +17,7 @@ package in.bytehue.messaging.mqtt5.example;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import java.nio.ByteBuffer;
 import java.util.function.Predicate;
 
 import org.osgi.service.component.annotations.Component;
@@ -27,8 +28,16 @@ public final class Mqtt5ReplyToManyHandlerPredicate implements Predicate<Message
 
 	@Override
 	public boolean test(final Message message) {
-		final String content = new String(message.payload().array(), UTF_8);
+		final String content = new String(getAsByteArray(message.payload()), UTF_8);
 		return "sample".equals(content);
 	}
 
+	private byte[] getAsByteArray(ByteBuffer buffer) {
+		if (buffer.hasArray() && buffer.arrayOffset() == 0 && buffer.array().length == buffer.remaining()) {
+			return buffer.array();
+		}
+		final byte[] result = new byte[buffer.remaining()];
+		buffer.duplicate().get(result);
+		return result;
+	}
 }

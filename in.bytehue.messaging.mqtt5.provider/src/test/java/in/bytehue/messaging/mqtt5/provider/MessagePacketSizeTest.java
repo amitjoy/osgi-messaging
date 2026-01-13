@@ -36,6 +36,7 @@ import aQute.launchpad.Launchpad;
 import aQute.launchpad.LaunchpadBuilder;
 import aQute.launchpad.Service;
 import aQute.launchpad.junit.LaunchpadRunner;
+import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
 
 @RunWith(LaunchpadRunner.class)
 public final class MessagePacketSizeTest {
@@ -78,7 +79,7 @@ public final class MessagePacketSizeTest {
 		subscriber.subscribe(channel).forEach(m -> {
 			final String topic = m.getContext().getChannel();
 			final String ctype = m.getContext().getContentType();
-			final String content = new String(m.payload().array(), UTF_8);
+			final String content = new String(MessageHelper.toByteArray(m.payload()), UTF_8);
 
 			assertThat(channel).isEqualTo(topic);
 			assertThat(payload).isEqualTo(content);

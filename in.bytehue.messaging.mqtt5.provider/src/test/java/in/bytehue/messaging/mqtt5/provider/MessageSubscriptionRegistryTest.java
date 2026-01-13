@@ -38,6 +38,7 @@ import aQute.launchpad.Launchpad;
 import aQute.launchpad.LaunchpadBuilder;
 import aQute.launchpad.Service;
 import aQute.launchpad.junit.LaunchpadRunner;
+import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
 import in.bytehue.messaging.mqtt5.provider.helper.SubscriptionAck;
 
 @RunWith(LaunchpadRunner.class)
@@ -129,23 +130,23 @@ public final class MessageSubscriptionRegistryTest {
 
 	@Test
 	public void test_all_reply_to_subscriptions_for_req_res_pattern() throws Exception {
-	    final String reqChannel = "a/b";
-	    final String resChannel = "c/d";
-	    final String payload = "abc";
-	    final String replyPayload = "def"; // The expected reply
-	    final String contentType = "text/plain";
+		final String reqChannel = "a/b";
+		final String resChannel = "c/d";
+		final String payload = "abc";
+		final String replyPayload = "def"; // The expected reply
+		final String contentType = "text/plain";
 
-	    // This simulates the other service that would handle the request and send a reply.
-	    subscriber.subscribe(reqChannel).forEach(request -> {
-	        // When a message arrives on a/b, publish a reply to its replyTo channel (c/d)
-	        final Message replyMessage = mcb.channel(request.getContext().getReplyToChannel())
-	                                        .content(ByteBuffer.wrap(replyPayload.getBytes()))
-	                                        .correlationId(request.getContext().getCorrelationId())
-	                                        .buildMessage();
-	        publisher.publish(replyMessage);
-	    });
+		// This simulates the other service that would handle the request and send a
+		// reply.
+		subscriber.subscribe(reqChannel).forEach(request -> {
+			// When a message arrives on a/b, publish a reply to its replyTo channel (c/d)
+			final Message replyMessage = mcb.channel(request.getContext().getReplyToChannel())
+					.content(ByteBuffer.wrap(replyPayload.getBytes()))
+					.correlationId(request.getContext().getCorrelationId()).buildMessage();
+			publisher.publish(replyMessage);
+		});
 
-	    // @formatter:off
+		// @formatter:off
 	    final Message message = mcb.contentType(contentType)
 	                               .channel(reqChannel) // Publish to the request channel
 	                               .replyTo(resChannel) // Expect a reply on the response channel
@@ -153,15 +154,16 @@ public final class MessageSubscriptionRegistryTest {
 	                               .buildMessage();
 	    // @formatter:on
 
-	    // Call publishWithReply and wait for the Promise to complete
-	    final Promise<Message> promise = replyToPublisher.publishWithReply(message);
-	    final Message reply = promise.timeout(5000).getValue(); // Use Promise.get() to wait for the result
+		// Call publishWithReply and wait for the Promise to complete
+		final Promise<Message> promise = replyToPublisher.publishWithReply(message);
+		final Message reply = promise.timeout(5000).getValue(); // Use Promise.get() to wait for the result
 
-	    assertThat(reply).isNotNull();
-	    assertThat(new String(reply.payload().array())).isEqualTo(replyPayload);
-	    // After a short delay, you can assert that the ephemeral subscription was indeed cleaned up.
-	    TimeUnit.SECONDS.sleep(2);
-	    assertThat(registry.getReplyToSubscriptionDTOs()).isEmpty();
+		assertThat(reply).isNotNull();
+		assertThat(new String(MessageHelper.toByteArray(reply.payload()))).isEqualTo(replyPayload);
+		// After a short delay, you can assert that the ephemeral subscription was
+		// indeed cleaned up.
+		TimeUnit.SECONDS.sleep(2);
+		assertThat(registry.getReplyToSubscriptionDTOs()).isEmpty();
 	}
 
 	@Test
