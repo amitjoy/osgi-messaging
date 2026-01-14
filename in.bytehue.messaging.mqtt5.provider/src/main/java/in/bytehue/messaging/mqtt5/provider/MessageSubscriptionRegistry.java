@@ -120,15 +120,14 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	 * <ul>
 	 * <li>Thread A holds a lock from the OLD array (e.g., performing a slow
 	 * unsubscribe).</li>
-	 * <li>Thread B gets the configuration update and re-initializes the
-	 * array.</li>
+	 * <li>Thread B gets the configuration update and re-initializes the array.</li>
 	 * <li>Thread C acquires the corresponding lock from the NEW array.</li>
 	 * <li>Result: Thread A and Thread C run concurrently on the same channel,
 	 * violating mutual exclusion.</li>
 	 * </ul>
 	 * By making the locks final and initializing in the constructor, we guarantee
-	 * that {@code getLock(channel)} always returns the same object instance
-	 * for the lifespan of this component instance.
+	 * that {@code getLock(channel)} always returns the same object instance for the
+	 * lifespan of this component instance.
 	 * </p>
 	 */
 	public MessageSubscriptionRegistry() {
@@ -188,8 +187,8 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 
 	/**
 	 * Adds a new subscription to the registry. This method uses striped locking to
-	 * ensure thread safety for the specific channel while allowing concurrency across
-	 * different channels.
+	 * ensure thread safety for the specific channel while allowing concurrency
+	 * across different channels.
 	 * 
 	 * <p>
 	 * <b>Acceptable Race Window:</b> When a subscription is added,
@@ -464,10 +463,9 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	 * Locking.
 	 * 
 	 * <p>
-	 * <b>Mechanism:</b>
-	 * This method maps the infinite space of channel strings to a fixed set of 32
-	 * lock objects using {@code hash & 31)}, that keeps the lowest 5 bits of the hash 
-	 * and discards the rest.
+	 * <b>Mechanism:</b> This method maps the infinite space of channel strings to a
+	 * fixed set of 32 lock objects using {@code hash & 31)}, that keeps the lowest
+	 * 5 bits of the hash and discards the rest.
 	 * </p>
 	 * 
 	 * <p>
@@ -482,12 +480,12 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	 * </p>
 	 * 
 	 * <p>
-	 * <b>Collisions:</b>
-	 * It is possible for two different channels to map to the same lock (a hash
-	 * collision). In this case, operations on these two specific channels will block
-	 * each other. With 32 locks, the probability of collision for any pair of
-	 * active channels is low (~3%). This is an intentional trade-off to avoid the
-	 * memory overhead and complexity of maintaining a dynamic 1:1 lock map.
+	 * <b>Collisions:</b> It is possible for two different channels to map to the
+	 * same lock (a hash collision). In this case, operations on these two specific
+	 * channels will block each other. With 32 locks, the probability of collision
+	 * for any pair of active channels is low (~3%). This is an intentional
+	 * trade-off to avoid the memory overhead and complexity of maintaining a
+	 * dynamic 1:1 lock map.
 	 * </p>
 	 * 
 	 * @param key the channel name
