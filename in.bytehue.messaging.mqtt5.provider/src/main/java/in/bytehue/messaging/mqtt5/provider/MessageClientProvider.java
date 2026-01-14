@@ -39,6 +39,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
@@ -1192,116 +1193,129 @@ public final class MessageClientProvider implements MqttClient {
 	}
 
 	private void registerReadyService(final MqttClientConnectedContext context) {
-		// Offload service registration to a separate thread.
-		// This prevents the I/O thread from being hijacked by the OSGi SCR framework,
-		// allowing it to process lifecycle events, such as, SUBACKs.
-		asyncTaskExecutor.submit(() -> {
-			// Check state first without lock
-			if (disconnectInProgress) {
-				logHelper.debug("Disconnect in progress, skipping service registration");
-				return;
-			}
-
-			// 1. Prepare properties
-			final Dictionary<String, Object> props = new Hashtable<>();
-			props.put("connection.ready.condition", "true");
-
-			ServiceRegistration<Object> newReg = null;
-
-			// 2. Register OUTSIDE the lock (DEADLOCK PREVENTION)
-			// We must call registerService() OUTSIDE the 'connectionLock'.
-			// Scenario:
-			// 1. Thread A (This Thread): Holds 'connectionLock', waits for OSGi Framework
-			// Lock (to register).
-			// 2. Thread B (OSGi Framework): Holds OSGi Framework Lock (e.g. stopping
-			// bundle), waits for 'connectionLock' (in @Deactivate).
-			// Result: Deadlock.
-			// Solution: Perform the OSGi call unlocked, then acquire the lock to verify
-			// state safely.
-			try {
-				newReg = bundleContext.registerService(Object.class, new Object(), props);
-			} catch (Exception e) {
-				logHelper.error("Failed to register MQTT connection ready service", e);
-				return;
-			}
-
-			// 3. Verify state INSIDE the lock
-			boolean keepRegistration = false;
-			ServiceRegistration<Object> staleReg = null;
-
-			connectionLock.lock();
-			try {
-				// Verify: Are we still connected?
-				// Since executor is single-threaded, 'readyServiceReg' cannot be changed
-				// concurrently.
-				if (isConnectedInternal() && !disconnectInProgress) {
-					// Capture the old one to close later
-					staleReg = readyServiceReg;
-
-					// Assign the new one
-					readyServiceReg = newReg;
-					keepRegistration = true;
+		try {
+			// Offload service registration to a separate thread.
+			// This prevents the I/O thread from being hijacked by the OSGi SCR framework,
+			// allowing it to process lifecycle events, such as, SUBACKs.
+			asyncTaskExecutor.submit(() -> {
+				// Check state first without lock
+				if (disconnectInProgress) {
+					logHelper.debug("Disconnect in progress, skipping service registration");
+					return;
 				}
-			} finally {
-				connectionLock.unlock();
-			}
 
-			// 4. Cleanup Stale Registration (OUTSIDE lock)
-			if (staleReg != null) {
+				// 1. Prepare properties
+				final Dictionary<String, Object> props = new Hashtable<>();
+				props.put("connection.ready.condition", "true");
+
+				ServiceRegistration<Object> newReg = null;
+
+				// 2. Register OUTSIDE the lock (DEADLOCK PREVENTION)
+				// We must call registerService() OUTSIDE the 'connectionLock'.
+				// Scenario:
+				// 1. Thread A (This Thread): Holds 'connectionLock', waits for OSGi Framework
+				// Lock (to register).
+				// 2. Thread B (OSGi Framework): Holds OSGi Framework Lock (e.g. stopping
+				// bundle), waits for 'connectionLock' (in @Deactivate).
+				// Result: Deadlock.
+				// Solution: Perform the OSGi call unlocked, then acquire the lock to verify
+				// state safely.
 				try {
-					staleReg.unregister();
-					logger.debug("Stale MQTT connection ready service deregistered safely");
+					newReg = bundleContext.registerService(Object.class, new Object(), props);
 				} catch (Exception e) {
-					logHelper.debug("Stale MQTT connection ready service has already been deregistered");
+					logHelper.error("Failed to register MQTT connection ready service", e);
+					return;
 				}
-			}
 
-			// 5. Rollback if verification failed (OUTSIDE lock)
-			if (!keepRegistration && newReg != null) {
+				// 3. Verify state INSIDE the lock
+				boolean keepRegistration = false;
+				ServiceRegistration<Object> staleReg = null;
+
+				connectionLock.lock();
 				try {
-					newReg.unregister();
-				} catch (Exception e) {
-					logger.debug("New MQTT connection ready service has already been deregistered");
+					// Verify: Are we still connected?
+					// Since executor is single-threaded, 'readyServiceReg' cannot be changed
+					// concurrently.
+					if (isConnectedInternal() && !disconnectInProgress) {
+						// Capture the old one to close later
+						staleReg = readyServiceReg;
+
+						// Assign the new one
+						readyServiceReg = newReg;
+						keepRegistration = true;
+					}
+				} finally {
+					connectionLock.unlock();
 				}
-			} else {
-				logHelper.debug("MQTT connection ready service registered successfully");
-			}
-		});
+
+				// 4. Cleanup Stale Registration (OUTSIDE lock)
+				if (staleReg != null) {
+					try {
+						staleReg.unregister();
+						logger.debug("Stale MQTT connection ready service deregistered safely");
+					} catch (Exception e) {
+						logHelper.debug("Stale MQTT connection ready service has already been deregistered");
+					}
+				}
+
+				// 5. Rollback if verification failed (OUTSIDE lock)
+				if (!keepRegistration && newReg != null) {
+					try {
+						newReg.unregister();
+					} catch (Exception e) {
+						logger.debug("New MQTT connection ready service has already been deregistered");
+					}
+				} else {
+					logHelper.debug("MQTT connection ready service registered successfully");
+				}
+			});
+		} catch (final RejectedExecutionException e) {
+			// Safe to ignore: The component is deactivating, so we definitely
+			// do NOT want to register the "Ready" service anyway.
+			logHelper.debug("Ignored register task (executor is shutting down)");
+		}
 	}
 
 	private void unregisterReadyService(final MqttClientDisconnectedContext context) {
-		// Offload service deregistration to a separate thread.
-		asyncTaskExecutor.submit(() -> {
-			ServiceRegistration<Object> regToClose = null;
+		try {
+			// Offload service deregistration to a separate thread.
+			asyncTaskExecutor.submit(() -> {
+				ServiceRegistration<Object> regToClose = null;
 
-			// 1. Get the handle and clear the field (Atomic swap)
-			connectionLock.lock();
-			try {
-				regToClose = readyServiceReg;
-				readyServiceReg = null;
-			} finally {
-				connectionLock.unlock();
-			}
-
-			// 2. Unregister (OUTSIDE Lock)
-			// We must call unregister() OUTSIDE the 'connectionLock'.
-			// If we hold the lock while unregistering, we risk the same Lock Inversion
-			// deadlock if the Framework is simultaneously processing service events or
-			// stopping the bundle.
-			if (regToClose != null) {
-				if (eventAdmin != null) {
-					// send disconnected event synchronously to ensure that the registry is cleaned
-					// up before unregistering ready service
-					eventAdmin.sendEvent(new Event(MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC, emptyMap()));
-				}
+				// 1. Get the handle and clear the field (Atomic swap)
+				connectionLock.lock();
 				try {
-					regToClose.unregister();
-					logHelper.debug("MQTT connection ready service has been deregistered");
-				} catch (Exception e) {
-					logger.debug("MQTT ready service has already been deregistered");
+					regToClose = readyServiceReg;
+					readyServiceReg = null;
+				} finally {
+					connectionLock.unlock();
 				}
-			}
-		});
+
+				// 2. Unregister (OUTSIDE Lock)
+				// We must call unregister() OUTSIDE the 'connectionLock'.
+				// If we hold the lock while unregistering, we risk the same Lock Inversion
+				// deadlock if the Framework is simultaneously processing service events or
+				// stopping the bundle.
+				if (regToClose != null) {
+					if (eventAdmin != null) {
+						// send disconnected event synchronously to ensure that the registry is cleaned
+						// up before unregistering ready service
+						eventAdmin.sendEvent(new Event(MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC, emptyMap()));
+					}
+					try {
+						regToClose.unregister();
+						logHelper.debug("MQTT connection ready service has been deregistered");
+					} catch (Exception e) {
+						logger.debug("MQTT ready service has already been deregistered");
+					}
+				}
+			});
+		} catch (final RejectedExecutionException e) {
+			// This occurs during component deactivation when the executor is shut down
+			// before the disconnected listener fires. It is safe to ignore because
+			// disconnect() already cleans up the service registration in Phase 3.
+			logHelper.debug("Ignored unregister task (executor is shutting down)");
+		}
 	}
 
 	private <T> List<T> emptyToNull(final T[] array) {
