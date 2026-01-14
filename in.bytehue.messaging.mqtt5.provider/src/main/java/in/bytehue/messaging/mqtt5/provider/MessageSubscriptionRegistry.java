@@ -249,19 +249,26 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	}
 
 	/**
-	 * Removes all subscriptions for a given topic and closes their streams. This is
-	 * the FAST, state-only removal method. It is synchronized on the channel's lock.
-	 * 
+	 * Removes all subscriptions for a given topic, closes their streams, and
+	 * schedules a network unsubscribe.
 	 * <p>
-	 * <b>Reentrant Synchronization Note:</b> This method makes a reentrant
-	 * synchronized call. When {@code connectedStreamCloser.run()} is invoked (which
-	 * triggers {@code stream.close()}), it eventually calls back into
-	 * {@code removeSubscription(channel, id)}. Since Java's {@code synchronized} is
-	 * reentrant, the same thread can reacquire this lock. However, the channel is
-	 * already removed from the map at line 176, so the reentrant call finds nothing
-	 * and returns immediately. This design is intentional for bulk cleanup
-	 * scenarios (e.g., client disconnect) where individual MQTT unsubscribe packets
-	 * are unnecessary.
+	 * <b>State & Network Cleanup:</b> This method removes the channel from the
+	 * internal registry immediately. It then:
+	 * <ol>
+	 * <li>Closes all local streams (triggering their onClose handlers).</li>
+	 * <li><b>Explicitly schedules a network UNSUBSCRIBE task.</b></li>
+	 * </ol>
+	 * The explicit unsubscribe is required because the {@code onClose} handlers in
+	 * {@link MessageSubscriptionProvider} will find the registry empty (since we
+	 * just removed it) and mistakenly assume they should not unsubscribe. Without
+	 * this step, the MQTT client retains a reference to the provider's listener,
+	 * causing a memory leak.
+	 * </p>
+	 * *
+	 * <p>
+	 * <b>Concurrency:</b> The removal and scheduling are synchronized on the
+	 * channel's lock. The actual network packet is sent asynchronously on the
+	 * {@code unsubscribeExecutor}, keeping this method non-blocking for the caller.
 	 * </p>
 	 */
 	public void removeSubscription(final String channel) {
@@ -269,8 +276,22 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 		synchronized (getLock(channel)) {
 			existingSubscriptions = subscriptions.remove(channel);
 		}
+
 		if (existingSubscriptions != null) {
+			// 1. Close local streams (triggers onClose, which will fail to unsubscribe)
 			existingSubscriptions.forEach((k, v) -> v.connectedStreamCloser.run());
+
+			// 2. Explicitly Unsubscribe from Broker
+			// We must perform this here because the onClose callback will see an empty
+			// map and assume it shouldn't unsubscribe.
+			try {
+				unsubscribeExecutor.submit(() -> {
+					unsubscribeSubscription(channel);
+				});
+			} catch (Exception e) {
+				// This might fail if the executor is already shutting down, which is fine
+				logHelper.warn("Could not schedule unsubscribe task for '{}'", channel, e);
+			}
 			logHelper.info("Removed all subscriptions from '{}' successfully", channel);
 		}
 	}
