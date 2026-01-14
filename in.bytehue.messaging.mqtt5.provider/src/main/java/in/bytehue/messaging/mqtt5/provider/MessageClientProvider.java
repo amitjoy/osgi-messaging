@@ -722,6 +722,21 @@ public final class MessageClientProvider implements MqttClient {
 				} catch (Exception e) {
 					// Ignore (already unregistered)
 				}
+			} else {
+				// Deactivation: We cannot unregister synchronously because the main thread
+				// holds the Component/Bundle lock and is waiting for us (join), which would
+				// cause a deadlock. However, we MUST unregister to prevent leaks during
+				// configuration updates (where the bundle stays active).
+				// Solution: Offload unregistration to a fire-and-forget thread that is NOT
+				// joined.
+				final ServiceRegistration<Object> reg = regToClose;
+				new Thread(() -> {
+					try {
+						reg.unregister();
+					} catch (Exception e) {
+						// Ignore (already unregistered or bundle stopped)
+					}
+				}, "mqtt-ready-service-cleanup").start();
 			}
 		}
 	}
