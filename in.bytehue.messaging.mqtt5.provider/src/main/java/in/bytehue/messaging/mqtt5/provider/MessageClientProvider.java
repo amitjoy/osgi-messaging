@@ -624,6 +624,7 @@ public final class MessageClientProvider implements MqttClient {
 				return;
 			}
 			clientToDisconnect = client;
+			client = null;
 			if (isNormalDisconnection) {
 				reasonCode = NORMAL_DISCONNECTION;
 				reasonDescription = "";
