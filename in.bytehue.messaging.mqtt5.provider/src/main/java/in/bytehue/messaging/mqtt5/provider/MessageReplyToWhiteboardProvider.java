@@ -597,7 +597,7 @@ public final class MessageReplyToWhiteboardProvider {
 
 		logHelper.debug("Publishing channel: {}", pubChannel);
 		if (pubChannel == null) {
-			logHelper.error("No reply-to channel is specified for the subscription handler");
+			logHelper.warn("No reply-to channel is specified for the subscription handler");
 			return;
 		}
 		if (config.storeReplyToChannelInfoIfReceivedInMessage()) {
