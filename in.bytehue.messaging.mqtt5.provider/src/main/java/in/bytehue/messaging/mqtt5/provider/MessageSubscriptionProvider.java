@@ -108,7 +108,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
             name = "MQTT 5.0 Messaging Subscriber Configuration",
             description = "This configuration is used to configure the MQTT 5.0 messaging subscriber")
 	public @interface SubscriberConfig {
-		@AttributeDefinition(name = "Default timeout for synchronously subscribing to the broker", min = "5000")
+		@AttributeDefinition(name = "Default timeout for synchronously subscribing to the broker (in milliseconds)", min = "5000")
 		long timeoutInMillis() default 15_000L;
 
 		@AttributeDefinition(name = "Default QoS for subscriptions unless specified", min = "0", max = "2")
