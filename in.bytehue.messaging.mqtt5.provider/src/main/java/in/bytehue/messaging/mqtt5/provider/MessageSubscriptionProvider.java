@@ -113,6 +113,9 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 
 		@AttributeDefinition(name = "Default QoS for subscriptions unless specified", min = "0", max = "2")
         int qos() default 0;
+
+		@AttributeDefinition(name = "Cluster Sync Delay", description = "Wait after SUBACK (in milliseconds)", min = "0")
+		long clusterSyncDelayInMillis() default 0L;
 	}
 
 	private LogHelper logHelper;
