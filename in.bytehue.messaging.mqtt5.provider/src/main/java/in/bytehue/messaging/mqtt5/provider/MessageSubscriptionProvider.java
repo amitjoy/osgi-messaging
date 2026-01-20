@@ -379,6 +379,14 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 		    });
 
             future.get(config.timeoutInMillis(), MILLISECONDS);
+
+            long delay = config.clusterSyncDelayInMillis();
+            if (delay > 0) {
+                logHelper.debug("Cluster Sync: Subscription acknowledged. Waiting {}ms for propagation...", delay);
+                // It is safe to sleep here because we are on the caller's thread, not the HiveMQ Network thread.
+                Thread.sleep(delay);
+            }
+
             return SubscriptionAck.of(stream, subscription.id);
         } catch (final Exception e) {
             // ROBUST CLEANUP
