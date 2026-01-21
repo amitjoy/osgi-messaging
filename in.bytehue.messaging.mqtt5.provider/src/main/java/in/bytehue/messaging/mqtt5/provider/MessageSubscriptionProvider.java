@@ -297,7 +297,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 										                                  .noLocal(!receiveLocal)
 										                                  .retainAsPublished(retainAsPublished)
 										                                  .callback(p -> {
-										                                	  logHelper.debug("Incoming message on channel: {} | Payload: {}", sChannel, p);
+										                                	  logHelper.debug("Incoming message on topic: {} | Payload: {}", sChannel, p);
 										                                	  try {
 										                                		  final MessageContextBuilderProvider mcb = mcbFactory.getService();
 										                                		  try {
