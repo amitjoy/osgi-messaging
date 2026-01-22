@@ -359,13 +359,17 @@ public final class MessageClientProvider implements MqttClient {
 	void activate(final Config config) {
 		logHelper = new LogHelper(logger, logMirror);
 
+		// @formatter:off
+		final ThreadFactory threadFactory = 
+				new ThreadFactoryBuilder()
+				        .setThreadFactoryName("mqtt-client-lifecycle")
+				        .setThreadNameFormat("-%d")
+				        .setDaemon(config.isDaemon())
+				        .build();
+		// @formatter:on
+
 		// Create a dedicated executor for all our internal async tasks
-		asyncTaskExecutor = Executors.newScheduledThreadPool(1, r -> {
-			final Thread t = new Thread(r);
-			t.setName("mqtt-client-lifecycle");
-			t.setDaemon(config.isDaemon());
-			return t;
-		});
+		asyncTaskExecutor = Executors.newScheduledThreadPool(1, threadFactory);
 		((ScheduledThreadPoolExecutor) asyncTaskExecutor).setRemoveOnCancelPolicy(true);
 
 		connectionLock.lock();
