@@ -19,7 +19,11 @@ import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.stackTrac
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.osgi.service.log.Logger;
 
@@ -32,6 +36,12 @@ public final class LogHelper {
 	private final Logger logger;
 	private final String loggerName;
 	private final LogMirrorService logMirror;
+	private final Map<String, ThrottleEntry> throttleMap = new ConcurrentHashMap<>();
+
+	private static class ThrottleEntry {
+		long lastLogTime = 0;
+		final AtomicLong suppressed = new AtomicLong(0);
+	}
 
 	public LogHelper(final Logger logger, final LogMirrorService logMirror) {
 		this.logger = Objects.requireNonNull(logger, "logger");
@@ -46,10 +56,26 @@ public final class LogHelper {
 		}
 	}
 
+	public void debugThrottled(final String key, final long time, final TimeUnit unit, final String message,
+			final Object... args) {
+		final long suppressed = checkThrottle(key, unit.toMillis(time));
+		if (suppressed >= 0) {
+			debug(appendSuppressed(message, suppressed), args);
+		}
+	}
+
 	public void info(final String message, final Object... args) {
 		logger.info(message, args);
 		if (logMirror != null && logMirror.isMirrorEnabled()) {
 			mirror("INFO", message, args, null);
+		}
+	}
+
+	public void infoThrottled(final String key, final long time, final TimeUnit unit, final String message,
+			final Object... args) {
+		final long suppressed = checkThrottle(key, unit.toMillis(time));
+		if (suppressed >= 0) {
+			info(appendSuppressed(message, suppressed), args);
 		}
 	}
 
@@ -60,10 +86,26 @@ public final class LogHelper {
 		}
 	}
 
+	public void warnThrottled(final String key, final long time, final TimeUnit unit, final String message,
+			final Object... args) {
+		final long suppressed = checkThrottle(key, unit.toMillis(time));
+		if (suppressed >= 0) {
+			warn(appendSuppressed(message, suppressed), args);
+		}
+	}
+
 	public void error(final String message, final Throwable t) {
 		logger.error(message, t);
 		if (logMirror != null && logMirror.isMirrorEnabled()) {
 			mirror("ERROR", message, null, t);
+		}
+	}
+
+	public void errorThrottled(final String key, final long time, final TimeUnit unit, final String message,
+			final Throwable t) {
+		final long suppressed = checkThrottle(key, unit.toMillis(time));
+		if (suppressed >= 0) {
+			error(appendSuppressed(message, suppressed), t);
 		}
 	}
 
@@ -84,6 +126,36 @@ public final class LogHelper {
 			}
 			mirror("ERROR", message, fmtArgs, trailing);
 		}
+	}
+
+	public void errorThrottled(final String key, final long time, final TimeUnit unit, final String message,
+			final Object... args) {
+		final long suppressed = checkThrottle(key, unit.toMillis(time));
+		if (suppressed >= 0) {
+			error(appendSuppressed(message, suppressed), args);
+		}
+	}
+
+	private long checkThrottle(final String key, final long intervalMillis) {
+		final long now = System.currentTimeMillis();
+		final ThrottleEntry entry = throttleMap.computeIfAbsent(key, k -> new ThrottleEntry());
+
+		synchronized (entry) {
+			if (now - entry.lastLogTime > intervalMillis) {
+				final long count = entry.suppressed.getAndSet(0);
+				entry.lastLogTime = now;
+				return count;
+			}
+			entry.suppressed.incrementAndGet();
+			return -1;
+		}
+	}
+
+	private String appendSuppressed(final String message, final long count) {
+		if (count > 0) {
+			return message + " [suppressed " + count + "]";
+		}
+		return message;
 	}
 
 	private void mirror(final String level, final String message, final Object[] args, final Throwable t) {

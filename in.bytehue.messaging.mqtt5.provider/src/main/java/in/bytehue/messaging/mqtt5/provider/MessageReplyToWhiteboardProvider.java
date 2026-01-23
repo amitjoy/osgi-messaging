@@ -790,8 +790,9 @@ public final class MessageReplyToWhiteboardProvider {
 							}
 							break; // No need to check other channels for this handler
 						} else {
-							logHelper.debug("Health check: Subscription for channel '{}' on Service ID: {} is active.",
-									channel, serviceId);
+							logHelper.debugThrottled("health-check-" + serviceId + "-" + channel, 60, SECONDS,
+									"Health check: Subscription for channel '{}' on Service ID: {} is active.", channel,
+									serviceId);
 						}
 					}
 				} catch (final Exception e) {
