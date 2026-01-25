@@ -71,7 +71,7 @@ public class MessageSubscriptionEventTest {
 
 	@Test
 	public void test_subscription_failed_event_is_sent() throws Exception {
-		final String topic = "#"; // invalid topic
+		final String topic = "a/#/b"; // invalid topic
 		final List<Event> receivedEvents = new CopyOnWriteArrayList<>();
 
 		final EventHandler handler = receivedEvents::add;
