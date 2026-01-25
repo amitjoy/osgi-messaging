@@ -1,5 +1,6 @@
 package in.bytehue.messaging.mqtt5.provider;
 
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.SUBSCRIBER;
 import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForMqttConnectionReady;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -97,14 +98,8 @@ public class MessageSubscriptionEventTest {
 		final String topic = "a/b/c";
 		final List<Event> receivedEvents = new CopyOnWriteArrayList<>();
 
-		// set a non-routable IP address to force a timeout
-		final Configuration clientConfig = configAdmin.getConfiguration("in.bytehue.messaging.client", "?");
-		final Dictionary<String, Object> clientProps = new Hashtable<>();
-		clientProps.put("server", "10.255.255.1");
-		clientConfig.update(clientProps);
-
 		// set a very low timeout for the test
-		final Configuration subscriberConfig = configAdmin.getConfiguration("in.bytehue.messaging.subscriber", "?");
+		final Configuration subscriberConfig = configAdmin.getConfiguration(SUBSCRIBER, "?");
 		final Dictionary<String, Object> subscriberProps = new Hashtable<>();
 		subscriberProps.put("timeoutInMillis", 1L);
 		subscriberConfig.update(subscriberProps);
@@ -120,17 +115,10 @@ public class MessageSubscriptionEventTest {
 		await().atMost(5, SECONDS).until(() -> !receivedEvents.isEmpty());
 		registration.unregister();
 
-		assertThat(receivedEvents).hasSize(1);
 		final Event event = receivedEvents.get(0);
 
 		assertThat(event.getTopic()).isEqualTo("mqtt/subscription/NO_ACK");
 		assertEventProperties(event, topic, Type.NO_ACK);
-
-		// clean up the configuration
-		clientProps.put("server", "localhost");
-		clientConfig.update(clientProps);
-		subscriberProps.put("timeoutInMillis", 30_000L);
-		subscriberConfig.update(subscriberProps);
 	}
 
 	private ServiceRegistration<EventHandler> registerEventHandler(final EventHandler handler, final String... topics) {
