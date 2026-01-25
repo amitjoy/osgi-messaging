@@ -3,11 +3,19 @@ pluginManagement {
     id 'biz.aQute.bnd.workspace' version bnd_version
   }
   repositories {
+    maven {
+        url = uri("https://maven.pkg.github.com/amitjoy/osgi-messaging")
+        credentials {
+            username "$GITHUB_USERNAME"
+            password "$GITHUB_API_KEY"
+        }
+    }
     maven { url bnd_snapshots }
     mavenCentral()
     gradlePluginPortal()
   }
 }
+
 plugins {
   id 'biz.aQute.bnd.workspace'
 }
