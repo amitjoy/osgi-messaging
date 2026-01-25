@@ -1,17 +1,3 @@
-allprojects {
-    repositories {
-        maven {
-            url = uri("https://maven.pkg.github.com/amitjoy/osgi-messaging")
-            credentials {
-                username "$GITHUB_USERNAME"
-                password "$GITHUB_API_KEY"
-            }
-        }
-        mavenCentral()
-    }
-}
-
-/* 2. Your existing wrapper configuration (Keep this) */
 tasks.named('wrapper') {
   jarFile = rootProject.file('.gradle-wrapper/gradle-wrapper.jar')
 }
