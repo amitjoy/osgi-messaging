@@ -385,6 +385,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
                 logHelper.debug("Cluster Sync: Subscription acknowledged. Waiting {}ms for propagation...", delay);
                 // It is safe to sleep here because we are on the caller's thread, not the HiveMQ Network thread.
                 Thread.sleep(delay);
+                logHelper.debug("Cluster Sync: Propagation wait of {}ms finished", delay);
             }
 
             return SubscriptionAck.of(stream, subscription.id);
