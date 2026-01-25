@@ -756,7 +756,7 @@ public final class MessageReplyToWhiteboardProvider {
 	 */
 	private void checkSubscriptionHealth() {
 		try {
-			logHelper.debug("Running whiteboard subscription health check...");
+			logHelper.debugThrottled("health-check-main", 60, SECONDS, "Running whiteboard subscription health check...");
 
 			subscriptions.forEach(sub -> {
 				final long serviceId = (long) sub.reference.getProperty(SERVICE_ID);
