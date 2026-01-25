@@ -95,7 +95,7 @@ public final class MessageServiceRuntimeTest {
 	@Test
 	public void test_connection_uri() throws Exception {
 		final MessagingRuntimeDTO runtimeDTO = runtime.getRuntimeDTO();
-		assertThat(runtimeDTO.connectionURI).isEqualTo("broker.emqx.io");
+		assertThat(runtimeDTO.connectionURI).isEqualTo("localhost");
 	}
 
 	@Test

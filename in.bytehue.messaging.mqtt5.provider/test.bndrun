@@ -25,6 +25,6 @@
 -runproperties: configurator.initial='{\
                       ":configurator:version":"1.0",\
                       ":configurator:symbolic-name":"in.bytehue.messaging.mqtt5.provider",\
-                      "in.bytehue.messaging.client":{"server":"broker.emqx.io"},\
+                      "in.bytehue.messaging.client":{"server":"localhost"},\
                       "in.bytehue.mqtt.debug":{"enabled":true}\
                       }'
