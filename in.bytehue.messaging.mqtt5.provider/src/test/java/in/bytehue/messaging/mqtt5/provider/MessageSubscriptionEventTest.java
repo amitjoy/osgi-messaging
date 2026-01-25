@@ -127,7 +127,7 @@ public class MessageSubscriptionEventTest {
 		assertEventProperties(event, topic, Type.NO_ACK);
 
 		// clean up the configuration
-		clientProps.put("server", "broker.emqx.io");
+		clientProps.put("server", "localhost");
 		clientConfig.update(clientProps);
 		subscriberProps.put("timeoutInMillis", 30_000L);
 		subscriberConfig.update(subscriberProps);
