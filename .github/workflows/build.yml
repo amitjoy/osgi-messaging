@@ -51,12 +51,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # Runs the Gradle build command.
-      # The GITHUB_TOKEN is passed as an environment variable for authentication with GitHub Packages.
-      - name: Build with Gradle
+      # Runs the Gradle build command via the test wrapper script.
+      # The script handles starting/stopping the MQTT broker.
+      - name: Build with Gradle and Local Broker
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew build
+        run: |
+          chmod +x run_tests.sh
+          ./run_tests.sh
 
       # Uploads the test reports as an artifact.
       # The `if: always()` condition ensures this step runs even if the build/test step fails,
