@@ -78,9 +78,9 @@ bin.testbin.directory                 =         ${if;${is;${driver};gradle};targ
           name                        =        "Runtime"; \
           index                       =        ${.}/maven/runtime.maven
 
--plugin.3.Release                     =        \
-    aQute.bnd.repository.maven.provider.MavenBndRepository; \
-          snapshotUrl                 =        "${github.messaging.packages.url}"; \
-          releaseUrl                  =        "${github.messaging.packages.url}"; \
-          name                        =        "Release"; \
-          index                       =        ${.}/maven/release.maven
+#-plugin.3.Release                     =        \
+#    aQute.bnd.repository.maven.provider.MavenBndRepository; \
+#          snapshotUrl                 =        "${github.messaging.packages.url}"; \
+#          releaseUrl                  =        "${github.messaging.packages.url}"; \
+#          name                        =        "Release"; \
+#          index                       =        ${.}/maven/release.maven
