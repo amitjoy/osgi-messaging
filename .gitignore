@@ -6,3 +6,7 @@
 */target/**
 */cache/**
 **/problems-report.html
+hivemq*
+hivemq.log
+hivemq_pid
+portable*
