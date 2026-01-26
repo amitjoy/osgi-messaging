@@ -74,21 +74,30 @@ The `in.bytehue.messaging.client` PID can be used to configure the client. The c
 | `server`                          | Server Host Address                                                                                                                           | String   | `broker.hivemq.com`             |
 | `port`                            | Server Port                                                                                                                                   | Long     | `1883`                       |
 | `topicPrefix`                          | MQTT Topic Prefix                                                                                                                           | String   |      |
-| `automaticReconnect`              | Custom Automatic Reconnection                                                                                                                        | Boolean  | `true`                      |
+| `automaticReconnectWithDefaultConfig`              | Custom Automatic Reconnection                                                                                                                        | Boolean  | `true`                      |
 | `cleanStart`                      | Always create new session after the client is connected                                                                                                         | Boolean  | `false`                      |
 | `initialDelay`                    | Initial Delay if Custom Automatic Reconnection is enabled (In seconds)                                                                               | Long     | `10`                          |
-| `maxDelay`                        | Max Delay if Custom Automatic Reconnection is enabled (In seconds)                                                                                   | Long     | `30`                         |
+| `maxDelay`                        | Max Delay if Custom Automatic Reconnection is enabled (In seconds)                                                                                   | Long     | `600`                        |
+| `keepAliveInterval`               | Keep Alive Interval (In seconds)                                                                                                                     | Integer  | `60`                          |
 | `useSessionExpiry`           | Flag to enable/disable session expiry                                                                                                                | Boolean     | `false`                         |
-| `sessionExpiryInterval`           | Keep Session State (In seconds)                                                                                                               | Long     | `30`                         |
+| `sessionExpiryInterval`           | Keep Session State (In seconds)                                                                                                               | Integer     | `30`                         |
 | `useSessionExpiryForDisconnect`           | Flag to enable/disable session expiry for disconnection                                                                                                               | Boolean     | `true`                         |
-| `sessionExpiryIntervalForDisconnect`           | Keep Session State after disconnection (In seconds)                                                                                                               | Long     | `0`                         |
+| `sessionExpiryIntervalForDisconnect`           | Keep Session State after disconnection (In seconds)                                                                                                               | Integer     | `0`                         |
 | `simpleAuth`                      | Simple Authentication                                                                                                                         | Boolean  | `false`                      |
 | `username`                        | Simple Authentication Username                                                                                                                | String   |                              |
 | `password`                        | Simple Authentication Password                                                                                                                | String   |                              |
 | `useSSL`                          | SSL Configuration                                                                                                                             | Boolean  | `false`                      |
-| `staticAuthCred`                  | Configuration to use static credentials specified in username and password configurations                                                        | Boolean  | `false`                      |
-| `simpleAuthCredFilter`            | SSL Configuration                                                                                                                             | String  |                       |
+| `staticAuthCred`                  | Configuration to use static credentials specified in username and password configurations                                                        | Boolean  | `true`                      |
+| `simpleAuthCredFilter`            | Simple Authentication Service Filter                                                                                                                             | String  |                       |
+| `useCustomExecutor`               | Custom Executor Configuration                                                                                                                 | Boolean  | `false`                      |
+| `numberOfThreads`                 | Custom Executor Number of Threads                                                                                                             | Integer  | `5`                          |
+| `threadNamePrefix`                | Custom Executor Prefix of the thread name                                                                                                     | String   | `mqtt-client`                |
+| `threadNameSuffix`                | Custom Executor Suffix of the thread name (supports only `%d` format specifier)                                                               | String   | `-%d`                        |
+| `isDaemon`                        | Flag to set if the threads will be daemon threads                                                                                             | Boolean  | `true`                       |
+| `executorTargetClass`             | Custom Thread Executor Service Class Name (Note that, the service should be an instance of Java Executor)                                     | String   |                              |
+| `executorTargetFilter`            | Custom Thread Executor Service Target Filter                                                                                                  | String   |                              |
 | `cipherSuites`                    | SSL Configuration Cipher Suites                                                                                                               | String[] |                              |
+| `protocols`                       | SSL Configuration Protocols                                                                                                                   | String[] |                              |
 | `sslHandshakeTimeout`             | SSL Configuration Handshake Timeout (In seconds)                                                                                              | Long     | `10`                          |
 | `keyManagerFactoryTargetFilter` | SSL Configuration Key Manager Factory Service Target Filter Refer to `javax.net.ssl.KeyManagerFactory`                                    | String   |                              |
 | `trustManagerFactoryTargetFilter` | SSL Configuration Trust Manager Factory Service Target Filter Refer to `javax.net.ssl.TrustManagerFactory`                                    | String   |                              |
@@ -112,19 +121,39 @@ The `in.bytehue.messaging.client` PID can be used to configure the client. The c
 | `useEnhancedAuthentication`       | Enhanced Authentication                                                                                                                       | Boolean  | `false`                      |
 | `enhancedAuthTargetFilter`        | Enhanced Authentication Service Filter Refer to `com.hivemq.client.mqtt.mqtt5.auth.Mqtt5EnhancedAuthMechanism`                                | String   |                              |
 | `useServerReauth`                 | Server Reauthentication                                                                                                                       | Boolean  | `false`                      |
-| `connectedListenerFilter`         | Connected Listener Service Filter Refer to `com.hivemq.client.mqtt.lifecycle.MqttClientConnectedListener`                                     | String   |                              |
-| `disconnectedListenerFilter`      | Disconnected Listener Service Filter Refer to `com.hivemq.client.mqtt.lifecycle.MqttClientDisconnectedListener`                               | String   |                              |
+| `connectedListenersFilters`         | Connected Listener Service Filters Refer to `com.hivemq.client.mqtt.lifecycle.MqttClientConnectedListener`                                     | String[]   |                              |
+| `disconnectedListenersFilters`      | Disconnected Listener Service Filters Refer to `com.hivemq.client.mqtt.lifecycle.MqttClientDisconnectedListener`                               | String[]   |                              |
 | `qos1IncomingInterceptorFilter`   | QoS 1 Incoming Interceptor Service Filter Refer to `com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos1.Mqtt5IncomingQos1Interceptor`      | String   |                              |
 | `qos2IncomingInterceptorFilter`   | QoS 2 Incoming Interceptor Service Filter Refer to `com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos1.Mqtt5IncomingQos2Interceptor`      | String   |                              |
 | `qos1OutgoingInterceptorFilter`   | QoS 1 Outgoing Interceptor Service Filter Refer to `com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos1.Mqtt5OutgoingQos1Interceptor`      | String   |                              |
 | `qos2OutgoingInterceptorFilter`   | QoS 2 Outgoing Interceptor Service Filter Refer to `com.hivemq.client.mqtt.mqtt5.advanced.interceptor.qos1.Mqtt5OutgoingQos2Interceptor`      | String   |                              |
-| `condition.target`                | LDAP filter that needs to be satisfied for the client to be active Refer to `in.bytehue.messaging.mqtt5.api.TargetCondition`                  | String   | `(satisfy=always)`           |
+| `activeMode`                      | Active Mode (If true, client connects automatically; if false, waits for explicit API call)                                                   | Boolean  | `true`                       |
+| `osgi.ds.satisfying.condition.target`                | LDAP filter that needs to be satisfied for the client to be active                                                                            | String   | `(osgi.condition.id=true)`           |
 | `disconnectionReasonDescription`  | Reason for the disconnection when the component is stopped                                                                                    | String   | `OSGi Component Deactivated` |
 | `disconnectionReasonCode`         | Code for the disconnection when the component is stopped Refer to `com.hivemq.client.mqtt.mqtt5.message.disconnect.Mqtt5DisconnectReasonCode` | String   | `NORMAL_DISCONNECTION`       |
 
+#### Subscriber Configuration
+
+The `in.bytehue.messaging.subscriber` PID can be used to configure the subscriber.
+
+| Configuration | Description | Type | Default Value |
+|---|---|---|---|
+| `timeoutInMillis` | Default timeout for synchronously subscribing to the broker (in milliseconds) | Long | `15000` |
+| `qos` | Default QoS for subscriptions unless specified | Integer | `0` |
+| `clusterSyncDelayInMillis` | Cluster Sync Delay - Wait after SUBACK (in milliseconds) | Long | `0` |
+
+#### Publisher Configuration
+
+The `in.bytehue.messaging.publisher` PID can be used to configure the publisher.
+
+| Configuration | Description | Type | Default Value |
+|---|---|---|---|
+| `timeoutInMillis` | Default timeout for synchronously publishing to the broker (in milliseconds) | Long | `15000` |
+| `qos` | Default QoS for publishes unless specified | Integer | `0` |
+
 #### Reply To Publisher Internal Executor Configuration
 
-The `in.bytehue.messaging.publisher` PID can be used to configure the internal thread pool
+The `in.bytehue.messaging.publisher.replyto` PID can be used to configure the internal thread pool of the reply-to publisher.
 
 | Configuration      | Description                                                      | Type    | Default Value            |
 |--------------------|------------------------------------------------------------------|---------|--------------------------|
@@ -132,6 +161,48 @@ The `in.bytehue.messaging.publisher` PID can be used to configure the internal t
 | `threadNamePrefix` | Prefix of the thread name                                        | String  | `mqtt-replyto-publisher` |
 | `threadNameSuffix` | Suffix of the thread name  (supports only `%d` format specifier) | String  | `-%d`                    |
 | `isDaemon`         | Flag to set if the threads will be daemon threads                | Boolean | `true`                   |
+
+#### Subscription Registry Configuration
+
+The `in.bytehue.messaging.mqtt5.provider.MessageSubscriptionRegistry` PID can be used to configure the subscription registry.
+
+| Configuration | Description | Type | Default Value |
+|---|---|---|---|
+| `clearSubscriptionsOnDisconnect` | Clear existing subscriptions on disconnect | Boolean | `true` |
+| `numThreads` | Number of threads for the internal thread pool | Integer | `5` |
+| `threadNamePrefix` | Prefix of the thread name | String | `mqtt-registry-unsubscribe` |
+| `threadNameSuffix` | Suffix of the thread name | String | `-%d` |
+| `isDaemon` | Flag to set if the threads will be daemon threads | Boolean | `true` |
+
+#### Reply-To Whiteboard Configuration
+
+The `in.bytehue.messaging.whiteboard` PID can be used to configure the reply-to whiteboard.
+
+| Configuration | Description | Type | Default Value |
+|---|---|---|---|
+| `storeReplyToChannelInfoIfReceivedInMessage` | Flag denoting to store the channel info if the channel is specified in the received message | Boolean | `true` |
+| `threadNamePrefix` | Prefix of the threads' names in the pool | String | `reply-to-handler` |
+| `threadNameSuffix` | Suffix of the threads' names in the pool | String | `-%d` |
+| `isDaemon` | Flag to set if the threads will be daemon threads | Boolean | `true` |
+| `corePoolSize` | Core Pool Size (0 set as default for cached behaviour) | Integer | `0` |
+| `maxPoolSize` | Maximum Pool Size | Integer | `3` |
+| `idleTime` | Idle time for threads before interrupted | Long | `60` |
+| `enableHealthCheck` | Enable subscription health check | Boolean | `true` |
+| `healthCheckIntervalSeconds` | Health check interval (In seconds) | Integer | `5` |
+| `healthCheckInitialDelaySeconds` | Initial health check delay (In seconds) | Integer | `10` |
+| `maxRetryAttempts` | Maximum retry attempts (0 to disable) | Integer | `0` |
+
+#### Log Mirror Configuration
+
+The `in.bytehue.mqtt.debug` PID can be used to configure the console log mirror.
+
+| Configuration | Description | Type | Default Value |
+|---|---|---|---|
+| `enabled` | Enable real-time log mirroring to System.out | Boolean | `false` |
+
+#### Connection Ready Service
+
+The `in.bytehue.mqtt.connection.ready` PID identifies the `ConnectionReadyService` which registers a condition service when the MQTT connection is established. This service exposes `osgi.condition.id=mqtt-ready` condition.
 
 #### Primary Messaging APIs
 
@@ -367,6 +438,44 @@ This will ensure that your services will be up and running before the client get
 
 --------------------------------------------------------------------------------------------------------------
 
+### Gogo Commands
+
+The bundle provides several Gogo commands to interact with the MQTT client and inspect its state. These commands are available under the `mqtt` scope.
+
+| Command | Arguments | Description |
+|---|---|---|
+| `mqtt:connect` | `-u` (username), `-p` (password) | Connects to the MQTT broker manually (useful in Passive Mode). |
+| `mqtt:disconnect` | | Disconnects from the MQTT broker. |
+| `mqtt:pub` | `-t` (topic), `-c` (content), `-q` (qos), `-r` (retain), `-ct` (contentType), `-l` (receiveLocal), `-e` (expiry), `-u` (userProperties) | Publishes a message to a specific topic. |
+| `mqtt:sub` | `-t` (topic), `-q` (qos), `-l` (receiveLocal), `-r` (retainAsPublished) | Subscribes to a topic and prints received messages to the console. |
+| `mqtt:unsub` | `-t` (topic) | Unsubscribes from a previously subscribed topic. |
+| `mqtt:runtime` | `config <type>` | Displays runtime information. `type` can be `client`, `pub`, `sub`, or `replytopub` to show specific configurations. |
+| `mqtt:mirror` | `-i` (status, on, off) | Controls or checks the status of the Log Mirror service (mirrors logs to console). |
+
+### Mqtt Command Extension
+
+You can extend the `mqtt:runtime` command output by implementing the `in.bytehue.messaging.mqtt5.api.MqttCommandExtension` interface and registering it as an OSGi service.
+
+```java
+@Component
+public class MyCustomMqttInfo implements MqttCommandExtension {
+
+    @Override
+    public String rowName() {
+        return "My Custom Metric";
+    }
+
+    @Override
+    public String rowValue() {
+        return "Some Value";
+    }
+}
+```
+
+This will add a new row to the `mqtt:runtime` output table.
+
+--------------------------------------------------------------------------------------------------------------
+
 ### Remote Resource (Edge Device) Management
 
 This comprises the guidelines to structure your MQTT topic namespace for managing the remote resources or edge devices using MQTT. 
@@ -403,6 +512,28 @@ Let's first discuss the pattern mentioned above to understand the workflow bette
 | `application-id`       | MQTT application running on the edge device that we want to access remotely.  To support multiple versions of the application, it is recommended that a version number be assigned with the `application-id` (e.g., `CONF-V1`, `CONF-V2`, etc.).                                                                                      |
 | `method`               | A specific operation we want to perform on the remote application. An application in the remote device supports different types of methods, such as, `GET`, `POST`, `PUT`, `DELETE`  and `EXEC`                                                                                                                                     |
 | `resource-id`          | The remainder of the total topic, for example, in `CTRL/com/company/ABCD-1234/CONF-V1/PUT/configurations/a.b.c.d` topic, `configurations/a.b.c.d` is the `resource-id`.                                                                                                                                                             |
+
+#### Subscription Status Events
+
+The provider emits OSGi EventAdmin events to notify about the status of MQTT subscription requests. These events are useful for tracking whether a subscription was successfully acknowledged by the broker, rejected, or timed out.
+
+**Event Topics:**
+
+*   `mqtt/subscription/ACKED`: The subscription was successfully acknowledged by the broker (SUBACK received with success codes).
+*   `mqtt/subscription/FAILED`: The subscription was rejected by the broker (SUBACK received with failure codes).
+*   `mqtt/subscription/NO_ACK`: No acknowledgement was received within the configured timeout (timeout or client-side error).
+
+**Event Properties:**
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `type` | `String` | The event type (`ACKED`, `FAILED`, `NO_ACK`). |
+| `topic` | `String` | The MQTT topic filter that was subscribed to. |
+| `qos` | `Integer` | The requested QoS level (0, 1, or 2). |
+| `replyTo` | `Boolean` | `true` if this is a reply-to subscription, `false` otherwise. |
+| `reason` | `String` | (Optional) The reason string provided by the broker or exception message. |
+| `reasonCodes` | `int[]` | The MQTT 5.0 reason codes returned in the SUBACK packet (empty for `NO_ACK`). |
+| `timestamp` | `Long` | The timestamp (milliseconds) when the event was created. |
 
 #### Read Resources
 
