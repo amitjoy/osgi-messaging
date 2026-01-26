@@ -4,9 +4,9 @@
 
 ## OSGi Messaging Specification and compliant MQTT 5.0 Implementation
 
-This repository comprises the rudimentary API extracted from the [OSGi RFC 246](https://github.com/osgi/design/blob/main/rfcs/rfc0246/rfc-0246-Messaging.pdf) specification and the MQTT 5.0 implementation of it. This spec is not at all the official version as it is based on the preliminary API from the current version of the spec. This is just an experimental repository for OSGi Messaging specification since the official version is not yet released. The official version is expected to be released with the release of OSGi Enterprise R8 specification in the second quarter of 2021 (as mentioned during the [EclipseCON talk](https://www.eclipsecon.org/2020/sessions/asychronous-communication-distributed-environments-new-osgi-messaging-rfc))
+This repository comprises the rudimentary API extracted from the [OSGi RFC 246](https://github.com/osgi/design/blob/main/rfcs/rfc0246/rfc-0246-Messaging.pdf) specification and the MQTT 5.0 implementation of it. This spec is not at all the official version as it is based on the preliminary API from the current version of the spec. This is just an experimental repository for OSGi Messaging specification since the official version is not yet released. The official version *was* expected to be released with the release of OSGi Enterprise R8 specification in the second quarter of 2021 (as mentioned during the [EclipseCON talk](https://www.eclipsecon.org/2020/sessions/asychronous-communication-distributed-environments-new-osgi-messaging-rfc)). However, the official version is yet to be released.
 
-Further to the above, there is a utility bundle comprising an easy-to-use functionality to manage remote resources or edge devices using MQTT 5.0.  For more details, have a look at the [Remote Resource (Edge Device) Management](#remote-resource-edge-device-management) section.
+Further to the above, there is a utility bundle comprising an easy-to-use functionality to manage remote resources or edge devices using MQTT 5.0. For more details, have a look at the [Remote Resource (Edge Device) Management](#remote-resource-edge-device-management) section.
 
 -----------------------------------------------------------------------------------------------------------
 
@@ -22,7 +22,7 @@ Further to the above, there is a utility bundle comprising an easy-to-use functi
 ### Minimum Requirements
 
 1. Java 8
-2. OSGi R7
+2. OSGi R8
 
 ------------------------------------------------------------------------------------------------------------
 
@@ -220,6 +220,7 @@ The `in.bytehue.mqtt.connection.ready` PID identifies the `ConnectionReadyServic
 | `org.osgi.service.messaging.replyto.ReplyToSubscriptionHandler`           | consumer API to handle only responses without publishing                                                                       |
 | `org.osgi.service.messaging.replyto.ReplyToManySubscriptionHandler`       | consumer API to handle to handle stream of requests and publish stream  of responses                                           |
 | `org.osgi.service.messaging.runtime.MessageServiceRuntime`                | service to respresent the runtime information of a Message Service  instance of an implementation                              |
+| `in.bytehue.messaging.mqtt5.api.MqttClient`                               | service to manage MQTT 5.0 client connections                                                                                  |
 
 The included APIs also provide several helpful annotations for implementors as well as consumers. Refer to `org.osgi.service.messaging.propertytypes` and `org.osgi.service.messaging.annotations` packages.
 
