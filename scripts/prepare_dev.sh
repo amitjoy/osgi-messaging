@@ -23,8 +23,6 @@ echo "🏁 Updating OSGi Messaging Adapter Baseline Version to $baseline_version
 echo $1.SNAPSHOT > cnf/version/app.version
 echo $baseline_version > cnf/version/baseline.version
 
-npm version $1 --no-git-tag-version
-
 echo "🏁 Committing the changes to current branch"
 
 git add .
