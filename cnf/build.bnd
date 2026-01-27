@@ -1,5 +1,3 @@
-Bundle-Version                        =         1.0.0.${tstamp;yyyyMMddHHmm;Europe/Berlin}
-
 -includeresource.all                  =         -src/main/resources
 -donotcopy                            =         \.gitignore|\.DS_Store
 
@@ -25,16 +23,16 @@ testsrc                               =         src/test/java
 testbin                               =         ${testbin.directory}
 target-dir                            =         target
 
-mave.central.url                      =         https://repo.maven.apache.org/maven2/
-github.packages.url                   =         https://maven.pkg.github.com
-github.messaging.packages.url         =         ${github.packages.url}/amitjoy/osgi-messaging
-sonatype.url                          =         https://oss.sonatype.org
+maven.central.url                     =         https://repo.maven.apache.org/maven2/
+sonatype.url                          =         https://s01.oss.sonatype.org
 sonatype.url.snapshot                 =         ${sonatype.url}/content/repositories/snapshots/
 sonatype.url.staging                  =         ${sonatype.url}/service/local/staging/deploy/maven2/
 
-usr                                   =         ${env;GITHUB_ACTOR;}
-pwd                                   =         ${env;GITHUB_TOKEN;}
--connection-settings                  =         ${if;${pwd};server;-dummy};id=${github.packages.url};username=${usr};password=${pwd}, -bnd
+-connection-settings                  =         server;\
+                                                  id=${sonatype.url};\
+                                                  username=${env;SONATYPE_USERNAME;};\
+                                                  password=${env;SONATYPE_PASSWORD;},\
+                                                -bnd
 -releaserepo                          =         Release
 
 -groupid                              =         in.bytehue
@@ -46,6 +44,11 @@ testbin.directory                     =         ${if;${is;${driver};gradle};targ
 bin.testbin.directory                 =         ${if;${is;${driver};gradle};target/classes,target/test-classes;target/gradle/classes,target/gradle/test-classes}
 
 -builderignore                        =         ${bin.testbin.directory}
+-noextraheaders                       =         true
+
+-baselinerepo                         =         Baseline
+-releaserepo                          =         Release
+-diffignore                           =         Bundle-Version
 
 -buildpath.all                        =         osgi.annotation,\
                                                 osgi.core,\
@@ -62,10 +65,22 @@ bin.testbin.directory                 =         ${if;${is;${driver};gradle};targ
 -testpath.all                         =         osgi.enroute.junit.wrapper,\
                                                 osgi.enroute.hamcrest.wrapper
 
+Package-Version                       =         ${cat;${.}/version/app.version}
+Bundle-Version                        =         ${trim;${Package-Version}}
+baseline.version                      =         ${cat;${.}/version/baseline.version}
+
+is.snapshot                           =         ${endswith;${trim;${Package-Version}};SNAPSHOT}
+-snapshot                             =         ${if;${is.snapshot};${tstamp};}
+-pom                                  =         version=${if;${is.snapshot};${replacestring;${trim;${Package-Version}};\.SNAPSHOT;-SNAPSHOT};${trim;${Package-Version}}}
+-groupid                              =         in.bytehue
+
+Git-Descriptor                        =         ${system-allow-fail;git describe --dirty --always --abbrev=9}
+Git-SHA                               =         ${system-allow-fail;git rev-list -1 --no-abbrev-commit HEAD}
+
 -plugin.1.Build                       =         \
     aQute.bnd.repository.maven.provider.MavenBndRepository; \
           snapshotUrl                 =        "${sonatype.url.snapshot}"; \
-          releaseUrl                  =        "${mave.central.url}"; \
+          releaseUrl                  =        "${maven.central.url}"; \
           readOnly                    =        true; \
           name                        =        "Build"; \
           index                       =        ${.}/maven/build.maven
@@ -73,14 +88,22 @@ bin.testbin.directory                 =         ${if;${is;${driver};gradle};targ
 -plugin.2.Runtime                     =        \
     aQute.bnd.repository.maven.provider.MavenBndRepository; \
           snapshotUrl                 =        "${sonatype.url.snapshot}"; \
-          releaseUrl                  =        "${mave.central.url}"; \
+          releaseUrl                  =        "${maven.central.url}"; \
           readOnly                    =        true; \
           name                        =        "Runtime"; \
           index                       =        ${.}/maven/runtime.maven
 
-#-plugin.3.Release                     =        \
-#    aQute.bnd.repository.maven.provider.MavenBndRepository; \
-#          snapshotUrl                 =        "${github.messaging.packages.url}"; \
-#          releaseUrl                  =        "${github.messaging.packages.url}"; \
-#          name                        =        "Release"; \
-#          index                       =        ${.}/maven/release.maven
+-plugin.3.Release                     =        \
+    aQute.bnd.repository.maven.provider.MavenBndRepository; \
+          snapshotUrl                 =        "${sonatype.url.snapshot}"; \
+          releaseUrl                  =        "${sonatype.url.staging}"; \
+          name                        =        "Release"; \
+          noupdateOnRelease           =         true
+
+-plugin.4.Baseline                    =         \
+		    aQute.bnd.repository.maven.provider.MavenBndRepository;\
+		          snapshotUrl         =         ${sonatype.url.snapshot};\
+		          releaseUrl          =         ${maven.central.url};\
+		          readOnly            =         true;\
+		          name                =         Baseline;\
+		          index               =         ${.}/maven/baseline.maven

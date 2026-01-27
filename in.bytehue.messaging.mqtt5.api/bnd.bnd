@@ -1,2 +1,3 @@
+-baseline          : *
 -buildpath         : org.osgi.service.messaging
 Require-Capability : compile
