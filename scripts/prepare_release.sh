@@ -17,11 +17,11 @@
 set -e
 
 echo "🏁 Retrieving Version"
-version=$(cat cnf/version/app.version)
+version=$(cat cnf/version/current.version)
 
 echo "🏁 Updating Version"
 version_without_snapshot=${version%".SNAPSHOT"}
-echo $version_without_snapshot > cnf/version/app.version
+echo $version_without_snapshot > cnf/version/current.version
 
 echo "🏁 Committing Changes"
 git add .

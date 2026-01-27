@@ -16,11 +16,11 @@
 #-------------------------------------------------------------------------------
 set -e
 
-baseline_version=$(cat cnf/version/app.version)
+baseline_version=$(cat cnf/version/current.version)
 echo "🏁 Updating OSGi Messaging Adapter Version to $1"
 echo "🏁 Updating OSGi Messaging Adapter Baseline Version to $baseline_version"
 
-echo $1.SNAPSHOT > cnf/version/app.version
+echo $1.SNAPSHOT > cnf/version/current.version
 echo $baseline_version > cnf/version/baseline.version
 
 echo "🏁 Committing the changes to current branch"

@@ -68,13 +68,13 @@ bin.testbin.directory                 =         ${if;${is;${driver};gradle};targ
 -testpath.all                         =         osgi.enroute.junit.wrapper,\
                                                 osgi.enroute.hamcrest.wrapper
 
-Package-Version                       =         ${cat;${.}/version/app.version}
-Bundle-Version                        =         ${trim;${Package-Version}}
+current.version                       =         ${cat;${.}/version/current.version}
 baseline.version                      =         ${cat;${.}/version/baseline.version}
+Bundle-Version                        =         ${trim;${current.version}}
 
-is.snapshot                           =         ${endswith;${trim;${Package-Version}};SNAPSHOT}
+is.snapshot                           =         ${endswith;${Bundle-Version};SNAPSHOT}
 -snapshot                             =         ${if;${is.snapshot};${tstamp};}
--pom                                  =         version=${if;${is.snapshot};${replacestring;${trim;${Package-Version}};.SNAPSHOT;-SNAPSHOT};${trim;${Package-Version}}}
+-pom                                  =         version=${if;${is.snapshot};${replacestring;${Bundle-Version};.SNAPSHOT;-SNAPSHOT};${Bundle-Version}}
 -groupid                              =         in.bytehue
 
 Git-Descriptor                        =         ${system-allow-fail;git describe --dirty --always --abbrev=9}
