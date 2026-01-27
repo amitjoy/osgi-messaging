@@ -25,7 +25,7 @@ target-dir                            =         target
 
 sonatype.username                     =         ${env;SONATYPE_USERNAME;}
 sonatype.password                     =         ${env;SONATYPE_PASSWORD;}
-maven.central.url                     =         https://repo.maven.apache.org/maven2/
+maven.central.url                     =         https://repo1.maven.org/maven2/
 sonatype.portal.url                   =         https://central.sonatype.com/
 sonatype.portal.snapshot              =         ${sonatype.portal.url}/repository/maven-snapshots
 sonatype.portal.api                   =         ${sonatype.portal.url}/api/v1/publisher/upload
