@@ -1,12 +1,11 @@
 -sourcepath                    : ${.}/src 
-Bundle-Name                    : MQTT 5.0 Messaging Adapter
-Bundle-Description             : MQTT 5.0 implementation conforming to OSGi messaging specification. \
-								 Internally making use of HiveMQ MQTT client \
-								 since it is MQTT 5.0 compatible and hence this bundle \
-								 exports the HiveMQ MQTT client APIs too for further extension.
+Bundle-Name                    : OSGi MQTT 5.0 Messaging Adapter
+Bundle-Description             : An OSGi Messaging Adapter for the MQTT 5.0 protocol, \
+                                 backed by the HiveMQ MQTT Client. This implementation strictly adheres \
+                                 to the OSGi Messaging Specification while exposing the underlying \
+                                 HiveMQ Client APIs to facilitate advanced use cases and extensions.
 
 -fixupmessages.private.ref     : 'private references'
--fixupmessages.split.package   : 'split'
 
 -buildpath                     :   \
 	biz.aQute.bnd.util,\
