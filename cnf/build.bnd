@@ -1,5 +1,5 @@
 -includeresource.all                  =         -src/main/resources
--donotcopy                            =         \.gitignore|\.DS_Store
+-donotcopy                            =         .gitignore|.DS_Store
 
 javac.source                          =         1.8
 javac.target                          =         ${javac.source}
@@ -23,16 +23,18 @@ testsrc                               =         src/test/java
 testbin                               =         ${testbin.directory}
 target-dir                            =         target
 
+sonatype.username                     =         ${env;SONATYPE_USERNAME;}
+sonatype.password                     =         ${env;SONATYPE_PASSWORD;}
 maven.central.url                     =         https://repo.maven.apache.org/maven2/
-sonatype.url                          =         https://s01.oss.sonatype.org
-sonatype.url.snapshot                 =         ${sonatype.url}/content/repositories/snapshots/
-sonatype.url.staging                  =         ${sonatype.url}/service/local/staging/deploy/maven2/
+sonatype.portal.url                   =         https://central.sonatype.com/
+sonatype.portal.snapshot              =         ${sonatype.portal.url}/repository/maven-snapshots
+sonatype.portal.api                   =         ${sonatype.portal.url}/api/v1/publisher/upload
 
 -connection-settings                  =         server;\
-                                                  id=${sonatype.url};\
-                                                  username=${env;SONATYPE_USERNAME;};\
-                                                  password=${env;SONATYPE_PASSWORD;},\
-                                                -bnd
+                                                  id=${sonatype.portal.api};\
+                                                  username=${sonatype.username};\
+                                                  password=${sonatype.password};\
+                                                  verify = false
 -releaserepo                          =         Release
 
 -groupid                              =         in.bytehue
@@ -71,7 +73,7 @@ baseline.version                      =         ${cat;${.}/version/baseline.vers
 
 is.snapshot                           =         ${endswith;${trim;${Package-Version}};SNAPSHOT}
 -snapshot                             =         ${if;${is.snapshot};${tstamp};}
--pom                                  =         version=${if;${is.snapshot};${replacestring;${trim;${Package-Version}};\.SNAPSHOT;-SNAPSHOT};${trim;${Package-Version}}}
+-pom                                  =         version=${if;${is.snapshot};${replacestring;${trim;${Package-Version}};.SNAPSHOT;-SNAPSHOT};${trim;${Package-Version}}}
 -groupid                              =         in.bytehue
 
 Git-Descriptor                        =         ${system-allow-fail;git describe --dirty --always --abbrev=9}
@@ -79,31 +81,32 @@ Git-SHA                               =         ${system-allow-fail;git rev-list
 
 -plugin.1.Build                       =         \
     aQute.bnd.repository.maven.provider.MavenBndRepository; \
-          snapshotUrl                 =        "${sonatype.url.snapshot}"; \
-          releaseUrl                  =        "${maven.central.url}"; \
+          releaseUrl                  =        ${maven.central.url}; \
           readOnly                    =        true; \
-          name                        =        "Build"; \
-          index                       =        ${.}/maven/build.maven
+          name                        =        Build; \
+          index                       =        ${.}/maven/build.maven; \
+		  sonatypeMode                =        none
 
 -plugin.2.Runtime                     =        \
     aQute.bnd.repository.maven.provider.MavenBndRepository; \
-          snapshotUrl                 =        "${sonatype.url.snapshot}"; \
-          releaseUrl                  =        "${maven.central.url}"; \
+          releaseUrl                  =        ${maven.central.url}; \
           readOnly                    =        true; \
-          name                        =        "Runtime"; \
-          index                       =        ${.}/maven/runtime.maven
+          name                        =        Runtime; \
+          index                       =        ${.}/maven/runtime.maven; \
+		  sonatypeMode                =        none
 
 -plugin.3.Release                     =        \
     aQute.bnd.repository.maven.provider.MavenBndRepository; \
-          snapshotUrl                 =        "${sonatype.url.snapshot}"; \
-          releaseUrl                  =        "${sonatype.url.staging}"; \
-          name                        =        "Release"; \
-          noupdateOnRelease           =         true
+		  releaseUrl                  =        ${sonatype.portal.api}; \
+		  snapshotUrl                 =        ${sonatype.portal.snapshot}; \
+          name                        =        Release; \
+          noupdateOnRelease           =        true; \
+          sonatypeMode                =        autopublish 
 
 -plugin.4.Baseline                    =         \
-		    aQute.bnd.repository.maven.provider.MavenBndRepository;\
-		          snapshotUrl         =         ${sonatype.url.snapshot};\
-		          releaseUrl          =         ${maven.central.url};\
-		          readOnly            =         true;\
-		          name                =         Baseline;\
-		          index               =         ${.}/maven/baseline.maven
+    aQute.bnd.repository.maven.provider.MavenBndRepository; \
+		  releaseUrl                  =        ${maven.central.url}; \
+		  readOnly                    =        true; \
+		  name                        =        Baseline; \
+		  index                       =        ${.}/maven/baseline.maven; \
+		  sonatypeMode                =        none
