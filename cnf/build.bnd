@@ -50,7 +50,7 @@ bin.testbin.directory                 =         ${if;${is;${driver};gradle};targ
 
 -builderignore                        =         ${bin.testbin.directory}
 -noextraheaders                       =         true
--diffignore                           =         Bundle-Version
+-diffignore                           =         Bundle-Version, Git-Descriptor, Git-SHA
 
 -buildpath.all                        =         osgi.annotation,\
                                                 osgi.core,\
