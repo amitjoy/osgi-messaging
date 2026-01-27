@@ -34,9 +34,9 @@ import in.bytehue.messaging.mqtt5.provider.helper.LogHelper;
 @Component(
      immediate = true,
      configurationPid = CONNECTION_READY,
-     property = {  
+     property = {
                   MQTT_CONNECTION_READY_SERVICE_PROPERTY + "=true",
-                  CONDITION_ID + "=mqtt-ready" 
+                  CONDITION_ID + "=mqtt-ready"
                 }
 )
 //@formatter:on
