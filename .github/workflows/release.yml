@@ -6,8 +6,8 @@ on:
 
 env:
     LC_ALL:       en_US.UTF-8
-    REPOSITORY_USERNAME: ${{ secrets.REPOSITORY_USERNAME }}
-    REPOSITORY_PASSWORD: ${{ secrets.REPOSITORY_PASSWORD }}
+    SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+    SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
     GRADLE_OPTS: -Dorg.gradle.parallel=false
 
 jobs:
@@ -16,26 +16,25 @@ jobs:
         runs-on:  ubuntu-latest
         steps:
         -   name: Git Checkout
-            uses: actions/checkout@v1
+            uses: actions/checkout@v6
         -   name: Gradle Wrapper Validation
             uses: gradle/wrapper-validation-action@v1
         -   name: Set up Java
-            uses: actions/setup-java@v1
-            with: 
-                java-version: 1.8
+            uses: actions/setup-java@v5
+            with:
+                distribution: zulu
+                java-version: 17
         -   name: Build
             shell: bash
-            run: ./gradlew release
+            run: ./gradlew build
         -   name: Set up Java
-            uses: actions/setup-java@v1
-            with: 
-                java-version: 1.8
-        -   name: Release with Local Broker
-            shell: bash
-            env:
-              # Pass secrets needed for release if required
-              REPOSITORY_USERNAME: ${{ secrets.REPOSITORY_USERNAME }}
-              REPOSITORY_PASSWORD: ${{ secrets.REPOSITORY_PASSWORD }}
-            run: |
-              chmod +x run_tests.sh
-              ./run_tests.sh
+            uses: actions/setup-java@v5
+            with:
+                distribution: zulu
+                java-version: 17
+        - name: Build with Gradle and Local Broker
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          run: |
+            chmod +x ./scripts/release.sh
+            ./scripts/release.sh

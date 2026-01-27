@@ -1,15 +1,11 @@
-# .github/workflows/ci.yml
-
 name: CI Build
 
-# This workflow runs on pushes to any branch except 'release', and on any pull request.
 on:
   push:
     branches-ignore:
       - "release"
   pull_request:
 
-# Defines default environment variables for all jobs.
 env:
   LC_ALL: en_US.UTF-8
   GRADLE_OPTS: -Dorg.gradle.parallel=false
@@ -18,29 +14,20 @@ jobs:
   build:
     name: Build on OpenJDK Linux
     runs-on: ubuntu-latest
-
-    # Grant the GITHUB_TOKEN permissions to read packages.
     permissions:
       contents: read
       packages: read
 
     steps:
-      # Checks out your repository's code.
       - name: Git Checkout
-        uses: actions/checkout@v4
-
-      # Validates the integrity of the Gradle Wrapper JAR file.
+        uses: actions/checkout@v6
       - name: Gradle Wrapper Validation
         uses: gradle/wrapper-validation-action@v1
-
-      # Sets up the specified Java version.
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
-          distribution: 'temurin'
-          java-version: '8'
-
-      # Caches Gradle dependencies and build outputs to speed up subsequent builds.
+          distribution: zulu
+          java-version: 17
       - name: Setup Gradle Cache
         uses: actions/cache@v4
         with:
@@ -50,19 +37,12 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-
-      # Runs the Gradle build command via the test wrapper script.
-      # The script handles starting/stopping the MQTT broker.
       - name: Build with Gradle and Local Broker
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          chmod +x run_tests.sh
-          ./run_tests.sh
-
-      # Uploads the test reports as an artifact.
-      # The `if: always()` condition ensures this step runs even if the build/test step fails,
-      # which is exactly when you need the reports the most.
+          chmod +x ./scripts/build.sh
+          ./scripts/build.sh
       - name: Upload Test Reports
         if: always()
         uses: actions/upload-artifact@v4
