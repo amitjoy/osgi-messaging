@@ -3,7 +3,6 @@ targetCompatibility = '1.8'
 
 tasks.named("release") {
     doFirst {
-        // Create the directory Bnd is complaining about
         mkdir("${rootDir}/cnf/cache/sonatype-release")
     }
 }

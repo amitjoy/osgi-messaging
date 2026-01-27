@@ -1,2 +1,8 @@
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
+
+tasks.named("release") {
+    doFirst {
+        mkdir("${rootDir}/cnf/cache/sonatype-release")
+    }
+}
