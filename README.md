@@ -218,6 +218,8 @@ The `in.bytehue.mqtt.debug` PID can be used to configure the console log mirror.
 
 The `in.bytehue.mqtt.connection.ready` PID identifies the `ConnectionReadyService` which registers a condition service when the MQTT connection is established. This service exposes `osgi.condition.id=mqtt-ready` condition.
 
+The `ConnectionReadyService` is exposed as an OSGi condition under the mentioned config PID as it enables consumers to configure `osgi.ds.satisfying.condition.target`. For example, one might want to delay the registration of the connection ready service if some specific services are up and running or the OSGi runtime is ready and ACTIVE.
+
 #### Primary Messaging APIs
 
 | API                                                                       | Description                                                                                                                    |
