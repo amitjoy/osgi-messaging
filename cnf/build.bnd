@@ -100,7 +100,9 @@ Git-SHA                               =         ${system-allow-fail;git rev-list
 		  releaseUrl                  =        ${sonatype.portal.api}; \
 		  snapshotUrl                 =        ${sonatype.portal.snapshot}; \
           name                        =        Release; \
+		  index                       =        ${.}/maven/release.maven; \
           noupdateOnRelease           =        true; \
+          local                       =        ${.}/target/sonatype-staging; \
           sonatypeMode                =        autopublish 
 
 -plugin.4.Baseline                    =         \
