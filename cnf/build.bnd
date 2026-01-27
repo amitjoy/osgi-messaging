@@ -36,7 +36,8 @@ sonatype.portal.api                   =         ${sonatype.portal.url}/api/v1/pu
                                                   password=${sonatype.password};\
                                                   verify = false
 -releaserepo                          =         Release
-
+gpg                                   =         gpg --batch --pinentry-mode loopback
+-maven-release                        =         remote; sign; passphrase="${env;GPG_PASSPHRASE}"
 -groupid                              =         in.bytehue
 -pom                                  =         version=${if;${def;-snapshot};${versionmask;===;${@version}}-${def;-snapshot};${versionmask;===s;${@version}}}
 -releaserepo                          =         Release
