@@ -35,12 +35,14 @@ sonatype.portal.api                   =         ${sonatype.portal.url}/api/v1/pu
                                                   username=${sonatype.username};\
                                                   password=${sonatype.password};\
                                                   verify = false
--releaserepo                          =         Release
+
 gpg                                   =         gpg --batch --pinentry-mode loopback
 -maven-release                        =         remote; sign; passphrase="${env;GPG_PASSPHRASE}"
 -groupid                              =         in.bytehue
 -pom                                  =         version=${if;${def;-snapshot};${versionmask;===;${@version}}-${def;-snapshot};${versionmask;===s;${@version}}}
+
 -releaserepo                          =         Release
+-baselinerepo                         =         Release
 
 bin.directory                         =         ${if;${is;${driver};gradle};target/gradle/classes;target/classes}
 testbin.directory                     =         ${if;${is;${driver};gradle};target/gradle/test-classes;target/test-classes}
@@ -48,9 +50,6 @@ bin.testbin.directory                 =         ${if;${is;${driver};gradle};targ
 
 -builderignore                        =         ${bin.testbin.directory}
 -noextraheaders                       =         true
-
--baselinerepo                         =         Baseline
--releaserepo                          =         Release
 -diffignore                           =         Bundle-Version
 
 -buildpath.all                        =         osgi.annotation,\
@@ -104,12 +103,4 @@ Git-SHA                               =         ${system-allow-fail;git rev-list
 		  index                       =        ${.}/maven/release.maven; \
           noupdateOnRelease           =        true; \
           local                       =        ${.}/target/sonatype-staging; \
-          sonatypeMode                =        autopublish 
-
--plugin.4.Baseline                    =         \
-    aQute.bnd.repository.maven.provider.MavenBndRepository; \
-		  releaseUrl                  =        ${maven.central.url}; \
-		  readOnly                    =        true; \
-		  name                        =        Baseline; \
-		  index                       =        ${.}/maven/baseline.maven; \
-		  sonatypeMode                =        none
+          sonatypeMode                =        autopublish
