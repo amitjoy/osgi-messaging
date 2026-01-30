@@ -70,7 +70,7 @@ public final class MessageContextBuilderProvider
 
     private final LogHelper logHelper;
     private final MessageProvider message;
-    private final MessageContextProvider messageContext;
+    private MessageContextProvider messageContext;
 
     @Activate
     public MessageContextBuilderProvider(
@@ -98,6 +98,7 @@ public final class MessageContextBuilderProvider
 	@Override
 	public MqttMessageContextBuilder withContext(final MessageContext context) {
 		if (context instanceof MessageContextProvider) {
+			messageContext = (MessageContextProvider) context;
 			message.messageContext = context;
 		}
 		return this;

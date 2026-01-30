@@ -557,10 +557,7 @@ public final class MqttCommand {
         table.setShowVerticalLines(true);
         table.setHeaders("Name", "Value");
 
-        table.addRow("Thread Pool Size", String.valueOf(config.numThreads()));
-        table.addRow("Thread Name Prefix", config.threadNamePrefix());
-        table.addRow("Thread Name Suffix", config.threadNameSuffix());
-        table.addRow("Daemon Threads", String.valueOf(config.isDaemon()));
+        table.addRow("Default Request Timeout", String.valueOf(config.requestTimeoutInMillis()));
 
         return table.print();
     }

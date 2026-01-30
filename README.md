@@ -171,10 +171,7 @@ The `in.bytehue.messaging.publisher.replyto` PID can be used to configure the in
 
 | Configuration      | Description                                                      | Type    | Default Value            |
 |--------------------|------------------------------------------------------------------|---------|--------------------------|
-| `numThreads`       | Number of Threads for the internal thread pool                   | Integer | `20`                     |
-| `threadNamePrefix` | Prefix of the thread name                                        | String  | `mqtt-replyto-publisher` |
-| `threadNameSuffix` | Suffix of the thread name  (supports only `%d` format specifier) | String  | `-%d`                    |
-| `isDaemon`         | Flag to set if the threads will be daemon threads                | Boolean | `true`                   |
+| `requestTimeoutInMillis`         | Default timeout for requests (in milliseconds)                | Long | `15000`                   |
 
 #### Subscription Registry Configuration
 
@@ -246,10 +243,9 @@ The OSGi messaging specification is catered to provide a unified solution to acc
 
 | API                                                                | Description                                                                                                                                                                                                                                                      |
 |--------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder`         | an extended service of `org.osgi.service.messaging.MessageContextBuilder`  that could be used to prepare MQTT 5.0 specific message context                                                                                                                       |
-| `in.bytehue.messaging.mqtt5.api.TargetCondition`                   | marker service interface which consumers can implement to provide services  with properties that can be used as conditional target to the MQTT client.  That means, consumer can provide filters that should be satisfied before MQTT  client is up and running. |
-| `in.bytehue.messaging.mqtt5.api.MqttMessageCorrelationIdGenerator` | service interface to be implemented by consumers to provide the functionality  for generating correlation identifiers required for reply-to channels                                                                                                             |
-| `in.bytehue.messaging.mqtt5.api.SimpleAuthentication`              | service interface to be implemented by consumers to provide the username and password authentication credential for MQTT simple authentication                                                                                                                  |
+| `in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder`         | an extended service of `org.osgi.service.messaging.MessageContextBuilder`  that could be used to prepare MQTT 5.0 specific message context                                                                                                                        |
+| `in.bytehue.messaging.mqtt5.api.MqttRequestMultiplexer`            | a centralized multiplexer for MQTT request-response interactions that maintains persistent, shared subscriptions for response topics                                                                                                                             |
+| `in.bytehue.messaging.mqtt5.api.MqttMessageCorrelationIdGenerator` | service interface to be implemented by consumers to provide the functionality  for generating correlation identifiers required for reply-to channels                                                                                                              |
 
 #### Examples in Action
 
@@ -326,6 +322,42 @@ public final class Mqtt5ReplyToExample {
                        .buildMessage();
             // @formatter:on
             mqttPublisher.publishWithReply(request).onSuccess(System.out::println);
+        } finally {
+            mcbFactory.ungetService(mcb);
+        }
+    }
+}
+```
+
+* Simple Request-Response Multiplexer Example
+
+```java
+@Component
+public final class Mqtt5MultiplexerExample {
+
+    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
+    private MqttRequestMultiplexer multiplexer;
+
+    @Reference(target = "(osgi.messaging.protocol=mqtt5)")
+    private ComponentServiceObjects<MessageContextBuilder> mcbFactory;
+
+    public void request(final String payload) {
+        final MessageContextBuilder mcb = mcbFactory.getService();
+        try {
+            // The Request must go to a SPECIFIC topic
+            final Message request = mcb.channel("my/request/topic")
+                                       .replyTo("my/response/topic/123") // Specific reply topic
+                                       .correlationId(UUID.randomUUID().toString())
+                                       .content(ByteBuffer.wrap(payload.getBytes()))
+                                       .buildMessage();
+
+            // The Context defines the SHARED subscription (Wildcard allowed)
+            final MessageContext subCtx = mcb.channel("my/response/topic/#")
+                                             .buildContext();
+
+            multiplexer.request(request, subCtx)
+                       .timeout(5000)
+                       .onSuccess(response -> System.out.println("Response received"));
         } finally {
             mcbFactory.ungetService(mcb);
         }

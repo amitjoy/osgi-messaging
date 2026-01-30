@@ -17,16 +17,23 @@ package in.bytehue.messaging.mqtt5.provider;
 
 import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForMqttConnectionReady;
 import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForRequestProcessing;
+import static org.junit.Assert.assertEquals;
 
 import java.nio.ByteBuffer;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.service.messaging.Message;
+import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.replyto.ReplyToManyPublisher;
+import org.osgi.util.pushstream.PushStream;
 
 import aQute.launchpad.Launchpad;
 import aQute.launchpad.LaunchpadBuilder;
@@ -97,6 +104,49 @@ public final class MessageReplyToManyPublisherTest {
 		publisher.publish(stopMessage, reqChannel);
 
 		waitForRequestProcessing(flag);
+	}
+
+	@Test
+	public void test_publish_with_reply_many_with_context() throws Exception {
+		final AtomicInteger count = new AtomicInteger(0);
+		final CountDownLatch latch = new CountDownLatch(3);
+
+		final String reqChannel = "a/b";
+		final String resChannel = "a/b/c";
+		final String payload = "abc";
+		final String correlationId = UUID.randomUUID().toString();
+
+		// @formatter:off
+        final Message req = mcb.channel(resChannel)
+                                   .replyTo(reqChannel)
+                                   .correlationId(correlationId)
+                                   .content(ByteBuffer.wrap(payload.getBytes()))
+                                   .buildMessage();
+
+        final MessageContext res = mcb.channel(resChannel)
+        		                      .replyTo(reqChannel)
+        		                      .correlationId(correlationId)
+        		                      .content(ByteBuffer.wrap(payload.getBytes()))
+        		                      .buildContext();
+        // @formatter:on
+
+		final PushStream<Message> stream = replyToPublisher.publishWithReplyMany(req, res);
+		stream.forEach(m -> {
+			count.incrementAndGet();
+			latch.countDown();
+		});
+
+		final Message response = mcb.channel(reqChannel).correlationId(correlationId)
+				.content(ByteBuffer.wrap(payload.getBytes())).buildMessage();
+
+		// Publish 3 responses
+		publisher.publish(response);
+		publisher.publish(response);
+		publisher.publish(response);
+
+		latch.await(20, TimeUnit.SECONDS);
+		assertEquals("Should have received 3 responses", 3, count.get());
+		stream.close();
 	}
 
 }

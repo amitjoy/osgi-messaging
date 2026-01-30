@@ -20,7 +20,6 @@ import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForRequestProce
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.ByteBuffer;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Before;
@@ -68,21 +67,25 @@ public final class MessageReplyToPublisherCorrelationIdTest {
 		final String reqChannel = "ab/ba";
 		final String resChannel = "c/d";
 		final String payload = "abc";
+		final String correlationId = "abcd";
 
 		// @formatter:off
         final Message message = mcb.channel(resChannel)
                                    .replyTo(reqChannel)
+                                   .correlationId(correlationId)
                                    .content(ByteBuffer.wrap(payload.getBytes()))
                                    .buildMessage();
 
         replyToPublisher.publishWithReply(message).onSuccess(m -> {
-                final String correlationId = m.getContext().getCorrelationId();
-                UUID.fromString(correlationId);
-                flag.set(true);
-            });
+                final String id = m.getContext().getCorrelationId();
+                if (correlationId.equals(id)) {
+                	flag.set(true);
+                }
+        });
 
         final Message reqMessage = mcb.channel(reqChannel)
                                       .content(ByteBuffer.wrap(payload.getBytes()))
+                                      .correlationId(correlationId)
                                       .buildMessage();
         // @formatter:on
 

@@ -5,7 +5,7 @@
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -18,9 +18,10 @@ package in.bytehue.messaging.mqtt5.provider;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_ID;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.MESSAGING_PROTOCOL;
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.PUBLISHER_REPLYTO;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RECEIVE_LOCAL;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getCorrelationId;
-import static java.util.concurrent.Executors.newFixedThreadPool;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.osgi.service.messaging.Features.EXTENSION_QOS;
 import static org.osgi.service.messaging.Features.GENERATE_CORRELATION_ID;
 import static org.osgi.service.messaging.Features.GENERATE_REPLY_CHANNEL;
 import static org.osgi.service.messaging.Features.REPLY_TO;
@@ -28,21 +29,18 @@ import static org.osgi.service.messaging.Features.REPLY_TO_MANY_PUBLISH;
 import static org.osgi.service.messaging.Features.REPLY_TO_MANY_SUBSCRIBE;
 
 import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadFactory;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.log.Logger;
 import org.osgi.service.log.LoggerFactory;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
-import org.osgi.service.messaging.MessageContextBuilder;
 import org.osgi.service.messaging.annotations.ProvideMessagingReplyToManyFeature;
 import org.osgi.service.messaging.propertytypes.MessagingFeature;
 import org.osgi.service.messaging.replyto.ReplyToManyPublisher;
@@ -50,17 +48,11 @@ import org.osgi.service.messaging.replyto.ReplyToPublisher;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
-import org.osgi.util.promise.Deferred;
 import org.osgi.util.promise.Promise;
-import org.osgi.util.promise.PromiseFactory;
 import org.osgi.util.pushstream.PushStream;
-import org.osgi.util.pushstream.PushStreamProvider;
-import org.osgi.util.pushstream.SimplePushEventSource;
 
 import in.bytehue.messaging.mqtt5.provider.MessageReplyToPublisherProvider.ReplyToConfig;
 import in.bytehue.messaging.mqtt5.provider.helper.LogHelper;
-import in.bytehue.messaging.mqtt5.provider.helper.SubscriptionAck;
-import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 
 //@formatter:off
 @Designate(ocd = ReplyToConfig.class)
@@ -86,21 +78,11 @@ import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 //@formatter:on
 public final class MessageReplyToPublisherProvider implements ReplyToPublisher, ReplyToManyPublisher {
 
-	@ObjectClassDefinition(name = "MQTT Messaging Reply-To Publisher Executor Configuration", description = "This configuration is used to configure the internal thread pool")
+	@ObjectClassDefinition(name = "MQTT Messaging Reply-To Publisher Configuration", description = "This configuration is used to configure the reply-to publisher")
 	public @interface ReplyToConfig {
-		@AttributeDefinition(name = "Number of threads for the internal thread pool")
-		int numThreads() default 20;
-
-		@AttributeDefinition(name = "Prefix of the thread name")
-		String threadNamePrefix() default "mqtt-replyto-publisher";
-
-		@AttributeDefinition(name = "Suffix of the thread name (supports only {@code %d} format specifier)")
-		String threadNameSuffix() default "-%d";
-
-		@AttributeDefinition(name = "Flag to set if the threads will be daemon threads")
-		boolean isDaemon() default true;
+		@AttributeDefinition(name = "Request Timeout", description = "Default timeout for requests (in milliseconds)", min = "1000")
+		long requestTimeoutInMillis() default 15_000L;
 	}
-	//@formatter:on
 
 	@Reference(service = LoggerFactory.class)
 	private Logger logger;
@@ -122,47 +104,18 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 
 	private LogHelper logHelper;
 	private volatile ReplyToConfig config;
-	private PromiseFactory promiseFactory;
 
 	@Activate
 	@Modified
 	void init(final ReplyToConfig config) {
 		this.config = config;
 		this.logHelper = new LogHelper(logger, logMirror);
-		//@formatter:off
-        final ThreadFactory threadFactory =
-                new ThreadFactoryBuilder()
-                        .setThreadFactoryName(config.threadNamePrefix())
-                        .setThreadNameFormat(config.threadNameSuffix())
-                        .setDaemon(config.isDaemon())
-                        .build();
-        //@formatter:on
-		final PromiseFactory oldFactory = this.promiseFactory;
-		this.promiseFactory = new PromiseFactory(newFixedThreadPool(config.numThreads(), threadFactory));
-		if (oldFactory != null) {
-			logHelper.info("Shutting down old reply-to executor gracefully...");
-			try {
-				// Tell executors to stop accepting new tasks
-				((ExecutorService) oldFactory.executor()).shutdown();
-				oldFactory.scheduledExecutor().shutdown();
-
-				// Give in-flight tasks 5 seconds to complete
-				if (!((ExecutorService) oldFactory.executor()).awaitTermination(5, SECONDS)) {
-					// Force shutdown if they don't finish
-					((ExecutorService) oldFactory.executor()).shutdownNow();
-				}
-				if (!oldFactory.scheduledExecutor().awaitTermination(5, SECONDS)) {
-					// Force shutdown if they don't finish
-					oldFactory.scheduledExecutor().shutdownNow();
-				}
-			} catch (final InterruptedException e) {
-				Thread.currentThread().interrupt();
-				// Force shutdown on interrupt
-				((ExecutorService) oldFactory.executor()).shutdownNow();
-				oldFactory.scheduledExecutor().shutdownNow();
-			}
-		}
 		logHelper.info("Messaging reply-to publisher has been activated/modified");
+	}
+
+	@Deactivate
+	void deactivate() {
+		logHelper.info("Messaging reply-to publisher has been deactivated");
 	}
 
 	public ReplyToConfig config() {
@@ -176,60 +129,17 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 
 	@Override
 	public Promise<Message> publishWithReply(final Message requestMessage, final MessageContext replyToContext) {
-		final Deferred<Message> deferred = promiseFactory.deferred();
-		final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
+		final PushStream<Message> stream = publishWithReplyMany(requestMessage, replyToContext);
 
-		SubscriptionAck sub = null;
-		try {
-			// Create a new, corrected MessageContext for the subscription
-			final String replyChannel = replyToContext.getReplyToChannel();
-			if (replyChannel == null || replyChannel.trim().isEmpty()) {
-				String errorMsg = "Reply-to channel is missing in the message context";
-			    logHelper.error(errorMsg + " for request message: {}", requestMessage.getContext());
-			    deferred.fail(new IllegalArgumentException(errorMsg));
-			    return deferred.getPromise();
-			}
-			final MessageContextBuilderProvider builder = mcbFactory.getService();
-			try {
-				// Use the reply-to channel as the primary channel for the subscription
-				final MessageContextBuilder mcb = builder.channel(replyChannel);
-
-				// Copy all extensions from the original context to preserve them
-				final Map<String, Object> extensions = replyToContext.getExtensions();
-				if (extensions != null) {
-					extensions.forEach(mcb::extensionEntry);
-				}
-				final MessageContext subscriptionContext = mcb.extensionEntry(REPLY_TO, true).buildContext();
-
-				// Pass the new, corrected context to the subscriber
-				sub = subscriber._subscribe(subscriptionContext);
-			} finally {
-				mcbFactory.ungetService(builder);
-			}
-		} catch (final Exception e) {
-			deferred.fail(e);
-			return deferred.getPromise();
-		}
-		// subscribe to the channel first
-		final PushStream<Message> stream = sub.stream()
-				.filter(responseMessage -> matchCorrelationId(requestMessage, responseMessage)).buffer();
-
-		// resolve the promise on first response matching the specified correlation ID
-		// and close the stream to proceed with the unsubscription as it is a fire and
-		// forget execution
-		stream.forEach(m -> {
-			deferred.resolve(m);
-			stream.close();
-		});
-
-		try {
-			// publish the request to the channel
-			publisher.publish(requestMessage, dto.pubChannel);
-		} catch (Exception e) {
-			deferred.fail(e);
-			stream.close();
-		}
-		return deferred.getPromise();
+		// We expect a single response, so we close the stream immediately after
+		// resolution or timeout
+		// @formatter:off
+		return stream.findFirst()
+				     .map(o -> o.orElseThrow(() -> new IllegalStateException("Stream closed without response")))
+				     .timeout(config.requestTimeoutInMillis())
+				     .onFailure(e -> stream.close()) 
+				     .onResolve(stream::close);      
+		// @formatter:on
 	}
 
 	@Override
@@ -239,89 +149,67 @@ public final class MessageReplyToPublisherProvider implements ReplyToPublisher, 
 
 	@Override
 	public PushStream<Message> publishWithReplyMany(final Message requestMessage, final MessageContext replyToContext) {
-		final ReplyToDTO dto = new ReplyToDTO(requestMessage, replyToContext);
-		SubscriptionAck sub = null;
+		final String correlationId = getCorrelationId((MessageContextProvider) requestMessage.getContext(),
+				bundleContext, logHelper);
+
+		final String replyToChannel = requestMessage.getContext().getReplyToChannel();
+		if (replyToChannel == null || replyToChannel.trim().isEmpty()) {
+			throw new IllegalArgumentException("Reply-to channel is missing in the publish message");
+		}
+
+		final MessageContextBuilderProvider builder = mcbFactory.getService();
 		try {
-			// Create a new, corrected MessageContext for the subscription
-			final String replyChannel = replyToContext.getReplyToChannel();
-			if (replyChannel == null || replyChannel.trim().isEmpty()) {
-				String errorMsg = "Reply-to channel is missing in the message context";
-				logHelper.error(errorMsg + " for request message: {}", requestMessage.getContext());
-				throw new IllegalArgumentException(errorMsg);
+			final MessageContextProvider contextProvider = (MessageContextProvider) replyToContext;
+
+			// Update the context with the generated correlation ID if it wasn't present
+			if (contextProvider.correlationId == null) {
+				contextProvider.correlationId = correlationId;
 			}
-			final MessageContextBuilderProvider builder = mcbFactory.getService();
+
+			// Determine the correct subscription channel
+			// If the passed context channel is the same as the request channel (publication
+			// topic), it means we are likely in the 1-arg scenario or the user reused the
+			// context.
+			// We must switch to the Reply-To channel to receive the response.
+			String subscriptionChannel = replyToContext.getChannel();
+			if (subscriptionChannel != null && subscriptionChannel.equals(requestMessage.getContext().getChannel())) {
+				subscriptionChannel = replyToChannel;
+			}
+
+			PushStream<Message> stream;
+
+			// @formatter:off
+			final Map<String, Object> extensions = replyToContext.getExtensions();
+			if (extensions != null) {
+				extensions.forEach(builder::extensionEntry);
+			}
+			
+			final MessageContext subscriptionContext = 
+					builder.channel(subscriptionChannel) // Use the resolved subscription channel
+					       .extensionEntry(EXTENSION_QOS, 0)
+					       .extensionEntry(REPLY_TO, true)
+					       .extensionEntry(RECEIVE_LOCAL, true)
+					       .extensionEntry(RETAIN, false)
+					       .buildContext();
+
+			stream = subscriber.subscribe(subscriptionContext)
+                               .filter(m -> correlationId.equals(m.getContext().getCorrelationId()));
+			// @formatter:on
+
+			logHelper.debug("Sending request to '{}' with correlation ID '{}', expecting reply on '{}'",
+					requestMessage.getContext().getChannel(), correlationId, subscriptionChannel);
+
 			try {
-				// Use the reply-to channel as the primary channel for the subscription
-				final MessageContextBuilder mcb = builder.channel(replyChannel);
-
-				// Copy all extensions from the original context to preserve them
-				final Map<String, Object> extensions = replyToContext.getExtensions();
-				if (extensions != null) {
-					extensions.forEach(mcb::extensionEntry);
-				}
-				final MessageContext subscriptionContext = mcb.extensionEntry(REPLY_TO, true).buildContext();
-
-				// Pass the new, corrected context to the subscriber
-				sub = subscriber._subscribe(subscriptionContext);
-			} finally {
-				mcbFactory.ungetService(builder);
+				publisher.publish(requestMessage);
+			} catch (final Exception e) {
+				stream.close();
+				throw e;
 			}
-		} catch (final Exception e) {
-			// If subscription fails, return an empty, closed stream
-			final PushStreamProvider psp = new PushStreamProvider();
-			final SimplePushEventSource<Message> eventSource = psp.createSimpleEventSource(Message.class);
-			eventSource.error(e); // Propagate the error to the stream
-			return psp.createStream(eventSource);
-		}
-		// subscribe to the channel first
-		final PushStream<Message> stream = sub.stream()
-				.filter(responseMessage -> matchCorrelationId(requestMessage, responseMessage));
 
-		try {
-			// publish the request to the channel
-			publisher.publish(requestMessage, dto.pubChannel);
-		} catch (Exception e) {
-			stream.close();
-		}
-		return stream;
-	}
+			return stream;
 
-	private class ReplyToDTO {
-		String pubChannel;
-		@SuppressWarnings("unused")
-		String subChannel;
-
-		ReplyToDTO(final Message message, final MessageContext context) {
-			autoGenerateCorrelationIdIfAbsent(message);
-			autoGenerateReplyToChannelIfAbsent(message);
-
-			pubChannel = context.getChannel();
-			subChannel = context.getReplyToChannel();
-		}
-
-		private void autoGenerateCorrelationIdIfAbsent(final Message message) {
-			final MessageContextProvider context = (MessageContextProvider) message.getContext();
-			context.correlationId = getCorrelationId(context, bundleContext, logHelper);
-		}
-
-		private void autoGenerateReplyToChannelIfAbsent(final Message message) {
-			final MessageContextProvider context = (MessageContextProvider) message.getContext();
-
-			if (context.getReplyToChannel() == null) {
-				context.replyToChannel = UUID.randomUUID().toString();
-				logHelper.info("Auto-generated reply-to channel '{}' as it is missing in the request",
-						context.replyToChannel);
-			}
+		} finally {
+			mcbFactory.ungetService(builder);
 		}
 	}
-
-	private boolean matchCorrelationId(final Message requestMessage, final Message responseMessage) {
-		final String requestCorrelationId = requestMessage.getContext().getCorrelationId();
-		if (requestCorrelationId == null) {
-			return false;
-		}
-		final String responseCorrelationId = responseMessage.getContext().getCorrelationId();
-		return requestCorrelationId.equals(responseCorrelationId);
-	}
-
 }

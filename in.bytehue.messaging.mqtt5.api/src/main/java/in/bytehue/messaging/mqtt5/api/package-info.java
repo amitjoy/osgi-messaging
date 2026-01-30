@@ -14,7 +14,7 @@
  * the License.
  ******************************************************************************/
 @Export
-@Version("1.0.0")
+@Version("1.1.0")
 package in.bytehue.messaging.mqtt5.api;
 
 import org.osgi.annotation.bundle.Export;

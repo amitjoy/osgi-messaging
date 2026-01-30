@@ -17,17 +17,24 @@ package in.bytehue.messaging.mqtt5.provider;
 
 import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForMqttConnectionReady;
 import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForRequestProcessing;
+import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContext;
 import org.osgi.service.messaging.MessageContextBuilder;
 import org.osgi.service.messaging.MessagePublisher;
+import org.osgi.service.messaging.MessageSubscription;
+import org.osgi.service.messaging.replyto.ReplyToManyPublisher;
 import org.osgi.service.messaging.replyto.ReplyToPublisher;
 
 import aQute.launchpad.Launchpad;
@@ -45,7 +52,19 @@ public final class MessageReplyToPublisherTest {
 	private MessagePublisher publisher;
 
 	@Service
+	private MessageSubscription subscriber;
+
+	@Service
 	private ReplyToPublisher replyToPublisher;
+
+	@Service
+	private ReplyToManyPublisher replyToManyPublisher;
+
+	@Service
+	private MessageReplyToPublisherProvider provider;
+
+	@Service
+	private ConfigurationAdmin configAdmin;
 
 	@Service
 	private MessageContextBuilder mcb;
@@ -54,7 +73,7 @@ public final class MessageReplyToPublisherTest {
 	static LaunchpadBuilder builder = new LaunchpadBuilder().bndrun("test.bndrun").export("sun.misc");
 
 	@Before
-	public void setup() throws InterruptedException {
+	public void setup() throws Exception {
 		waitForMqttConnectionReady(launchpad);
 	}
 
@@ -65,16 +84,19 @@ public final class MessageReplyToPublisherTest {
 		final String reqChannel = "a/b";
 		final String resChannel = "c/d";
 		final String payload = "abc";
+		final String correlationId = UUID.randomUUID().toString();
 
 		// @formatter:off
         final Message message = mcb.channel(resChannel)
                                    .replyTo(reqChannel)
+                                   .correlationId(correlationId)
                                    .content(ByteBuffer.wrap(payload.getBytes()))
                                    .buildMessage();
 
         replyToPublisher.publishWithReply(message).onSuccess(m -> flag.set(true));
 
         final Message reqMessage = mcb.channel(reqChannel)
+                                      .correlationId(correlationId)
                                       .content(ByteBuffer.wrap(payload.getBytes()))
                                       .buildMessage();
         // @formatter:on
@@ -91,6 +113,7 @@ public final class MessageReplyToPublisherTest {
 		final String reqChannel = "a/b";
 		final String resChannel = "c/d";
 		final String payload = "abc";
+		final String correlationId = UUID.randomUUID().toString();
 
 		// @formatter:off
         final Message message = mcb.channel(resChannel)
@@ -99,11 +122,13 @@ public final class MessageReplyToPublisherTest {
 
         final MessageContext context = mcb.channel(resChannel)
                                           .replyTo(reqChannel)
+                                          .correlationId(correlationId)
                                           .buildContext();
 
         replyToPublisher.publishWithReply(message, context).onSuccess(m -> flag.set(true));
 
         final Message reqMessage = mcb.channel(reqChannel)
+                                      .correlationId(correlationId)
                                       .content(ByteBuffer.wrap(payload.getBytes()))
                                       .buildMessage();
         // @formatter:on
@@ -120,20 +145,94 @@ public final class MessageReplyToPublisherTest {
 		final String reqChannel = "a/b";
 		final String resChannel = "c/d";
 		final String payload = "abc";
+		final String correlationId = UUID.randomUUID().toString();
 
 		// @formatter:off
         final Message message = mcb.channel(resChannel)
                                    .replyTo(reqChannel)
+                                   .correlationId(correlationId)
                                    .content(ByteBuffer.wrap(payload.getBytes()))
                                    .buildMessage();
 
         final Message reqMessage = mcb.channel(reqChannel)
+                                      .correlationId(correlationId)
                                       .content(ByteBuffer.wrap(payload.getBytes()))
                                       .buildMessage();
         // @formatter:on
 		replyToPublisher.publishWithReply(message).onSuccess(m -> flag.set(true));
 		publisher.publish(reqMessage);
 		waitForRequestProcessing(flag);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void test_publish_with_reply_missing_reply_channel() throws Exception {
+		final String resChannel = "c/d";
+		final String payload = "abc";
+
+		// @formatter:off
+        final Message message = mcb.channel(resChannel)
+                                   .content(ByteBuffer.wrap(payload.getBytes()))
+                                   .buildMessage();
+        // @formatter:on
+
+		replyToPublisher.publishWithReply(message);
+	}
+
+	@Test
+	public void test_publish_with_reply_timeout() throws Exception {
+		final AtomicBoolean failure = new AtomicBoolean();
+		final CountDownLatch latch = new CountDownLatch(1);
+
+		final String reqChannel = "a/b";
+		final String resChannel = "c/d";
+		final String payload = "abc";
+		final String correlationId = UUID.randomUUID().toString();
+
+		// @formatter:off
+        final Message message = mcb.channel(resChannel)
+                                   .replyTo(reqChannel)
+                                   .correlationId(correlationId)
+                                   .content(ByteBuffer.wrap(payload.getBytes()))
+                                   .buildMessage();
+        // @formatter:on
+
+		// We do not publish the response, so it should timeout
+		replyToPublisher.publishWithReply(message).onFailure(e -> {
+			failure.set(true);
+			latch.countDown();
+		});
+
+		latch.await(20, TimeUnit.SECONDS); // Wait longer than the timeout
+		assertTrue("Promise should have failed with timeout", failure.get());
+	}
+
+	@Test
+	public void test_publish_with_reply_auto_correlation_id() throws Exception {
+		final AtomicBoolean received = new AtomicBoolean();
+		final String reqChannel = "test/auto/cid/req";
+		final String resChannel = "test/auto/cid/res";
+		final CountDownLatch latch = new CountDownLatch(1);
+
+		// Subscribe to REQUEST channel (where the message is published) to verify CID
+		subscriber.subscribe(resChannel).forEach(m -> {
+			if (m.getContext().getCorrelationId() != null) {
+				received.set(true);
+				latch.countDown();
+			}
+		});
+
+		// Publish without CID
+		// @formatter:off
+		final Message message = mcb.channel(resChannel)
+				                   .replyTo(reqChannel)
+				                   .content(ByteBuffer.wrap("abc".getBytes()))
+				                   .buildMessage();
+		// @formatter:on
+
+		replyToPublisher.publishWithReply(message); // Don't care about result, just the publish
+
+		latch.await(20, TimeUnit.SECONDS);
+		assertTrue("Request message should have auto-generated correlation ID", received.get());
 	}
 
 }

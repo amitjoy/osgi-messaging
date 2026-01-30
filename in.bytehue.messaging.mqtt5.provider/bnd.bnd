@@ -9,7 +9,7 @@ Bundle-Description             : An OSGi Messaging Adapter for the MQTT 5.0 prot
 
 -buildpath                     :   \
 	biz.aQute.bnd.util,\
-	in.bytehue.messaging.mqtt5.api,\
+	in.bytehue.messaging.mqtt5.api;version=latest,\
 	org.apache.felix.gogo.runtime,\
 	org.apache.felix.log,\
 	org.osgi.service.event,\
