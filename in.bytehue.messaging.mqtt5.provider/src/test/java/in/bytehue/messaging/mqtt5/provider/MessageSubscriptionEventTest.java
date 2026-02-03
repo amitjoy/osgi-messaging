@@ -123,7 +123,7 @@ public class MessageSubscriptionEventTest {
 				}
 
 				@Override
-				public long clusterSyncDelayInMillis() {
+				public long postSubAckDelayForClusterSync() {
 					return 0;
 				}
 

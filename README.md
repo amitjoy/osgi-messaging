@@ -154,7 +154,7 @@ The `in.bytehue.messaging.subscriber` PID can be used to configure the subscribe
 |---|---|---|---|
 | `timeoutInMillis` | Default timeout for synchronously subscribing to the broker (in milliseconds) | Long | `15000` |
 | `qos` | Default QoS for subscriptions unless specified | Integer | `0` |
-| `clusterSyncDelayInMillis` | Cluster Sync Delay - Wait after SUBACK (in milliseconds) | Long | `0` |
+| `postSubAckDelayForClusterSync` | Delay in milliseconds to wait after a successful SUBACK to allow for cluster synchronization | Long | `0` |
 
 #### Publisher Configuration
 

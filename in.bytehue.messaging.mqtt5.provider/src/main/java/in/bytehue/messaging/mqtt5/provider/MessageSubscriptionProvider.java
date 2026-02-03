@@ -114,8 +114,9 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 		@AttributeDefinition(name = "Default QoS for subscriptions unless specified", min = "0", max = "2")
         int qos() default 0;
 
-		@AttributeDefinition(name = "Cluster Sync Delay", description = "Wait after SUBACK (in milliseconds)", min = "0")
-		long clusterSyncDelayInMillis() default 0L;
+		@AttributeDefinition(name = "Post SUBACK Delay For Cluster Sync", description = "Delay in milliseconds to wait after a successful SUBACK "
+				+ "to allow for cluster synchronization", min = "0")
+		long postSubAckDelayForClusterSync() default 0L;
 	}
 
 	private LogHelper logHelper;
@@ -380,12 +381,12 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 
             future.get(config.timeoutInMillis(), MILLISECONDS);
 
-            long delay = config.clusterSyncDelayInMillis();
+            long delay = config.postSubAckDelayForClusterSync();
             if (delay > 0) {
-                logHelper.debug("Cluster Sync: Subscription acknowledged. Waiting {}ms for propagation...", delay);
+                logHelper.debug("[Post SUBACK Delay] Subscription acknowledged. Waiting {}ms for cluster synchronization...", delay);
                 // It is safe to sleep here because we are on the caller's thread, not the HiveMQ Network thread.
                 Thread.sleep(delay);
-                logHelper.debug("Cluster Sync: Propagation wait of {}ms finished", delay);
+                logHelper.debug("[Post SUBACK Delay] Wait of {}ms for cluster synchronization finished", delay);
             }
 
             return SubscriptionAck.of(stream, subscription.id);
