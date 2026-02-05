@@ -25,8 +25,8 @@ Further to the above, there is a utility bundle comprising an easy-to-use functi
 
 | Artifact | Version | Coordinates (G:A:V) |
 | :--- | :---: | :--- |
-| **MQTT 5 Provider** | `1.0.0` | `in.bytehue:in.bytehue.messaging.mqtt5.provider:1.0.0` |
-| **Remote Adapter** | `1.0.0` | `in.bytehue:in.bytehue.messaging.mqtt5.remote.adapter:1.0.0` |
+| **MQTT 5 Provider** | `1.1.0` | `in.bytehue:in.bytehue.messaging.mqtt5.provider:1.1.0` |
+| **Remote Adapter** | `1.1.0` | `in.bytehue:in.bytehue.messaging.mqtt5.remote.adapter:1.1.0` |
 
 
 ------------------------------------------------------------------------------------------------------------
