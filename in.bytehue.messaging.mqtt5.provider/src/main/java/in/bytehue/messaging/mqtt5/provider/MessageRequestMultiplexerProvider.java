@@ -26,6 +26,7 @@ import static org.osgi.service.messaging.Features.REPLY_TO_MANY_PUBLISH;
 import static org.osgi.service.messaging.Features.REPLY_TO_MANY_SUBSCRIBE;
 
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -43,7 +44,9 @@ import org.osgi.util.promise.Deferred;
 import org.osgi.util.promise.Promise;
 import org.osgi.util.pushstream.PushStream;
 
+import in.bytehue.messaging.mqtt5.api.CancellablePromise;
 import in.bytehue.messaging.mqtt5.api.MqttRequestMultiplexer;
+import in.bytehue.messaging.mqtt5.provider.helper.CancellablePromiseProvider;
 
 @Component
 // @formatter:off
@@ -85,7 +88,7 @@ public final class MessageRequestMultiplexerProvider implements MqttRequestMulti
 	}
 
 	@Override
-	public Promise<Message> request(final Message request, final MessageContext subscriptionContext) {
+	public CancellablePromise<Message> request(final Message request, final MessageContext subscriptionContext) {
 		requireNonNull(request, "Request message cannot be null");
 		requireNonNull(subscriptionContext, "Subscription context cannot be null");
 
@@ -116,7 +119,14 @@ public final class MessageRequestMultiplexerProvider implements MqttRequestMulti
 			throw e;
 		}
 
-		return deferred.getPromise();
+		return new CancellablePromiseProvider<>(deferred.getPromise(), () -> {
+			final Deferred<Message> d = pendingRequests.remove(correlationId);
+			if (d != null) {
+				d.fail(new CancellationException("Request cancelled by consumer"));
+				return true;
+			}
+			return false;
+		});
 	}
 
 	private void ensureMasterStream(final String topic, final MessageContext context) {

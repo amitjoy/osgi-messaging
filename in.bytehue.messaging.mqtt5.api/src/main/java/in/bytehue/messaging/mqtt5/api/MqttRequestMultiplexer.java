@@ -63,5 +63,5 @@ public interface MqttRequestMultiplexer {
 	 *                            (wildcards allowed).
 	 * @return a Promise resolving to the response message.
 	 */
-	Promise<Message> request(Message request, MessageContext subscriptionContext);
+	CancellablePromise<Message> request(Message request, MessageContext subscriptionContext);
 }
