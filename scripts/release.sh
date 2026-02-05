@@ -59,6 +59,9 @@ git tag v$version_without_snapshot
 echo "🏁 Pushing Tag: v$version_without_snapshot"
 git push origin v$version_without_snapshot
 
+echo "🏁 Building Bundles"
+./scripts/build.sh
+
 echo "🏁 Cleaning Sonatype Staging Folders"
 rm -rf cnf/cache/sonatype-release/* 2>/dev/null || true
 rm -rf cnf/target/sonatype-staging/* 2>/dev/null || true

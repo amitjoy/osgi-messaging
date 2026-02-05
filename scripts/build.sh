@@ -88,7 +88,7 @@ if [ $# -gt 0 ]; then
     "$@"
 else
     echo "--- [EXEC] Running Default: ./gradlew build ---"
-    ./gradlew build
+    ./gradlew clean build
 fi
 EXIT_CODE=$?
 
