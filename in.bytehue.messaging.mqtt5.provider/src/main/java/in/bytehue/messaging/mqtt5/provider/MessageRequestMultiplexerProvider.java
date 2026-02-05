@@ -71,10 +71,17 @@ public final class MessageRequestMultiplexerProvider implements MqttRequestMulti
 	private final Lock lock = new ReentrantLock();
 	private final Map<String, PushStream<Message>> masterStreams = new ConcurrentHashMap<>();
 	private final Map<String, Deferred<Message>> pendingRequests = new ConcurrentHashMap<>();
+	private boolean active = true;
 
 	@Deactivate
 	void deactivate() {
-		clearStreams("Multiplexer is being deactivated");
+		lock.lock();
+		try {
+			active = false;
+			clearStreams("Multiplexer is being deactivated");
+		} finally {
+			lock.unlock();
+		}
 	}
 
 	// ========== MQTT CONNECTION LIFECYCLE ==========
@@ -84,7 +91,12 @@ public final class MessageRequestMultiplexerProvider implements MqttRequestMulti
 	}
 
 	protected void unbindMqttConnectionReadyCondition(Condition condition) {
-		clearStreams("MQTT connection is NOT READY");
+		lock.lock();
+		try {
+			clearStreams("MQTT connection is NOT READY");
+		} finally {
+			lock.unlock();
+		}
 	}
 
 	@Override
@@ -137,6 +149,9 @@ public final class MessageRequestMultiplexerProvider implements MqttRequestMulti
 		}
 		lock.lock();
 		try {
+			if (!active) {
+				throw new IllegalStateException("Multiplexer is shutting down");
+			}
 			if (!masterStreams.containsKey(topic)) {
 				// Initialize the persistent stream
 				final PushStream<Message> stream = subscriber.subscribe(context);
@@ -173,24 +188,19 @@ public final class MessageRequestMultiplexerProvider implements MqttRequestMulti
 	}
 
 	private void clearStreams(String message) {
-		lock.lock();
-		try {
-			// Close all streams (will trigger the onResolve cleanup above, which is fine)
-			masterStreams.values().forEach(stream -> {
-				try {
-					stream.close();
-				} catch (Exception ignored) {
-					// ignore
-				}
-			});
-			masterStreams.clear();
+		// Close all streams (will trigger the onResolve cleanup above, which is fine)
+		masterStreams.values().forEach(stream -> {
+			try {
+				stream.close();
+			} catch (Exception ignored) {
+				// ignore
+			}
+		});
+		masterStreams.clear();
 
-			final Exception shutdownError = new IllegalStateException(message);
-			pendingRequests.values().forEach(d -> d.fail(shutdownError));
-			pendingRequests.clear();
-		} finally {
-			lock.unlock();
-		}
+		final Exception shutdownError = new IllegalStateException(message);
+		pendingRequests.values().forEach(d -> d.fail(shutdownError));
+		pendingRequests.clear();
 	}
 
 }
