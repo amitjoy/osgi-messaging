@@ -156,11 +156,9 @@ public final class MessageRequestMultiplexerProvider implements MqttRequestMulti
 				// Initialize the persistent stream
 				final PushStream<Message> stream = subscriber.subscribe(context);
 
-				// Atomic Registration: Put into map BEFORE attaching listeners to avoid race
-				// condition where listener fires before put() happens.
-				masterStreams.put(topic, stream);
-
 				// One-time terminal operation setup
+				// Attach Listener BEFORE exposing to map to avoid race where concurrent
+				// readers see the stream but no listener is attached yet.
 				final Promise<Void> closedPromise = stream.forEach(msg -> {
 					final String cid = msg.getContext().getCorrelationId();
 					if (cid != null) {
@@ -171,6 +169,9 @@ public final class MessageRequestMultiplexerProvider implements MqttRequestMulti
 						}
 					}
 				});
+
+				// Atomic Registration: Expose fully initialized stream
+				masterStreams.put(topic, stream);
 
 				// Self-cleaning: If stream dies for ANY reason, remove it from the map
 				closedPromise.onResolve(() -> {
