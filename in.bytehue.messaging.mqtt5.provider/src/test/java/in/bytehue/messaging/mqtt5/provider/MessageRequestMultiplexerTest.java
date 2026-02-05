@@ -232,4 +232,26 @@ public final class MessageRequestMultiplexerTest {
 			assertEquals("Should explicitly cleanup request after timeout", true, cleanedUp);
 		}
 	}
+
+	@Test
+	public void test_duplicate_correlation_id() throws Exception {
+		final String correlationId = "duplicate-id-" + UUID.randomUUID().toString();
+		final String topic = "request/duplicate";
+
+		final Message request = getFreshBuilder().channel(topic).replyTo(topic).correlationId(correlationId)
+				.buildMessage();
+
+		final MessageContext subCtx = getFreshBuilder().channel(topic).buildContext();
+
+		// First request should succeed
+		multiplexer.request(request, subCtx);
+
+		// Second request with SAME correlation ID should fail
+		try {
+			multiplexer.request(request, subCtx);
+			fail("Should have thrown IllegalArgumentException for duplicate correlation ID");
+		} catch (IllegalArgumentException e) {
+			// Expected
+		}
+	}
 }

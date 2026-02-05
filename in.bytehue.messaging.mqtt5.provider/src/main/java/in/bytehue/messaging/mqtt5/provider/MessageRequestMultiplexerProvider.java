@@ -100,7 +100,9 @@ public final class MessageRequestMultiplexerProvider implements MqttRequestMulti
 		final Deferred<Message> deferred = new Deferred<>();
 
 		// Atomic Registration
-		pendingRequests.put(correlationId, deferred);
+		if (pendingRequests.putIfAbsent(correlationId, deferred) != null) {
+			throw new IllegalArgumentException("Duplicate Correlation ID currently in flight: " + correlationId);
+		}
 
 		try {
 			// Mark as reply-to subscription
