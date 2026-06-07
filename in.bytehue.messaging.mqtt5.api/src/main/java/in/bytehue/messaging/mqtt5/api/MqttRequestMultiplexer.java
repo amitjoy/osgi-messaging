@@ -51,13 +51,13 @@ public interface MqttRequestMultiplexer {
 	 * // The Context defines the SHARED subscription (Wildcard allowed)
 	 * MessageContext subCtx = mcb.channel("my/response/topic/#")
 	 *                            .buildContext();
-	 * *
+	 *
 	 *  multiplexer.request(request, subCtx)
 	 *             .timeout(5000)
 	 *             .onSuccess(response -> handle(response));
 	 * </pre>
 	 * 
-	 * * @param request the {@link Message} to publish (must have correlationId).
+	 * @param request the {@link Message} to publish (must have correlationId).
 	 * 
 	 * @param subscriptionContext context defining the response subscription
 	 *                            (wildcards allowed).
