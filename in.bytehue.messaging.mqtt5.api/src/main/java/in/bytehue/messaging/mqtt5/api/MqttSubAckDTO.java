@@ -19,6 +19,15 @@ import org.osgi.dto.DTO;
 
 /**
  * MQTT SubAck DTO — represents MQTT 5.0 SUBACK status translated for events.
+ *
+ * <p>
+ * Instances of this DTO are published as event properties on
+ * {@link MqttMessageConstants#MQTT_SUBSCRIPTION_EVENT_TOPIC_PREFIX} event topics
+ * to notify consumers of subscription acknowledgement outcomes.
+ * </p>
+ *
+ * @see MqttMessageConstants#MQTT_SUBSCRIPTION_EVENT_TOPIC_PREFIX
+ * @since 1.1
  */
 public class MqttSubAckDTO extends DTO {
 
