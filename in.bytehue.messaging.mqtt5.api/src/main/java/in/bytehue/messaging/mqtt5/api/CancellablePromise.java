@@ -22,6 +22,11 @@ import org.osgi.util.promise.Promise;
  * A Promise that can be cancelled.
  *
  * @param <T> The type of the value promised.
+ *
+ * @noimplement This interface is not intended to be implemented by consumers.
+ * @noextend This interface is not intended to be extended by consumers.
+ *
+ * @see MqttRequestMultiplexer
  * @since 1.1
  */
 @ProviderType
