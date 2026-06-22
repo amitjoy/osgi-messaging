@@ -21,6 +21,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * ASCII table formatter for rendering tabular data in console output.
+ *
+ * <p>
+ * This utility is used primarily by the MQTT Gogo commands to display
+ * subscription and runtime information in a human-readable tabular format.
+ * </p>
+ *
+ * @since 1.0
+ */
 public final class Table {
 
 	private static final String HORIZONTAL_SEP = "-";
@@ -37,22 +47,48 @@ public final class Table {
 		setShowVerticalLines(false);
 	}
 
+	/**
+	 * Sets whether the table output should be right-aligned.
+	 *
+	 * @param rightAlign {@code true} for right-aligned output
+	 */
 	public void setRightAlign(final boolean rightAlign) {
 		this.rightAlign = rightAlign;
 	}
 
+	/**
+	 * Sets whether vertical line separators should be displayed.
+	 *
+	 * @param showVerticalLines {@code true} to show vertical lines
+	 */
 	public void setShowVerticalLines(final boolean showVerticalLines) {
 		joinSep = showVerticalLines ? "+" : " ";
 		verticalSep = showVerticalLines ? "|" : "";
 	}
 
+	/**
+	 * Sets the column headers for the table.
+	 *
+	 * @param headers the header labels
+	 */
 	public void setHeaders(final String... headers) {
 		this.headers = headers;
 	}
 
+	/**
+	 * Adds a data row to the table.
+	 *
+	 * @param cells the cell values for the row
+	 */
 	public void addRow(final String... cells) {
 		rows.add(cells);
 	}
+
+	/**
+	 * Renders the table as a formatted string.
+	 *
+	 * @return the formatted table string
+	 */
 
 	public String print() {
 		int[] maxWidths = headers != null ? Arrays.stream(headers).mapToInt(String::length).toArray() : null;
