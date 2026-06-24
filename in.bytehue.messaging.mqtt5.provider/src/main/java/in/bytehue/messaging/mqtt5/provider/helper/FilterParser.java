@@ -13,7 +13,16 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  ******************************************************************************/
-// COPIED FROM bndlib TO MAKE STRIPPED VERSION
+/**
+ * LDAP-style filter expression parser.
+ *
+ * <p>
+ * This is a stripped-down version copied from bndlib that provides parsing and
+ * evaluation of OSGi LDAP filter expressions (e.g., {@code (&(key=value)(key2>=5))}).
+ * </p>
+ *
+ * @since 1.0
+ */
 package in.bytehue.messaging.mqtt5.provider.helper;
 
 import static java.lang.invoke.MethodHandles.publicLookup;
