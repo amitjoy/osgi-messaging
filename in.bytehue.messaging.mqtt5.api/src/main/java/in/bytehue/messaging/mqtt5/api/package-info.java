@@ -13,6 +13,18 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  ******************************************************************************/
+/**
+ * OSGi Messaging MQTT 5.0 API Package.
+ *
+ * <p>
+ * This package provides the application programming interfaces for MQTT 5.0
+ * client interactions within an OSGi environment. It contains DTOs, interfaces,
+ * and extensions for working with MQTT connections, messaging contexts, and
+ * multiplexed request-reply patterns.
+ * </p>
+ *
+ * @since 1.0
+ */
 @Export
 @Version("1.1.0")
 package in.bytehue.messaging.mqtt5.api;
