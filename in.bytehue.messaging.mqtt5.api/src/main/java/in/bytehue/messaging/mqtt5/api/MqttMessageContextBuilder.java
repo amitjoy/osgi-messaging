@@ -158,9 +158,9 @@ public interface MqttMessageContextBuilder extends MessageContextBuilder {
     MqttMessageContextBuilder extensionEntry(String key, Object value);
 
     /**
-     * Appends the given options to the context options.
+     * Appends the given extensions to the context extensions.
      *
-     * @param options the options map to be added to the existing options
+     * @param extension the extensions map to be added to the existing extensions
      * @return the {@link MqttMessageContextBuilder} instance
      */
     @Override

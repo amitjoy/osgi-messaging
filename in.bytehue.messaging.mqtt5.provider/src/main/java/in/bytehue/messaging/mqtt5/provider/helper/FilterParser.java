@@ -13,7 +13,16 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  ******************************************************************************/
-// COPIED FROM bndlib TO MAKE STRIPPED VERSION
+/**
+ * LDAP-style filter expression parser.
+ *
+ * <p>
+ * This is a stripped-down version copied from bndlib that provides parsing and
+ * evaluation of OSGi LDAP filter expressions (e.g., {@code (&(key=value)(key2>=5))}).
+ * </p>
+ *
+ * @since 1.0
+ */
 package in.bytehue.messaging.mqtt5.provider.helper;
 
 import static java.lang.invoke.MethodHandles.publicLookup;
@@ -215,6 +224,9 @@ public final class FilterParser {
 		@Override
 		public boolean eval(final Map<String, ?> map) {
 			final Object target = map.get(key);
+			if (target == null) {
+				return false;
+			}
 			if (target instanceof Iterable) {
 				for (final Object scalar : (Iterable<?>) target) {
 					if (eval(scalar)) {
@@ -607,8 +619,15 @@ public final class FilterParser {
 		public PatternExpression(final String key, String value) {
 			super(key, Op.EQUAL, value);
 
-			value = Pattern.quote(value);
-			pattern = Pattern.compile(value.replace("\\*", ".*"));
+			final String[] parts = value.split("\\*", -1);
+			final StringBuilder sb = new StringBuilder();
+			for (int i = 0; i < parts.length; i++) {
+				sb.append(Pattern.quote(parts[i]));
+				if (i < parts.length - 1) {
+					sb.append(".*");
+				}
+			}
+			pattern = Pattern.compile(sb.toString());
 		}
 
 		@Override

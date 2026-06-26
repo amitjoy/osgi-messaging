@@ -18,7 +18,15 @@ package in.bytehue.messaging.mqtt5.api;
 import static org.osgi.service.condition.Condition.CONDITION_ID;
 
 /**
- * Standard constants for the {@code MQTT Messaging}
+ * Standard constants for the {@code MQTT Messaging} implementation.
+ *
+ * <p>
+ * This class provides constants used across the MQTT 5.0 messaging
+ * implementation, including configuration PIDs, protocol identifiers,
+ * and extension property names.
+ * </p>
+ *
+ * @since 1.0
  */
 public final class MqttMessageConstants {
 
@@ -119,7 +127,7 @@ public final class MqttMessageConstants {
 		/**
 		 * The name of the {@code Message Retain} extension of the
 		 * {@code MQTT 5.0 specification}. This indicates the message will be retained.
-		 * A value of {code true} ensures successful retention of messages.
+		 * A value of {@code true} ensures successful retention of messages.
 		 *
 		 * @since 1.0
 		 */
@@ -137,7 +145,7 @@ public final class MqttMessageConstants {
 		/**
 		 * The name of the {@code Local} extension of the
 		 * {@code MQTT 5.0 specification}. This ensures if we want to receive our own
-		 * messages. A value of {code true} ascertains the receipt of own messages.
+		 * messages. A value of {@code true} ascertains the receipt of own messages.
 		 *
 		 * @since 1.0
 		 */
@@ -197,8 +205,7 @@ public final class MqttMessageConstants {
 		public static final String PUBLISHER_REPLYTO = "in.bytehue.messaging.publisher.replyto";
 
 		/**
-		 * The configuration PID to configure the internal executor in Reply-To
-		 * publisher
+		 * The configuration PID to configure the MQTT client connection
 		 *
 		 * @since 1.0
 		 */

@@ -21,22 +21,30 @@ import org.osgi.annotation.versioning.ConsumerType;
  * The {@link MqttCommandExtension} interface is used to provide additional
  * information for display in MQTT Gogo commands.
  *
+ * <p>
+ * Implementations of this interface are picked up by the MQTT Gogo command
+ * and rendered as additional rows in the command output table.
+ * </p>
+ *
+ * @see MqttMessageConstants
  * @since 1.0
  */
 @ConsumerType
 public interface MqttCommandExtension {
 
     /**
-     * Retrieves the name of the row to be displayed in the command.
+     * Retrieves the name of the row to be displayed in the Gogo command output.
+     * This serves as the label for the information being displayed.
      *
-     * @return the row name
+     * @return the row name, must not be {@code null}
      */
     String rowName();
 
     /**
-     * Retrieves the value of the row to be displayed in the command.
+     * Retrieves the value of the row to be displayed in the Gogo command output.
+     * This is the data associated with the row name.
      *
-     * @return the row value
+     * @return the row value, must not be {@code null}
      */
     String rowValue();
 

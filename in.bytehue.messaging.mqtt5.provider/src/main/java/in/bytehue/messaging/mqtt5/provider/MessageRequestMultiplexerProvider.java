@@ -193,7 +193,7 @@ public final class MessageRequestMultiplexerProvider implements MqttRequestMulti
 		masterStreams.values().forEach(stream -> {
 			try {
 				stream.close();
-			} catch (Exception ignored) {
+			} catch (final Exception ignored) { // NOSONAR
 				// ignore
 			}
 		});

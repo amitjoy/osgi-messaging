@@ -36,6 +36,12 @@ import org.osgi.service.messaging.MessageContext;
  * </p>
  *
  * <p>
+ * <strong>Thread Safety:</strong> Implementations must be thread-safe. The
+ * {@link #generate()} method may be called concurrently from multiple threads,
+ * and each invocation must produce a unique identifier.
+ * </p>
+ *
+ * <p>
  * Example usage:
  * </p>
  *
@@ -48,6 +54,7 @@ import org.osgi.service.messaging.MessageContext;
  *
  * @see MessageContext
  * @see MqttMessageContextBuilder
+ * @ThreadSafe
  * @since 1.0
  */
 @ConsumerType

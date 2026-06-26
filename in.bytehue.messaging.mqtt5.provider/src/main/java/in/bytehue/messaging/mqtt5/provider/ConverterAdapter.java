@@ -23,6 +23,17 @@ import org.osgi.util.converter.Converters;
 import org.osgi.util.converter.Converting;
 import org.osgi.util.converter.Functioning;
 
+/**
+ * OSGi DS component that wraps the standard {@link Converter} instance.
+ *
+ * <p>
+ * This adapter provides the standard OSGi converter as a managed component
+ * service, allowing other components to inject it as a dependency rather
+ * than creating converter instances directly.
+ * </p>
+ *
+ * @since 1.0
+ */
 @Component(service = ConverterAdapter.class)
 public final class ConverterAdapter implements Converter {
 

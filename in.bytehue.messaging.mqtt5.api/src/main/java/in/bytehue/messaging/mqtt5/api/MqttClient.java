@@ -34,6 +34,9 @@ import org.osgi.annotation.versioning.ProviderType;
  * {@code ServicePermission[MqttClient, GET]} permission.
  * </p>
  *
+ * @see MqttMessageConstants.ConfigurationPid#CLIENT
+ * @see MqttMessageConstants#MQTT_CONNECTION_READY_CONDITION
+ *
  * @noimplement This interface is not intended to be implemented by consumers.
  * @noextend This interface is not intended to be extended by consumers.
  *
@@ -44,16 +47,16 @@ import org.osgi.annotation.versioning.ProviderType;
 public interface MqttClient {
 
 	/**
-	 * Initiates a connection to the MQTT broker.
-	 * 
+	 * Initiates a connection to the MQTT broker asynchronously.
+	 *
 	 * <p>
-	 * This method is typically handled automatically by the OSGi component
-	 * lifecycle. Manual invocation may be useful for reconnection scenarios or
-	 * custom connection management.
+	 * The connection parameters are determined by the configuration supplied to
+	 * {@link MqttMessageConstants.ConfigurationPid#CLIENT}.
 	 * </p>
 	 *
-	 * @return a {@link CompletableFuture} that completes when the connection is
-	 *         established, or completes exceptionally if the connection fails
+	 * @return a {@link CompletableFuture} that completes when the connection is established,
+	 *         or completes exceptionally if the connection fails.
+	 * @see MqttMessageConstants.ConfigurationPid#CLIENT
 	 * @throws IllegalStateException if the client is already connected
 	 */
 	CompletableFuture<Void> connect();
