@@ -224,6 +224,9 @@ public final class FilterParser {
 		@Override
 		public boolean eval(final Map<String, ?> map) {
 			final Object target = map.get(key);
+			if (target == null) {
+				return false;
+			}
 			if (target instanceof Iterable) {
 				for (final Object scalar : (Iterable<?>) target) {
 					if (eval(scalar)) {
@@ -616,8 +619,15 @@ public final class FilterParser {
 		public PatternExpression(final String key, String value) {
 			super(key, Op.EQUAL, value);
 
-			value = Pattern.quote(value);
-			pattern = Pattern.compile(value.replace("\\*", ".*"));
+			final String[] parts = value.split("\\*", -1);
+			final StringBuilder sb = new StringBuilder();
+			for (int i = 0; i < parts.length; i++) {
+				sb.append(Pattern.quote(parts[i]));
+				if (i < parts.length - 1) {
+					sb.append(".*");
+				}
+			}
+			pattern = Pattern.compile(sb.toString());
 		}
 
 		@Override
