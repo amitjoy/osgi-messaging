@@ -541,7 +541,7 @@ public final class MessageClientProvider implements MqttClient {
 				}
 				// Safe to shutdown because we are not inside this executor
 				if (asyncTaskExecutor != null) {
-					asyncTaskExecutor.shutdown();
+					asyncTaskExecutor.shutdownNow();
 				}
 			}
 		}, "mqtt-client-deactivator");
