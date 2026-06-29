@@ -16,53 +16,18 @@
 #-------------------------------------------------------------------------------
 
 # --- CONFIGURATION ---
-HIVEMQ_VERSION="2023.5"
-HIVEMQ_ZIP="hivemq-ce-${HIVEMQ_VERSION}.zip"
-HIVEMQ_DIR="hivemq-ce-${HIVEMQ_VERSION}"
-HIVEMQ_URL="https://github.com/hivemq/hivemq-community-edition/releases/download/${HIVEMQ_VERSION}/${HIVEMQ_ZIP}"
-
 MQTT_PORT=1883
 PID_FILE="hivemq_pid"
-
-# --- 0. PRE-FLIGHT CHECKS ---
-
-# A. Verify Java 17
-JAVA_VER=$(java -version 2>&1 | head -n 1 | cut -d'"' -f2 | cut -d'.' -f1)
-if [[ "$JAVA_VER" != "17" ]]; then
-  echo "❌ Error: Java 17 is required. Found Java $JAVA_VER"
-  exit 1
-fi
-
-# B. Kill existing HiveMQ processes for a clean start
-echo "--- [CLEANUP] Scrubbing existing HiveMQ processes ---"
-EXISTING_PIDS=$(pgrep -f "$HIVEMQ_DIR")
-
-if [ ! -z "$EXISTING_PIDS" ]; then
-  echo "Stopping existing HiveMQ process(es): $EXISTING_PIDS"
-  echo "$EXISTING_PIDS" | xargs kill -9 2>/dev/null
-  sleep 2
-fi
-
-# Final port check
-if nc -z localhost $MQTT_PORT; then
-  echo "❌ Error: Port $MQTT_PORT is occupied. Please stop any other MQTT services."
-  exit 1
-fi
 
 [ -f "$PID_FILE" ] && rm "$PID_FILE"
 
 # --- 1. SETUP BROKER ---
-if [ ! -d "$HIVEMQ_DIR" ]; then
-  echo "--- [SETUP] Downloading HiveMQ CE ${HIVEMQ_VERSION} ---"
-  curl -L -O "$HIVEMQ_URL"
-  unzip -q "$HIVEMQ_ZIP"
-  rm "$HIVEMQ_ZIP"
+./scripts/start-broker.sh --daemon
+if [ ! -f "$PID_FILE" ]; then
+  echo "❌ Error: $PID_FILE not found. Broker failed to start."
+  exit 1
 fi
-
-echo "--- [SETUP] Starting HiveMQ Broker (Java 17) ---"
-./"$HIVEMQ_DIR"/bin/run.sh > hivemq.log 2>&1 &
-HIVEMQ_PID=$!
-echo $HIVEMQ_PID > "$PID_FILE"
+HIVEMQ_PID=$(cat "$PID_FILE")
 
 # Wait for Startup
 echo "Waiting for HiveMQ..."
