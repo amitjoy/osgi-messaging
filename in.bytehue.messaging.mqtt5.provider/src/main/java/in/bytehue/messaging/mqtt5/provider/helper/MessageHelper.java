@@ -81,6 +81,16 @@ public final class MessageHelper {
 		throw new IllegalAccessError("Non-instantiable");
 	}
 
+	public static boolean isEpollAvailable(final LogHelper logger) {
+		try {
+			final Class<?> epollClass = Class.forName("io.netty.channel.epoll.Epoll");
+			return (Boolean) epollClass.getMethod("isAvailable").invoke(null);
+		} catch (final Throwable t) {
+			logger.debug("Epoll is not available: {}", t.getMessage());
+			return false;
+		}
+	}
+
 	public static Object getServiceWithoutType(final String clazz, final String filter, final BundleContext context) {
 		try {
 			ServiceReference<?>[] references = context.getServiceReferences(clazz, filter);
