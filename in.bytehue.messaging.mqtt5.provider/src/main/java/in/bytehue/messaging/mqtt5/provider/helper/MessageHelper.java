@@ -47,6 +47,10 @@ import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
 import java.util.stream.Stream;
 
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import java.util.concurrent.ThreadFactory;
+
 import org.osgi.dto.DTO;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -88,6 +92,24 @@ public final class MessageHelper {
 		} catch (final Throwable t) {
 			logger.debug("Epoll is not available: {}", t.getMessage());
 			return false;
+		}
+	}
+
+	public static EventLoopGroup createEventLoopGroup(final int nThreads, final ThreadFactory threadFactory,
+			final LogHelper logHelper) {
+		if (isEpollAvailable(logHelper)) {
+			logHelper.debug("Using EpollEventLoopGroup for MQTT client");
+			try {
+				final Class<?> epollGroupClass = Class.forName("io.netty.channel.epoll.EpollEventLoopGroup");
+				return (EventLoopGroup) epollGroupClass.getConstructor(int.class, ThreadFactory.class)
+						.newInstance(nThreads, threadFactory);
+			} catch (final Exception e) {
+				logHelper.warn("Failed to instantiate EpollEventLoopGroup, falling back to NioEventLoopGroup", e);
+				return new NioEventLoopGroup(nThreads, threadFactory);
+			}
+		} else {
+			logHelper.debug("Using NioEventLoopGroup for MQTT client");
+			return new NioEventLoopGroup(nThreads, threadFactory);
 		}
 	}
 
