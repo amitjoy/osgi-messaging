@@ -22,6 +22,7 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationP
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getAllServicesSortedByRanking;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalService;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalServiceWithoutType;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.isEpollAvailable;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -416,10 +417,6 @@ public final class MessageClientProvider implements MqttClient {
 		connectionLock.lock();
 		try {
 			init(config);
-			// [ACTIVE MODE] mark as in-progress
-			if (config.activeMode()) {
-				connectInProgress = true;
-			}
 
 			logHelper.info("Client configuration has been modified");
 
@@ -441,6 +438,9 @@ public final class MessageClientProvider implements MqttClient {
 				}
 			}
 			disconnectInProgress = true; // Mark as in progress for lifecycle
+			if (config.activeMode()) {
+				connectInProgress = true;
+			}
 		} finally {
 			connectionLock.unlock();
 		}
@@ -541,7 +541,7 @@ public final class MessageClientProvider implements MqttClient {
 				}
 				// Safe to shutdown because we are not inside this executor
 				if (asyncTaskExecutor != null) {
-					asyncTaskExecutor.shutdownNow();
+					asyncTaskExecutor.shutdown();
 				}
 			}
 		}, "mqtt-client-deactivator");
@@ -682,7 +682,7 @@ public final class MessageClientProvider implements MqttClient {
 			connectionLock.lock();
 			try {
 				if (executorToShutdown != null) {
-					executorToShutdown.shutdownGracefully(0, 0, MILLISECONDS);
+					executorToShutdown.shutdownGracefully(0, 0, MILLISECONDS).awaitUninterruptibly(2, SECONDS);
 					logHelper.debug("Custom executor shut down gracefully");
 					// Only clear the field if it hasn't been replaced by a new connection
 					if (customExecutor == executorToShutdown) {
@@ -940,8 +940,25 @@ public final class MessageClientProvider implements MqttClient {
 							        .build();
 					// @formatter:on
 
-					// Create NioEventLoopGroup locally, assign to field *inside* the lock
-					executorToUse = new NioEventLoopGroup(config.numberOfThreads(), threadFactory);
+					// Dynamically check for EpollEventLoopGroup to avoid NoClassDefFoundError
+					// since it's a Linux-only native transport not available in all environments.
+					final boolean epollAvailable = isEpollAvailable(logHelper);
+
+					if (epollAvailable) {
+						logHelper.debug("Using EpollEventLoopGroup for MQTT client");
+						try {
+							Class<?> epollGroupClass = Class.forName("io.netty.channel.epoll.EpollEventLoopGroup");
+							executorToUse = (EventLoopGroup) epollGroupClass
+									.getConstructor(int.class, ThreadFactory.class)
+									.newInstance(config.numberOfThreads(), threadFactory);
+						} catch (Exception e) {
+							logHelper.warn("Failed to instantiate EpollEventLoopGroup, falling back to NioEventLoopGroup", e);
+							executorToUse = new NioEventLoopGroup(config.numberOfThreads(), threadFactory);
+						}
+					} else {
+						logHelper.debug("Using NioEventLoopGroup for MQTT client");
+						executorToUse = new NioEventLoopGroup(config.numberOfThreads(), threadFactory);
+					}
 				} else {
 					logHelper.debug("Applying Executor as Service Configuration");
 					String filter = config.executorTargetFilter().trim();
@@ -1001,14 +1018,14 @@ public final class MessageClientProvider implements MqttClient {
 				logHelper.warn("Client already connected, skipping connection attempt");
 				// Manually shutdown the executor we just created, as it won't be used
 				if (localCustomExecutor != null) {
-					localCustomExecutor.shutdownGracefully(0, 0, MILLISECONDS);
+					localCustomExecutor.shutdownGracefully(0, 0, MILLISECONDS).awaitUninterruptibly(2, SECONDS);
 					logHelper.debug("Cleaning up stale local executor");
 				}
 				return CompletableFuture.completedFuture(null);
 			}
 			// Clean up the old executor before overwriting
 			if (this.customExecutor != null) {
-				this.customExecutor.shutdownGracefully(0, 0, MILLISECONDS);
+				this.customExecutor.shutdownGracefully(0, 0, MILLISECONDS).awaitUninterruptibly(2, SECONDS);
 				logHelper.debug("Cleaning up stale executor");
 			}
 			// Commit the new client and executor
@@ -1016,7 +1033,7 @@ public final class MessageClientProvider implements MqttClient {
 			if (disconnectInProgress) {
 				logHelper.warn("Disconnect initiated during connection attempt. Aborting connection.");
 				if (localCustomExecutor != null) {
-					localCustomExecutor.shutdownGracefully(0, 0, MILLISECONDS);
+					localCustomExecutor.shutdownGracefully(0, 0, MILLISECONDS).awaitUninterruptibly(2, SECONDS);
 				}
 				if (clientToConnect != null) {
 					// We built it but haven't connected it. Just discard it.
