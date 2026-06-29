@@ -23,6 +23,7 @@ import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getAllSer
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalService;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalServiceWithoutType;
 import static java.util.Collections.emptyMap;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.osgi.service.component.annotations.ConfigurationPolicy.REQUIRE;
 import static org.osgi.service.condition.Condition.CONDITION_ID;
@@ -681,7 +682,7 @@ public final class MessageClientProvider implements MqttClient {
 			connectionLock.lock();
 			try {
 				if (executorToShutdown != null) {
-					executorToShutdown.shutdownGracefully();
+					executorToShutdown.shutdownGracefully(0, 0, MILLISECONDS);
 					logHelper.debug("Custom executor shut down gracefully");
 					// Only clear the field if it hasn't been replaced by a new connection
 					if (customExecutor == executorToShutdown) {
@@ -1000,14 +1001,14 @@ public final class MessageClientProvider implements MqttClient {
 				logHelper.warn("Client already connected, skipping connection attempt");
 				// Manually shutdown the executor we just created, as it won't be used
 				if (localCustomExecutor != null) {
-					localCustomExecutor.shutdownGracefully();
+					localCustomExecutor.shutdownGracefully(0, 0, MILLISECONDS);
 					logHelper.debug("Cleaning up stale local executor");
 				}
 				return CompletableFuture.completedFuture(null);
 			}
 			// Clean up the old executor before overwriting
 			if (this.customExecutor != null) {
-				this.customExecutor.shutdownGracefully();
+				this.customExecutor.shutdownGracefully(0, 0, MILLISECONDS);
 				logHelper.debug("Cleaning up stale executor");
 			}
 			// Commit the new client and executor
@@ -1015,7 +1016,7 @@ public final class MessageClientProvider implements MqttClient {
 			if (disconnectInProgress) {
 				logHelper.warn("Disconnect initiated during connection attempt. Aborting connection.");
 				if (localCustomExecutor != null) {
-					localCustomExecutor.shutdownGracefully();
+					localCustomExecutor.shutdownGracefully(0, 0, MILLISECONDS);
 				}
 				if (clientToConnect != null) {
 					// We built it but haven't connected it. Just discard it.
