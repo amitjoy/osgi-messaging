@@ -952,7 +952,8 @@ public final class MessageClientProvider implements MqttClient {
 									.getConstructor(int.class, ThreadFactory.class)
 									.newInstance(config.numberOfThreads(), threadFactory);
 						} catch (Exception e) {
-							logHelper.warn("Failed to instantiate EpollEventLoopGroup, falling back to NioEventLoopGroup", e);
+							logHelper.warn(
+									"Failed to instantiate EpollEventLoopGroup, falling back to NioEventLoopGroup", e);
 							executorToUse = new NioEventLoopGroup(config.numberOfThreads(), threadFactory);
 						}
 					} else {
