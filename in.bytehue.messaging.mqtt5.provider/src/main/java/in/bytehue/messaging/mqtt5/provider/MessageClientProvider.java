@@ -40,7 +40,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
@@ -92,6 +91,8 @@ import in.bytehue.messaging.mqtt5.api.MqttClient;
 import in.bytehue.messaging.mqtt5.provider.MessageClientProvider.Config;
 import in.bytehue.messaging.mqtt5.provider.helper.LogHelper;
 import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 
 @ProvideMessagingFeature
 @Designate(ocd = Config.class)
@@ -184,7 +185,7 @@ public final class MessageClientProvider implements MqttClient {
         @AttributeDefinition(name = "Flag to set if the threads will be daemon threads")
         boolean isDaemon() default true;
 
-        @AttributeDefinition(name = "Custom Thread Executor Service Class Name (Note that, the service should be an instance of Java Executor)")
+        @AttributeDefinition(name = "Custom Thread Executor Service Class Name (Note that, the service should be an instance of Java Executor or Netty EventLoopGroup)")
         String executorTargetClass() default "";
 
         @AttributeDefinition(name = "Custom Thread Executor Service Target Filter")
@@ -332,7 +333,7 @@ public final class MessageClientProvider implements MqttClient {
 
 	public volatile Config config;
 	private LogHelper logHelper;
-	private ScheduledExecutorService customExecutor;
+	private EventLoopGroup customExecutor;
 	private ServiceRegistration<Object> readyServiceReg;
 
 	private volatile String lastDisconnectReason;
@@ -618,7 +619,7 @@ public final class MessageClientProvider implements MqttClient {
 		final String reasonDescription;
 		final boolean useSessionExpiry;
 		final int sessionExpiryInterval;
-		final ScheduledExecutorService executorToShutdown;
+		final EventLoopGroup executorToShutdown;
 		ServiceRegistration<Object> regToClose = null;
 
 		// --- PHASE 1: Capture state ---
@@ -680,8 +681,8 @@ public final class MessageClientProvider implements MqttClient {
 			connectionLock.lock();
 			try {
 				if (executorToShutdown != null) {
-					executorToShutdown.shutdownNow();
-					logHelper.debug("Custom executor shut down");
+					executorToShutdown.shutdownGracefully();
+					logHelper.debug("Custom executor shut down gracefully");
 					// Only clear the field if it hasn't been replaced by a new connection
 					if (customExecutor == executorToShutdown) {
 						customExecutor = null;
@@ -815,7 +816,7 @@ public final class MessageClientProvider implements MqttClient {
 	private CompletableFuture<Mqtt5ConnAck> connectInternal(final String username, final byte[] password) {
 		// --- PHASE 1: PREPARATION (NO LOCK) ---
 		// Perform all service lookups and builder config *before* acquiring the lock.
-		final ScheduledExecutorService localCustomExecutor;
+		final EventLoopGroup localCustomExecutor;
 		final Mqtt5AsyncClient clientToConnect;
 
 		try {
@@ -938,9 +939,8 @@ public final class MessageClientProvider implements MqttClient {
 							        .build();
 					// @formatter:on
 
-					// Create locally, assign to field *inside* the lock
-					executorToUse = Executors.newScheduledThreadPool(config.numberOfThreads(), threadFactory);
-					((ScheduledThreadPoolExecutor) executorToUse).setRemoveOnCancelPolicy(true);
+					// Create NioEventLoopGroup locally, assign to field *inside* the lock
+					executorToUse = new NioEventLoopGroup(config.numberOfThreads(), threadFactory);
 				} else {
 					logHelper.debug("Applying Executor as Service Configuration");
 					String filter = config.executorTargetFilter().trim();
@@ -955,8 +955,7 @@ public final class MessageClientProvider implements MqttClient {
 			}
 			// This local variable will be assigned to the field inside the lock
 			localCustomExecutor = (config.executorTargetClass().trim().isEmpty()
-					&& executorToUse instanceof ScheduledExecutorService) ? (ScheduledExecutorService) executorToUse
-							: null;
+					&& executorToUse instanceof EventLoopGroup) ? (EventLoopGroup) executorToUse : null;
 
 			if (config.useEnhancedAuthentication()) {
 				logHelper.debug("Applying Enhanced Authentication Configuration");
@@ -1001,14 +1000,14 @@ public final class MessageClientProvider implements MqttClient {
 				logHelper.warn("Client already connected, skipping connection attempt");
 				// Manually shutdown the executor we just created, as it won't be used
 				if (localCustomExecutor != null) {
-					localCustomExecutor.shutdownNow();
+					localCustomExecutor.shutdownGracefully();
 					logHelper.debug("Cleaning up stale local executor");
 				}
 				return CompletableFuture.completedFuture(null);
 			}
 			// Clean up the old executor before overwriting
 			if (this.customExecutor != null) {
-				this.customExecutor.shutdownNow();
+				this.customExecutor.shutdownGracefully();
 				logHelper.debug("Cleaning up stale executor");
 			}
 			// Commit the new client and executor
@@ -1016,7 +1015,7 @@ public final class MessageClientProvider implements MqttClient {
 			if (disconnectInProgress) {
 				logHelper.warn("Disconnect initiated during connection attempt. Aborting connection.");
 				if (localCustomExecutor != null) {
-					localCustomExecutor.shutdownNow();
+					localCustomExecutor.shutdownGracefully();
 				}
 				if (clientToConnect != null) {
 					// We built it but haven't connected it. Just discard it.
