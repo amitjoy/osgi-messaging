@@ -22,7 +22,7 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationP
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getAllServicesSortedByRanking;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalService;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalServiceWithoutType;
-import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.isEpollAvailable;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.createEventLoopGroup;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -94,7 +94,6 @@ import in.bytehue.messaging.mqtt5.provider.MessageClientProvider.Config;
 import in.bytehue.messaging.mqtt5.provider.helper.LogHelper;
 import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 
 @ProvideMessagingFeature
 @Designate(ocd = Config.class)
@@ -541,7 +540,7 @@ public final class MessageClientProvider implements MqttClient {
 				}
 				// Safe to shutdown because we are not inside this executor
 				if (asyncTaskExecutor != null) {
-					asyncTaskExecutor.shutdown();
+					asyncTaskExecutor.shutdownNow();
 				}
 			}
 		}, "mqtt-client-deactivator");
@@ -940,26 +939,7 @@ public final class MessageClientProvider implements MqttClient {
 							        .build();
 					// @formatter:on
 
-					// Dynamically check for EpollEventLoopGroup to avoid NoClassDefFoundError
-					// since it's a Linux-only native transport not available in all environments.
-					final boolean epollAvailable = isEpollAvailable(logHelper);
-
-					if (epollAvailable) {
-						logHelper.debug("Using EpollEventLoopGroup for MQTT client");
-						try {
-							Class<?> epollGroupClass = Class.forName("io.netty.channel.epoll.EpollEventLoopGroup");
-							executorToUse = (EventLoopGroup) epollGroupClass
-									.getConstructor(int.class, ThreadFactory.class)
-									.newInstance(config.numberOfThreads(), threadFactory);
-						} catch (Exception e) {
-							logHelper.warn(
-									"Failed to instantiate EpollEventLoopGroup, falling back to NioEventLoopGroup", e);
-							executorToUse = new NioEventLoopGroup(config.numberOfThreads(), threadFactory);
-						}
-					} else {
-						logHelper.debug("Using NioEventLoopGroup for MQTT client");
-						executorToUse = new NioEventLoopGroup(config.numberOfThreads(), threadFactory);
-					}
+					executorToUse = createEventLoopGroup(config.numberOfThreads(), threadFactory, logHelper);
 				} else {
 					logHelper.debug("Applying Executor as Service Configuration");
 					String filter = config.executorTargetFilter().trim();
