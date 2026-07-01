@@ -46,6 +46,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import javax.net.ssl.HostnameVerifier;
@@ -1175,14 +1176,22 @@ public final class MessageClientProvider implements MqttClient {
 	}
 
 	private String getClientID(final BundleContext bundleContext) {
+		final Consumer<String> idValidator = id -> {
+			if (id.contains("+") || id.contains("#")) {
+				throw new IllegalArgumentException("MQTT Client ID cannot contain wildcard characters (+ or #)");
+			}
+		};
 		// check for the existence of configuration
 		if (!config.id().isEmpty()) {
-			logHelper.info("Using client ID from component configuration: {}", config.id());
-			return config.id();
+			final String id = config.id();
+			idValidator.accept(id);
+			logHelper.info("Using client ID from component configuration: {}", id);
+			return id;
 		}
 		// check for framework property if available
 		final String id = bundleContext.getProperty(CLIENT_ID_FRAMEWORK_PROPERTY);
 		if (id != null) {
+			idValidator.accept(id);
 			logHelper.info("Using client ID from framework property: {}", id);
 			return id;
 		}
