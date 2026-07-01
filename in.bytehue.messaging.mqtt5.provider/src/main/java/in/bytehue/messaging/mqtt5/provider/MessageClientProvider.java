@@ -22,7 +22,6 @@ import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationP
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getAllServicesSortedByRanking;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalService;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.getOptionalServiceWithoutType;
-import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.createEventLoopGroup;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -94,6 +93,7 @@ import in.bytehue.messaging.mqtt5.provider.MessageClientProvider.Config;
 import in.bytehue.messaging.mqtt5.provider.helper.LogHelper;
 import in.bytehue.messaging.mqtt5.provider.helper.ThreadFactoryBuilder;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 
 @ProvideMessagingFeature
 @Designate(ocd = Config.class)
@@ -939,7 +939,7 @@ public final class MessageClientProvider implements MqttClient {
 							        .build();
 					// @formatter:on
 
-					executorToUse = createEventLoopGroup(config.numberOfThreads(), threadFactory, logHelper);
+					executorToUse = new NioEventLoopGroup(config.numberOfThreads(), threadFactory);
 				} else {
 					logHelper.debug("Applying Executor as Service Configuration");
 					String filter = config.executorTargetFilter().trim();

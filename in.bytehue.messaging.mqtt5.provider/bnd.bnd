@@ -27,7 +27,6 @@ Bundle-Description             : An OSGi Messaging Adapter for the MQTT 5.0 prot
 	io.netty.handler-proxy;maven-scope=provided,\
 	io.netty.resolver;maven-scope=provided,\
 	io.netty.transport;maven-scope=provided,\
-	io.netty.transport-native-epoll;maven-scope=provided,\
 	io.netty.transport-native-unix-common;maven-scope=provided,\
 	io.reactivex.rxjava2.rxjava;maven-scope=provided,\
 	org.apache.servicemix.bundles.javax-inject;maven-scope=provided,\
