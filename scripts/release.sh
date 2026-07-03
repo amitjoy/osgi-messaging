@@ -68,7 +68,13 @@ rm -rf cnf/target/sonatype-staging/* 2>/dev/null || true
 
 echo "🏁 Releasing Bundles"
 ./gradlew :in.bytehue.messaging.mqtt5.api:release
+
+rm -rf cnf/cache/sonatype-release/* 2>/dev/null || true
+rm -rf cnf/target/sonatype-staging/* 2>/dev/null || true
 ./gradlew :in.bytehue.messaging.mqtt5.provider:release
+
+rm -rf cnf/cache/sonatype-release/* 2>/dev/null || true
+rm -rf cnf/target/sonatype-staging/* 2>/dev/null || true
 ./gradlew :in.bytehue.messaging.mqtt5.remote.adapter:release
 
 baseline_version=$(cat cnf/version/current.version)
