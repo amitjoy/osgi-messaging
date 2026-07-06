@@ -21,12 +21,18 @@ import static com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5Uns
 import static in.bytehue.messaging.mqtt5.provider.MessageClientProvider.MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.toServiceReferenceDTO;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.osgi.service.condition.Condition.CONDITION_ID;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Dictionary;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.IntSummaryStatistics;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -36,12 +42,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
+import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.dto.ServiceReferenceDTO;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.condition.Condition;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
 import org.osgi.service.event.propertytypes.EventTopics;
@@ -102,6 +110,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 
 	private LogHelper logHelper;
 	private volatile ExecutorService unsubscribeExecutor;
+	private volatile ServiceRegistration<?> conditionRegistration;
 
 	// topic as outer map's key and subscription id as internal map's key
 	// there can be multiple subscriptions for a single topic
@@ -164,11 +173,27 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 			oldExecutor.shutdown();
 		}
 
+		if (conditionRegistration == null) {
+			final Dictionary<String, Object> props = new Hashtable<>();
+			props.put(CONDITION_ID, "mqtt.subscription");
+			props.put("#topic", 0);
+			conditionRegistration = bundleContext.registerService(Condition.class, new Condition() {}, props);
+		}
+		logHelper.info("DEBUG INIT: reg=" + conditionRegistration + " this=" + System.identityHashCode(this));
+
 		logHelper.info("Messaging subscription registry has been activated/modified");
 	}
 
 	@Deactivate
 	void deactivate() {
+		if (conditionRegistration != null) {
+			try {
+				conditionRegistration.unregister();
+			} catch (Exception e) {
+				// ignore
+			}
+			conditionRegistration = null;
+		}
 		clearAllSubscriptions();
 		// Shut down our executor AFTER streams are closed
 		if (unsubscribeExecutor != null) {
@@ -227,24 +252,35 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	 *         otherwise.
 	 */
 	public boolean removeSubscription(final String channel, final String id) {
+		final boolean removed;
+		final boolean isLast;
 		synchronized (getLock(channel)) {
 			final Map<String, ExtendedSubscription> existingSubscriptions = subscriptions.get(channel);
 
 			if (existingSubscriptions != null) {
 				final ExtendedSubscription existingSubscription = existingSubscriptions.remove(id);
-				if (existingSubscription != null) {
+				removed = existingSubscription != null;
+				if (removed) {
 					logHelper.info("Removed subscription from '{}' successfully", channel);
 				}
 
 				if (existingSubscriptions.isEmpty()) {
 					subscriptions.remove(channel);
 					logHelper.info("Removed the last subscription from '{}' successfully", channel);
-					// Signal to the caller that the last subscriber is gone
-					return true;
+					isLast = true;
+				} else {
+					isLast = false;
 				}
+			} else {
+				removed = false;
+				isLast = false;
 			}
-			return false;
 		}
+
+		if (removed) {
+			updateSubscriptionConditionProperties();
+		}
+		return isLast;
 	}
 
 	/**
@@ -293,6 +329,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 			}
 			logHelper.info("Removed all subscriptions from '{}' successfully", channel);
 		}
+		updateSubscriptionConditionProperties();
 	}
 
 	/**
@@ -456,6 +493,51 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 	@Override
 	public void handleEvent(Event event) {
 		clearAllSubscriptions();
+	}
+
+	public void updateSubscriptionConditionProperties() {
+		final ServiceRegistration<?> reg = conditionRegistration;
+		logHelper.info("DEBUG UPDATE PROPERTIES: reg=" + reg + " this=" + System.identityHashCode(this));
+		if (reg == null) {
+			return;
+		}
+		final List<String> topics = new ArrayList<>();
+		final List<Integer> qosList = new ArrayList<>();
+
+		for (final Entry<String, Map<String, ExtendedSubscription>> entry : subscriptions.entrySet()) {
+			for (final ExtendedSubscription sub : entry.getValue().values()) {
+				if (sub.isAcknowledged.get()) {
+					topics.add(sub.subChannel.name);
+					qosList.add(sub.qos);
+				}
+			}
+		}
+
+		final Dictionary<String, Object> props = new Hashtable<>();
+		props.put(CONDITION_ID, "mqtt.subscription");
+
+		if (topics.isEmpty()) {
+			props.put("#topic", 0);
+		} else {
+			props.put("topic", topics.toArray(new String[0]));
+			props.put("#topic", topics.size());
+
+			final Set<String> uniqueTopics = new HashSet<>(topics);
+			props.put("[unq]topic", uniqueTopics.size());
+
+			props.put("qos", qosList.toArray(new Integer[0]));
+			final IntSummaryStatistics qosStats = qosList.stream().mapToInt(Integer::intValue).summaryStatistics();
+			props.put("[max]qos", qosStats.getMax());
+			props.put("[min]qos", qosStats.getMin());
+			props.put("[sum]qos", (int) qosStats.getSum());
+		}
+
+		try {
+			logHelper.info("DEBUG UPDATE PROPERTIES: topics=" + topics + " count=" + topics.size());
+			reg.setProperties(props);
+		} catch (Exception e) {
+			logHelper.warn("Failed to update subscription condition properties", e);
+		}
 	}
 
 	/**
