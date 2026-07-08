@@ -177,9 +177,9 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 			final Dictionary<String, Object> props = new Hashtable<>();
 			props.put(CONDITION_ID, "mqtt.subscription");
 			props.put("#topic", 0);
-			conditionRegistration = bundleContext.registerService(Condition.class, new Condition() {}, props);
+			conditionRegistration = bundleContext.registerService(Condition.class, new Condition() {
+			}, props);
 		}
-		logHelper.info("DEBUG INIT: reg=" + conditionRegistration + " this=" + System.identityHashCode(this));
 
 		logHelper.info("Messaging subscription registry has been activated/modified");
 	}
@@ -497,7 +497,6 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 
 	public void updateSubscriptionConditionProperties() {
 		final ServiceRegistration<?> reg = conditionRegistration;
-		logHelper.info("DEBUG UPDATE PROPERTIES: reg=" + reg + " this=" + System.identityHashCode(this));
 		if (reg == null) {
 			return;
 		}
@@ -533,8 +532,8 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 		}
 
 		try {
-			logHelper.info("DEBUG UPDATE PROPERTIES: topics=" + topics + " count=" + topics.size());
 			reg.setProperties(props);
+			logHelper.debug("Updated subscription condition properties: {}", props);
 		} catch (Exception e) {
 			logHelper.warn("Failed to update subscription condition properties", e);
 		}
