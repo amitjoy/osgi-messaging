@@ -485,6 +485,22 @@ You can make use of the following extended calculated values:
 
 This will ensure that your services will be up and running before the client gets activated. This also guarantees that the start order of the bundles is not at all required in this scenario.
 
+#### Target Condition Satisfiability for MQTT Subscriptions
+
+Similarly, you can track the active MQTT subscriptions in your OSGi runtime. The MQTT provider registers an OSGi `Condition` service with the identifier `mqtt.subscription`. This service tracks all active subscriptions and updates its properties dynamically whenever a subscription is successfully established or removed.
+
+You can use the following properties to filter your dependent components:
+
+* `#topic`: The total number of active subscriptions
+* `topic`: A list of all subscribed topics
+* `[unq]topic`: The number of unique subscribed topics
+* `qos`: A list of active QoS levels
+* `[max]qos`, `[min]qos`, `[sum]qos`: Statistical values computed over the active QoS levels
+
+For instance, to ensure your component activates only when there are at least two active subscriptions and at least one of them matches a specific topic prefix, you can specify the target filter:
+
+`(&(osgi.condition.id=mqtt.subscription)(#topic>=2)(topic=gateway/*))`
+
 --------------------------------------------------------------------------------------------------------------
 
 ### Gogo Commands
