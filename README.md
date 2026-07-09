@@ -495,7 +495,7 @@ You can use the following properties to filter your dependent components:
 * `topic`: A list of all subscribed topics
 * `[unq]topic`: The number of unique subscribed topics
 * `qos`: A list of active QoS levels
-* `[max]qos`, `[min]qos`, `[sum]qos`: Statistical values computed over the active QoS levels
+* `[max]qos`, `[min]qos`: Statistical values computed over the active QoS levels
 
 For instance, to ensure your component activates only when there are at least two active subscriptions and at least one of them matches a specific topic prefix, you can specify the target filter:
 

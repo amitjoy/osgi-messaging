@@ -130,7 +130,7 @@ public final class MessageSubscriptionConditionTest {
 		// 3.6 Test LDAP Filters for min, max, sum
 		await().atMost(3, SECONDS).until(() -> {
 			ServiceReference<?>[] refs = launchpad.getBundleContext().getAllServiceReferences(null,
-					"(&(osgi.condition.id=mqtt.subscription)([max]qos>=0)([min]qos=0)([sum]qos=0))");
+					"(&(osgi.condition.id=mqtt.subscription)([max]qos>=0)([min]qos=0))");
 			return refs != null && refs.length > 0;
 		});
 

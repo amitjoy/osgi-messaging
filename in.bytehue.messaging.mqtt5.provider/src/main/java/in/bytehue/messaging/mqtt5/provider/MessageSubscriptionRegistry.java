@@ -529,7 +529,6 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 			final IntSummaryStatistics qosStats = qosList.stream().mapToInt(Integer::intValue).summaryStatistics();
 			props.put("[max]qos", qosStats.getMax());
 			props.put("[min]qos", qosStats.getMin());
-			props.put("[sum]qos", (int) qosStats.getSum());
 		}
 
 		try {
