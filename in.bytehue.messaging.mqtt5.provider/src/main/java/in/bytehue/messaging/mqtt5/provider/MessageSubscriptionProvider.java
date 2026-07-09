@@ -345,7 +345,6 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 			        sendSubscriptionStatusEvent(subAck);
 			        logHelper.info("New subscription request for '{}' processed successfully - {} > ID: {}",
 			                     sChannel, ack, subscription.id);
-			        subscriptionRegistry.updateSubscriptionConditionProperties();
 			    } else {
 			        final MqttSubAckDTO subNack =
 			                createStatusEvent(FAILED, sChannel, qos, isReplyToSub, reason, codes);
@@ -389,7 +388,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
                 Thread.sleep(delay);
                 logHelper.debug("[Post SUBACK Delay] Wait of {}ms for cluster synchronization finished", delay);
             }
-
+            subscriptionRegistry.updateSubscriptionConditionProperties();
             return SubscriptionAck.of(stream, subscription.id);
         } catch (final Exception e) {
             // ROBUST CLEANUP
