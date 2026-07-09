@@ -41,6 +41,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.dto.ServiceReferenceDTO;
@@ -504,7 +505,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 		final List<Integer> qosList = new ArrayList<>();
 
 		for (final Entry<String, Map<String, ExtendedSubscription>> entry : subscriptions.entrySet()) {
-			for (final ExtendedSubscription sub : entry.getValue().values()) {
+			for (final ExtendedSubscription sub : entry.getValue().values()) { 
 				if (sub.isAcknowledged.get()) {
 					topics.add(sub.subChannel.name);
 					qosList.add(sub.qos);
@@ -533,8 +534,8 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 
 		try {
 			reg.setProperties(props);
-			logHelper.debug("Updated subscription condition properties: {}", props);
-		} catch (Exception e) {
+			logHelper.debug("Updated subscription condition properties: {}", FrameworkUtil.asMap(props));
+		} catch (final Exception e) {
 			logHelper.warn("Failed to update subscription condition properties", e);
 		}
 	}
