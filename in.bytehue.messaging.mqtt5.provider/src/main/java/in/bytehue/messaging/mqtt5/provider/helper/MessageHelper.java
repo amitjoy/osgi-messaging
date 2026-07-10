@@ -36,6 +36,8 @@ import java.io.StringWriter;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Dictionary;
+import java.util.Enumeration;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -622,5 +624,32 @@ public final class MessageHelper {
         return UUID.randomUUID().toString();
     }
     // @formatter:on
+
+	/**
+	 * Formats a {@link Dictionary} of OSGi service properties into a human-readable
+	 * string, expanding array values using {@link Arrays#toString(Object[])}
+	 * instead of printing raw Java object identifiers (e.g.
+	 * {@code [Ljava.lang.String;@f4fd4a}).
+	 *
+	 * @param props the dictionary to format; must not be {@code null}
+	 * @return a string of the form {@code {key=value, ...}}
+	 */
+	public static String formatProperties(final Dictionary<String, Object> props) {
+		final StringBuilder sb = new StringBuilder("{");
+		boolean first = true;
+		for (final Enumeration<String> e = props.keys(); e.hasMoreElements();) {
+			if (!first) {
+				sb.append(", ");
+			}
+			first = false;
+			final String key = e.nextElement();
+			Object value = props.get(key);
+			if (value instanceof Object[]) {
+				value = Arrays.toString((Object[]) value);
+			}
+			sb.append(key).append("=").append(value);
+		}
+		return sb.append("}").toString();
+	}
 
 }

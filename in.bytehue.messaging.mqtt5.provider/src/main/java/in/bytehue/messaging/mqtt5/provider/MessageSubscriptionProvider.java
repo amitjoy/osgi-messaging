@@ -339,7 +339,6 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 			            .toArray();
 
 			    if (ok) {
-			        subscription.setAcknowledged(true);
 			        final MqttSubAckDTO subAck =
 			                createStatusEvent(Type.ACKED, sChannel, qos, isReplyToSub, reason, codes);
 			        sendSubscriptionStatusEvent(subAck);
@@ -379,7 +378,11 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
 		        }
 		    });
 
-            future.get(config.timeoutInMillis(), MILLISECONDS);
+            final Mqtt5SubAck ack = future.get(config.timeoutInMillis(), MILLISECONDS);
+
+            if (isSubscriptionAcknowledged(ack)) {
+                subscription.setAcknowledged(true);
+            }
 
             long delay = config.postSubAckDelayForClusterSync();
             if (delay > 0) {
@@ -388,7 +391,7 @@ public final class MessageSubscriptionProvider implements MessageSubscription {
                 Thread.sleep(delay);
                 logHelper.debug("[Post SUBACK Delay] Wait of {}ms for cluster synchronization finished", delay);
             }
-
+            subscriptionRegistry.updateSubscriptionConditionProperties();
             return SubscriptionAck.of(stream, subscription.id);
         } catch (final Exception e) {
             // ROBUST CLEANUP
