@@ -19,6 +19,7 @@ import static com.hivemq.client.mqtt.MqttClientState.CONNECTED;
 import static com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode.NO_SUBSCRIPTIONS_EXISTED;
 import static com.hivemq.client.mqtt.mqtt5.message.unsubscribe.unsuback.Mqtt5UnsubAckReasonCode.SUCCESS;
 import static in.bytehue.messaging.mqtt5.provider.MessageClientProvider.MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC;
+import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.formatProperties;
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.toServiceReferenceDTO;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.osgi.service.condition.Condition.CONDITION_ID;
@@ -41,7 +42,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.dto.ServiceReferenceDTO;
@@ -505,7 +505,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 		final List<Integer> qosList = new ArrayList<>();
 
 		for (final Entry<String, Map<String, ExtendedSubscription>> entry : subscriptions.entrySet()) {
-			for (final ExtendedSubscription sub : entry.getValue().values()) { 
+			for (final ExtendedSubscription sub : entry.getValue().values()) {
 				if (sub.isAcknowledged.get()) {
 					topics.add(sub.subChannel.name);
 					qosList.add(sub.qos);
@@ -533,7 +533,7 @@ public final class MessageSubscriptionRegistry implements EventHandler {
 
 		try {
 			reg.setProperties(props);
-			logHelper.debug("Updated subscription condition properties: {}", FrameworkUtil.asMap(props));
+			logHelper.debug("Updated subscription condition properties: {}", formatProperties(props));
 		} catch (final Exception e) {
 			logHelper.warn("Failed to update subscription condition properties", e);
 		}
