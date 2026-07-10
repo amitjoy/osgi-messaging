@@ -111,7 +111,7 @@ public final class MessageSubscriptionConditionTest {
 
 		// 3.5 Subscribe to the SAME topic again to test [unq]topic
 		final PushStream<Message> stream3 = subscriber.subscribe(channel1);
-		
+
 		await().atMost(3, SECONDS).until(() -> {
 			ServiceReference<?>[] refs = launchpad.getBundleContext().getAllServiceReferences(null,
 					"(osgi.condition.id=mqtt.subscription)");
