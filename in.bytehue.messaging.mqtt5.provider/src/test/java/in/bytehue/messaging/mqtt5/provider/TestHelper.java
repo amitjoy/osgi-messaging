@@ -15,8 +15,10 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
 import static org.awaitility.Awaitility.await;
 
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.List;
@@ -28,6 +30,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.osgi.service.condition.Condition;
+import org.osgi.service.messaging.Message;
+import org.osgi.service.messaging.MessageContextBuilder;
+import org.osgi.service.messaging.MessagePublisher;
 
 import aQute.launchpad.Launchpad;
 
@@ -48,6 +53,17 @@ public final class TestHelper {
 	}
 
 	/**
+	 * Wait for the flag to be true with custom timeout
+	 *
+	 * @param flag the flag
+	 * @param timeout the timeout value
+	 * @param unit the time unit
+	 */
+	public static void waitForRequestProcessing(final AtomicBoolean flag, final long timeout, final TimeUnit unit) {
+		await().atMost(timeout, unit).untilTrue(flag);
+	}
+
+	/**
 	 * Converts dictionary to map
 	 *
 	 * @param dictionary the dictionary to convert
@@ -62,6 +78,24 @@ public final class TestHelper {
 		await().atMost(20, TimeUnit.SECONDS) //
 				.until((Callable<Boolean>) () -> launchpad.getService(Condition.class, "(mqtt.connection.ready=true)")
 						.isPresent());
+	}
+
+	/**
+	 * Clears any retained message on the given channel by publishing an empty payload with retain=true.
+	 *
+	 * @param publisher the message publisher
+	 * @param mcb the message context builder
+	 * @param channel the channel to clear
+	 */
+	public static void clearRetainedMessage(
+			final MessagePublisher publisher,
+			final MessageContextBuilder mcb,
+			final String channel) {
+		final Message clearMsg = mcb.channel(channel)
+				.extensionEntry(RETAIN, true)
+				.content(ByteBuffer.allocate(0))
+				.buildMessage();
+		publisher.publish(clearMsg);
 	}
 
 }
