@@ -133,4 +133,68 @@ public final class MessageUserPropertiesTest {
 		assertThat(receivedProps.get().get("environment")).isEqualTo("staging");
 	}
 
+	@Test
+	@SuppressWarnings("unchecked")
+	public void test_user_properties_with_special_and_utf8_characters() throws Exception {
+		final AtomicBoolean flag = new AtomicBoolean();
+		final AtomicReference<Map<String, String>> receivedProps = new AtomicReference<>();
+
+		final String channel = "test/userprops/utf8/" + UUID.randomUUID().toString();
+		final String payload = "payload-with-special-props";
+
+		final Map<String, Object> userProps = new HashMap<>();
+		userProps.put("city/location", "Zürich-München");
+		userProps.put("metric:key#1", "value with spaces & symbols!");
+		userProps.put("greeting", "こんにちは");
+
+		subscriber.subscribe(channel).forEach(m -> {
+			final Object props = m.getContext().getExtensions().get(USER_PROPERTIES);
+			if (props instanceof Map) {
+				receivedProps.set((Map<String, String>) props);
+			}
+			flag.set(true);
+		});
+
+		final Message message = mcb.channel(channel)
+				.extensionEntry(USER_PROPERTIES, userProps)
+				.content(ByteBuffer.wrap(payload.getBytes(UTF_8)))
+				.buildMessage();
+
+		publisher.publish(message);
+		waitForRequestProcessing(flag);
+
+		assertThat(receivedProps.get()).isNotNull();
+		assertThat(receivedProps.get().get("city/location")).isEqualTo("Zürich-München");
+		assertThat(receivedProps.get().get("metric:key#1")).isEqualTo("value with spaces & symbols!");
+		assertThat(receivedProps.get().get("greeting")).isEqualTo("こんにちは");
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void test_empty_user_properties_map() throws Exception {
+		final AtomicBoolean flag = new AtomicBoolean();
+		final AtomicReference<Map<String, String>> receivedProps = new AtomicReference<>();
+
+		final String channel = "test/userprops/empty/" + UUID.randomUUID().toString();
+		final String payload = "payload-empty-props";
+
+		subscriber.subscribe(channel).forEach(m -> {
+			final Object props = m.getContext().getExtensions().get(USER_PROPERTIES);
+			if (props instanceof Map) {
+				receivedProps.set((Map<String, String>) props);
+			}
+			flag.set(true);
+		});
+
+		final Message message = mcb.channel(channel)
+				.extensionEntry(USER_PROPERTIES, new HashMap<>())
+				.content(ByteBuffer.wrap(payload.getBytes(UTF_8)))
+				.buildMessage();
+
+		publisher.publish(message);
+		waitForRequestProcessing(flag);
+
+		assertThat(receivedProps.get()).isNotNull().isEmpty();
+	}
+
 }
