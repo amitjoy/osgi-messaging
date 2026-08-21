@@ -107,6 +107,66 @@ public final class MessageTopicWildcardsTest {
 		assertThat(receivedTopics).contains(prefix);
 	}
 
+	@Test
+	public void test_singlelevel_wildcard_plus() throws Exception {
+		final AtomicBoolean flag = new AtomicBoolean();
+		final List<String> receivedTopics = new CopyOnWriteArrayList<>();
+
+		final String prefix = "wildcard/single/" + UUID.randomUUID().toString();
+		final String subFilter = prefix + "/+/temperature";
+
+		final String matchedTopic1 = prefix + "/kitchen/temperature";
+		final String matchedTopic2 = prefix + "/bedroom/temperature";
+		final String unmatchedTopic1 = prefix + "/kitchen/humidity";
+		final String unmatchedTopic2 = prefix + "/livingroom/guest/temperature";
+
+		subscriber.subscribe(subFilter).forEach(m -> {
+			receivedTopics.add(m.getContext().getChannel());
+			if (receivedTopics.size() == 2) {
+				flag.set(true);
+			}
+		});
+
+		publisher.publish(newMessage(matchedTopic1, "21.5"));
+		publisher.publish(newMessage(unmatchedTopic1, "55%"));
+		publisher.publish(newMessage(matchedTopic2, "19.0"));
+		publisher.publish(newMessage(unmatchedTopic2, "22.0"));
+
+		waitForRequestProcessing(flag);
+
+		assertThat(receivedTopics).containsExactlyInAnyOrder(matchedTopic1, matchedTopic2);
+		assertThat(receivedTopics).doesNotContain(unmatchedTopic1, unmatchedTopic2);
+	}
+
+	@Test
+	public void test_combined_wildcards() throws Exception {
+		final AtomicBoolean flag = new AtomicBoolean();
+		final List<String> receivedTopics = new CopyOnWriteArrayList<>();
+
+		final String prefix = "wildcard/combo/" + UUID.randomUUID().toString();
+		final String subFilter = prefix + "/+/metrics/#";
+
+		final String match1 = prefix + "/node1/metrics/cpu";
+		final String match2 = prefix + "/node2/metrics/memory/heap";
+		final String noMatch = prefix + "/node1/logs/error";
+
+		subscriber.subscribe(subFilter).forEach(m -> {
+			receivedTopics.add(m.getContext().getChannel());
+			if (receivedTopics.size() == 2) {
+				flag.set(true);
+			}
+		});
+
+		publisher.publish(newMessage(match1, "cpu-ok"));
+		publisher.publish(newMessage(noMatch, "error-log"));
+		publisher.publish(newMessage(match2, "heap-ok"));
+
+		waitForRequestProcessing(flag);
+
+		assertThat(receivedTopics).containsExactlyInAnyOrder(match1, match2);
+		assertThat(receivedTopics).doesNotContain(noMatch);
+	}
+
 	private Message newMessage(final String topic, final String payload) {
 		final MessageContextBuilder mcb = launchpad.getService(MessageContextBuilder.class).get();
 		return mcb.channel(topic).content(ByteBuffer.wrap(payload.getBytes(UTF_8))).buildMessage();
