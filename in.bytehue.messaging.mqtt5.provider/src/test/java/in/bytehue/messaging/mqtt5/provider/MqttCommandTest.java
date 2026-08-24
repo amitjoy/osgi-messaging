@@ -58,4 +58,23 @@ public final class MqttCommandTest {
 		assertThat(command).isPresent();
 	}
 
+	@Test
+	public void test_mqtt_command_runtime_output_table() {
+		launchpad.register(Condition.class, Condition.INSTANCE, "osgi.condition.id", "gogo-available");
+		await().atMost(5, SECONDS).until(() -> launchpad.getService(MqttCommand.class).isPresent());
+
+		final MqttCommand command = launchpad.getService(MqttCommand.class).get();
+		final String output = command.runtime();
+
+		assertThat(output).isNotNull();
+		assertThat(output).contains("Connection URI");
+		assertThat(output).contains("localhost");
+		assertThat(output).contains("Connection State");
+		assertThat(output).contains("CONNECTED");
+		assertThat(output).contains("Provider");
+		assertThat(output).contains("Supported Protocols");
+		assertThat(output).contains("Subscriptions:");
+		assertThat(output).contains("ReplyTo Subscriptions:");
+	}
+
 }
