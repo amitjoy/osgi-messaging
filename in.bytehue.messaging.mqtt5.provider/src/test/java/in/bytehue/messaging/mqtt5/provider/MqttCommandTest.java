@@ -77,4 +77,25 @@ public final class MqttCommandTest {
 		assertThat(output).contains("ReplyTo Subscriptions:");
 	}
 
+	@Test
+	public void test_mqtt_command_runtime_config_subcommands() {
+		launchpad.register(Condition.class, Condition.INSTANCE, "osgi.condition.id", "gogo-available");
+		await().atMost(5, SECONDS).until(() -> launchpad.getService(MqttCommand.class).isPresent());
+
+		final MqttCommand command = launchpad.getService(MqttCommand.class).get();
+
+		final String clientConfig = command.runtime("config", "client");
+		assertThat(clientConfig).contains("Client Configuration:");
+		assertThat(clientConfig).contains("Server Host Address");
+
+		final String pubConfig = command.runtime("config", "pub");
+		assertThat(pubConfig).contains("Publisher Configuration:");
+
+		final String subConfig = command.runtime("config", "sub");
+		assertThat(subConfig).contains("Subscriber Configuration:");
+
+		final String replyToPubConfig = command.runtime("config", "replytopub");
+		assertThat(replyToPubConfig).contains("Reply-To Publisher Configuration:");
+	}
+
 }
