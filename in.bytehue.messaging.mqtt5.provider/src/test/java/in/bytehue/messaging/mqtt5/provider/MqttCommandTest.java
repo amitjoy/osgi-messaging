@@ -98,4 +98,18 @@ public final class MqttCommandTest {
 		assertThat(replyToPubConfig).contains("Reply-To Publisher Configuration:");
 	}
 
+	@Test
+	public void test_mqtt_command_runtime_invalid_arguments() {
+		launchpad.register(Condition.class, Condition.INSTANCE, "osgi.condition.id", "gogo-available");
+		await().atMost(5, SECONDS).until(() -> launchpad.getService(MqttCommand.class).isPresent());
+
+		final MqttCommand command = launchpad.getService(MqttCommand.class).get();
+
+		final String invalidCommand = command.runtime("invalid", "client");
+		assertThat(invalidCommand).contains("Usage: mqtt:runtime config <type>");
+
+		final String unknownType = command.runtime("config", "nonexistent");
+		assertThat(unknownType).contains("Error: Unknown configuration type 'nonexistent'");
+	}
+
 }
