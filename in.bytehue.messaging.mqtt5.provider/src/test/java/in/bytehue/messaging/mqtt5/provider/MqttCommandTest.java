@@ -31,6 +31,7 @@ import aQute.launchpad.Launchpad;
 import aQute.launchpad.LaunchpadBuilder;
 import aQute.launchpad.Service;
 import aQute.launchpad.junit.LaunchpadRunner;
+import in.bytehue.messaging.mqtt5.api.MqttCommandExtension;
 import in.bytehue.messaging.mqtt5.provider.command.MqttCommand;
 
 @RunWith(LaunchpadRunner.class)
@@ -110,6 +111,32 @@ public final class MqttCommandTest {
 
 		final String unknownType = command.runtime("config", "nonexistent");
 		assertThat(unknownType).contains("Error: Unknown configuration type 'nonexistent'");
+	}
+
+	@Test
+	public void test_mqtt_command_extension_whiteboard() {
+		launchpad.register(Condition.class, Condition.INSTANCE, "osgi.condition.id", "gogo-available");
+
+		final MqttCommandExtension extension = new MqttCommandExtension() {
+			@Override
+			public String rowName() {
+				return "Custom Status";
+			}
+
+			@Override
+			public String rowValue() {
+				return "OPERATIONAL";
+			}
+		};
+		launchpad.register(MqttCommandExtension.class, extension);
+
+		await().atMost(5, SECONDS).until(() -> launchpad.getService(MqttCommand.class).isPresent());
+
+		final MqttCommand command = launchpad.getService(MqttCommand.class).get();
+		final String output = command.runtime();
+
+		assertThat(output).contains("Custom Status");
+		assertThat(output).contains("OPERATIONAL");
 	}
 
 }
