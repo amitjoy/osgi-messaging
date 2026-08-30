@@ -16,16 +16,20 @@
 package in.bytehue.messaging.mqtt5.provider;
 
 import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForMqttConnectionReady;
+import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForRequestProcessing;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.service.condition.Condition;
+import org.osgi.service.messaging.MessageSubscription;
 
 import aQute.launchpad.Launchpad;
 import aQute.launchpad.LaunchpadBuilder;
@@ -137,6 +141,32 @@ public final class MqttCommandTest {
 
 		assertThat(output).contains("Custom Status");
 		assertThat(output).contains("OPERATIONAL");
+	}
+
+	@Test
+	public void test_mqtt_command_sub_and_pub() throws Exception {
+		launchpad.register(Condition.class, Condition.INSTANCE, "osgi.condition.id", "gogo-available");
+		await().atMost(5, SECONDS).until(() -> launchpad.getService(MqttCommand.class).isPresent());
+
+		final MqttCommand command = launchpad.getService(MqttCommand.class).get();
+		final MessageSubscription subscriber = launchpad.getService(MessageSubscription.class).get();
+
+		final String topic = "cmd/subpub/" + UUID.randomUUID().toString();
+		final String payload = "test-cmd-payload";
+
+		final AtomicBoolean received = new AtomicBoolean();
+		subscriber.subscribe(topic).forEach(m -> received.set(true));
+
+		final String pubResponse = command.pub(topic, 0, false, false, "text/plain", payload, 0L, "");
+		assertThat(pubResponse).contains("Published to " + topic);
+
+		waitForRequestProcessing(received);
+		assertThat(received.get()).isTrue();
+
+		final String subTopic = "cmd/sub/" + UUID.randomUUID().toString();
+		final String subResponse = command.sub(subTopic, 0, false, false);
+		assertThat(subResponse).contains("Subscribed to '" + subTopic + "'");
+		command.unsub(subTopic);
 	}
 
 }
