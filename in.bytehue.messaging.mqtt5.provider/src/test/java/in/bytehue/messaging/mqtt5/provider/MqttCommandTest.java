@@ -169,4 +169,26 @@ public final class MqttCommandTest {
 		command.unsub(subTopic);
 	}
 
+	@Test
+	public void test_mqtt_command_unsub_and_mirror() {
+		launchpad.register(Condition.class, Condition.INSTANCE, "osgi.condition.id", "gogo-available");
+		await().atMost(5, SECONDS).until(() -> launchpad.getService(MqttCommand.class).isPresent());
+
+		final MqttCommand command = launchpad.getService(MqttCommand.class).get();
+
+		// Test unsub validation
+		final String emptyTopic = command.unsub("");
+		assertThat(emptyTopic).contains("Error: Topic must be specified");
+
+		final String validUnsub = command.unsub("a/b/c");
+		assertThat(validUnsub).contains("Successfully unsubscribed from topic: a/b/c");
+
+		// Test mirror command
+		assertThat(command.mirror("ON")).isEqualTo("Log Mirror ENABLED");
+		assertThat(command.mirror("STATUS")).isEqualTo("Log Mirror ENABLED");
+		assertThat(command.mirror("OFF")).isEqualTo("Log Mirror DISABLED");
+		assertThat(command.mirror("STATUS")).isEqualTo("Log Mirror DISABLED");
+		assertThat(command.mirror("UNKNOWN")).isEqualTo("Invalid Parameter");
+	}
+
 }
