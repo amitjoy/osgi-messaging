@@ -16,7 +16,9 @@
 package in.bytehue.messaging.mqtt5.provider;
 
 import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForMqttConnectionReady;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -51,6 +53,18 @@ public final class MessageClientLifecycleTest {
 		assertThat(client.isConnected()).isTrue();
 		assertThat(client.getConnectedTimestamp()).isGreaterThan(0L);
 		assertThat(client.getLastDisconnectReason()).isNull();
+	}
+
+	@Test
+	public void test_client_disconnect_lifecycle() throws Exception {
+		assertThat(client.isConnected()).isTrue();
+
+		client.disconnect().get(5, SECONDS);
+
+		await().atMost(5, SECONDS).until(() -> !client.isConnected());
+		assertThat(client.isConnected()).isFalse();
+		assertThat(client.getConnectedTimestamp()).isEqualTo(-1L);
+		assertThat(client.getLastDisconnectReason()).isNotNull();
 	}
 
 }
