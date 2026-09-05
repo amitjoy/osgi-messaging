@@ -18,6 +18,7 @@ package in.bytehue.messaging.mqtt5.provider;
 import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForMqttConnectionReady;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import org.junit.Before;
@@ -65,6 +66,28 @@ public final class MessageClientLifecycleTest {
 		assertThat(client.isConnected()).isFalse();
 		assertThat(client.getConnectedTimestamp()).isEqualTo(-1L);
 		assertThat(client.getLastDisconnectReason()).isNotNull();
+	}
+
+	@Test
+	public void test_reconnect_and_double_connect_error() throws Exception {
+		// When already connected, calling connect() should throw IllegalStateException
+		assertThatThrownBy(() -> client.connect())
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("already connected");
+
+		// Username without password should throw IllegalArgumentException
+		assertThatThrownBy(() -> client.connect("admin", null))
+				.isInstanceOf(IllegalArgumentException.class);
+
+		// Disconnect first
+		client.disconnect().get(5, SECONDS);
+		await().atMost(5, SECONDS).until(() -> !client.isConnected());
+
+		// Reconnect should succeed
+		client.connect().get(5, SECONDS);
+		await().atMost(5, SECONDS).until(() -> client.isConnected());
+		assertThat(client.isConnected()).isTrue();
+		assertThat(client.getConnectedTimestamp()).isGreaterThan(0L);
 	}
 
 }
