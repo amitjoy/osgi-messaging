@@ -35,6 +35,7 @@ import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.messaging.Message;
 import org.osgi.service.messaging.MessageContextBuilder;
+import org.osgi.service.messaging.MessagePublisher;
 import org.osgi.service.messaging.replyto.ReplyToPublisher;
 
 import aQute.launchpad.Launchpad;
@@ -50,6 +51,9 @@ public final class MessageReplyToTimeoutTest {
 
 	@Service
 	private ReplyToPublisher replyToPublisher;
+
+	@Service
+	private MessagePublisher publisher;
 
 	@Service
 	private ConfigurationAdmin configAdmin;
@@ -107,6 +111,53 @@ public final class MessageReplyToTimeoutTest {
 		assertThat(failureRef.get()).isNotNull();
 		assertThat(elapsed).isGreaterThanOrEqualTo(1500L);
 		assertThat(elapsed).isLessThan(8000L);
+	}
+
+	@Test
+	public void test_publish_with_reply_correlation_id_filtering() throws Exception {
+		final String reqChannel = "filter/req";
+		final String resChannel = "filter/res";
+		final String targetCid = UUID.randomUUID().toString();
+		final String wrongCid = UUID.randomUUID().toString();
+
+		final CountDownLatch latch = new CountDownLatch(1);
+		final AtomicReference<String> receivedPayload = new AtomicReference<>();
+
+		final MessageContextBuilder mcb1 = launchpad.getService(MessageContextBuilder.class).get();
+		final Message reqMessage = mcb1.channel(resChannel)
+		                               .replyTo(reqChannel)
+		                               .correlationId(targetCid)
+		                               .content(ByteBuffer.wrap("request".getBytes()))
+		                               .buildMessage();
+
+		replyToPublisher.publishWithReply(reqMessage).onSuccess(msg -> {
+			final byte[] bytes = new byte[msg.payload().remaining()];
+			msg.payload().get(bytes);
+			receivedPayload.set(new String(bytes));
+			latch.countDown();
+		});
+
+		// First, publish a message with the WRONG correlation ID on the reply channel
+		final MessageContextBuilder mcb2 = launchpad.getService(MessageContextBuilder.class).get();
+		final Message wrongMsg = mcb2.channel(reqChannel)
+		                             .correlationId(wrongCid)
+		                             .content(ByteBuffer.wrap("wrong-reply".getBytes()))
+		                             .buildMessage();
+		publisher.publish(wrongMsg);
+
+		Thread.sleep(500);
+
+		// Now publish a message with the MATCHING correlation ID
+		final MessageContextBuilder mcb3 = launchpad.getService(MessageContextBuilder.class).get();
+		final Message correctMsg = mcb3.channel(reqChannel)
+		                               .correlationId(targetCid)
+		                               .content(ByteBuffer.wrap("correct-reply".getBytes()))
+		                               .buildMessage();
+		publisher.publish(correctMsg);
+
+		final boolean completed = latch.await(10, SECONDS);
+		assertThat(completed).isTrue();
+		assertThat(receivedPayload.get()).isEqualTo("correct-reply");
 	}
 
 }
