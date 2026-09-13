@@ -204,6 +204,141 @@ public class RemoteResourceManagementTest {
 		assertThat(userProps.get(RESPONSE_CODE_PROPERTY)).isEqualTo(RESPONSE_CODE_OK);
 	}
 
+	@Test
+	public void test_dispatch_put_request() throws Exception {
+		final AtomicBoolean putInvoked = new AtomicBoolean(false);
+		final MqttApplication app = new MqttApplication() {
+			@Override
+			public Message doPUT(final String resource, final Message requestMessage, final MqttMessageContextBuilder builder) {
+				putInvoked.set(true);
+				assertThat(resource).isEqualTo("config/new");
+				return createMockMessage("resp-channel", null, new HashMap<>());
+			}
+		};
+
+		final Map<String, Object> props = new HashMap<>();
+		props.put(APPLICATION_ID_PROPERTY, "PUT-APP");
+		applications.add(new AbstractMap.SimpleEntry<>(props, app));
+
+		final RequestDTO dto = new RequestDTO();
+		dto.applicationId = "PUT-APP";
+		dto.method = MethodType.PUT;
+		dto.resource = "config/new";
+		dto.requestMessage = createMockMessage("req-channel", "cor-put", new HashMap<>());
+
+		final Method execApp = RemoteResourceManagement.class.getDeclaredMethod("execMqttApplication", RequestDTO.class);
+		execApp.setAccessible(true);
+
+		final Message response = (Message) execApp.invoke(rrm, dto);
+
+		assertThat(putInvoked.get()).isTrue();
+		assertThat(response).isNotNull();
+
+		final Map<String, Object> extensions = response.getContext().getExtensions();
+		@SuppressWarnings("unchecked")
+		final Map<String, Object> userProps = (Map<String, Object>) extensions.get(MqttMessageConstants.Extension.USER_PROPERTIES);
+		assertThat(userProps.get(RESPONSE_CODE_PROPERTY)).isEqualTo(RESPONSE_CODE_OK);
+	}
+
+	@Test
+	public void test_dispatch_delete_request() throws Exception {
+		final AtomicBoolean deleteInvoked = new AtomicBoolean(false);
+		final MqttApplication app = new MqttApplication() {
+			@Override
+			public Message doDELETE(final String resource, final Message requestMessage, final MqttMessageContextBuilder builder) {
+				deleteInvoked.set(true);
+				assertThat(resource).isEqualTo("items/42");
+				return createMockMessage("resp-channel", null, new HashMap<>());
+			}
+		};
+
+		final Map<String, Object> props = new HashMap<>();
+		props.put(APPLICATION_ID_PROPERTY, "DELETE-APP");
+		applications.add(new AbstractMap.SimpleEntry<>(props, app));
+
+		final RequestDTO dto = new RequestDTO();
+		dto.applicationId = "DELETE-APP";
+		dto.method = MethodType.DELETE;
+		dto.resource = "items/42";
+		dto.requestMessage = createMockMessage("req-channel", "cor-del", new HashMap<>());
+
+		final Method execApp = RemoteResourceManagement.class.getDeclaredMethod("execMqttApplication", RequestDTO.class);
+		execApp.setAccessible(true);
+
+		final Message response = (Message) execApp.invoke(rrm, dto);
+
+		assertThat(deleteInvoked.get()).isTrue();
+		assertThat(response).isNotNull();
+
+		final Map<String, Object> extensions = response.getContext().getExtensions();
+		@SuppressWarnings("unchecked")
+		final Map<String, Object> userProps = (Map<String, Object>) extensions.get(MqttMessageConstants.Extension.USER_PROPERTIES);
+		assertThat(userProps.get(RESPONSE_CODE_PROPERTY)).isEqualTo(RESPONSE_CODE_OK);
+	}
+
+	@Test
+	public void test_dispatch_exec_request() throws Exception {
+		final AtomicBoolean execInvoked = new AtomicBoolean(false);
+		final MqttApplication app = new MqttApplication() {
+			@Override
+			public Message doEXEC(final String resource, final Message requestMessage, final MqttMessageContextBuilder builder) {
+				execInvoked.set(true);
+				assertThat(resource).isEqualTo("restart/node");
+				return createMockMessage("resp-channel", null, new HashMap<>());
+			}
+		};
+
+		final Map<String, Object> props = new HashMap<>();
+		props.put(APPLICATION_ID_PROPERTY, "EXEC-APP");
+		applications.add(new AbstractMap.SimpleEntry<>(props, app));
+
+		final RequestDTO dto = new RequestDTO();
+		dto.applicationId = "EXEC-APP";
+		dto.method = MethodType.EXEC;
+		dto.resource = "restart/node";
+		dto.requestMessage = createMockMessage("req-channel", "cor-exec", new HashMap<>());
+
+		final Method execApp = RemoteResourceManagement.class.getDeclaredMethod("execMqttApplication", RequestDTO.class);
+		execApp.setAccessible(true);
+
+		final Message response = (Message) execApp.invoke(rrm, dto);
+
+		assertThat(execInvoked.get()).isTrue();
+		assertThat(response).isNotNull();
+
+		final Map<String, Object> extensions = response.getContext().getExtensions();
+		@SuppressWarnings("unchecked")
+		final Map<String, Object> userProps = (Map<String, Object>) extensions.get(MqttMessageConstants.Extension.USER_PROPERTIES);
+		assertThat(userProps.get(RESPONSE_CODE_PROPERTY)).isEqualTo(RESPONSE_CODE_OK);
+	}
+
+	@Test
+	public void test_correlation_id_forwarded_to_response() throws Exception {
+		final MqttApplication app = new MqttApplication() {
+			@Override
+			public Message doGET(final String resource, final Message requestMessage, final MqttMessageContextBuilder builder) {
+				return createMockMessage("resp-channel", null, new HashMap<>());
+			}
+		};
+
+		final Map<String, Object> props = new HashMap<>();
+		props.put(APPLICATION_ID_PROPERTY, "CID-APP");
+		applications.add(new AbstractMap.SimpleEntry<>(props, app));
+
+		final RequestDTO dto = new RequestDTO();
+		dto.applicationId = "CID-APP";
+		dto.method = MethodType.GET;
+		dto.resource = "data";
+		dto.requestMessage = createMockMessage("req-channel", "unique-correlation-id-999", new HashMap<>());
+
+		final Method execApp = RemoteResourceManagement.class.getDeclaredMethod("execMqttApplication", RequestDTO.class);
+		execApp.setAccessible(true);
+
+		final Message response = (Message) execApp.invoke(rrm, dto);
+
+		assertThat(response.getContext().getCorrelationId()).isEqualTo("unique-correlation-id-999");
+	}
+
 	private static void setField(final Object target, final String fieldName, final Object value) throws Exception {
 		final Field field = target.getClass().getDeclaredField(fieldName);
 		field.setAccessible(true);
@@ -261,6 +396,7 @@ public class RemoteResourceManagementTest {
 		final Map<String, Object> ext = new HashMap<>();
 		final Map<String, Object> userProps = new HashMap<>();
 		ext.put(MqttMessageConstants.Extension.USER_PROPERTIES, userProps);
+		final String[] cidHolder = new String[] { "built-cid" };
 
 		return (MqttMessageContextBuilder) Proxy.newProxyInstance(
 				MqttMessageContextBuilder.class.getClassLoader(),
@@ -268,7 +404,11 @@ public class RemoteResourceManagementTest {
 				(proxy, method, args) -> {
 					final String name = method.getName();
 					if ("buildMessage".equals(name)) {
-						return createMockMessage("built-channel", "built-cid", new HashMap<>(ext));
+						return createMockMessage("built-channel", cidHolder[0], new HashMap<>(ext));
+					}
+					if ("correlationId".equals(name) && args != null && args.length == 1) {
+						cidHolder[0] = (String) args[0];
+						return proxy;
 					}
 					if ("extensions".equals(name) && args != null && args.length == 1 && args[0] instanceof Map) {
 						@SuppressWarnings("unchecked")
