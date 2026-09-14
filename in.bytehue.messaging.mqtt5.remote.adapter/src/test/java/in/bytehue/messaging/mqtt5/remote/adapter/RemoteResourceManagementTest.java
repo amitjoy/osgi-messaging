@@ -16,11 +16,17 @@
 package in.bytehue.messaging.mqtt5.remote.adapter;
 
 import static in.bytehue.messaging.mqtt5.remote.api.MqttApplication.APPLICATION_ID_PROPERTY;
+import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.RESPONSE_CODE_BAD_REQUEST;
+import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.RESPONSE_CODE_ERROR;
+import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.RESPONSE_CODE_NOT_FOUND;
 import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.RESPONSE_CODE_OK;
 import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.RESPONSE_CODE_PROPERTY;
+import static in.bytehue.messaging.mqtt5.remote.api.MqttRemoteConstants.RESPONSE_EXCEPTION_MESSAGE_PROPERTY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
@@ -46,6 +52,7 @@ import org.osgi.service.messaging.MessageContext;
 import in.bytehue.messaging.mqtt5.api.MqttMessageConstants;
 import in.bytehue.messaging.mqtt5.api.MqttMessageContextBuilder;
 import in.bytehue.messaging.mqtt5.remote.adapter.RemoteResourceHelper.MethodType;
+import in.bytehue.messaging.mqtt5.remote.adapter.RemoteResourceHelper.MqttException;
 import in.bytehue.messaging.mqtt5.remote.adapter.RemoteResourceHelper.RequestDTO;
 import in.bytehue.messaging.mqtt5.remote.api.MqttApplication;
 
@@ -337,6 +344,77 @@ public class RemoteResourceManagementTest {
 		final Message response = (Message) execApp.invoke(rrm, dto);
 
 		assertThat(response.getContext().getCorrelationId()).isEqualTo("unique-correlation-id-999");
+	}
+
+	@Test
+	public void test_bad_request_when_less_than_three_tokens() throws Exception {
+		final String topic = "CTRL/in/bytehue/device-123/APP1/GET";
+		final Method initReq = RemoteResourceManagement.class.getDeclaredMethod("initRequest", String.class, Message.class);
+		initReq.setAccessible(true);
+
+		final Message reqMessage = createMockMessage(topic, "cid-bad", new HashMap<>());
+
+		assertThatThrownBy(() -> initReq.invoke(rrm, topic, reqMessage))
+				.isInstanceOf(InvocationTargetException.class)
+				.hasCauseInstanceOf(MqttException.class)
+				.satisfies(t -> {
+					final MqttException ex = (MqttException) t.getCause();
+					assertThat(ex.code).isEqualTo(RESPONSE_CODE_BAD_REQUEST);
+					assertThat(ex.getMessage()).contains("APPLICATION-ID/METHOD/RESOURCE");
+				});
+	}
+
+	@Test
+	public void test_application_not_found() throws Exception {
+		final RequestDTO dto = new RequestDTO();
+		dto.applicationId = "NON_EXISTENT";
+		dto.method = MethodType.GET;
+		dto.resource = "res";
+		dto.requestMessage = createMockMessage("req-channel", "cid", new HashMap<>());
+
+		final Method execApp = RemoteResourceManagement.class.getDeclaredMethod("execMqttApplication", RequestDTO.class);
+		execApp.setAccessible(true);
+
+		assertThatThrownBy(() -> execApp.invoke(rrm, dto))
+				.isInstanceOf(InvocationTargetException.class)
+				.hasCauseInstanceOf(MqttException.class)
+				.satisfies(t -> {
+					final MqttException ex = (MqttException) t.getCause();
+					assertThat(ex.code).isEqualTo(RESPONSE_CODE_NOT_FOUND);
+					assertThat(ex.getMessage()).contains("doesn't exist");
+				});
+	}
+
+	@Test
+	public void test_prepare_error_message_500() throws Exception {
+		final Method prepError = RemoteResourceManagement.class.getDeclaredMethod("prepareErrorMessage", Exception.class, int.class);
+		prepError.setAccessible(true);
+
+		final Exception error = new RuntimeException("Severe internal failure");
+		final Message errorMsg = (Message) prepError.invoke(rrm, error, RESPONSE_CODE_ERROR);
+
+		assertThat(errorMsg).isNotNull();
+		final Map<String, Object> extensions = errorMsg.getContext().getExtensions();
+		@SuppressWarnings("unchecked")
+		final Map<String, Object> userProps = (Map<String, Object>) extensions.get(MqttMessageConstants.Extension.USER_PROPERTIES);
+		assertThat(userProps.get(RESPONSE_CODE_PROPERTY)).isEqualTo(RESPONSE_CODE_ERROR);
+		assertThat(userProps.get(RESPONSE_EXCEPTION_MESSAGE_PROPERTY)).isEqualTo("Severe internal failure");
+	}
+
+	@Test
+	public void test_prepare_error_message_400() throws Exception {
+		final Method prepError = RemoteResourceManagement.class.getDeclaredMethod("prepareErrorMessage", Exception.class, int.class);
+		prepError.setAccessible(true);
+
+		final MqttException error = new MqttException(RESPONSE_CODE_BAD_REQUEST, "Malformed command payload");
+		final Message errorMsg = (Message) prepError.invoke(rrm, error, RESPONSE_CODE_BAD_REQUEST);
+
+		assertThat(errorMsg).isNotNull();
+		final Map<String, Object> extensions = errorMsg.getContext().getExtensions();
+		@SuppressWarnings("unchecked")
+		final Map<String, Object> userProps = (Map<String, Object>) extensions.get(MqttMessageConstants.Extension.USER_PROPERTIES);
+		assertThat(userProps.get(RESPONSE_CODE_PROPERTY)).isEqualTo(RESPONSE_CODE_BAD_REQUEST);
+		assertThat(userProps.get(RESPONSE_EXCEPTION_MESSAGE_PROPERTY)).isEqualTo("Malformed command payload");
 	}
 
 	private static void setField(final Object target, final String fieldName, final Object value) throws Exception {
