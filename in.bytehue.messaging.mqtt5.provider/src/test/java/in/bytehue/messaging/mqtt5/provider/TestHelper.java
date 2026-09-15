@@ -16,6 +16,8 @@
 package in.bytehue.messaging.mqtt5.provider;
 
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.nio.ByteBuffer;
@@ -96,6 +98,33 @@ public final class TestHelper {
 				.content(ByteBuffer.allocate(0))
 				.buildMessage();
 		publisher.publish(clearMsg);
+	}
+
+	/**
+	 * Asserts that the message contains the expected user property key and value.
+	 *
+	 * @param message the message
+	 * @param key the property key
+	 * @param expectedValue the expected property value
+	 */
+	@SuppressWarnings("unchecked")
+	public static void assertMessageHasUserProperty(final Message message, final String key, final String expectedValue) {
+		final Map<String, Object> extensions = message.getContext().getExtensions();
+		assertThat(extensions).isNotNull();
+		final Object userProps = extensions.get(USER_PROPERTIES);
+		assertThat(userProps).isInstanceOf(Map.class);
+		final Map<String, Object> propsMap = (Map<String, Object>) userProps;
+		assertThat(propsMap).containsEntry(key, expectedValue);
+	}
+
+	/**
+	 * Asserts that the message context has the specified correlation ID.
+	 *
+	 * @param message the message
+	 * @param expectedCorrelationId the expected correlation ID
+	 */
+	public static void assertMessageHasCorrelationId(final Message message, final String expectedCorrelationId) {
+		assertThat(message.getContext().getCorrelationId()).isEqualTo(expectedCorrelationId);
 	}
 
 }
