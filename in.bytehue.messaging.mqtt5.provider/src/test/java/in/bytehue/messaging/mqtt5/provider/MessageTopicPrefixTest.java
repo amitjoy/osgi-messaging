@@ -20,7 +20,6 @@ import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForMqttConnecti
 import static in.bytehue.messaging.mqtt5.provider.helper.MessageHelper.addTopicPrefix;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 import java.nio.ByteBuffer;
 import java.util.Dictionary;

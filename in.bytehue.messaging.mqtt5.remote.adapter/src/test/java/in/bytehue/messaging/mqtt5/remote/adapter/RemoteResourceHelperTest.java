@@ -16,7 +16,6 @@
 package in.bytehue.messaging.mqtt5.remote.adapter;
 
 import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.CLIENT_ID_FRAMEWORK_PROPERTY;
-import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.CLIENT;
 import static in.bytehue.messaging.mqtt5.remote.adapter.RemoteResourceHelper.clientID;
 import static in.bytehue.messaging.mqtt5.remote.adapter.RemoteResourceHelper.exceptionToString;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,9 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Dictionary;
 import java.util.Hashtable;

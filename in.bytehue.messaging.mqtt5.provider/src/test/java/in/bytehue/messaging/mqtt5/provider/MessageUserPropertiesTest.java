@@ -40,7 +40,6 @@ import aQute.launchpad.Launchpad;
 import aQute.launchpad.LaunchpadBuilder;
 import aQute.launchpad.Service;
 import aQute.launchpad.junit.LaunchpadRunner;
-import in.bytehue.messaging.mqtt5.provider.helper.MessageHelper;
 
 @RunWith(LaunchpadRunner.class)
 public final class MessageUserPropertiesTest {
