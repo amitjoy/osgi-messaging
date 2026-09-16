@@ -99,8 +99,7 @@ public final class MessageSubscriptionQoSTest {
 		TimeUnit.SECONDS.sleep(2);
 
 		// Reset subscriber configuration to its default by deleting the config
-		final Configuration config = configAdmin.getConfiguration("in.bytehue.messaging.mqtt5.provider.subscriber",
-				"?");
+		final Configuration config = configAdmin.getConfiguration(SUBSCRIBER, "?");
 		if (config.getProperties() != null) {
 			config.delete();
 			// Allow time for component to restart with default config

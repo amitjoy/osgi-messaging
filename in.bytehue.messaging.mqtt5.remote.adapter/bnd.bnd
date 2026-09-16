@@ -2,4 +2,5 @@ Bundle-Name                    : MQTT 5.0 Remote Resource Management
 Bundle-Description             : Provides implementation for REST-like remote resource management 
 
 -buildpath                     : in.bytehue.messaging.mqtt5.api, org.osgi.service.messaging
+-testpath                      : assertj-core
 -privatepackage                : in.bytehue.messaging.mqtt5.remote.*

@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.Dictionary;
 import java.util.Hashtable;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,6 +51,17 @@ public final class MessageClientConditionTest {
 
 	@Before
 	public void setup() throws InterruptedException {
+		waitForMqttConnectionReady(launchpad);
+	}
+
+	@After
+	public void cleanup() throws IOException, InterruptedException {
+		final Configuration config = configAdmin.getConfiguration(CLIENT, "?");
+		if (config != null) {
+			final Dictionary<String, Object> defaultProps = new Hashtable<>();
+			defaultProps.put("server", "localhost");
+			config.update(defaultProps);
+		}
 		waitForMqttConnectionReady(launchpad);
 	}
 

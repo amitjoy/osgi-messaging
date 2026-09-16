@@ -15,8 +15,12 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.RETAIN;
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.Extension.USER_PROPERTIES;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.List;
@@ -28,6 +32,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.osgi.service.condition.Condition;
+import org.osgi.service.messaging.Message;
+import org.osgi.service.messaging.MessageContextBuilder;
+import org.osgi.service.messaging.MessagePublisher;
 
 import aQute.launchpad.Launchpad;
 
@@ -48,6 +55,17 @@ public final class TestHelper {
 	}
 
 	/**
+	 * Wait for the flag to be true with custom timeout
+	 *
+	 * @param flag the flag
+	 * @param timeout the timeout value
+	 * @param unit the time unit
+	 */
+	public static void waitForRequestProcessing(final AtomicBoolean flag, final long timeout, final TimeUnit unit) {
+		await().atMost(timeout, unit).untilTrue(flag);
+	}
+
+	/**
 	 * Converts dictionary to map
 	 *
 	 * @param dictionary the dictionary to convert
@@ -62,6 +80,51 @@ public final class TestHelper {
 		await().atMost(20, TimeUnit.SECONDS) //
 				.until((Callable<Boolean>) () -> launchpad.getService(Condition.class, "(mqtt.connection.ready=true)")
 						.isPresent());
+	}
+
+	/**
+	 * Clears any retained message on the given channel by publishing an empty payload with retain=true.
+	 *
+	 * @param publisher the message publisher
+	 * @param mcb the message context builder
+	 * @param channel the channel to clear
+	 */
+	public static void clearRetainedMessage(
+			final MessagePublisher publisher,
+			final MessageContextBuilder mcb,
+			final String channel) {
+		final Message clearMsg = mcb.channel(channel)
+				.extensionEntry(RETAIN, true)
+				.content(ByteBuffer.allocate(0))
+				.buildMessage();
+		publisher.publish(clearMsg);
+	}
+
+	/**
+	 * Asserts that the message contains the expected user property key and value.
+	 *
+	 * @param message the message
+	 * @param key the property key
+	 * @param expectedValue the expected property value
+	 */
+	@SuppressWarnings("unchecked")
+	public static void assertMessageHasUserProperty(final Message message, final String key, final String expectedValue) {
+		final Map<String, Object> extensions = message.getContext().getExtensions();
+		assertThat(extensions).isNotNull();
+		final Object userProps = extensions.get(USER_PROPERTIES);
+		assertThat(userProps).isInstanceOf(Map.class);
+		final Map<String, Object> propsMap = (Map<String, Object>) userProps;
+		assertThat(propsMap).containsEntry(key, expectedValue);
+	}
+
+	/**
+	 * Asserts that the message context has the specified correlation ID.
+	 *
+	 * @param message the message
+	 * @param expectedCorrelationId the expected correlation ID
+	 */
+	public static void assertMessageHasCorrelationId(final Message message, final String expectedCorrelationId) {
+		assertThat(message.getContext().getCorrelationId()).isEqualTo(expectedCorrelationId);
 	}
 
 }
