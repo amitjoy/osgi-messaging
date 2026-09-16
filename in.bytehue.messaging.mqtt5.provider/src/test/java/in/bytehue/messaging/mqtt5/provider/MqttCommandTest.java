@@ -156,6 +156,7 @@ public final class MqttCommandTest {
 
 		final AtomicBoolean received = new AtomicBoolean();
 		subscriber.subscribe(topic).forEach(m -> received.set(true));
+		SECONDS.sleep(2);
 
 		final String pubResponse = command.pub(topic, 0, false, false, "text/plain", payload, 0L, "");
 		assertThat(pubResponse).contains("Published to " + topic);
@@ -185,9 +186,9 @@ public final class MqttCommandTest {
 
 		// Test mirror command
 		assertThat(command.mirror("ON")).isEqualTo("Log Mirror ENABLED");
-		assertThat(command.mirror("STATUS")).isEqualTo("Log Mirror ENABLED");
+		await().atMost(5, SECONDS).until(() -> "Log Mirror ENABLED".equals(command.mirror("STATUS")));
 		assertThat(command.mirror("OFF")).isEqualTo("Log Mirror DISABLED");
-		assertThat(command.mirror("STATUS")).isEqualTo("Log Mirror DISABLED");
+		await().atMost(5, SECONDS).until(() -> "Log Mirror DISABLED".equals(command.mirror("STATUS")));
 		assertThat(command.mirror("UNKNOWN")).isEqualTo("Invalid Parameter");
 	}
 

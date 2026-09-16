@@ -213,6 +213,8 @@ public final class MessageSubscriptionRegistryTest {
 		assertThat(registry.getReplyToSubscriptionDTOs()).isNotNull();
 		assertThat(registry.getReplyToSubscriptionDTOs()[0].requestChannel.name).isEqualTo(channel);
 		assertThat(registry.getReplyToSubscriptionDTOs()[0].responseChannel.name).isEqualTo(replyToChannel);
+
+		TimeUnit.SECONDS.sleep(2);
 	}
 
 	@Test

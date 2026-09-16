@@ -88,29 +88,35 @@ public final class MessageReplyToTimeoutTest {
 		// Give config update a moment to take effect
 		Thread.sleep(500);
 
-		final CountDownLatch latch = new CountDownLatch(1);
-		final AtomicReference<Throwable> failureRef = new AtomicReference<>();
+		try {
+			final CountDownLatch latch = new CountDownLatch(1);
+			final AtomicReference<Throwable> failureRef = new AtomicReference<>();
 
-		final MessageContextBuilder mcb = launchpad.getService(MessageContextBuilder.class).get();
-		final Message message = mcb.channel("unanswered/request/timeout")
-		                           .replyTo("unanswered/reply/timeout")
-		                           .correlationId(UUID.randomUUID().toString())
-		                           .content(ByteBuffer.wrap("ping".getBytes()))
-		                           .buildMessage();
+			final MessageContextBuilder mcb = launchpad.getService(MessageContextBuilder.class).get();
+			final Message message = mcb.channel("unanswered/request/timeout")
+			                           .replyTo("unanswered/reply/timeout")
+			                           .correlationId(UUID.randomUUID().toString())
+			                           .content(ByteBuffer.wrap("ping".getBytes()))
+			                           .buildMessage();
 
-		final long start = System.currentTimeMillis();
-		replyToPublisher.publishWithReply(message).onFailure(t -> {
-			failureRef.set(t);
-			latch.countDown();
-		});
+			final long start = System.currentTimeMillis();
+			replyToPublisher.publishWithReply(message).onFailure(t -> {
+				failureRef.set(t);
+				latch.countDown();
+			});
 
-		final boolean completed = latch.await(10, SECONDS);
-		final long elapsed = System.currentTimeMillis() - start;
+			final boolean completed = latch.await(10, SECONDS);
+			final long elapsed = System.currentTimeMillis() - start;
 
-		assertThat(completed).isTrue();
-		assertThat(failureRef.get()).isNotNull();
-		assertThat(elapsed).isGreaterThanOrEqualTo(1500L);
-		assertThat(elapsed).isLessThan(8000L);
+			assertThat(completed).isTrue();
+			assertThat(failureRef.get()).isNotNull();
+			assertThat(elapsed).isGreaterThanOrEqualTo(1500L);
+			assertThat(elapsed).isLessThan(8000L);
+		} finally {
+			if (config != null) {
+				config.delete();
+			}
+		}
 	}
 
 	@Test

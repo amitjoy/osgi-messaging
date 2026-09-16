@@ -82,37 +82,42 @@ public final class MessageTopicPrefixTest {
 		final Configuration config = configAdmin.getConfiguration(CLIENT, "?");
 
 		final Dictionary<String, Object> properties = new Hashtable<>();
+		properties.put("server", "localhost");
 		properties.put("topicPrefix", "iot/building1");
 		config.update(properties);
 
-		// Wait for configuration update and client reconnection
-		waitForMqttConnectionReady(launchpad);
+		try {
+			// Wait for configuration update and client reconnection
+			waitForMqttConnectionReady(launchpad);
 
-		final String subChannel = "sensors/temperature";
-		final CountDownLatch latch = new CountDownLatch(1);
-		final AtomicBoolean received = new AtomicBoolean(false);
+			final String subChannel = "sensors/temperature";
+			final CountDownLatch latch = new CountDownLatch(1);
+			final AtomicBoolean received = new AtomicBoolean(false);
 
-		subscriber.subscribe(subChannel).forEach(msg -> {
-			received.set(true);
-			latch.countDown();
-		});
+			subscriber.subscribe(subChannel).forEach(msg -> {
+				received.set(true);
+				latch.countDown();
+			});
 
-		final MessageContextBuilder mcb = launchpad.getService(MessageContextBuilder.class).get();
-		final Message message = mcb.channel(subChannel)
-		                           .content(ByteBuffer.wrap("22.5C".getBytes()))
-		                           .buildMessage();
+			final MessageContextBuilder mcb = launchpad.getService(MessageContextBuilder.class).get();
+			final Message message = mcb.channel(subChannel)
+			                           .content(ByteBuffer.wrap("22.5C".getBytes()))
+			                           .buildMessage();
 
-		publisher.publish(message);
+			publisher.publish(message);
 
-		final boolean completed = latch.await(10, SECONDS);
-		assertThat(completed).isTrue();
-		assertThat(received.get()).isTrue();
-
-		// Clean up configuration
-		final Dictionary<String, Object> resetProperties = new Hashtable<>();
-		resetProperties.put("topicPrefix", "");
-		config.update(resetProperties);
-		waitForMqttConnectionReady(launchpad);
+			final boolean completed = latch.await(10, SECONDS);
+			assertThat(completed).isTrue();
+			assertThat(received.get()).isTrue();
+		} finally {
+			// Clean up configuration by restoring default
+			if (config != null) {
+				final Dictionary<String, Object> defaultProps = new Hashtable<>();
+				defaultProps.put("server", "localhost");
+				config.update(defaultProps);
+			}
+			waitForMqttConnectionReady(launchpad);
+		}
 	}
 
 }

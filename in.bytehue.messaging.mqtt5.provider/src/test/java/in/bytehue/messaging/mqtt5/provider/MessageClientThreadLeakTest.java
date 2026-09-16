@@ -15,12 +15,14 @@
  ******************************************************************************/
 package in.bytehue.messaging.mqtt5.provider;
 
+import static in.bytehue.messaging.mqtt5.api.MqttMessageConstants.ConfigurationPid.CLIENT;
 import static in.bytehue.messaging.mqtt5.provider.TestHelper.waitForMqttConnectionReady;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Dictionary;
 import java.util.Hashtable;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,7 +57,7 @@ public class MessageClientThreadLeakTest {
     @Before
     public void setup() throws Exception {
         // Configure the client to use a custom executor (which triggers the local thread pool creation)
-        final Configuration config = configAdmin.getConfiguration("in.bytehue.messaging.client", "?");
+        final Configuration config = configAdmin.getConfiguration(CLIENT, "?");
         final Dictionary<String, Object> props = new Hashtable<>();
         props.put("server", "localhost");
         props.put("useCustomExecutor", true);
@@ -63,6 +65,17 @@ public class MessageClientThreadLeakTest {
         props.put("threadNamePrefix", "mqtt-leak-test");
         config.updateIfDifferent(props);
 
+        waitForMqttConnectionReady(launchpad);
+    }
+
+    @After
+    public void cleanup() throws Exception {
+        final Configuration config = configAdmin.getConfiguration(CLIENT, "?");
+        if (config != null) {
+            final Dictionary<String, Object> defaultProps = new Hashtable<>();
+            defaultProps.put("server", "localhost");
+            config.update(defaultProps);
+        }
         waitForMqttConnectionReady(launchpad);
     }
 
