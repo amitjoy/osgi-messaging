@@ -229,7 +229,7 @@ public final class MessagePublisherProvider implements MessagePublisher {
                                           .correlationData(correlationId.getBytes())
                                           .userProperties(userProps)
                                           .messageExpiryInterval(
-                                        		  messageExpiryInterval == null ? -1 : messageExpiryInterval)
+                                        		  (messageExpiryInterval == null || messageExpiryInterval <= 0) ? -1 : messageExpiryInterval)
                                           .send();
 
         logHelper.debug(

@@ -304,14 +304,16 @@ public final class MqttCommand {
             st.addRow("User Properties", String.valueOf(properties));
             st.print();
 
-            final Message message = mcb.channel(topic)
-                                       .withQoS(qos)
-                                       .withRetain(retain)
-                                       .contentType(contentType)
-                                       .content(ByteBuffer.wrap(content.getBytes()))
-                                       .withMessageExpiryInterval(messageExpiryInterval)
-                                       .withUserProperties(properties)
-                                       .buildMessage();
+            final MqttMessageContextBuilder builder = mcb.channel(topic)
+                                                         .withQoS(qos)
+                                                         .withRetain(retain)
+                                                         .contentType(contentType)
+                                                         .content(ByteBuffer.wrap(content.getBytes()))
+                                                         .withUserProperties(properties);
+            if (messageExpiryInterval > 0) {
+                builder.withMessageExpiryInterval(messageExpiryInterval);
+            }
+            final Message message = builder.buildMessage();
             publisher.publish(message);
         } catch (final Exception e) {
             return stackTraceToString(e);

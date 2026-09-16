@@ -348,6 +348,7 @@ public final class MessageClientProvider implements MqttClient {
 	// State tracking to prevent concurrent operations
 	private volatile boolean connectInProgress = false;
 	private volatile boolean disconnectInProgress = false;
+	private static volatile String lastGeneratedClientId;
 
 	public static final String MQTT_CLIENT_DISCONNECTED_EVENT_TOPIC = "mqtt/client/disconnected";
 
@@ -555,6 +556,11 @@ public final class MessageClientProvider implements MqttClient {
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			logHelper.warn("Interrupted while waiting for deactivation cleanup");
+		}
+
+		if (lastGeneratedClientId != null && lastGeneratedClientId.equals(System.getProperty(CLIENT_ID_FRAMEWORK_PROPERTY))) {
+			System.clearProperty(CLIENT_ID_FRAMEWORK_PROPERTY);
+			lastGeneratedClientId = null;
 		}
 	}
 
@@ -1046,7 +1052,7 @@ public final class MessageClientProvider implements MqttClient {
 				connectionParams.sessionExpiryInterval(config.sessionExpiryInterval());
 			} else {
 				logHelper.debug("Session Expiry is not enabled");
-				connectionParams.noSessionExpiry();
+				connectionParams.sessionExpiryInterval(0);
 			}
 
 			// @formatter:off
@@ -1196,6 +1202,7 @@ public final class MessageClientProvider implements MqttClient {
 			return id;
 		}
 		final String generatedClientId = UUID.randomUUID().toString();
+		lastGeneratedClientId = generatedClientId;
 		// update the generated framework property for others to use
 		System.setProperty(CLIENT_ID_FRAMEWORK_PROPERTY, generatedClientId);
 		logHelper.info("No client ID found in config or properties. Generated new client ID: {}", generatedClientId);
