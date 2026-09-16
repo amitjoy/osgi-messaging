@@ -6,3 +6,7 @@ tasks.named("release") {
         mkdir("${rootDir}/cnf/cache/sonatype-release")
     }
 }
+
+tasks.named("test") {
+    forkEvery = 5
+}
