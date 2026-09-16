@@ -67,6 +67,7 @@ public final class MessageReplyToManyHandlerTest {
 	public void test_reply_to_many_subscription_handler() throws Exception {
 		final AtomicBoolean flag1 = new AtomicBoolean();
 		final AtomicBoolean flag2 = new AtomicBoolean();
+		final AtomicBoolean running = new AtomicBoolean(true);
 
 		final String channel = "ab/ba";
 		final String replyToChannel = "c/d";
@@ -79,17 +80,20 @@ public final class MessageReplyToManyHandlerTest {
 
 		final ReplyToManySubscriptionHandler handler = (m, b) -> {
 			final Message message = b.content(ByteBuffer.wrap(responsePyload.getBytes())).buildMessage();
-			new Thread(() -> {
-				while (true) {
+			final Thread t = new Thread(() -> {
+				while (running.get()) {
 					source.publish(message);
 					flag1.set(true);
 					try {
 						TimeUnit.MILLISECONDS.sleep(800);
 					} catch (final InterruptedException e) {
-						e.printStackTrace();
+						Thread.currentThread().interrupt();
+						break;
 					}
 				}
-			}).start();
+			});
+			t.setDaemon(true);
+			t.start();
 			source.endOfStream();
 			return provider.createStream(source);
 		};
@@ -121,6 +125,7 @@ public final class MessageReplyToManyHandlerTest {
 		publisher.publish(message);
 		waitForRequestProcessing(flag1);
 		waitForRequestProcessing(flag2);
+		running.set(false);
 	}
 
 	@Test
@@ -136,17 +141,12 @@ public final class MessageReplyToManyHandlerTest {
 
 		final ReplyToManySubscriptionHandler handler = (m, b) -> {
 			final Message message = b.content(ByteBuffer.wrap(responsePyload.getBytes())).buildMessage();
-			new Thread(() -> {
-				while (true) {
-					source.publish(message);
-					try {
-						TimeUnit.MILLISECONDS.sleep(800);
-					} catch (final InterruptedException e) {
-						e.printStackTrace();
-					}
-					throw new AssertionError("Will never be executed");
-				}
-			}).start();
+			final Thread t = new Thread(() -> {
+				source.publish(message);
+				throw new AssertionError("Will never be executed");
+			});
+			t.setDaemon(true);
+			t.start();
 			source.endOfStream();
 			return provider.createStream(source);
 		};
@@ -191,17 +191,12 @@ public final class MessageReplyToManyHandlerTest {
 
 		final ReplyToManySubscriptionHandler handler = (m, b) -> {
 			final Message message = b.content(ByteBuffer.wrap(responsePyload.getBytes())).buildMessage();
-			new Thread(() -> {
-				while (true) {
-					source.publish(message);
-					try {
-						TimeUnit.MILLISECONDS.sleep(800);
-					} catch (final InterruptedException e) {
-						e.printStackTrace();
-					}
-					throw new AssertionError("Will never be executed");
-				}
-			}).start();
+			final Thread t = new Thread(() -> {
+				source.publish(message);
+				throw new AssertionError("Will never be executed");
+			});
+			t.setDaemon(true);
+			t.start();
 			source.endOfStream();
 			return provider.createStream(source);
 		};
@@ -246,17 +241,12 @@ public final class MessageReplyToManyHandlerTest {
 
 		final ReplyToManySubscriptionHandler handler = (m, b) -> {
 			final Message message = b.content(ByteBuffer.wrap(responsePyload.getBytes())).buildMessage();
-			new Thread(() -> {
-				while (true) {
-					source.publish(message);
-					try {
-						TimeUnit.MILLISECONDS.sleep(800);
-					} catch (final InterruptedException e) {
-						e.printStackTrace();
-					}
-					throw new AssertionError("Will never be executed");
-				}
-			}).start();
+			final Thread t = new Thread(() -> {
+				source.publish(message);
+				throw new AssertionError("Will never be executed");
+			});
+			t.setDaemon(true);
+			t.start();
 			source.endOfStream();
 			return provider.createStream(source);
 		};
@@ -301,17 +291,12 @@ public final class MessageReplyToManyHandlerTest {
 
 		final ReplyToManySubscriptionHandler handler = (m, b) -> {
 			final Message message = b.content(ByteBuffer.wrap(responsePyload.getBytes())).buildMessage();
-			new Thread(() -> {
-				while (true) {
-					source.publish(message);
-					try {
-						TimeUnit.MILLISECONDS.sleep(800);
-					} catch (final InterruptedException e) {
-						e.printStackTrace();
-					}
-					throw new AssertionError("Will never be executed");
-				}
-			}).start();
+			final Thread t = new Thread(() -> {
+				source.publish(message);
+				throw new AssertionError("Will never be executed");
+			});
+			t.setDaemon(true);
+			t.start();
 			source.endOfStream();
 			return provider.createStream(source);
 		};
@@ -356,17 +341,12 @@ public final class MessageReplyToManyHandlerTest {
 
 		final ReplyToManySubscriptionHandler handler = (m, b) -> {
 			final Message message = b.content(ByteBuffer.wrap(responsePyload.getBytes())).buildMessage();
-			new Thread(() -> {
-				while (true) {
-					source.publish(message);
-					try {
-						TimeUnit.MILLISECONDS.sleep(800);
-					} catch (final InterruptedException e) {
-						e.printStackTrace();
-					}
-					throw new AssertionError("Will never be executed");
-				}
-			}).start();
+			final Thread t = new Thread(() -> {
+				source.publish(message);
+				throw new AssertionError("Will never be executed");
+			});
+			t.setDaemon(true);
+			t.start();
 			source.endOfStream();
 			return provider.createStream(source);
 		};
@@ -411,17 +391,12 @@ public final class MessageReplyToManyHandlerTest {
 
 		final ReplyToManySubscriptionHandler handler = (m, b) -> {
 			final Message message = b.content(ByteBuffer.wrap(responsePyload.getBytes())).buildMessage();
-			new Thread(() -> {
-				while (true) {
-					source.publish(message);
-					try {
-						TimeUnit.MILLISECONDS.sleep(800);
-					} catch (final InterruptedException e) {
-						e.printStackTrace();
-					}
-					throw new AssertionError("Will never be executed");
-				}
-			}).start();
+			final Thread t = new Thread(() -> {
+				source.publish(message);
+				throw new AssertionError("Will never be executed");
+			});
+			t.setDaemon(true);
+			t.start();
 			source.endOfStream();
 			return provider.createStream(source);
 		};
@@ -466,17 +441,12 @@ public final class MessageReplyToManyHandlerTest {
 
 		final ReplyToManySubscriptionHandler handler = (m, b) -> {
 			final Message message = b.content(ByteBuffer.wrap(responsePyload.getBytes())).buildMessage();
-			new Thread(() -> {
-				while (true) {
-					source.publish(message);
-					try {
-						TimeUnit.MILLISECONDS.sleep(800);
-					} catch (final InterruptedException e) {
-						e.printStackTrace();
-					}
-					throw new AssertionError("Will never be executed");
-				}
-			}).start();
+			final Thread t = new Thread(() -> {
+				source.publish(message);
+				throw new AssertionError("Will never be executed");
+			});
+			t.setDaemon(true);
+			t.start();
 			source.endOfStream();
 			return provider.createStream(source);
 		};
@@ -518,17 +488,12 @@ public final class MessageReplyToManyHandlerTest {
 
 		final ReplyToManySubscriptionHandler handler = (m, b) -> {
 			final Message message = b.content(ByteBuffer.wrap(responsePyload.getBytes())).buildMessage();
-			new Thread(() -> {
-				while (true) {
-					source.publish(message);
-					try {
-						TimeUnit.MILLISECONDS.sleep(800);
-					} catch (final InterruptedException e) {
-						e.printStackTrace();
-					}
-					throw new AssertionError("Will never be executed");
-				}
-			}).start();
+			final Thread t = new Thread(() -> {
+				source.publish(message);
+				throw new AssertionError("Will never be executed");
+			});
+			t.setDaemon(true);
+			t.start();
 			source.endOfStream();
 			return provider.createStream(source);
 		};
@@ -570,17 +535,12 @@ public final class MessageReplyToManyHandlerTest {
 
 		final ReplyToManySubscriptionHandler handler = (m, b) -> {
 			final Message message = b.content(ByteBuffer.wrap(responsePyload.getBytes())).buildMessage();
-			new Thread(() -> {
-				while (true) {
-					source.publish(message);
-					try {
-						TimeUnit.MILLISECONDS.sleep(800);
-					} catch (final InterruptedException e) {
-						e.printStackTrace();
-					}
-					throw new AssertionError("Will never be executed");
-				}
-			}).start();
+			final Thread t = new Thread(() -> {
+				source.publish(message);
+				throw new AssertionError("Will never be executed");
+			});
+			t.setDaemon(true);
+			t.start();
 			source.endOfStream();
 			return provider.createStream(source);
 		};
