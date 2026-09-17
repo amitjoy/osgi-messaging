@@ -57,6 +57,7 @@ Bundle-Description             : An OSGi Messaging Adapter for the MQTT 5.0 prot
 	org.reactivestreams
 
 Export-Package                 : \
+	com.hivemq.client.annotations,\
 	com.hivemq.client.mqtt.datatypes,\
 	com.hivemq.client.mqtt.exceptions,\
 	com.hivemq.client.mqtt.lifecycle,\
@@ -92,6 +93,8 @@ Import-Package                 : \
 	!org.eclipse.jetty.alpn,\
 	!org.eclipse.jetty.npn,\
 	!org.jboss.marshalling,\
+	!org.jctools.*,\
+	!org.jetbrains.annotations*,\
 	!reactor.blockhound,\
 	!reactor.blockhound.integration,\
 	!sun.security.ssl,\
