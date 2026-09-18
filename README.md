@@ -14,7 +14,7 @@ Further to the above, there is a utility bundle comprising an easy-to-use functi
 [![stars - osgi-messaging](https://img.shields.io/github/stars/amitjoy/osgi-messaging?style=social)](https://github.com/amitjoy/osgi-messaging)
 [![forks - osgi-messaging](https://img.shields.io/github/forks/amitjoy/osgi-messaging?style=social)](https://github.com/amitjoy/osgi-messaging)
 [![License - Apache](https://img.shields.io/badge/License-Apache-blue)](#license)
-[![Build - Passing](https://img.shields.io/badge/Build-Passing-brightgreen)](https://github.com/amitjoy/osgi-messaging/runs/1485969918)
+[![Build](https://github.com/amitjoy/osgi-messaging/actions/workflows/build.yml/badge.svg)](https://github.com/amitjoy/osgi-messaging/actions/workflows/build.yml)
 [![GitHub release](https://img.shields.io/github/release/amitjoy/osgi-messaging?include_prereleases&sort=semver)](https://github.com/amitjoy/osgi-messaging/releases/)
 
 ------------------------------------------------------------------------------------------------------------
@@ -25,11 +25,9 @@ Further to the above, there is a utility bundle comprising an easy-to-use functi
 
 | Artifact | Version | Coordinates (G:A:V) |
 | :--- | :---: | :--- |
-| **MQTT 5 Provider** | `1.1.0` | `in.bytehue:in.bytehue.messaging.mqtt5.provider:1.1.0` |
-| **Remote Adapter** | `1.1.0` | `in.bytehue:in.bytehue.messaging.mqtt5.remote.adapter:1.1.0` |
-
-
-------------------------------------------------------------------------------------------------------------
+| **MQTT 5 API** | `1.3.0` | `in.bytehue:in.bytehue.messaging.mqtt5.api:1.3.0` |
+| **MQTT 5 Provider** | `1.3.0` | `in.bytehue:in.bytehue.messaging.mqtt5.provider:1.3.0` |
+| **Remote Adapter** | `1.3.0` | `in.bytehue:in.bytehue.messaging.mqtt5.remote.adapter:1.3.0` |
 
 ------------------------------------------------------------------------------------------------------------
 
@@ -42,7 +40,7 @@ Further to the above, there is a utility bundle comprising an easy-to-use functi
 
 ### Modules
 
-This project comprises three projects - 
+This workspace comprises the following projects - 
 
 |                  Bundle                     |                 Description                        |
 |---------------------------------------------|----------------------------------------------------|
@@ -72,7 +70,17 @@ want to make use of the remote device management, you also need to install `in.b
 
 #### Building from Source
 
-Run `./gradlew clean build` in the project root directory
+To build and run all tests with an automated local HiveMQ broker:
+
+```bash
+./scripts/build.sh
+```
+
+Or build directly using the Gradle wrapper if an MQTT broker is already running on `localhost:1883`:
+
+```bash
+./gradlew clean build
+```
 
 --------------------------------------------------------------------------------------------------------------
 
@@ -873,7 +881,8 @@ Amit Kumar Mondal (admin@amitinside.com)
 
 ### Contribution [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/amitjoy/osgi-messaging/issues)
 
-Want to contribute? Great! Check out [Contribution Guide](https://github.com/amitjoy/osgi-messaging/blob/master/CONTRIBUTING.md)
+* Want to contribute? Great! Check out the [Contribution Guide](CONTRIBUTING.md).
+* Releasing artifacts? Check out the [Release Guide](RELEASING.md).
 
 --------------------------------------------------------------------------------------------------------------
 
